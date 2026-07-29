@@ -79,7 +79,7 @@
       "5p": {
         "side": "5p",
         "population": 4234,
-        "cm_reused": "[local build path redacted for carve — see provenance/known_open_issues.md]/ev_unified/ncr_5p.cm",
+        "cm_reused": "[local build path redacted for carve]/ev_unified/ncr_5p.cm",
         "block_width": 738,
         "block_rows": 4234,
         "ss_cons_pairs": 24
@@ -87,7 +87,7 @@
       "3p": {
         "side": "3p",
         "population": 3438,
-        "cm_reused": "[local build path redacted for carve — see provenance/known_open_issues.md]/ev_unified/ncr_3p.cm",
+        "cm_reused": "[local build path redacted for carve]/ev_unified/ncr_3p.cm",
         "block_width": 87,
         "block_rows": 3438,
         "ss_cons_pairs": 0
