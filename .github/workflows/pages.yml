@@ -1,0 +1,62 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+# Only the bundle is built here. The data artifacts under site/data/ are committed
+# and hash-gated; ci.yml fails if they no longer match final/. That keeps this job
+# free of any bioinformatics toolchain.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# A queued deploy should replace an older one, not cancel a run mid-publish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # 24, not 22: `npm test` runs the TypeScript sources directly and relies on
+      # Node stripping their types without a flag, which is only unconditional from
+      # 23.6 on. Also declared in site/package.json engines.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: site
+      - name: Typecheck
+        run: npm run check
+        working-directory: site
+      - name: Test
+        run: npm test
+        working-directory: site
+      - name: Build
+        run: npm run build
+        working-directory: site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

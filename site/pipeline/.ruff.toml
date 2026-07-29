@@ -1,0 +1,8 @@
+# Inherits the repository's rule selection and line length; adds only what ruff
+# cannot infer here. These modules are siblings run as a script directory rather
+# than an installed package, so ruff would otherwise sort them as third-party and
+# demand they share a block with numpy.
+extend = "../../pyproject.toml"
+
+[lint.isort]
+known-first-party = ["contract", "frame", "manifest", "summary", "traits"]

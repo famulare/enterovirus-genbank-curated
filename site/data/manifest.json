@@ -1,0 +1,45 @@
+{
+  "artifacts": {
+    "panels/NPEV.json": "1b00540725f70b1bb44041acc6fec69420102a882f1a6744ccdbdb62a49b89ea",
+    "panels/PV1.json": "bb5ebd3558545c915e12d3bb4155b89f6565cfc00c5c1e9832412f2504441686",
+    "panels/PV2.json": "b877d13ecfcc5738ae46c423ee6388e0bc3f16fa9e9299795d2d585e8b853ccf",
+    "panels/PV3.json": "52ded293e19ba088a8a4fafb598d111c0e184855883a9070fee9bd3ca330b222",
+    "panels/all.json": "14d8fd15ed18c99d09a1233c10c53437e5c4c031cca755283ba48d606282f6a9",
+    "records.json": "a78fbae39f45cabd9a78714040392fb31def82aa355b45326d3c4c703f3945b3",
+    "summary.json": "855ad5b7c3951fa55be3de8e9b217ba9ff8a79daf93c99b53ae2d504df7a8413"
+  },
+  "build_identity": "src-2d46811d6c10dff2",
+  "inputs": {
+    "final/alignments/EV_unified.provenance.json": "680a0830cb2cd29cdcc353924d3cb67e45ed42303c78cd76b9411bb9797fb3ad",
+    "final/alignments/EV_unified.sto.gz": "32600d33fada27ea6ea8f9675d59c9247659512d00e2612a9a248c27f19375cf",
+    "final/alignments/PV1_unified.sto.gz": "b9db50b0c622c8d64acd214337b908caf2ea49395b042494c137b8820a72f36d",
+    "final/alignments/PV2_unified.sto.gz": "0191b8e886e60396b8a2f9bc5bfacf45f8482dfcff95e5144c6b11e1f87cf98c",
+    "final/alignments/PV3_unified.sto.gz": "2d695a0334a8ca6ac4630639ed272004f480776f174289ea258feeb839caa2e7",
+    "final/alignments/reference_region_coordinates.tsv": "41420f9e5a5d3804f6370c0b41fa487365e5dc0a85e1f85c191082f15f9551e1",
+    "final/alignments/unified_stockholm_provenance.json": "6428df2a82825d729a35606402c36c8ed354ee2049d0b0da198d57ce7fcad872",
+    "final/audit/build_manifest.json": "c369eb5a9db7ad4f39ce0413fbbc7c5af640093940c8be6bffa207a10fe102a7",
+    "final/audit/manual_decisions.tsv.gz": "e664fd23c87791e9b046f2282d212ae4a5fe0350d77f7901f38cfaa86f395d1a",
+    "final/canonical/sequence_metadata.tsv.gz": "369b6c0bf351bb10f4611f9a7a862653ab68cc96cd77b1cd2d95f2c71dc3d005",
+    "final/source/normalized_tsv/record_taxonomy.tsv.gz": "2da64e6af64b6aec0582b7ac7118df795f4e71f78b73f08a6ac17686de19f9b9",
+    "raw/raw_manifest.json": "6aa7ac029c48f781c2b99a921084406a2b06ef8995667b8e2b8917c4efbae2ec"
+  },
+  "notes": {},
+  "schema": 1,
+  "sources": {
+    "site/pipeline/cli.py": "d2cd949179b9f9af829ab160caaa6756584a11e65a3e11fd2fcf0c6b3aada652",
+    "site/pipeline/contract.py": "36f22ae6a6f29116997c64458f84b80a50fe01a10d2f00a73b83c2257f8cda91",
+    "site/pipeline/divergence.py": "17700ff9c189114669586d089592b96d1c00ae2faec22c0ec57d7b36f9cf9b3c",
+    "site/pipeline/frame.py": "71aeed1d6af87ab4941035b4adc7ae21fe81151445147a22afc347db64f0ebb9",
+    "site/pipeline/manifest.py": "1fb7ea8a705e7fcd974badd6e37dcd215a5d2dfc1c117c4c77f003e99f48bb73",
+    "site/pipeline/panels.py": "6f0b71fbcd523351f47f9abce808f5b10abebc52a4d46077d41620469ae58406",
+    "site/pipeline/records.py": "ba7ead9b3bbdca6ad09328b32d92ccb5745a0d6b91eb187e1f5d392fa6262c40",
+    "site/pipeline/reference.py": "f320a749d8d0489fbf11fa2a965c420537ab725f906e7225fd81a38d5d34b634",
+    "site/pipeline/selftest.py": "4319d449cede55e9fb09cd2e5501def1ce3382f02519fae359b7e40cbad5b1d5",
+    "site/pipeline/summary.py": "5d356408b0564d3dfcd6d22a7fa93ba63ced9b0f38d415629d4419af73b40ee2",
+    "site/pipeline/traits.py": "bd80255e728ecb4cf629cf81bec2c36451346b3b923ac7a510f79809063b40b9"
+  },
+  "tool_versions": {
+    "numpy": "2.5.1",
+    "python": "3.12.13"
+  }
+}

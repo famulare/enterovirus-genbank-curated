@@ -1,0 +1,412 @@
+"""Every `final/` path and column name the site consumes, declared exactly once.
+
+This module is the blast-radius firewall. The generation pipeline is being
+rewritten upstream; when a path moves or a column is renamed, this file is the
+only one that needs to change. Nothing else under `site/pipeline/` may hardcode a
+path into `final/` or a canonical column name.
+
+Two upstream changes are already expected and are marked `# UPCOMING:` below —
+`collection_date` normalization to ISO, and an added date-range field.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+FINAL = REPO_ROOT / "final"
+SITE = REPO_ROOT / "site"
+DATA_OUT = SITE / "data"
+
+# --- Files read ------------------------------------------------------------
+
+CANONICAL_METADATA = FINAL / "canonical" / "sequence_metadata.tsv.gz"
+
+# `sequence_metadata_vouched.tsv.gz` is deliberately NOT read. It is a
+# byte-identical strict subset of the above — 10,086 rows, same 24 columns,
+# exactly `curation_status == "vouched"`, zero differing field values. It is a
+# filter, not a table, and is exposed in the UI as a curation_status toggle.
+
+RECORD_TAXONOMY = FINAL / "source" / "normalized_tsv" / "record_taxonomy.tsv.gz"
+# Carries `retrieval_date` — the day the frozen GenBank snapshot was pulled, which
+# is what "source complete as of" on the page means. Not the build date.
+RAW_MANIFEST = REPO_ROOT / "raw" / "raw_manifest.json"
+MANUAL_DECISIONS = FINAL / "audit" / "manual_decisions.tsv.gz"
+BUILD_MANIFEST = FINAL / "audit" / "build_manifest.json"
+REGION_COORDINATES = FINAL / "alignments" / "reference_region_coordinates.tsv"
+
+ALIGNMENT_DIR = FINAL / "alignments"
+
+
+def alignment_sto(name: str) -> Path:
+    return ALIGNMENT_DIR / f"{name}.sto.gz"
+
+
+# The three per-serotype alignments were built as one artifact and share a single
+# provenance record; the genus-wide alignment has its own.
+ALIGNMENT_PROVENANCE = {
+    "PV1_unified": "unified_stockholm_provenance.json",
+    "PV2_unified": "unified_stockholm_provenance.json",
+    "PV3_unified": "unified_stockholm_provenance.json",
+    "EV_unified": "EV_unified.provenance.json",
+}
+
+
+def alignment_provenance(name: str) -> Path:
+    return ALIGNMENT_DIR / ALIGNMENT_PROVENANCE[name]
+
+
+# `NPEV_unified` is deliberately unused. It carries no poliovirus reference row,
+# so there is no anchor from which to project polyprotein cleavage sites onto its
+# columns. Non-polio records are read from `EV_unified`, which does contain
+# AY184219/20/21 and puts polio and non-polio in one comparable frame.
+UNUSED_ALIGNMENTS = ("NPEV_unified", "POLIO_unified")
+
+# --- Canonical columns -----------------------------------------------------
+
+KEY_ACCESSION = "accession"
+KEY_VERSION = "version"
+
+CANONICAL_COLUMNS = (
+    "accession",
+    "version",
+    "sequence_sha256",
+    "sequence_length_nt",
+    "sequence_scope",
+    "ncbi_taxid",
+    "organism_name",
+    "virus_group",
+    "virus_type",
+    "poliovirus_classification",
+    "curation_status",
+    "isolate_name",
+    "strain_name",
+    "host_name",
+    "sample_origin",
+    "surveillance_stream",
+    "specimen_type",
+    "collection_date",
+    "collection_date_precision",
+    "country",
+    "admin1",
+    "locality",
+    "engineered_or_construct",
+    "biosample_accession",
+)
+# UPCOMING: an added date-range field will appear here. Add it to CANONICAL_COLUMNS
+# and, if it should be colorable, to TRAITS.
+
+GROUP_POLIO = "poliovirus"
+GROUP_NPEV = "non_polio_enterovirus"
+
+# --- Genome regions --------------------------------------------------------
+
+# `reference_region_coordinates.tsv` names the thirteen mature peptides plus the
+# two untranslated regions, in Sabin coordinates, per serotype.
+P1_GENES = ("VP4", "VP2", "VP3", "VP1")
+P2_GENES = ("2A", "2B", "2C")
+P3_GENES = ("3A", "3B", "3C", "3D")
+CDS_GENES = P1_GENES + P2_GENES + P3_GENES
+
+REGION_5NCR = "5NCR"
+REGION_3NCR = "3NCR"
+REGION_P1 = "P1"
+REGION_P2 = "P2"
+REGION_P3 = "P3"
+REGION_POLYPROTEIN = "polyprotein"
+
+# Region ids paired with the coordinate-table region names they are built from.
+# 5UTR/3UTR are the coordinate table's spelling; 5NCR/3NCR is this project's.
+CODING_REGIONS = (REGION_POLYPROTEIN, REGION_P1, REGION_P2, REGION_P3)
+NONCODING_REGIONS = (REGION_5NCR, REGION_3NCR)
+
+REGION_LABELS = {
+    REGION_POLYPROTEIN: "Polyprotein",
+    REGION_P1: "P1 (capsid)",
+    REGION_P2: "P2",
+    REGION_P3: "P3",
+    REGION_5NCR: "5′NCR",
+    REGION_3NCR: "3′NCR",
+}
+
+# Figure set 1 compares translated codons, so it is coding-only. Figure set 2
+# works on nucleotide distance and can therefore add the two NCRs.
+DIVERGENCE_REGIONS = CODING_REGIONS
+DISTANCE_REGIONS = (REGION_5NCR, REGION_P1, REGION_P2, REGION_P3, REGION_3NCR)
+
+# --- Thresholds ------------------------------------------------------------
+
+# Coverage below this many nucleotides of comparable material excludes a record
+# from a region's panel. The distributions are bimodal — near-complete or absent —
+# so this separates "has the region" from "does not", rather than trimming edges.
+MIN_REGION_NT = 50
+
+# The 3'NCR alignment block is only 87 columns wide, so 50 nt is a large fraction
+# of it and 70% of genus-wide pairs fall below that overlap. Lowered deliberately.
+MIN_REGION_NT_BY_REGION = {REGION_3NCR: 30}
+
+# A non-polio reference consensus needs this many contributing rows before it is
+# trusted; otherwise the fallback ladder steps up to species, then genus.
+MIN_CONSENSUS_ROWS = 5
+MIN_CONSENSUS_NT = 30
+
+
+def min_nt(region: str) -> int:
+    return MIN_REGION_NT_BY_REGION.get(region, MIN_REGION_NT)
+
+
+# --- Selections ------------------------------------------------------------
+
+SABIN_REFERENCE = {"PV1": "AY184219", "PV2": "AY184220", "PV3": "AY184221"}
+
+# Each selection names the alignment that supplies its coordinate frame, and how
+# rows are restricted within it. `frame="sabin"` means the alignment's RF match
+# columns are exactly that serotype's Sabin genome coordinates, so the region
+# coordinate table applies directly. `frame="projected"` means region boundaries
+# are projected from Sabin 1 through the alignment's codon MSA.
+SELECTIONS = (
+    {
+        "id": "PV1",
+        "label": "Poliovirus 1",
+        "alignment": "PV1_unified",
+        "frame": "sabin",
+        "reference": "AY184219",
+        "restrict": None,
+        "default_trait": "poliovirus_classification",
+        "root": "AY184219",
+    },
+    {
+        "id": "PV2",
+        "label": "Poliovirus 2",
+        "alignment": "PV2_unified",
+        "frame": "sabin",
+        "reference": "AY184220",
+        "restrict": None,
+        "default_trait": "poliovirus_classification",
+        "root": "AY184220",
+    },
+    {
+        "id": "PV3",
+        "label": "Poliovirus 3",
+        "alignment": "PV3_unified",
+        "frame": "sabin",
+        "reference": "AY184221",
+        "restrict": None,
+        "default_trait": "poliovirus_classification",
+        "root": "AY184221",
+    },
+    {
+        "id": "NPEV",
+        "label": "Non-polio enterovirus",
+        "alignment": "EV_unified",
+        "frame": "projected",
+        "reference": "consensus",
+        "restrict": GROUP_NPEV,
+        "default_trait": "virus_type",
+        "root": "midpoint",
+    },
+    {
+        "id": "all",
+        "label": "All enterovirus",
+        "alignment": "EV_unified",
+        "frame": "projected",
+        "reference": "consensus",
+        "restrict": None,
+        "default_trait": "virus_type",
+        "root": "AY184219",
+    },
+)
+
+# The Sabin 1 row in EV_unified is the anchor from which P1/P2/P3 boundaries are
+# projected onto the genus-wide codon MSA. Verified: its CDS block is 6,627 nt,
+# divisible by three, starting at ATG, and the projected region widths reproduce
+# the per-serotype widths (2643 / 1725 / 2259 nt) exactly.
+PROJECTION_ANCHOR = "AY184219"
+PROJECTION_ANCHOR_SEROTYPE = "PV1"
+
+# --- Traits ----------------------------------------------------------------
+
+# One trait catalog drives every figure set, so a color means the same thing in
+# all of them. `source="canonical"` reads the column directly; `source="derived"`
+# is computed in traits.py.
+TRAITS = (
+    {
+        "id": "poliovirus_classification",
+        "label": "Classification",
+        "kind": "discrete",
+        "source": "canonical",
+        "note": "Empty for every non-polio record.",
+    },
+    {"id": "virus_type", "label": "Virus type", "kind": "discrete", "source": "canonical"},
+    {
+        "id": "species",
+        "label": "Species",
+        "kind": "discrete",
+        "source": "derived",
+        "note": "Derived from the GenBank taxonomy lineage.",
+    },
+    {
+        "id": "type_concordance",
+        "label": "Type concordance",
+        "kind": "discrete",
+        "source": "derived",
+        # Scoped to the selection: the same record is concordant in one serotype's
+        # alignment and discordant in another's, so it has no global value.
+        "scope": "selection",
+        "note": "Curated virus_type against the alignment the record was placed in.",
+    },
+    {
+        "id": "curation_status",
+        "label": "Curation status",
+        "kind": "discrete",
+        "source": "canonical",
+    },
+    {"id": "sample_origin", "label": "Sample origin", "kind": "discrete", "source": "canonical"},
+    {
+        "id": "surveillance_stream",
+        "label": "Surveillance stream",
+        "kind": "discrete",
+        "source": "canonical",
+    },
+    {"id": "specimen_type", "label": "Specimen type", "kind": "discrete", "source": "canonical"},
+    {"id": "country", "label": "Country", "kind": "discrete", "source": "canonical"},
+    {"id": "host_name", "label": "Host", "kind": "discrete", "source": "canonical"},
+    {
+        "id": "sequence_scope",
+        "label": "Sequence scope",
+        "kind": "discrete",
+        "source": "canonical",
+        "note": "other_fragment for every non-polio record; polio-only in practice.",
+    },
+    {
+        "id": "collection_date_precision",
+        "label": "Date precision",
+        "kind": "discrete",
+        "source": "canonical",
+    },
+    {
+        "id": "engineered_or_construct",
+        "label": "Engineered or construct",
+        "kind": "discrete",
+        "source": "canonical",
+    },
+    {
+        "id": "collection_year",
+        "label": "Collection date",
+        "kind": "continuous",
+        "source": "derived",
+        "note": "Decimal year. Records with no parseable date are drawn unfilled.",
+    },
+    {
+        "id": "sequence_length_nt",
+        "label": "Sequence length (nt)",
+        "kind": "continuous",
+        "source": "canonical",
+    },
+    {
+        "id": "region_coverage_nt",
+        "label": "Region coverage (nt)",
+        "kind": "continuous",
+        "source": "computed",
+        "scope": "panel",
+        "note": "Comparable nucleotides in the region on screen. Varies per panel.",
+    },
+)
+
+TRAIT_SCOPE_RECORD = "record"
+
+DEFAULT_SELECTION = "PV1"
+DEFAULT_REGION = REGION_POLYPROTEIN
+
+# Number of discrete categories given their own hue before the rest collapse into a
+# single `Other` bucket. Seven is not a preference: it is the largest number of hues
+# that clears all-pairs colour-vision separation on a scatter plot. See the
+# measurements in site/src/model/palette.ts.
+MAX_DISCRETE_CATEGORIES = 7
+OTHER_CATEGORY = "Other"
+MISSING_CATEGORY = "not recorded"
+
+# --- Derived-trait vocabularies -------------------------------------------
+
+CONCORDANT = "concordant"
+DISCORDANT = "discordant"
+UNALIGNED = "unaligned"
+
+# Traits whose categories have a declared meaning rather than an incidental
+# frequency. Ranking these by count would exile `Sabin` — 46 records, and the
+# reference every polio panel is measured against — into `Other`, which is exactly
+# backwards. Values absent from the list still fall to `Other`.
+CATEGORY_ORDER = {
+    "poliovirus_classification": [
+        "Sabin",
+        "Sabin-like",
+        "VDPV",
+        "cVDPV",
+        "iVDPV",
+        "wild",
+        "unresolved",
+    ],
+    "type_concordance": [CONCORDANT, DISCORDANT, UNALIGNED],
+    "curation_status": ["vouched", "provisional"],
+}
+
+# SWITCHOVER: species is derived here because `final/canonical/` ships no species
+# column. The taxonomy table uses post-2023 ICTV binomials rather than the
+# EV-A..EV-D / RV-A..RV-C labels this field is universally reported in, so the
+# mapping is explicit. When canonical gains a native species column, delete this
+# map and the `derive_species` call in traits.py and read the column instead.
+SPECIES_BINOMIAL = {
+    "Enterovirus alphacoxsackie": "EV-A",
+    "Enterovirus betacoxsackie": "EV-B",
+    "Enterovirus coxsackiepol": "EV-C",
+    "Enterovirus deconjuncti": "EV-D",
+    "Enterovirus eibovi": "EV-E",
+    "Enterovirus fitauri": "EV-F",
+    "Enterovirus geswini": "EV-G",
+    "Enterovirus hesimi": "EV-H",
+    "Enterovirus jesimi": "EV-J",
+    "Enterovirus alpharhino": "RV-A",
+    "Enterovirus betarhino": "RV-B",
+    "Enterovirus cerhino": "RV-C",
+    # Legacy pre-binomial labels still present on a handful of records.
+    "Enterovirus A": "EV-A",
+    "Enterovirus B": "EV-B",
+    "Enterovirus C": "EV-C",
+    "Enterovirus D": "EV-D",
+    "Rhinovirus A": "RV-A",
+    "Rhinovirus B": "RV-B",
+    "Rhinovirus C": "RV-C",
+}
+GENUS_TAXA = ("Enterovirus", "Rhinovirus")
+SPECIES_UNRESOLVED = "unresolved"
+
+# Alignment character semantics live in frame.py, which owns the normalized
+# encoding: rows mix case, the NCR blocks use U where the CDS block uses T, and
+# everything outside ACGT counts as not-covered rather than as a mismatch.
+
+# --- Gated inputs ----------------------------------------------------------
+
+
+def gated_inputs() -> tuple[Path, ...]:
+    """Files whose bytes the committed site artifacts depend on.
+
+    `uv run site/pipeline/cli.py check` recomputes these hashes and fails if any
+    differs from what `site/data/manifest.json` recorded, so a data change cannot
+    silently ship a stale figure.
+    """
+    paths = [
+        CANONICAL_METADATA,
+        RECORD_TAXONOMY,
+        MANUAL_DECISIONS,
+        REGION_COORDINATES,
+        BUILD_MANIFEST,
+        RAW_MANIFEST,
+    ]
+    used = {s["alignment"] for s in SELECTIONS}
+    paths.extend(alignment_sto(name) for name in sorted(used))
+    paths.extend(sorted({alignment_provenance(name) for name in used}))
+    return tuple(paths)
+
+
+def repo_relative(path: Path) -> str:
+    return path.relative_to(REPO_ROOT).as_posix()

@@ -5,6 +5,14 @@ A curated, versioned view of publicly available GenBank Enterovirus sequence dat
 with epidemiology-first metadata, full provenance for every curated field, and reference
 multiple-sequence alignments.
 
+**→ Explore the data in your browser:
+[famulare.github.io/enterovirus-genbank-curated](https://famulare.github.io/enterovirus-genbank-curated/)**
+
+Synonymous against non-synonymous divergence for every sequence in the release, colored by any
+curated trait, brushable, and linked to the full record — an exploration surface that shows the
+structure in the data and makes misclassification visible. Nucleotide distance and the two
+phylogeny views are still to come. Source and build instructions in [`site/`](site/README.md).
+
 This is a **data release** with an early public pipeline foundation. It is not yet a fully
 self-contained reproducible pipeline. See [Reproducibility status](#reproducibility-status) for the
 precise boundary and [`docs/pipeline.md`](docs/pipeline.md) for the staged rewrite architecture.
@@ -39,6 +47,9 @@ raw/
 
 registry/             Contracts for the future human-readable curation ledger and
                       deterministic rule catalog.
+site/                 Source for the browser data explorer linked above, plus the
+                      precomputed artifacts it serves and the gate that keeps them
+                      in step with final/.
 src/                  Pipeline foundation and executable contract validation.
 releases/2.1.5/       Immutable parity contract for the historical release.
 docs/                 Pipeline architecture and the reproducibility boundary.

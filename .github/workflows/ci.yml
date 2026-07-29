@@ -35,3 +35,14 @@ jobs:
       # calls it, and running it twice would just double the build cost.
       - name: Test against the full corpus
         run: python -m pytest -m slow
+
+  # The site publishes committed, precomputed artifacts rather than recomputing on
+  # deploy, so the failure mode worth engineering against is a figure built from
+  # data that has since changed. This job makes that impossible to land quietly.
+  site-data-is-current:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Check site data against final/
+        run: uv run --no-project site/pipeline/cli.py check
