@@ -31,6 +31,8 @@ from __future__ import annotations
 
 import os
 import sys
+import tempfile
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -77,7 +79,19 @@ MUTATION_EVENTS: dict[str, tuple[int, ...]] = {
     "os.rmdir": (0,),
     "os.truncate": (0,),
     "os.symlink": (1,),
-    "os.link": (1,),
+    # Both ends of a hardlink, not just the destination. Checking only the destination let
+    # `os.link(final/x, scratch/alias)` succeed — the destination is legitimately in scratch — after
+    # which `open(scratch/alias, "w")` writes through the shared inode and rewrites shipped release
+    # bytes with zero violations recorded. Linking an inode *out* of a protected tree is itself the
+    # mutation to refuse, because nothing downstream can tell the alias apart from a real scratch
+    # file.
+    "os.link": (0, 1),
+    # NOT here, deliberately: `os.mkfifo` and `os.mknod`. Both plant a node inside `final/`
+    # undetected, but CPython raises **no audit event** for either — verified empirically, after
+    # first adding them to this table and watching the probe still escape. An entry for an event
+    # that never fires is itself a check that cannot fail, which is the bug class this repository
+    # exists to kill, so the honest move is to leave them out and record the gap in
+    # docs/reproducibility.md.
     "os.chmod": (0,),
     "os.chown": (0,),
     "os.chflags": (0,),
@@ -107,12 +121,20 @@ class UndeclaredInputError(ContractError):
 
 @dataclass
 class InputGuard:
+    """The record of what a guarded process touched.
+
+    Deliberately holds no enable/disable flag. There used to be an `_active: bool = True` that
+    nothing ever set, and a `_reentrant: bool` on the instance. Both were reachable from build code
+    — `next(o for o in gc.get_objects() if isinstance(o, InputGuard))._active = False` switched the
+    whole hook off, network and subprocess checks included. Neutralising a guard is not something
+    build code should be able to do by accident, and no caller needed either flag, so reentrancy now
+    lives in a thread-local owned by the hook's closure and there is no kill switch at all.
+    """
+
     repository_root: Path
     allowed_read_roots: tuple[str, ...]
     allowed_write_roots: tuple[str, ...]
     violations: list[str] = field(default_factory=list)
-    _active: bool = True
-    _reentrant: bool = False
 
     def record(self, message: str) -> None:
         if message not in self.violations:
@@ -182,6 +204,31 @@ def _as_path_str(raw: object) -> str | None:
     return os.path.normpath(os.path.abspath(raw))
 
 
+class ScratchRootError(ContractError):
+    """The scratch directory the guard was asked to trust is not trustworthy."""
+
+
+def _safe_scratch_root() -> str | None:
+    """The temp directory, unless honouring it would allowlist part of `$HOME`.
+
+    The guard used to fold `tempfile.gettempdir()` straight into both the read and the write roots.
+    That reads `$TMPDIR`, which the caller controls, so `TMPDIR=$HOME` made the whole home directory
+    readable *and* writable under a clean PASS — reintroducing exactly the `~/Downloads/*.xlsx`
+    dependency this guard exists to catch, and nullifying the "the home directory is not permitted"
+    property stated one sentence away from it in the docs. `TMPDIR=~/tmp` is a common real setup, so
+    this is an accident waiting to happen rather than an attack.
+
+    Returning None drops the temp root from the allowlist entirely, which is the safe direction: the
+    build then fails loudly on its own scratch writes instead of silently trusting `$HOME`.
+    """
+    candidate = tempfile.gettempdir()
+    home = os.path.realpath(str(Path.home()))
+    resolved = os.path.realpath(candidate)
+    if resolved == home or resolved.startswith(home + os.sep):
+        return None
+    return candidate
+
+
 def _interpreter_roots() -> tuple[str, ...]:
     """Everything the interpreter and its installed packages legitimately read.
 
@@ -191,7 +238,7 @@ def _interpreter_roots() -> tuple[str, ...]:
     """
     candidates: list[str | Path | None] = [
         sys.prefix, sys.base_prefix, sys.exec_prefix, sys.base_exec_prefix,
-        os.environ.get("TMPDIR"), "/tmp", "/var/folders",
+        _safe_scratch_root(), "/tmp", "/var/folders",
     ]
     candidates.extend(entry for entry in sys.path if entry)
     # Shared libraries the dynamic loader pulls in, and the locale/timezone data the stdlib reads.
@@ -203,12 +250,24 @@ def _interpreter_roots() -> tuple[str, ...]:
 def install_input_guard(
     repository_root: Path, *, extra_read_roots: tuple[Path, ...] = ()
 ) -> InputGuard:
-    """Install the audit hook. Irreversible for the life of the process."""
-    root = repository_root.resolve()
-    import tempfile
+    """Install the audit hook. The hook cannot be removed for the life of the process.
 
-    read_roots = _roots(root, tempfile.gettempdir(), *extra_read_roots) + _interpreter_roots()
-    write_roots = _roots(root, tempfile.gettempdir())
+    Raises `ScratchRootError` when `$TMPDIR` points inside `$HOME`, rather than quietly allowlisting
+    the home directory. Re-run with a `TMPDIR` outside `$HOME`, or unset it.
+    """
+    root = repository_root.resolve()
+
+    scratch = _safe_scratch_root()
+    if scratch is None:
+        raise ScratchRootError(
+            f"$TMPDIR resolves inside the home directory ({tempfile.gettempdir()}), so trusting it "
+            f"as scratch space would allowlist part of $HOME for both reading and writing — the "
+            f"exact undeclared-dependency class this guard exists to catch. Re-run with TMPDIR "
+            f"outside $HOME, or unset it."
+        )
+
+    read_roots = _roots(root, scratch, *extra_read_roots) + _interpreter_roots()
+    write_roots = _roots(root, scratch)
     immutable = _roots(*[root / name for name in IMMUTABLE_DIRS])
     frozen = _roots(*[root / name for name in FROZEN_DIRS])
 
@@ -227,27 +286,33 @@ def install_input_guard(
             return f"write outside the clone and the scratch directory: {_describe(path)}"
         return ""
 
+    # Thread-local, not per-instance. A single shared flag was set for the whole process while the
+    # hook worked, so any *other* thread doing I/O inside that window was skipped entirely — one
+    # undeclared read slipped through undetected in a two-thread probe. `os.fork` is refused, which
+    # covers `multiprocessing`, but `threading` is not and cannot be.
+    local = threading.local()
+
     def hook(event: str, args: tuple[object, ...]) -> None:
-        if not guard._active or guard._reentrant:
+        if getattr(local, "busy", False):
             return
         if event in NETWORK_EVENTS:
-            guard._reentrant = True
+            local.busy = True
             try:
                 message = f"network access is not a declared input: {event}{args!r:.200}"
                 guard.record(message)
             finally:
-                guard._reentrant = False
+                local.busy = False
             raise UndeclaredInputError(message)
         if event in ESCAPE_EVENTS:
-            guard._reentrant = True
+            local.busy = True
             try:
                 message = f"subprocess execution would escape the guard: {event}{args!r:.200}"
                 guard.record(message)
             finally:
-                guard._reentrant = False
+                local.busy = False
             raise UndeclaredInputError(message)
         if event in MUTATION_EVENTS:
-            guard._reentrant = True
+            local.busy = True
             try:
                 found = []
                 for index in MUTATION_EVENTS[event]:
@@ -262,7 +327,7 @@ def install_input_guard(
                 for message in found:
                     guard.record(message)
             finally:
-                guard._reentrant = False
+                local.busy = False
             if found:
                 raise UndeclaredInputError(found[0])
             return
@@ -274,7 +339,7 @@ def install_input_guard(
         if path is None:
             return
 
-        guard._reentrant = True
+        local.busy = True
         try:
             writing = (isinstance(mode, str) and any(c in mode for c in "wxa+")) or (
                 isinstance(flags, int) and bool(flags & _WRITE_FLAGS)
@@ -284,6 +349,21 @@ def install_input_guard(
                 problem = (
                     f"the frozen legacy registries are carried for provenance and read by nothing; "
                     f"the build may not open them: {_describe(path)}"
+                )
+            elif os.path.isdir(path) and (_within(path, immutable) or _within(path, frozen)):
+                # A directory descriptor is the one thing that gets a caller *past* every check in
+                # this hook: `openat`-style calls take `dir_fd=` plus a bare relative name, and the
+                # audit event carries neither, so the guard judges `CWD/name` while the kernel acts
+                # inside the protected tree. One keyword argument defeated the immutable-tree rule,
+                # the atomic-publish rule and the frozen-read rule together.
+                #
+                # The hook cannot see `dir_fd`, so this refuses the descriptor instead of the use.
+                # It is a partial defence — a caller who already holds a descriptor to a parent, or
+                # who walks in via a C extension, is unaffected — and the residual is documented in
+                # docs/reproducibility.md rather than claimed as closed.
+                problem = (
+                    f"refusing to open a directory inside a protected tree, because a directory "
+                    f"descriptor bypasses every path check this guard makes: {_describe(path)}"
                 )
             elif writing and _within(path, immutable):
                 problem = (
@@ -296,7 +376,7 @@ def install_input_guard(
             if problem:
                 guard.record(problem)
         finally:
-            guard._reentrant = False
+            local.busy = False
 
         if problem:
             raise UndeclaredInputError(problem)
