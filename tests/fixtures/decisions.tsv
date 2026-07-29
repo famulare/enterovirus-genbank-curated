@@ -1,0 +1,3 @@
+decision_id	decision_type	subject_key	accession	field_name	new_value	reason	evidence_reference	confirmed_by	source_artifact	status	effective_from	effective_through	notes
+D-0123456789abcdef	classification	AF000001	AF000001	classification	wild	legacy assertion	PMID:1	curator	legacy/classification.csv	active			
+D-fedcba9876543210	location	AF000002	AF000002	country	Pakistan	legacy assertion		curator	legacy/location.csv	active			
