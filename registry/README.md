@@ -93,14 +93,38 @@ Blank `evidence_reference` therefore rises from 206 rows to 250.
 
 **D2 — CS406436 / CS406482 / CS406483.** These carried genuinely contradictory live decisions:
 `classification=engineered` from the 2015 legacy bridge ("codon-deoptimized MEF1") against
-`classification=wild` from the 2026 full-genome review. Measured divergence from MEF1 (AY238473)
-is 4 nt over 6,621 aligned nt for CS406436, and 4 nt and 6 nt over 7,435 for CS406482 and CS406483 —
-0.05–0.08%. That rules out codon deoptimization, which rewrites synonymous codons wholesale and
-would give hundreds to thousands of substitutions. Both analyses cite the same patent
-(WO2006042156), so these are the **parental** MEF1 deposited within an engineering patent.
+`classification=wild` from the 2026 full-genome review. Divergence from MEF1 (AY238473) is 4 nt over
+6,621 aligned nt for CS406436, and 4 nt and 6 nt over 7,439 for CS406482 and CS406483 — 0.05–0.08%.
+That rules out codon deoptimization, which rewrites synonymous codons wholesale and would give
+hundreds to thousands of substitutions. All three are GenBank division `PAT`
+(`Sequence 6/52/53 from Patent WO2006042156`) and both analyses cite that same patent, so these are
+the **parental** MEF1 deposited within an engineering patent.
+
+Those figures are **remeasured from the shipped `final/canonical/sequences.fasta.gz`**, by pairwise
+global alignment, so a reader of this repository can check them. That is why the denominator differs
+from the curator's own rows, which report the same substitution counts over **7,435** positions from
+a Sabin-frame multiple alignment that is not carried publicly. Both are right about different
+quantities — 7,439 is the comparable positions of the pairwise alignment, and CS406482/CS406483 are
+7,439 nt against a 7,440 nt reference. The percentages agree to three figures either way, so the
+conclusion does not turn on the choice. The curator's `reason` text is carried verbatim under D1 and
+keeps 7,435; the migration-authored `notes` state the remeasurement and its method.
+
 Adjudicated by the curator: the legacy rows are `superseded`, and an explicit
-`engineered_or_construct=FALSE` is asserted. Canonical already ships `wild`, so **no scientific
-output changes**. These three new assertions are the entire difference between 2,753 and 2,756.
+`engineered_or_construct=FALSE` is asserted. These three new assertions are the entire difference
+between 2,753 and 2,756.
+
+**What that changes downstream, stated per field rather than in aggregate:**
+
+| field | canonical ships | ledger asserts | effect of applying the ledger |
+|---|---|---|---|
+| `poliovirus_classification` | `wild` | `wild` (2026 review, `active`) | none — the superseded legacy rows were never the governing call |
+| `engineered_or_construct` | `TRUE` | `FALSE` (added here) | **flips on all three records** |
+
+The supersession is a no-op on shipped output; the added assertion is not. This is the one
+scientific-output change the migration carries, and it is an approved curation change rather than a
+migration error. Nothing in Phase A rebuilds `final/canonical/`, so the flip lands when Phase B
+applies decisions — until then the ledger and the shipped canonical table disagree on this field by
+design, and [`docs/pipeline.md`](../docs/pipeline.md) records it as a known pending delta.
 
 ## Status vocabulary
 
@@ -151,6 +175,16 @@ The real file is tab-delimited. The wrapped display above is only for readabilit
 - `source_artifact` records where the assertion came from: one of the ten migrated registry
   filenames, or `curator_adjudication_2026-07-29` for the three D2 rows, which were authored during
   this migration and are recorded in no registry.
+
+  Those ten filenames name files in the **private** curation repository, so on its own the column is
+  a reference a public reader cannot follow. One of the ten is now committed beside the ledger as
+  [`registry/legacy/legacy_accession_classification_overrides.csv`](legacy/legacy_accession_classification_overrides.csv),
+  and a test reconciles all 30 of its rows against the decisions that cite it — so for the one
+  legacy file that affects canonical output, `source_artifact` is verifiable rather than asserted.
+  The other nine are not committed because the ledger is a complete migration of their content: every
+  row, every field, every rationale is here, which is what the parity test against the shipped
+  `manual_decisions.tsv.gz` demonstrates. Copying them would duplicate data the ledger already
+  carries, and duplicated curation data drifts.
 - `status` is `active`, `superseded`, or `retired`.
 - effective boundaries are explicit strings and may be blank until release-scoped semantics are
   required.
@@ -206,9 +240,44 @@ python scripts/migrate_legacy_registries.py \
 ```
 
 Because it needs a private path, CI cannot run it. Its guards — the disagreement raise, the
-truncation repair, the quote normalization, the D2 adjudication and id assignment — are covered by
-`tests/test_migration_legacy.py` against synthetic inputs instead. It is deterministic: re-running
-it reproduces `registry/decisions.tsv` byte for byte.
+truncation repair, the quote normalization, the D2 adjudication, the DQ205099 annotation, the
+release-baseline pin and id assignment — are covered by `tests/test_migration_legacy.py` against
+synthetic inputs instead. It is deterministic in the sense that matters: the same inputs produce the
+same bytes.
+
+**It is pinned to release 2.1.5's curation state, not to whatever the private repository holds
+today.** That repository is a live working tree where curation continues, so re-running this script
+is not idempotent over time — and the failure mode is silent, because new private rows are
+well-formed decisions that migrate cleanly. Observed 2026-07-29: a concurrent private edit added two
+`date_override` rows for `KP004228`/`KP004229`, and an unguarded re-run wrote a 2,758-row ledger
+without comment. The ledger tests caught it, but only four stages downstream, as six failures about
+counts and status distributions rather than one statement about what happened.
+
+So the baseline count is asserted at the point of divergence:
+`EXPECTED_BASELINE_DECISIONS = 2753` is checked immediately after the registries are read and before
+any adjudication is applied. A moved source now stops the migration and names what to do about it.
+`--allow-baseline-drift` overrides it, deliberately awkward, for the case where the new decisions
+have been diffed and approved — at which point the constant, the counts in this file, and
+`tests/test_decision_ledger.py` all move together.
+
+Those two decisions are **not** in this ledger. Whether release-era curation should be re-synced from
+the private repository, and on what cadence, is an open question for Phase B rather than something
+this migration should decide by running at an arbitrary moment.
+
+## Frozen legacy registries
+
+[`registry/legacy/`](legacy/) carries four hash-pinned CSVs that are the only surviving output of two
+private pipeline stages whose external inputs no longer exist. Three of them are named as frozen
+inputs-of-record in the shipped `final/audit/build_manifest.json` and were dangling references in the
+published repo until they were committed.
+
+Only 30 of those 2,315 rows are load-bearing, and they are already migrated into this ledger. Nothing
+in the build reads the directory — it is provenance, and the undeclared-input guard refuses to open
+anything that resolves inside it, so composing the path segment-wise or reaching it through a symlink
+does not evade the rule. A hardlink would, since it is a second name for the same inode rather than a
+path that resolves into the tree; that is a documented limit rather than a defended boundary. See
+[`registry/legacy/README.md`](legacy/README.md) for the per-file reach analysis, the three large
+derived tables deliberately *not* carried, and the DQ205099 disposition.
 
 `scripts/migrate_decisions.py` is the generic normalizer for *future* legacy imports. It refuses to
 run when an input file carries a column with no destination in the ledger — silently dropping

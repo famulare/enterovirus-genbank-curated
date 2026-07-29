@@ -2,12 +2,13 @@
 
 The migration itself needs `--source-dir` pointing at a private repository, so CI can never run it
 end to end. Its fail-closed behaviour is therefore tested here against synthetic inputs: the
-disagreement raise, the truncation repair, the quote normalization, the D2 adjudication and the id
-assignment are all exercised without touching the private data.
+disagreement raise, the truncation repair, the quote normalization, the D2 adjudication, the
+release-baseline pin and the id assignment are all exercised without touching the private data.
 """
 
 from __future__ import annotations
 
+import csv
 import importlib.util
 import sys
 from pathlib import Path
@@ -225,6 +226,89 @@ def test_d2_raises_if_the_legacy_rows_are_absent(mig: ModuleType) -> None:
         mig.apply_d2([decision()])
 
 
+# --- apply_dq205099_annotation ------------------------------------------------------------------
+
+
+def dq_row(mig: ModuleType, **overrides: str) -> dict[str, str]:
+    row = decision(
+        subject_key=mig.DQ205099_ACCESSION, accession=mig.DQ205099_ACCESSION,
+        decision_type="legacy_classification_override", new_value="engineered",
+        source_artifact="legacy_accession_classification_overrides.csv",
+    )
+    row.update(overrides)
+    return row
+
+
+def test_the_annotation_adds_a_note_and_changes_nothing_else(mig: ModuleType) -> None:
+    """The whole point of the DQ205099 disposition: marked, not overturned."""
+    before = dq_row(mig)
+    rows = mig.apply_dq205099_annotation([dict(before)])
+    assert len(rows) == 1, "the annotation must not add a decision row"
+    after = rows[0]
+    assert after["notes"] == mig.DQ205099_NOTE
+    for column, value in before.items():
+        if column != "notes":
+            assert after[column] == value, f"{column} changed"
+
+
+def test_the_annotation_preserves_the_curators_raw_reason(mig: ModuleType) -> None:
+    """D1 carries what the author typed. The note corrects the record; the reason field does not."""
+    raw = "miscoded. This is codon-deoptimized Sabin2: https://example.invalid/patent"
+    after = mig.apply_dq205099_annotation([dq_row(mig, reason=raw)])[0]
+    assert after["reason"] == raw
+
+
+def test_the_annotation_appends_rather_than_overwriting_an_existing_note(mig: ModuleType) -> None:
+    after = mig.apply_dq205099_annotation([dq_row(mig, notes="attr=1")])[0]
+    assert after["notes"] == f"attr=1; {mig.DQ205099_NOTE}"
+
+
+def test_the_annotation_raises_when_its_subject_is_absent(mig: ModuleType) -> None:
+    """A renamed or re-exported legacy file must fail loudly, not drop the note silently."""
+    with pytest.raises(ContractError, match="expected exactly one legacy engineered row"):
+        mig.apply_dq205099_annotation([decision()])
+
+
+def test_the_annotation_raises_on_more_than_one_candidate(mig: ModuleType) -> None:
+    with pytest.raises(ContractError, match="found 2"):
+        mig.apply_dq205099_annotation([dq_row(mig), dq_row(mig)])
+
+
+def test_the_annotation_refuses_to_run_twice(mig: ModuleType) -> None:
+    """Appending the note again would read as a second, corroborating judgment."""
+    once = mig.apply_dq205099_annotation([dq_row(mig)])
+    with pytest.raises(ContractError, match="already annotated"):
+        mig.apply_dq205099_annotation(once)
+
+
+def test_the_annotation_refuses_a_row_that_was_overturned(mig: ModuleType) -> None:
+    """The note asserts the label was upheld, so it must not land on a superseded row.
+
+    Not reachable by mutating the real migration — making D2 cover DQ205099 trips D2's own anchor
+    check first — so the guard is exercised directly here rather than left unproven.
+    """
+    with pytest.raises(ContractError, match="not active"):
+        mig.apply_dq205099_annotation([dq_row(mig, status="superseded")])
+
+
+def test_the_annotation_records_the_evidence_it_claims_to(mig: ModuleType) -> None:
+    """The note is the only place the falsification survives, so its content is contractual.
+
+    A future editor trimming it for length would otherwise silently remove the reason DQ205099 is
+    not a D2 twin.
+    """
+    for phrase in (
+        "3 nt/7439",          # the measurement that falsifies codon deoptimization
+        "AY184220",           # what it was measured against
+        "A2616G",             # where the differences are, so the claim is checkable
+        "VRL",                # not a patent deposit — the fact D2's analogy broke on
+        "S2R9",               # which clone it is
+        "16537593",           # the paper it is the parental control for
+        "engineered_or_construct=TRUE stands",  # the conclusion, stated as no-change
+    ):
+        assert phrase in mig.DQ205099_NOTE, f"the annotation no longer records {phrase!r}"
+
+
 # --- assign_ids -------------------------------------------------------------------------------
 
 
@@ -249,3 +333,95 @@ def test_ids_do_not_depend_on_input_order(mig: ModuleType) -> None:
     forward = {r["decision_id"] for r in mig.assign_ids(list(rows))}
     backward = {r["decision_id"] for r in mig.assign_ids(list(reversed(rows)))}
     assert forward == backward
+
+
+# --- assert_release_baseline ---------------------------------------------------------------------
+#
+# The private repository is a live working tree, so "re-run the migration" is not a repeatable
+# operation over time. New rows there are well-formed and migrate cleanly, which is why the drift is
+# silent and has to be checked by count rather than by validity.
+
+
+def test_the_baseline_pin_passes_on_the_release_era_count(mig: ModuleType) -> None:
+    rows = [decision(subject_key=f"AB{n:06d}") for n in range(mig.EXPECTED_BASELINE_DECISIONS)]
+    assert mig.assert_release_baseline(rows) is rows
+
+
+def test_the_baseline_pin_refuses_a_source_that_gained_decisions(mig: ModuleType) -> None:
+    """The observed 2026-07-29 case: two `date_override` rows appeared mid-session."""
+    rows = [decision(subject_key=f"AB{n:06d}") for n in range(mig.EXPECTED_BASELINE_DECISIONS + 2)]
+    with pytest.raises(ContractError) as caught:
+        mig.assert_release_baseline(rows)
+    message = str(caught.value)
+    assert str(mig.EXPECTED_BASELINE_DECISIONS + 2) in message
+    assert str(mig.EXPECTED_BASELINE_DECISIONS) in message
+    assert "--allow-baseline-drift" in message, "the message must say how to proceed deliberately"
+
+
+def test_the_baseline_pin_refuses_a_source_that_lost_decisions(mig: ModuleType) -> None:
+    rows = [decision(subject_key=f"AB{n:06d}") for n in range(mig.EXPECTED_BASELINE_DECISIONS - 1)]
+    with pytest.raises(ContractError):
+        mig.assert_release_baseline(rows)
+
+
+def test_the_baseline_pin_can_be_overridden_explicitly(mig: ModuleType) -> None:
+    rows = [decision(subject_key=f"AB{n:06d}") for n in range(mig.EXPECTED_BASELINE_DECISIONS + 2)]
+    assert mig.assert_release_baseline(rows, allow_drift=True) is rows
+
+
+def test_the_pinned_baseline_matches_the_committed_ledger(
+    mig: ModuleType, repository_root: Path
+) -> None:
+    """The pin and the shipped artifact must describe the same release.
+
+    This used to assert `EXPECTED_BASELINE_DECISIONS + len(D2_ACCESSIONS) == 2756` — an arithmetic
+    identity among two module constants and a literal in this file, which opens no artifact and so
+    stays green through exactly the drift it claims to catch. It now counts the committed ledger.
+    """
+    with (repository_root / "registry/decisions.tsv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    expected = mig.EXPECTED_BASELINE_DECISIONS + len(mig.D2_ACCESSIONS)
+    assert len(rows) == expected, (
+        f"registry/decisions.tsv holds {len(rows)} decisions but the migration is pinned to "
+        f"{mig.EXPECTED_BASELINE_DECISIONS} baseline + {len(mig.D2_ACCESSIONS)} D2 additions = "
+        f"{expected}. Bumping one without the other is the drift the pin exists to catch."
+    )
+
+
+def test_the_shipped_ledger_carries_the_current_d2_evidence(
+    mig: ModuleType, repository_root: Path
+) -> None:
+    """The committed artifact must match the generator that claims to produce it.
+
+    Nothing checked this, which is how the `7435`->`7439` correction reached the module docstring
+    and both READMEs while `D2_EVIDENCE` — the string actually written into the ledger — kept the
+    old figure. Editing the constant without regenerating, or hand-editing the ledger, fails here.
+    """
+    with (repository_root / "registry/decisions.tsv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+
+    added = [
+        row for row in rows
+        if row["source_artifact"] == mig.D2_SOURCE
+        and row["field_name"] == "engineered_or_construct"
+    ]
+    assert len(added) == len(mig.D2_ACCESSIONS), added
+    for row in added:
+        assert row["evidence_reference"] == mig.D2_EVIDENCE, (
+            f"{row['subject_key']}: the shipped evidence_reference is not the current "
+            f"D2_EVIDENCE. Regenerate the ledger, or revert the constant."
+        )
+        assert row["notes"] == mig.D2_ADDED_NOTE, row["subject_key"]
+
+    superseded = [
+        row for row in rows
+        if row["subject_key"] in mig.D2_ACCESSIONS and row["status"] == "superseded"
+    ]
+    assert len(superseded) == len(mig.D2_ACCESSIONS), superseded
+    for row in superseded:
+        assert row["notes"] == mig.D2_SUPERSEDED_NOTE, row["subject_key"]
+
+    assert "7435" not in mig.D2_EVIDENCE, (
+        "the Sabin-frame denominator is the curator's, carried verbatim in `reason` under D1. "
+        "Migration-authored evidence states the pairwise figure this repository can reproduce."
+    )

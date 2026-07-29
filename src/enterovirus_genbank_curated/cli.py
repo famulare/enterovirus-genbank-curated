@@ -14,6 +14,7 @@ from enterovirus_genbank_curated.contracts import (
     validate_contracts,
     validate_decision_ledger,
 )
+from enterovirus_genbank_curated.sandbox import assert_no_violations, install_input_guard
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -51,19 +52,30 @@ def build_parser() -> argparse.ArgumentParser:
         "--skip-relational", action="store_true",
         help="write only the TSVs, skipping the DuckDB and Parquet exports",
     )
+    build_source.add_argument(
+        "--guard-inputs", action="store_true",
+        help="fail on any read outside the clone, any write into final/ or raw/, or network use",
+    )
 
     parity_source = subparsers.add_parser(
         "parity-source",
         help="rebuild the source layer and byte-compare it against the shipped release",
     )
     parity_source.add_argument("--repository-root", type=Path, default=Path.cwd())
+    parity_source.add_argument(
+        "--guard-inputs", action="store_true",
+        help="fail on any read outside the clone, any write into final/ or raw/, or network use",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     root = args.repository_root.resolve()
+    guard = None
     try:
+        if getattr(args, "guard_inputs", False):
+            guard = install_input_guard(root)
         if args.command == "validate-contracts":
             validate_contracts(root, verify_baseline=not args.skip_baseline_verification)
             scope = "shape only" if args.skip_baseline_verification else "shape and shipped release"
@@ -80,18 +92,30 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "build-source":
             output = args.output.resolve()
             result = build_source_layer(root, output, relational=not args.skip_relational)
+            if guard is not None:
+                assert_no_violations(guard)
             for name, count in result.row_counts.items():
                 print(f"  {name:32} {count:>8}")
             print(f"source layer written to {output}")
+            if guard is not None:
+                print("undeclared-input guard: PASS (no read, write or connection outside scope)")
             return 0
         if args.command == "parity-source":
             results = verify_source_parity(root)
+            if guard is not None:
+                assert_no_violations(guard)
             print(
                 f"source parity: PASS ({len(results)} artifacts match the hashes "
                 f"final/audit/release_file_manifest.tsv declares)"
             )
+            if guard is not None:
+                print("undeclared-input guard: PASS (no read, write or connection outside scope)")
             return 0
     except ContractError as exc:
         print(f"contract validation failed: {exc}", file=sys.stderr)
         return 1
     raise AssertionError(f"unhandled command: {args.command}")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

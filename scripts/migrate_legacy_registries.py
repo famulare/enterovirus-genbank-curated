@@ -35,12 +35,24 @@ now, and are then stable against renames.
 
 **D2 — CS406436 / CS406482 / CS406483.** These carried contradictory live decisions:
 `classification=engineered` from the 2015 legacy override ("codon-deoptimized MEF1") and
-`classification=wild` from the 2026 full-genome review. Measured divergence from MEF1 (AY238473) is
-4 nt/6621 for CS406436 and 4-6 nt/7435 for the other two, which rules out codon deoptimization —
-that rewrites synonymous codons wholesale. Adjudicated by the curator: the legacy rows become
+`classification=wild` from the 2026 full-genome review. Divergence from MEF1 (AY238473), remeasured
+here from the shipped sequences, is 4 nt/6621 for CS406436 and 4 and 6 nt/7439 for the other two,
+which rules out codon deoptimization — that rewrites synonymous codons wholesale. Adjudicated by the
+curator: the legacy rows become
 `superseded`, and an explicit `engineered_or_construct=FALSE` is asserted, since these are parental
-sequences deposited inside an engineering patent. Canonical already ships `wild`, so no scientific
-output changes. This adds three rows, so the ledger is 2,756 rather than the historical 2,753.
+sequences deposited inside an engineering patent (all three are GenBank division `PAT`). This adds
+three rows, so the ledger is 2,756 rather than the historical 2,753.
+
+The supersession changes no shipped value — canonical already ships
+`poliovirus_classification=wild`, so the 2026 review was already the governing call. The added
+assertion does: canonical ships `engineered_or_construct=TRUE` for all three, so applying the
+ledger flips that field. That is the one scientific-output change here, approved rather than
+accidental, and it lands in Phase B because nothing in Phase A rebuilds `final/canonical/`.
+
+**DQ205099 — annotated, not adjudicated.** The same legacy file asserts `engineered` for a fourth
+accession, citing the same patent and claiming "codon-deoptimized Sabin2". The claim is false and
+the label is still right, so the row keeps `status=active` and gains a note rather than a
+supersession. See `apply_dq205099_annotation` for the evidence.
 
 ## Column-mapping choices, stated rather than buried
 
@@ -96,14 +108,28 @@ from enterovirus_genbank_curated.contracts import (
 # reason/evidence/confirmed_by fields, so wording can be corrected without changing an id.
 ID_COLUMNS = ("decision_type", "subject_key", "field_name", "new_value")
 
+# This migration is pinned to the curation state release 2.1.5 shipped, not to whatever the private
+# repository currently holds — that repository is a live working tree where curation continues. The
+# count is asserted so a source that has moved fails loudly here, at the point of divergence,
+# instead of silently producing a ledger with rows the shipped release never contained. Observed
+# 2026-07-29: a concurrent private edit added two `date_override` rows and this script wrote them
+# without comment; the ledger tests caught it, but four stages too late to be legible.
+PINNED_RELEASE = "2.1.5"
+EXPECTED_BASELINE_DECISIONS = 2753
+
 # The D2 adjudication is not a migration from any registry — it is a curator decision made during
 # this migration. Attributing it to manual_review_overrides.csv would claim that file records an
 # assertion it does not contain, so it names itself.
 D2_SOURCE = "curator_adjudication_2026-07-29"
 D2_ACCESSIONS = ("CS406436", "CS406482", "CS406483")
+# The denominator differs from the curator's own rows on purpose. Those report the same
+# substitution counts over 7435 positions, from a Sabin-frame MSA that is not carried publicly;
+# this reports the comparable positions of a pairwise global alignment of the shipped sequences,
+# which a reader of this repository can reproduce. 0.05-0.08% on either denominator.
 D2_EVIDENCE = (
-    "measured 4 nt/6621 (CS406436) and 4-6 nt/7435 (CS406482, CS406483) from MEF1 AY238473, "
-    "which rules out codon deoptimization"
+    "measured 4 nt/6621 (CS406436), 4 nt/7439 (CS406482) and 6 nt/7439 (CS406483) from MEF1 "
+    "AY238473 by pairwise global alignment of the shipped sequences, which rules out codon "
+    "deoptimization"
 )
 # Distinct wording per status. Reusing one string left three status=active rows whose notes opened
 # with the word "superseded", which is exactly the confusion the status vocabulary exists to avoid.
@@ -114,6 +140,35 @@ D2_SUPERSEDED_NOTE = (
 D2_ADDED_NOTE = (
     f"asserted 2026-07-29 when the contradictory legacy classification=engineered was superseded: "
     f"{D2_EVIDENCE}"
+)
+
+# DQ205099 is the fourth `engineered` call in the same legacy file, citing the same patent. It
+# survived D2 only because nothing contradicted it — it has one decision in the whole ledger and no
+# 2026 review row — which is why the falsified rationale is marked here instead of left to be
+# rediscovered and re-escalated as a D2 twin.
+#
+# The label is upheld and the status is unchanged, so this is an annotation rather than an
+# adjudication. Three facts separate it from D2:
+#
+#   1. It is not a patent deposit. GenBank division is VRL, not PAT, and the definition is
+#      "Human poliovirus 2 clone S2R9, complete genome" — a CDC direct submission, not
+#      "Sequence N from Patent WO2006042156" like the D2 trio.
+#   2. Its own source qualifiers say what it is: clone=S2R9, note=infectious clone. An infectious
+#      cDNA clone *is* a construct, so canonical engineered_or_construct=TRUE is correct and
+#      D2's remedy would make the record less accurate, not more.
+#   3. Only the stated mechanism is false. S2R9 is the parental wild-type control of the study the
+#      patent derives from, not one of its deoptimized constructs.
+DQ205099_ACCESSION = "DQ205099"
+DQ205099_NOTE = (
+    "annotated 2026-07-29, label upheld and status unchanged: the recorded mechanism is falsified "
+    "but the engineered call is not. Measured 3 nt/7439 (0.040%) from Sabin 2 AY184220, "
+    "differences A2616G/A3303T/T5640A unclustered across P1 and P3, which rules out capsid "
+    "codon deoptimization — that rewrites synonymous codons wholesale within ~2.6 kb. GenBank "
+    "division is VRL rather than PAT: this is CDC clone S2R9, source qualifier note=infectious "
+    "clone, the parental control of Burns et al. 2006 J Virol 80:3259 (PMID 16537593), the study "
+    "patent WO2006042156 derives from — not one of its deoptimized constructs. An infectious cDNA "
+    "clone is a construct, so canonical engineered_or_construct=TRUE stands and no shipped value "
+    "changes"
 )
 
 
@@ -220,6 +275,13 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, default=Path("registry/decisions.tsv"))
+    parser.add_argument(
+        "--allow-baseline-drift", action="store_true",
+        help=(
+            "write even though the private source no longer yields the release-era decision count. "
+            "Use only after diffing the result and approving the additions."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -492,6 +554,43 @@ def apply_d2(decisions: list[dict[str, str]]) -> list[dict[str, str]]:
     return decisions
 
 
+def apply_dq205099_annotation(decisions: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Mark the fourth legacy `engineered` call's falsified rationale, without changing its verdict.
+
+    Deliberately narrower than `apply_d2`: it adds no row, supersedes nothing, and asserts no field.
+    `status` stays `active` and `new_value` stays `engineered`, so `decision_id` is unaffected —
+    `notes` is not in `ID_COLUMNS`.
+
+    The row must be found. An earlier draft annotated whatever matched and reported success on zero
+    matches, which would have let a rename of the legacy file silently drop the note while the
+    migration still printed a clean summary. It also refuses to run twice: appending the note to a
+    row that already carries it would look like corroboration rather than duplication.
+    """
+    matches = [
+        row for row in decisions
+        if row["decision_type"] == "legacy_classification_override"
+        and row["subject_key"] == DQ205099_ACCESSION
+        and row["field_name"] == "classification"
+        and row["new_value"] == "engineered"
+    ]
+    if len(matches) != 1:
+        raise ContractError(
+            f"expected exactly one legacy engineered row for {DQ205099_ACCESSION}, found "
+            f"{len(matches)}. The annotation describes one specific assertion; if the legacy file "
+            f"changed, re-check the evidence before re-pointing the note."
+        )
+    row = matches[0]
+    if DQ205099_NOTE in row["notes"]:
+        raise ContractError(f"{DQ205099_ACCESSION} is already annotated")
+    if row["status"] != "active":
+        raise ContractError(
+            f"{DQ205099_ACCESSION} is {row['status']}, not active. The note asserts that the label "
+            f"was upheld, so it must not be attached to a row that was overturned."
+        )
+    row["notes"] = "; ".join(x for x in (row["notes"], DQ205099_NOTE) if x)
+    return decisions
+
+
 # Which registry governs when two of them assert the same field for the same subject. Declared
 # because the ledger forbids two *active* assertions per (subject_key, field_name) and something has
 # to break the tie; documented because an undocumented precedence rule is exactly the stop-condition
@@ -576,6 +675,28 @@ def assign_ids(decisions: list[dict[str, str]]) -> list[dict[str, str]]:
     return decisions
 
 
+def assert_release_baseline(
+    decisions: list[dict[str, str]], *, allow_drift: bool = False
+) -> list[dict[str, str]]:
+    """Refuse to continue when the private source no longer holds the release-era decision set.
+
+    Checked before any adjudication is applied, so the number reported is the migrated baseline and
+    not that baseline plus this migration's own additions.
+    """
+    if len(decisions) == EXPECTED_BASELINE_DECISIONS or allow_drift:
+        return decisions
+    raise ContractError(
+        f"the private registries now yield {len(decisions)} decisions, not the "
+        f"{EXPECTED_BASELINE_DECISIONS} that release {PINNED_RELEASE} shipped. This migration is "
+        f"pinned to the release-era snapshot, and the private repository is a live working tree, "
+        f"so a difference here means the source moved rather than that this script is wrong. Diff "
+        f"the new ledger against the committed one to see which decisions appeared, decide whether "
+        f"they are approved additions, and only then bump EXPECTED_BASELINE_DECISIONS with the "
+        f"counts in registry/README.md and tests/test_decision_ledger.py. Pass "
+        f"--allow-baseline-drift to write anyway."
+    )
+
+
 def main() -> int:
     args = parse_args()
     root = args.repository_root.resolve()
@@ -592,7 +713,9 @@ def main() -> int:
         decisions.extend(emitted)
 
     print(f"  {'baseline total':48} {'':>5}         {len(decisions):>5} decisions")
+    assert_release_baseline(decisions, allow_drift=args.allow_baseline_drift)
     decisions = apply_d2(decisions)
+    decisions = apply_dq205099_annotation(decisions)
     decisions = resolve_duplicate_assertions(decisions)
 
     # Normalize BEFORE hashing. Ids are derived from subject_key/field_name/new_value, so

@@ -24,6 +24,14 @@ jobs:
           python -m pip install -e . -r requirements-dev.txt
       - name: Lint
         run: ruff check .
+      # Fast tier. Includes the undeclared-input guard tests, each of which runs in a subprocess
+      # because audit hooks cannot be uninstalled. Most assert a violation is refused; a handful are
+      # positive controls asserting legitimate work still succeeds, so they must keep *passing* when
+      # the guard is neutered — do not read them as falsified checks. The reproducible evidence that
+      # the refusals bite is tests/test_sandbox.py itself: neuter a rule in sandbox.py and its
+      # matching test fails. docs/reproducibility.md additionally records a planted-mutation battery,
+      # but that is prose, not a runnable artifact — do not cite it as the check. This tier proves
+      # the guard's mechanism, not the real build.
       - name: Test
         run: python -m pytest
       - name: Validate repository contracts
@@ -31,7 +39,12 @@ jobs:
       # The corpus tier: reparse all 25,727 records from raw/ and compare every source artifact
       # against the hashes the release manifest declares. ~40s, so it belongs on every push. When
       # the pipeline grows a multi-hour alignment stage this must split into its own scheduled
-      # workflow. `evgc parity-source` is deliberately not a separate step — the slow tier already
-      # calls it, and running it twice would just double the build cost.
+      # workflow.
+      #
+      # Neither `evgc parity-source` nor `evgc parity-source --guard-inputs` is a separate step, on
+      # purpose. This tier already invokes both: `test_the_real_source_build_runs_clean_under_the
+      # _guard` shells out to the guarded CLI against the real corpus and asserts both PASS lines.
+      # Adding a step would run a second full corpus build for no extra coverage. If you are here to
+      # add one, check that test first.
       - name: Test against the full corpus
         run: python -m pytest -m slow

@@ -1,0 +1,315 @@
+legacy_row,accession,title,pubmed,possibleClassifications,classificationKeyValuePairs,possibleSamplingFrames,samplingFrameKeyValuePairs,discard,reason,notes,curation_source
+2,A01868,DNA FRAGMENTS CARRYING PORTIONS OF GENETIC INFORMATION OF :POLIOVIRUS_ PARTICULARLY OF THE PV1 TYPE_ AND METHOD FOR OBTAINING:THEM :,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+3,A03852,POLYPEPTIDES USEFUL IN VACCINATION AGAINST ENTEROVIRUSES:,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+4,A07272,Attenuated viruses:,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+5,A09260,Peptides useful in vaccination against enteroviruses:,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+6,A37539,MULTICISTRONIC EXPRESSION UNITS AND THEIR USE:,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+7,A37564,PRODUCTION OF HETERODIMER PDGF-AB BY MEANS OF A BICISTRONIC VECTOR:SYSTEM IN MAMMALIAN CELLS :,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+8,AB054212,Two major strains of type 1 wild poliovirus circulating in:Indochina :,9129093,wild,"wild:""wild poliovirus""",AFP,,,,,legacy_excel_title_key_table
+9,AB060337,Circulation of type 1 wild poliovirus in northern Vietnam during:1991-1994 :,8940986,wild,"wild:""wild poliovirus""",AFP,,,,,legacy_excel_title_key_table
+10,AB061280,Assessment of poliovirus eradication in Japan: genomic analysis of:polioviruses isolated from river water and sewage in toyama :prefecture :,11055968,vaccineOrigin,,environmental,,,,,legacy_excel_title_key_table
+11,AB111515,Phylogenetic diagnosis of polioviruses and other enteroviruses :isolated in Turkey during 1994 and 1999 by use of the VP4 sequence:,,wild;vaccineOrigin,"vaccineOrigin:""Ankara/21/96"";wild:",AFP,,,,,legacy_excel_title_key_table
+12,AB111826,Phylogenetic analysis of wild type 1 polioviruses isolated at the:latest period of transmission in Turkey :,,wild,wild:wild,AFP,,,,,legacy_excel_title_key_table
+13,AB162761,sequence of enterovirus:,,vaccineOrigin,,AFP-throat;AFP:,AFP-throat:throat;AFP:,,,,legacy_excel_title_key_table
+14,AB180073,Circulation of type 1 vaccine-derived poliovirus in the Philippines:in 2001 :,15564462,cVDPV;wild,cVDPV:Mindanao-01-1;cVDPV:Luzon-01-1;cVDPV:Luzon-01-2;cVDPV:Luzon-01-2c;wild:,AFP,,,,,legacy_excel_title_key_table
+15,AB282824,[Influence of genome extraction kits on enterovirus detection using:RT-PCR] :,18306682,unknown,,AFP,,,isolate follows EPID naming structure,,legacy_excel_title_key_table
+16,AB467771,Shedding of vaccine viruses with increased antigenic and genetic:divergence after vaccination of newborns with monovalent type 1 :oral poliovirus vaccine :,19515771,SabinLike,"SabinLike:""Shedding of vaccine viruses""",healthy,,,,,legacy_excel_title_key_table
+17,AB629955,Development of real-time PCR to detect oral vaccine-like poliovirus:and its application to environmental surveillance :,24134937,unknown,,environmental;healthy,environmental:sewage;healthy:healthy,,,,legacy_excel_title_key_table
+18,AB739059,Molecular typing of human enteroviruses from healthy children in:Yunnan province_ 2011 :,,unknown,,healthy,healthy:healthy,,,,legacy_excel_title_key_table
+19,AB781741,Molecular typing of human enteroviruses from healthy children in:Yunnan province_ 2012 (part 2) :,,unknown,,healthy,healthy:healthy,,,,legacy_excel_title_key_table
+20,AB794138,Molecular typing of enteroviruses in Yuxi city_Yunnan:province_China_2011(part 1) :,,unknown,,unknownStool,,,,,legacy_excel_title_key_table
+21,AB813054,Molecular typing of enteroviruses in Yuxi city_ Yunnan province_:China_ 2011(part 2) :,,unknown,,unknownStool,,,,,legacy_excel_title_key_table
+22,AB861646,Molecular typing of enteroviruses from healthy Children_ Yunnan:Province_ China_ 2013 :,,unknown,,healthy,healthy:healthy,,,,legacy_excel_title_key_table
+23,AB976096,Molecular typing of enteroviruses isolated from sewage samples_:Yunnan province_ China_ 2013 :,,unknown,,environmental,environmental:sewage,,,,legacy_excel_title_key_table
+24,AB980994,Environmental surveillance of poliovirus in sewage water around the:introduction period for inactivated polio vaccine in Japan :,25556189,unknown,,environmental,"environmental:""river water""",,,,legacy_excel_title_key_table
+25,AF065158,A Sabin vaccine-derived field isolate of poliovirus type 1 :displaying aberrant phenotypic and genetic features_ including a:deletion in antigenic site 1 :,10211959,VDPV,,AFP,,,,I suspect iVDPV based on presentation concurrent with measles and unusual genotype,legacy_excel_title_key_table
+26,AF068878,Multicenter quality assessment of PCR methods for detection of:enteroviruses :,10203496,,,,,yes,Sabin2 for lab protocol testing,,legacy_excel_title_key_table
+27,AF083944,Prolonged replication of a type 1 vaccine-derived poliovirus in an:immunodeficient patient :,9738040,iVDPV,iVDVP:immunodeficient,AFP,,,,,legacy_excel_title_key_table
+28,AF111953,Distribution of wild type 1 poliovirus genotypes in China:,8245521,wild,,AFP,,,,,legacy_excel_title_key_table
+29,AF139291,Resolution of the pathways of poliovirus type 1 transmission during:an outbreak :,10698978,wild,,AFP;environmental,AFP:clinical;environmental:environmental,,,,legacy_excel_title_key_table
+30,AF233222,Evolution of circulating wild poliovirus and of vaccine-derived:poliovirus in an immunodeficient patient: a unifying model :,10906191,wild;iVDPV,iVDPV:usa;wild:,AFP,,,,,legacy_excel_title_key_table
+31,AF236796,Nucleotide sequencing coat protein (VP1-VP3) of poliovirus type I:Mahoney-var :,,,,,,yes,,,legacy_excel_title_key_table
+32,AF236797,Nucleotide sequencing coat protein (VP1-VP3) of poliovirus type I:Mahoney-var_ hor7 :,,,,,,yes,no metadata to explain sample origin,,legacy_excel_title_key_table
+33,AF249265,Molecular and antigenic characterization of a highly evolved :derivative of the type 2 oral poliovaccine strain isolated from:sewage in Israel :,11015392,,,,,yes,no metadata to explain sample origin,,legacy_excel_title_key_table
+34,AF252165,Molecular characterization of human enteroviruses in clinical :samples: comparison between VP2_ VP1_ and RNA polymerase regions:using RT nested PCR assays and direct sequencing of products :,11505456,,,,,yes,lab assay study,,legacy_excel_title_key_table
+35,AF261763,Vaccine-associated Paralytic Poliomyelitis: Report of Successful:Treatment With Pleconaril :,,iVDPV,,AFP-CNS,,,,,legacy_excel_title_key_table
+36,AF334953,Antigenic sites of poliovirus type 3 eliciting IgA monoclonal:antibodies in orally immunized mice :,11277698,,,,,yes,mouse immunology study,,legacy_excel_title_key_table
+37,AF380615,Detection and Typing of Enteroviruses by Analysis of the 2C Gene:Sequence :,,unknown,,unknown,,yes,no metadata to explain sample origin,2C so I want to keep if possible,legacy_excel_title_key_table
+38,AF405657,Outbreak of poliomyelitis in Hispaniola associated with circulating:type 1 vaccine-derived poliovirus :,11896235,wild;cVDPV,cVDPV:HAI0;cVDPV:DOR0;wild:,AFP,,,,,legacy_excel_title_key_table
+39,AF405689,Circulating type 1 vaccine-derived poliovirus recombinants:,,cVDPV,,AFP;healthy,"healthy:C"";healthy:C1"";healthy:C2"";AFP:",,,,legacy_excel_title_key_table
+40,AF462419,Long-term circulation of vaccine-derived poliovirus that causes:paralytic disease :,12050392,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+41,AF528821,Calibration of a Clock for VP1 Nucleotide Evolution in Poliovirus:Type 1 :,,wild,,AFP,,,,,legacy_excel_title_key_table
+42,AF538842,Intratypic Recombination among Lineages of Type 1 Vaccine-Derived :Poliovirus Emerging during Chronic Infection of an Immunodeficient:Patient :,16188964,iVDPV,,AFP,,,,,legacy_excel_title_key_table
+43,AF541919,Characterization of a recombinant type 3/type 2 poliovirus isolated:from a healthy vaccinee and containing a chimeric capsid protein :VP1 :,12604808,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+44,AF545181,Prolonged detection of indigenous wild polioviruses in sewage from:communities in Egypt :,14561671,wild,,AFP,,,,,legacy_excel_title_key_table
+45,AF551841,Circulation of endemic type 2 vaccine-derived poliovirus in Egypt:from 1983 to 1993 :,12857906,wild;cVDPV,wild:pak;wild:per;wild:geo;wild:ind;wild:ban;wild:cae;wild:EGY79;wild:isr;wild:swe;wild:EGY55;cVDPV:,AFP,,,,,legacy_excel_title_key_table
+46,AH004344 S66302 S66304,Genomic analysis of type 3 wild poliovirus isolates in southern:Alberta :,8395279,wild,,healthy,,,,"source for ""healthy"": MMWR 42(17);337-339 http://www.cdc.gov/mmwr/preview/mmwrhtml/00020490.htm",legacy_excel_title_key_table
+47,AJ007969,Antigenic and molecular characterization of wild type 1 poliovirus:causing outbreaks of poliomyelitis in Albania and neighboring :countries in 1996 :,9650935,wild,,AFP,,,,,legacy_excel_title_key_table
+48,AJ132961,Evolution of poliovirus type I during 5.5 years of prolonged:enteral replication in an immunodeficient patient :,10600590,iVDPV,,AFP,,,,,legacy_excel_title_key_table
+49,AJ248524,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+50,AJ248525,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+51,AJ248526,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+52,AJ248527,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+53,AJ248528,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+54,AJ248529,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+55,AJ248530,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+56,AJ248531,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+57,AJ248532,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+58,AJ248533,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+59,AJ248534,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+60,AJ248535,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+61,AJ248536,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+62,AJ248537,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+63,AJ248538,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+64,AJ248539,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+65,AJ248540,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+66,AJ248541,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+67,AJ248542,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+68,AJ248543,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+69,AJ248544,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+70,AJ248545,Direct Submission:,,wild,,AFP,,,,source for AFP: country is India in 1990's and /isolate looks like polio surveillance EPID (case ID),legacy_excel_title_key_table
+71,AJ249036,Genetic recombination in wild-type poliovirus:,12466487,wild,,AFP,,,,,legacy_excel_title_key_table
+72,AJ249073,Epidemiologie moleculaire des poliovirus de type 1 en Afrique de:l'ouest :,,unknown,,AFP,,,,,legacy_excel_title_key_table
+73,AJ277196,Genomic characterization of type 3 polioviruses isolated from:vaccine-associated poliomyelitis cases in Brazil :,7581041,vaccineOrigin,,unknown,,,,"cannot determine case type (AFP, non-polio, healthy) from Genbank entries and cannot locate copy of paper",legacy_excel_title_key_table
+74,AJ288081,A highly evolved derivative of the type 2 oral poliovaccine strain:isolated from sewage in Israel: molecular and antigenic :characterization :,,VDPV;wild,"wild:""wild type reference"";VDPV:",environmental;AFP,environmental:sewage;environmental:environmental;AFP:,,,,legacy_excel_title_key_table
+75,AJ290808,Genomic characterization of type 2 polioviruses isolated from:vaccine-associated cases in Brazil :,8580863,vaccineOrigin,,unknown,,,,"cannot determine case type (AFP, non-polio, healthy) from Genbank entries and cannot locate copy of paper",legacy_excel_title_key_table
+76,AJ293918,The vaccine origin of the 1968 epidemic of type 3 poliomyelitis in:Poland :,11112479,USOL-D-bac,,AFP,,,,,legacy_excel_title_key_table
+77,AJ295189,Molecular identification and typing of enteroviruses isolated from:clinical specimens :,12454151,unknown,,unknown,,,,clinical specimens from hospital freezer,legacy_excel_title_key_table
+78,AJ400336,Type 2 poliovirus recombinants isolated from vaccine-associated:cases and from healthy contacts in Brazil :,8886095,vaccineOrigin,,unknown,,,,"cannot determine case type (AFP, non-polio, healthy) from Genbank entries and cannot locate copy of paper",legacy_excel_title_key_table
+79,AJ430385,Characterization of CHAT and Cox type 1 live-attenuated poliovirus:vaccine strains :,11991962,CHAT;Cox,Cox:Cox;CHAT:CHAT,CHAT;Cox,Cox:Cox;CHAT:CHAT,,,,legacy_excel_title_key_table
+80,AJ512792,Presence of poliovirus type 1 in working stocks of typed human:rhinoviruses: implications for laboratory containment :,,,,,,yes,unknown lab history,,legacy_excel_title_key_table
+81,AJ544513,Characterisation of a type 2 poliovirus strain from long-term:excretor with CVID immunodeficiency :,,iVDPV,,healthy,,,,"early isolate from ""Birmingham man""",legacy_excel_title_key_table
+82,AJ635238,Genomic mutations in oral poliovirus vaccine strains: implications:for the eradication of poliovirus :,,iVDPV;vaccineOrigin,iVDPV:immunodeficient;vaccineOrigin:immunocompetent;vaccineOrigin:Sabin,unknown,,,,,legacy_excel_title_key_table
+83,AJ699402,Genomic mutations in oral poliovirus vaccine strains:implications:for the eradication of poliovirus :,,iVDPV;vaccineOrigin,iVDPV:immunodeficient;vaccineOrigin:immunocompetent;vaccineOrigin:Sabin,unknown,,,,,legacy_excel_title_key_table
+84,AJ783774,Prevalence of vaccine-derived polioviruses in sewage and river:water in South Africa :,15996707,unknown,,environmental,,,,,legacy_excel_title_key_table
+85,AJ871589,Direct Submission:,,unknown,,unknown,,,,,legacy_excel_title_key_table
+86,AJ871590,Direct Submission:,,unknown,,unknown,,,,,legacy_excel_title_key_table
+87,AJ871591,Direct Submission:,,unknown,,unknown,,,,,legacy_excel_title_key_table
+88,AJ871592,Direct Submission:,,unknown,,unknown,,,,,legacy_excel_title_key_table
+89,AL590842 AJ414141-AJ414160,Genome sequence of Yersinia pestis_ the causative agent of plague:,11586360,,,,,yes,not polio,,legacy_excel_title_key_table
+90,AM056050,Neurovirulent vaccine-derived polioviruses in sewage from highly:immune populations :,17183700,VDPV,,environmental,,,,,legacy_excel_title_key_table
+91,AM084225,Co-circulation and evolution of polioviruses and species C:enteroviruses in a district of Madagascar :,18085822,cVDPV;wild,wild:PV1.;wild:PV3.;cVDPV:,AFP;healthy,healthy:VDPV;AFP:,,,,legacy_excel_title_key_table
+92,AM707037,Genetic features of polioviruses isolated in Tunisia_ 1991-2006:,,wild,,AFP,,,,,legacy_excel_title_key_table
+93,AX348201,Method for controlling the microbiological quality of an aqueous:medium and kit therefor :,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+94,AY015667,Rapid detection and specific identification of polioviruses by:multiplex pcr: surveillance of poliomyelitis in Spain :,,unknown,,unknown,,,,,legacy_excel_title_key_table
+95,AY017264,Molecular evolution of a type 1 wild-vaccine poliovirus recombinant:during widespread circulation in China :,11070012,wild-vaccine,,AFP,,,,,legacy_excel_title_key_table
+96,AY056711,Investigation of the presence of recombinant polioviruses in the:hit population in Albania during the 1996 outbreak :,11773144,wild,,AFP,,,,,legacy_excel_title_key_table
+97,AY082675,Russian reference poliovirus strains:,,wild,,unknown,,,,,legacy_excel_title_key_table
+98,AY082677,Poliovirus type 2 reference sequences:,,W-2;Lederle2:MEF1,W-2:W-2;Lederle2:LederleII;MEF1:MEF1,W-2;Lederle2:MEF1,W-2:W-2;Lederle2:LederleII;MEF1:MEF1,,,,legacy_excel_title_key_table
+99,AY082685,Poliovirus type 3 reference sequences:,,FOX3;Lederle3;Leon37;Saukett,FOX3:FOX3;Lederle3:LederleIII;Leon37:Leon37;Saukett:Saukett,FOX3;Lederle3;Leon37;Saukett,FOX3:FOX3;Lederle3:LederleIII;Leon37:Leon37;Saukett:Saukett,,,,legacy_excel_title_key_table
+100,AY082686,Poliovirus type 1 reference sequences:,,Lederle1;Mahoney;Brunhilde;CHAT,Lederle1:Lederle1;Mahoney:Mahoney;Brunhilde:Brunhilde;CHAT:CHAT,Lederle1;Mahoney;Brunhilde;CHAT,Lederle1:Lederle1;Mahoney:Mahoney;Brunhilde:Brunhilde;CHAT:CHAT,,,,legacy_excel_title_key_table
+101,AY177685,Nucleotide variation in Sabin type 2 poliovirus from an:immunodeficient patient with poliomyelitis :,12692287,iVDPV,,AFP,,,,,legacy_excel_title_key_table
+102,AY184219,Microevolution of Sabin 1 strain in vitro and genetic stability of:oral poliovirus vaccine :,8009849,Sabin1,"Sabin1:""Sabin 1""",Sabin 1,"consensus:""Sabin 1""",,,,legacy_excel_title_key_table
+103,AY184220,Mutations in Sabin 2 strain of poliovirus and stability of:attenuation phenotype :,10329577,Sabin2,"Sabin2:""Sabin 2""",Sabin 2,"consensus:""Sabin 2""",,,,legacy_excel_title_key_table
+104,AY184221,Microevolution of type 3 Sabin strain of poliovirus in cell :cultures and its implications for oral poliovirus vaccine quality:control :,7645242,Sabin3,"Sabin3:""Sabin 3""",Sabin 3,"consensus:""Sabin 3""",,,,legacy_excel_title_key_table
+105,AY189178,Reduced frequency of HLA DRB1*03-DQB1*02 in children with type 1:diabetes associated with enterovirus RNA :,12721936,,,,,yes,fragment,,legacy_excel_title_key_table
+106,AY189894,Environmental surveillance system to track wild poliovirus:transmission :,12732567,wild,,environmental;AFP;healthy,healthy:healthy;environmental:F-;environmental:G-;environmental:M-;AFP:,,,,legacy_excel_title_key_table
+107,AY211513,Evolution of wild type 1 poliovirus in two healthy siblings:excreting the virus over a period of six months :,,wild,,healthy,,,,,legacy_excel_title_key_table
+108,AY221243,The Mechanism of Poliovirus Eradication:,,wild,,AFP,,,,,legacy_excel_title_key_table
+109,AY238473,Evaluation of immunogenicity and protective properties of :inactivated poliovirus vaccines: a new surrogate method for:predicting vaccine efficacy :,15378432,MEF1,,MEF1,,,,,legacy_excel_title_key_table
+110,AY241265,Importation and circulation of poliovirus in Bulgaria_ 2001:,,wild,,AFP,,,,,legacy_excel_title_key_table
+111,AY253227,Wild Poliovirus Transmission in India:,,wild,,AFP,,,,,legacy_excel_title_key_table
+112,AY278553,Retrospective analysis of a local cessation of vaccination against:poliomyelitis: a possible scenario for the future :,14610170,vaccineOrigin,,AFP;healthy,healthy:healthy;AFP:,,,,legacy_excel_title_key_table
+113,AY278864,Microarray analysis of evolution of RNA viruses: new evidence of:circulation of virulent highly divergent vaccine-derived :polioviruses :,,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+114,AY297768,Recombinations in poliovirus vaccine strains:,,vaccineOrigin,,unknown,,,,,legacy_excel_title_key_table
+115,AY297769,Site analysis of recombinant and mutant poliovirus isolates of:Sabin origin from patients and from vaccinees :,15051119,vaccineOrigin,,unknown,,,,paper and genbank do not provide sufficient info to link all samples to the case ID,legacy_excel_title_key_table
+116,AY308802,Polio Type 2 Reference Strain:,,USA53,,unknown,,,,,legacy_excel_title_key_table
+117,AY323852,Evolution of wild-type 1 poliovirus in two healthy siblings:excreting the virus over a period of 6 months :,14769894,wild,,healthy,,,,,legacy_excel_title_key_table
+118,AY359873,Human poliovirus 3 strain LH polyprotein gene:,,,,,,yes,unknown provinence,,legacy_excel_title_key_table
+119,AY359874,Poliovirus 3 strain LH polyprotein_ partial VP3-VP1 region:,,,,,,yes,unknown provinence,,legacy_excel_title_key_table
+120,AY359875,Human poliovirus 3 strain Fox polyprotein_ partial VP3-VP1 region:,,,,,,yes,unknown provinence,,legacy_excel_title_key_table
+121,AY365245,Dynamic circulation of Polioviruses in India:,,wild,,AFP,,,,,legacy_excel_title_key_table
+122,AY421739,Characterization of a highly evolved vaccine-derived poliovirus:type 3 isolated from sewage in Estonia :,15078968,VDPV,,environmental,,,,,legacy_excel_title_key_table
+123,AY531200,Environmental surveillance of wild poliovirus circulation in:Egypt--balancing between detection sensitivity and workload :,15847928,unknown,,environmental,,,,wild vs vaccine not determinable from entry,legacy_excel_title_key_table
+124,AY560657,Direct Submission:,,Brunhilde,,Brunhilde,,,,,legacy_excel_title_key_table
+125,AY563379,Membrane adsorption with direct cell culture combined with reverse:transcription-PCR as a fast method for identifying enteroviruses :from sewage :,15640172,,,,,yes,"/note=""nonfunctional VP1 protein due to mutation""",,legacy_excel_title_key_table
+126,AY618458,Molecular epidemiology of wild poliovirus type 1 circulation in :West and Central Africa_ from 1997 to 1999_ using genotyping with a:restriction fragment length polymorphism assay :,18060590,wild,,AFP,,,,,legacy_excel_title_key_table
+127,AY649330,Spread of vaccine-derived poliovirus from a paralytic case in an:immunodeficient child: an insight into the natural evolution of :oral polio vaccine :,15613335,iVDPV,,AFP;environmental,environmental:sewage;AFP:,,,,legacy_excel_title_key_table
+128,AY741367,Direct Submission:,,wild,,AFP,,,,,legacy_excel_title_key_table
+129,AY741398,Genomic analysis of recombinant sabin clinical isolates:,16604453,vaccineOrigin,,unknown,,,,,legacy_excel_title_key_table
+130,AY820973,Recombinant Sabin environmental isolates in Greece and Cyprus:,18031522,vaccineOrigin,,environmental,,,,,legacy_excel_title_key_table
+131,AY820975,Vaccine derived bi- and multi-recombinant Sabin strains:,17680217,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+132,AY830710,Evolution of a rare vaccine-derived multirecombinant poliovirus:,16227237,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+133,AY923837,Advanced environmental surveillance and molecular analyses indicate:separate importations rather than endemic circulation of wild type :1 poliovirus in Gaza district in 2002 :,17660306,wild,,environmental,,,,,legacy_excel_title_key_table
+134,AY945798,Detection of unusual mutation within the VP1 region of different:re-isolates of poliovirus Sabin vaccine :,16972033,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+135,AY948201,Characterization of a rare natural intertypic type 2/type 3 :penta-recombinant vaccine-derived poliovirus isolated from a child:with acute flaccid paralysis :,19846676,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+136,AY960850,Molecular Characterization of Wild-Type Polioviruses Isolated in:Greece during the 1996 Outbreak in Albania :,16517917,wild,,AFP,,,,,legacy_excel_title_key_table
+137,AY962588,Characterization of wild type polioviruses isolated in Greece:during the 1996 outbreak in Albania :,,wild,,AFP,,,,,legacy_excel_title_key_table
+138,CS406483,Modulation of replicative fitness by using less frequently used:synonymous codons :,,engineered,,engineered,,,,,legacy_excel_title_key_table
+139,D00262,The effect of sequences in the 5' non-coding region on the:replication of polioviruses in the human gut :,2836553,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+140,D00625,Localization of genomic regions specific for the attenuated_:mouse-adapted poliovirus type 2 strain W-2 :,2154539,,,,,yes,mouse-adapted,,legacy_excel_title_key_table
+141,DI499176,IDENTIFICATION OF POLIOVIRUS STRAINS:,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+142,DQ167414,Detection of enteroviruses and mammalian reoviruses in Korean:environmental waters :,17053314,unknown,,environmental,,,,,legacy_excel_title_key_table
+143,DQ205099,Modulation of Poliovirus Replicative Fitness in HeLa Cells by:Deoptimization of Synonymous Codon Usage in the Capsid Region:,16537593,engineered,,engineered,,,,,legacy_excel_title_key_table
+144,DQ264317,Antigenic evolution of vaccine-derived polioviruses: changes in:individual epitopes and relative stability of the overall :immunological properties :,16501074,vaccineOrigin,,healthy;environmental;AFP,healthy:healthy;AFP:AFP;environmental:sewage;AFP:VAPP;healthy:,,,,legacy_excel_title_key_table
+145,DQ411569,Genetic drift of poliovirus type 1 during 51 months of prolonged:intestinal replication in an immunodeficient patient :,,iVDPV,,AFP,,,,,legacy_excel_title_key_table
+146,DQ522896,Genomic analysis of vaccine-derived poliovirus strains in stool:specimens by combination of full-length PCR and oligonucleotide:microarray hybridization :,15956413,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+147,DQ655667,Isolation of a vaccine derived poliovirus type 2 from a:immunodeficient child vacinated with OPV :,,iVDPV,,AFP,,,,,legacy_excel_title_key_table
+148,DQ787796,Use of mutational pattern in 5'-NCR and VP1 regions of polioviruses:for molecular diagnosis :,17336496,vaccineOrigin,,AFP;healthy,AFP:V8;AFP:V10;AFP:V12;healthy:,,,,legacy_excel_title_key_table
+149,DQ890388,Isolation of recombinant type 2 vaccine-derived poliovirus (VDPV):from a Nigerian child :,17449127,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+150,EF374030,Calibration of multiple poliovirus molecular clocks covering an:extended evolutionary range :,18287242,wild,,AFP,,,,,legacy_excel_title_key_table
+151,EF420871,Identification and characterization of type 2 and type 3 vaccine :derived polioviruses isolated during an outbreak of poliomyelitis:in Madagascar in 2005 :,,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+152,EF456706,Retrospective characterization of a vaccine-derived poliovirus type:1 isolate from sewage in Greece :,17827314,vaccineOrigin,,environmental,,,,,legacy_excel_title_key_table
+153,EF456707,Complete genomic characterization of an intertypic Sabin 3/Sabin 2:capsid recombinant :,18328076,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+154,EF490681,Isolation of sabin-like polioviruses from wastewater in a country:using inactivated polio vaccine :,18641161,SabinLike,,environmental,,,,,legacy_excel_title_key_table
+155,EF628464,Reemergence of recombinant vaccine-derived poliovirus outbreak in:Madagascar :,18419577,cVDPV,,AFP;healthy,AFP:acute;healthy:,,,,legacy_excel_title_key_table
+156,EF682359,Transmission of Imported Vaccine-derived Poliovirus in an Amish:Community --- Minnesota_ USA_ 2005 :,,cVDPV,,healthy,,,,Pubmed 19090774,legacy_excel_title_key_table
+157,EU004574,Molecular analysis and implications of neurovirulent circulating :vaccine-derived poliovirus in Jamaica. A case report and review of:literature :,19090774,cVDPV,,healthy,,,,Pubmed 19090774,legacy_excel_title_key_table
+158,EU046227,Identification and characterization of poliovirus type 1 (India:genotype) during the outbreak of poliomyelitis in Africa :,,wild,,AFP,,,,,legacy_excel_title_key_table
+159,EU049856,Interrupting wild poliovirus transmission using oral poliovirus:vaccine: environmental surveillance in high-risks area of India:,18551602,wild,,AFP;environmental,environmental:RCP1PGI;environmental:RCP2PGI;environmental:RCP3PGI;environmental:RCP4PGI;AFP:,,,,legacy_excel_title_key_table
+160,EU566950,Paralysis Associated and Contact Spreading of an Imported:Recombinant Vaccine Derived Poliovirus in Spain :,,iVDPV,,AFP,,,,"despite title, all reported isolates are listed are from immunocompromised patient",legacy_excel_title_key_table
+161,EU598487,A new RT-PCR assay for the identification of the predominant :recombination types in 2C and 3D genomic regions of vaccine-derived:poliovirus strains :,19948215,vaccineOrigin,,environmental,,,,,legacy_excel_title_key_table
+162,EU598488,Growth kinetic analysis of bi-recombinant poliovirus vaccine:strains :,20091423,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+163,EU684057,Isolation of a type 3 vaccine-derived poliovirus (VDPV) from an:Iranian child with X-linked agammaglobulinemia :,18674576,iVDPV,,AFP,,,,,legacy_excel_title_key_table
+164,EU715814,Determination of the role of mutations and recombination in growth:rates of Poliovirus vaccine strains :,,vaccineOrigin,,unknown,,,,,legacy_excel_title_key_table
+165,EU794964,Changes in population dynamics during long-term evolution of sabin:type 1 poliovirus in an immunodeficient patient :,18596089,iVDPV,,healthy,,,,,legacy_excel_title_key_table
+166,EU918390,Molecular characterization of poliovirus isolates from children who:contracted vaccine-associated paralytic poliomyelitis (VAPP) :following administration of monovalent type 3 oral poliovirus :vaccine in the 1960s in Hungary :,19863665,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+167,FB743423,Attenuated polio viruses:,,,,,,yes,Sabin 3 fragment,,legacy_excel_title_key_table
+168,FJ437006,Environmental Poliovirus Surveillance in Switzerland 2006-2008:,,unknown,,environmental,,,,,legacy_excel_title_key_table
+169,FJ456966,Chronic excretion of vaccine-derived poliovirus type 1 in an:immunodeficient patient from Germany :,,iVDPV,,unknown,,,,,legacy_excel_title_key_table
+170,FJ460227,Comparison of poliovirus recombinants: accumulation of point:mutations provides further advantages :,19403755,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+171,FJ492827,Detection and Quantification of Enteroviruses in Coastal Seawater:of Bohai Bay_ Tianjin_ China :,,unknown,,environmental,,,,,legacy_excel_title_key_table
+172,FJ517649,Evolution of the Sabin vaccine into pathogenic derivatives without:appreciable changes in antigenic properties: need for improvement :of current poliovirus surveillance :,19129444,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+173,FJ598093,An outbreak of hand-foot-mouth disease due to EV71/CoxA16 in:Guangdong_ China_ in 2008 :,,unknown,,AFP,,,,,legacy_excel_title_key_table
+174,FJ609772,Study of antigenic evolution of vaccine poliovirus strains and :determination of their immunological properties in Greek population:,,vaccineOrigin,,unknown,,,,"likely from healthy subjects (based on the number of isolates available), but no metadata is available to confirm",legacy_excel_title_key_table
+175,FJ769385,An Insight into Recombination with Enterovirus Species C and :Nucleotide G-480 Reversion from the Viewpoint of Neurovirulence of:Vaccine-Derived Polioviruses :,26603565,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+176,FJ839689,Outbreak of poliomyelitis in Finland in 1984-85 - Re-analysis of:viral sequences using the current standard approach :,19883702,wild;vaccineOrigin,vaccineOrigin:FIN85-77-32899;vaccineOrigin:FIN85-77-32899;vaccineOrigin:FIN85-349-1848;wild:,AFP,,,,,legacy_excel_title_key_table
+177,FJ859064,Emergence and localized circulation of a vaccine-derived poliovirus:in an isolated mountain community in guangxi_ china :,20631095,cVDPV,,AFP,,,,,legacy_excel_title_key_table
+178,FJ859192,Natural type 3/type 2 intertypic vaccine-related poliovirus :recombinants with the first crossover sites within the VP1 capsid:coding region :,21203565,vaccineOrigin,,AFP;healthy,healthy:CHN11185h/XZ/CHN/2007;AFP:,,,,legacy_excel_title_key_table
+179,FJ868312,Identification of 20 common human enterovirus serotypes by use of a:reverse transcription-PCR-based reverse line blot hybridization :assay :,19571022,unknown,,AFP,,,,,legacy_excel_title_key_table
+180,FJ868336,Direct Submission:,,unknown,,AFP,,,,,legacy_excel_title_key_table
+181,FJ898290,A Sabin 2-related poliovirus recombinant contains a homologous :sequence of human enterovirus species C in the viral polymerase:coding region :,19946714,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+182,FR715560,The frequency and biodiversity of poliovirus and non-polio :enterovirus strains isolated from healthy children living in a:limited area in Romania :,,unknown,,healthy,,,,,legacy_excel_title_key_table
+183,FV537077,Modified Microbial Nucleic Acid:,,,,,,yes,patent,,legacy_excel_title_key_table
+184,GM709485,Oligonucleotide microarray for identification of pathogens:,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+185,GN353743,Viral nucleic acid microarray and method of use:,,,,,,yes,patent;fragment,,legacy_excel_title_key_table
+186,GQ331952,Enteric viruses in raw vegetables and groundwater used for:irrigation in South Korea :,19854919,unknown,,environmental,,,,,legacy_excel_title_key_table
+187,GQ506664,Molecular characterization of circulating Human enteroviruses in:India :,,unknown,,AFP-CSF,,,,,legacy_excel_title_key_table
+188,GQ984141,OPV-like Poliovirus Type 1 Detection in Patients with Severe Acute:Respiratory Syndrome: a Retrospective Study :,,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+189,GU180608,Retrospective molecular and phenotypic analysis of poliovirus:vaccine strains isolated in Greece :,21375661,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+190,GU236309,Direct Submission:,,unknown,,AFP,,,,,legacy_excel_title_key_table
+191,GU236310,Direct Submission:,,unknown,,AFP,,,,,legacy_excel_title_key_table
+192,GU236311,Direct Submission:,,unknown,,AFP,,,,,legacy_excel_title_key_table
+193,GU236312,Direct Submission:,,unknown,,AFP,,,,,legacy_excel_title_key_table
+194,GU236313,Direct Submission:,,unknown,,AFP,,,,,legacy_excel_title_key_table
+195,GU236314,Direct Submission:,,unknown,,AFP,,,,,legacy_excel_title_key_table
+196,GU256222,Isolation of a recombinant type 3/type 2 poliovirus with a chimeric:capsid VP1 from sewage in Shandong_ China :,20206214,vaccineOrigin,,environmental,,,,,legacy_excel_title_key_table
+197,GU380286,Recurrent isolation of poliovirus 3 strains with chimeric capsid:protein Vp1 suggests a recombination hot-spot site in Vp1 :,20493912,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+198,GU390706,Brief Report: Neuroinvasive Immunodeficiency-Associated :Vaccine-Derived Poliomyelitis Thirteen Years after Infection -:Minnesota_ 2008 :,,iVPDV;cVDPV,iVDPV:USA;cVDPV:,AFP,,,,,legacy_excel_title_key_table
+199,GU903889,Detection and molecular identification of human adenoviruses and:enteroviruses in wastewater from Morocco :,22324352,unknown,,environmental,,,,,legacy_excel_title_key_table
+200,GU906272,Isolation and molecular characterization of Poliovirus-3 from the:respiratory tract in Nairobi_ Kenya :,,unknown,,AFP-throat,,,,,legacy_excel_title_key_table
+201,GU951803,Identification and molecular characterisation of an Indian genotype:of poliovirus type 1 isolated during outbreaks of poliomyelitis in :the Democratic Republic of Congo (DRC) from 2006 - 2008 :,,wild,,AFP,,,,,legacy_excel_title_key_table
+202,HF913428,Reemergence of Recombinant Vaccine-derived Polioviruses in Healthy:Children_ Madagascar :,23735779,VDPV,,healthy,,,,,legacy_excel_title_key_table
+203,HM107835,Type 2 vaccine-derived poliovirus from patients with acute flaccid:paralysis in china: current immunization strategy effectively :prevented its sustained transmission :,21050127,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+204,HM134120,Vaccine Derived Polioviruses (VDPV) threatening eradication of:polio in the Democratic Republic of Congo (DRC) :,,cVDPV,,AFP,,,,,legacy_excel_title_key_table
+205,HM537011,Determination of antigenic properties of vaccine derived poliovirus:strains :,20974307,vaccineOrigin,,environmental;AFP;healthy,environmental:742;environmental:7/b/97;AFP:I34;AFP:ID;AFP:EP23;AFP:K/2002;environmental:738;environmental:584;healthy:,,,,legacy_excel_title_key_table
+206,HQ286321,The Picornaviruses Chapter 26: The poliovirus eradication:initiative :,,wild,,AFP,,,,,legacy_excel_title_key_table
+207,HQ317702,Identification and characterization of poliovirus type 1 (India :genotype) during the outbreak of poliomyelitis in Tajikistan 2010:,,wild,,AFP,,,,,legacy_excel_title_key_table
+208,HQ694496,Virological surveillance of enteroviruses from healthy children in:the border areas with Myanma_ Yunnan Province_ China_ 2009 :,,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+209,HQ703555,Antiviral Activity of 3(2H)- and 6-Chloro-3(2H)-Isoflavenes against:Highly Diverged_ Neurovirulent Vaccine-Derived_ Type2 Poliovirus :Sewage Isolates :,21904594,vaccineOrigin,,environmental,,,,,legacy_excel_title_key_table
+210,HV202313,Replication-competent recombinant sabin type 1 strain of poliovirus:,,,,,,yes,patent; unknown design,,legacy_excel_title_key_table
+211,HZ037987,ATTENUATED VIRUSES USEFUL FOR VACCINES:,,,,,,yes,patent; Mahoney copy,,legacy_excel_title_key_table
+212,J02283,Poliovirus type 3: molecular cloning of the genome and nucleotide:sequence of the region encoding the protease and polymerase :proteins :,6298739,,,,,yes,Sabin 3 fragment,,legacy_excel_title_key_table
+213,JF313104,Poliovirus reference strains:,,wild;VDPV,VDPV:NIE0811671;wild:,AFP,,,,,legacy_excel_title_key_table
+214,JF343828,Occurrence of human enteric viruses at freshwater beaches during:swimming season and its link to water inflow :,24333998,,,,,yes,fragments; likely false homology with Sabin in OPV-free era,,legacy_excel_title_key_table
+215,JF838278,Robustness against serum neutralization of a poliovirus type 1 from:a lethal epidemic of poliomyelitis in the Republic of Congo in 2010:,25136105,wild,,AFP,,,,,legacy_excel_title_key_table
+216,JF896213,Environmental surveillance of enterovirus in Northern India using:an integrated shell vial culture with a semi-nested RT PCR and :partial sequencing of the VP1 gene :,23341372,unknown,,environmental,,,,,legacy_excel_title_key_table
+217,JN092123,Direct Submission:,,,,,,yes,fragment; unclear clinical presentation,,legacy_excel_title_key_table
+218,JN092124,Direct Submission:,,,,,,yes,fragment; unclear clinical presentation,,legacy_excel_title_key_table
+219,JN105295,Characterization of poliovirus variants selected for resistance to:the antiviral compound v-073 :,22890765,v073-antiviral,,engineered,,,,,legacy_excel_title_key_table
+220,JN393077,Interruption of poliovirus transmission in Ghana: molecular :epidemiology of wild-type 1 poliovirus isolated from 1995 to 2008:,22829642,wild,,AFP,,,,,legacy_excel_title_key_table
+221,JN688978,A RT-PCR method for selective amplification and phenotypic:characterization of all three serotypes of Sabin-related :polioviruses from viral mixtures :,22850966,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+222,JN812668,Phylogenetic study of wild poliovirus that circulated in:pre-eradication era in Brazil :,,wild,,AFP,,,,,legacy_excel_title_key_table
+223,JN990978,Molecular epidemiological study of human enterovirus circulating in:India :,,wild,,AFP,,,,,legacy_excel_title_key_table
+224,JQ228564,Bioterrorism and surveillance for infectious diseases - lessons:from poliovirus and enteric virus surveillance :,,unknown,,environmental,,,,,legacy_excel_title_key_table
+225,JQ411771,Molecular epidemiology and evolution of human enterovirus serotype:68 in Thailand_ 2006-2011 :,22586446,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+226,JQ613997,Detection of imported wild polioviruses and of vaccine-derived:polioviruses by environmental surveillance in egypt :,22582070,wild;cVDPV,cVDPV:PV1/EGY10/E42/V1;cVDPV:PV2;wild:,environmental,,,,,legacy_excel_title_key_table
+227,JQ906536,Genetic relationships and epidemiological links between wild type 1:poliovirus isolates in Pakistan and Afghanistan :,22353446,wild,,AFP,,,,,legacy_excel_title_key_table
+228,JX179294,Nearly constant shedding of diverse enteric viruses by two healthy:infants :,22875894,SabinLike,,healthy,,,,,legacy_excel_title_key_table
+229,JX181927,Molecular identification and analysis of human enteroviruses :isolated from healthy children in shenzhen_ china from 2010 to 2011:,23762262,unknown,,healthy,,,,,legacy_excel_title_key_table
+230,JX219557,Diversity of picornaviruses in rural Bolivia:,23804569,unknown,,AFP,,,,,legacy_excel_title_key_table
+231,JX275382,Multiple Independent Emergences of Type 2 Vaccine-Derived:Polioviruses during a Large Outbreak in Northern Nigeria :,23408630,cVDPV,,AFP,,,,,legacy_excel_title_key_table
+232,JX424836,Emergence of Vaccine-derived Polioviruses_ Democratic Republic of:Congo_ 2004-2011 :,24047933,cVDPV,,AFP,,,,,legacy_excel_title_key_table
+233,JX513605,Non-polio enteroviruses and their association with acute diarrhea:in children in India :,23602838,,,,,yes,sabin references,,legacy_excel_title_key_table
+234,JX538031,Naturally Acquired Picornavirus Infections in Primates at the Dhaka:Zoo :,23097447,,,,,yes,non-human primate infection (Sabin 3 in an olive baboon!),,legacy_excel_title_key_table
+235,JX913690,Characteristics of an Environmentally Monitored Prolonged Type 2:Vaccine Derived Poliovirus Shedding Episode that Stopped without:Intervention :,23935826,VDPV,,environmental,,,,,legacy_excel_title_key_table
+236,K01392,Comparison of the complete nucleotide sequences of the genomes of:the neurovirulent poliovirus P3/Leon/37 and its attenuated Sabin :vaccine derivative P3/Leon 12a1b :,6324200,Leon37,,AFP-CNS,,,,,legacy_excel_title_key_table
+237,KC136312,Two Cases of Fatal Respiratory Failure Causing By Poliovirus:Vaccine Strain :,,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+238,KC784373,Highly Divergent Types 2 and 3 Vaccine-Derived Polioviruses:Isolated from Sewage in Tallinn_ Estonia :,24049178,VDPV,,environmental;AFP,AFP:TKM90;environmental:,,,,legacy_excel_title_key_table
+239,KC800683,VP1 sequence analysis of poliovirus type 1 isolated in India:,,unknown,,AFP,,,,,legacy_excel_title_key_table
+240,KC812257,Sequence analysis of 3D region of wild poliovirus type 1 isolated:in India :,,unknown,,AFP,,,,,legacy_excel_title_key_table
+241,KC832671,Evolution of type 2 vaccine derived poliovirus lineages. Evidence:for codon-specific positive selection at three distinct locations:on capsid wall :,23840537,wild,,AFP,,,,Strange is that these are Egypt sequences that aren't mentioned in the linked paper. I wonder if this genbank entry is wrong.,legacy_excel_title_key_table
+242,KC848180,Altered Antibody Profiles against Common Infectious Agents in:Chronic Disease :,24312567,,,,,yes,lab neutralization assay strain,,legacy_excel_title_key_table
+243,KC880521,The 2010 Outbreak of Poliomyelitis in Tajikistan: the Nature and:Some Lessons :,,wild,,AFP,,,,,legacy_excel_title_key_table
+244,KF177120,Non-polio enterovirus association with persistent diarrhea in:children as revealed by a follow-up study of an Indian cohort:during the first two years of life :,24954472,unknown,,healthy,,,,,legacy_excel_title_key_table
+245,KF193870,Characterization of Polio virus from live vaccine and polio:patients from Pakistan :,,unknown,,AFP,,,,,legacy_excel_title_key_table
+246,KF322158,Evolution and Circulation of Type-2 Vaccine-Derived Polioviruses in:Nad Ali District of Southern Afghanistan during June 2009-February :2011 :,24558390,cVDPV,,AFP,,,,,legacy_excel_title_key_table
+247,KF537633,Complete genome sequence of the last representative genotype of:wild indigenous poliovirus type 1_ which circulated in Brazil :,24179117,wild,,AFP,,,,,legacy_excel_title_key_table
+248,KF584242,Outbreak of Type 1 Wild Poliovirus in Adults_ Namibia_ 2006:,,wild,,AFP,,,,,legacy_excel_title_key_table
+249,KF666633,Isolation and Characterization of a Type 2 Vaccine-Derived:Poliovirus from Environmental Surveillance in China_ 2012 :,24386319,VDPV,,environmental,,,,,legacy_excel_title_key_table
+250,KF698779,Impact of cell lines included in enterovirus isolation protocol on:perception of nonpolio enterovirus species C diversity :,25064357,unknown,,environmental,,,,,legacy_excel_title_key_table
+251,KF701306,Detection of vaccine-derived polioviruses in Mexico using:environmental surveillance :,25316850,vaccineOrigin,,environmental,,,,,legacy_excel_title_key_table
+252,KF990615,Direct Submission:,,wild,,AFP,,,,,legacy_excel_title_key_table
+253,KF990616,Direct Submission:,,wild,,AFP,,,,,legacy_excel_title_key_table
+254,KF990617,Direct Submission:,,wild,,AFP,,,,,legacy_excel_title_key_table
+255,KF990618,Direct Submission:,,wild,,AFP,,,,,legacy_excel_title_key_table
+256,KF990619,Direct Submission:,,wild,,AFP,,,,,legacy_excel_title_key_table
+257,KF990620,Direct Submission:,,wild,,AFP,,,,,legacy_excel_title_key_table
+258,KF992623,Phylogeny of imported and reestablished wild polioviruses in:theDemocratic Republic of the Congo from 2006 to 2011 :,25316856,wild,,AFP,,,,,legacy_excel_title_key_table
+259,KJ013498,Molecular Epidemiology of Silent Introduction and Sustained:Transmission of Wild Poliovirus Type 1_ Israel_ 2013 :,,wild,,environmental;healthy,healthy:stool;environmental:,,,,legacy_excel_title_key_table
+260,KJ170677,Sabin Vaccine Reversion in the Field: a Comprehensive Analysis of:Sabin-Like Poliovirus Isolates in Nigeria :,26468545,SabinLike,,AFP,,,,,legacy_excel_title_key_table
+261,KJ419277,Limited and localized outbreak of newly emergent type 2:vaccine-derived poliovirus in sichuan_ china :,24850620,cVDPV,,AFP;healthy,healthy:CHN16019c;AFP:,,,,legacy_excel_title_key_table
+262,KJ460332,Molecular Characterization and Phylogenetic Relationship of Wild:Type 1 Poliovirus Strains Circulating across Pakistan and :Afghanistan Bordering Areas during 2010-2012 :,25229826,wild,,AFP,,,,,legacy_excel_title_key_table
+263,KJ852648,Sporadic Isolation of Sabin-Like Polioviruses and High-Level :Detection of Non-Polio Enteroviruses during Sewage Surveillance in :Seven Italian Cities_ after Several Years of Inactivated Poliovirus:Vaccination :,24814793,vaccineOrigin,,environmental,,,,,legacy_excel_title_key_table
+264,KM233675,Enterovirus species circulating in Nigeria and their contribution:to the emergence of recombinant circulating vaccine derived :polioviruses :,,unknown,,environmental,,,,,legacy_excel_title_key_table
+265,KM235193,Enterovirus Species Cs Circulating in Nigeria and Their :Contribution To The Emergence of Recombinant Circulating Vaccine:Derived Polioviruses :,,unknown,,environmental,,,,,legacy_excel_title_key_table
+266,KM433732,Complete genome sequence analysis of a poliovirus type 2 strain:isolated in Yunnan_ China_ in 2013 :,,vaccineOrigin,,AFP-CSF,,,,,legacy_excel_title_key_table
+267,KP004244,Genetic analysis and characterization of wild poliovirus type 1:during sustained transmission in a population with >95% vaccine:coverage_ Israel 2013 :,25550350,wild,,environmental,,,,,legacy_excel_title_key_table
+268,KP143072,Circulating vaccine-derived polioviruses in the Extreme North:region of Cameroon :,25542478,cVDPV,,AFP,,,,,legacy_excel_title_key_table
+269,KP196613,The Genetic Character Analysis of Type 2 Vaccine-derived Poliovirus:in Shanxi Province in 2014 :,,VDPV,,AFP,,,,,legacy_excel_title_key_table
+270,KR259355,Vaccine derived polioviruses that escaped detection by the :real-time RT-PCR VDPV screening assay used in polio surveillance:,,unknown,,environmental,,,,,legacy_excel_title_key_table
+271,KR259358,Vaccine-Derived Polioviruses Not Detected by Global Surveillance:Screening Assay :,26402584,VDPV,,AFP,,,,,legacy_excel_title_key_table
+272,KR709242,Two Cases of Vaccine-Derived Poliovirus Infection in an Oncology:Ward :,27028932,iVDPV,,healthy,,,,,legacy_excel_title_key_table
+273,KR817066,Twenty-eight years of poliovirus replication in an immunodeficient:individual: impact on the global polio eradication initiative :,,iVDPV;wild,wild:wild;iVDPV:,healthy;AFP,AFP:wild;healthy:,,,,legacy_excel_title_key_table
+274,KT022351,Enterovirus Species B Bias of RD Cell Line and Its Influence on:Enterovirus Diversity Landscape :,26403309,unknown,,environmental,,,,,legacy_excel_title_key_table
+275,KT353719,Direct Submission:,,unknown,,unknown,,,,,legacy_excel_title_key_table
+276,KU161399,Environmental surveillance of viruses by tangential flow filtration:and metagenomic reconstruction :,27105043,wild,,environmental,,,,,legacy_excel_title_key_table
+277,KU198435,Molecular and Phenotypic Characterization of a Highly Evolved Type:2 Vaccine-Derived Poliovirus Isolated from Sewage in Brazil_ 2014 :,,VDPV,,environmental,,,,,legacy_excel_title_key_table
+278,KU372652,Molecular and Phenotypic Characterization of a Highly Evolved Type :2 Vaccine-Derived Poliovirus Isolated from Seawater in Brazil_ 2014:,27019095,VDPV,,environmental,,,,,legacy_excel_title_key_table
+279,KU598891,A cluster of paralytic poliomyelitis cases due to transmission of:slightly diverged Sabin-2 vaccine virus :,27099315,VDPV,,AFP;healthy,AFP:AFP;healthy:,,,,legacy_excel_title_key_table
+280,KU708514,Nucleotide variation in Sabin type 3 poliovirus from an Albanian :infant with agammaglobulinemia and vaccine associated poliomyelitis:,27287521,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+281,KU738889,Detection of poliovirus infection in children with acute:gastroenteritis in Thailand :,,,,,,yes,fragment,,legacy_excel_title_key_table
+282,KU763188,Rare natural type 3/type 2 intertypic capsid recombinant :vaccine-related Poliovirus isolated from a case of acute flaccid:paralysis in Brazil_ 2015 :,,vaccineOrigin,,AFP,,,,,legacy_excel_title_key_table
+283,KU866422,Direct Submission:,,Mahoney,,Mahoney,,,,,legacy_excel_title_key_table
+284,KU878958,Neutralization capacity of highly divergent type 2 vaccine-derived:polioviruses from immunodficient patients :,,iVDPV,,AFP,,,,,legacy_excel_title_key_table
+285,KU925284,Importation and outbreak of wild polioviruses from 2000 to 2014 and:interruption of transmission in Cameroon :,27045455,wild,"wild:""wild polioviruses""",AFP,,,,,legacy_excel_title_key_table
+286,KX011400,Detection of Enterovirus Infection among Patients With Aseptic:Meningitis in South of Iran :,,unknown,,AFP-CSF,,,,,legacy_excel_title_key_table
+287,KX162717,High-Throughput Next Generation Sequencing of Polioviruses:,27927929,SabinLike;cVDPV;wild,SabinLike:SABIN;cVDPV:VDPV;wild:,AFP,,,,,legacy_excel_title_key_table
+288,KX197454,Molecular epidemiology of human enterovirus 71 at the origin of an:epidemic of fatal hand_ foot and mouth disease cases in Cambodia :,27651091,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+289,KX432024,Detection of poliovirus infection in children with acute:gastroenteritis in Chiang Mai_ Thailand :,27664943,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+290,KX828560,Wild and vaccine-derived Poliovirus detection through environmental:surveillance: Sao Paulo_ Brazil_ 2014 :,,unknown,,environmental,,,,,legacy_excel_title_key_table
+291,KY026068,Human poliovirus 1 strain Mahoney-like:,,,,,,yes,fragment,,legacy_excel_title_key_table
+292,KY774682,Human enteroviruses associated with and without diarrhea in:Thailand between 2010 and 2016 :,28750058,vaccineOrigin,,healthy,,,,,legacy_excel_title_key_table
+293,KY884693,Polio and measles down the drain: Environmental Enterovirus:Surveillance in the Netherlands_ 2005-2015 :,28432101,unknown,,environmental,,,,,legacy_excel_title_key_table
+294,L23848,Poliovirus type 3/Saukett: antigenic and structural correlates of:sequence variation in the capsid proteins :,8116248,Saukett,,Saukett,,,,,legacy_excel_title_key_table
+295,L76412,Genetic diversity and rapid evolution of poliovirus in human hosts:,1318186,wild,,AFP,,,,,legacy_excel_title_key_table
+296,L76413,Genetic variation in vivo and proposed functional domains of the 5':noncoding region of poliovirus RNA :,1323698,wild,,AFP,,,,,legacy_excel_title_key_table
+297,LC120952,Detection of enteroviruses from healthy children_ Yunnan province_:China_ 2014-2015 :,,unknown,,healthy,,,,,legacy_excel_title_key_table
+298,LC143376,Surveillance of human enteric viruses isolated from raw sewage and:clinical cases in Toyama Prefecture_ Japan_ from 2006 to 2013 :,,vaccineOrigin,,healthy;environmental,environmental:Sewage;healthy:,,,,legacy_excel_title_key_table
+299,LC201513,Detection of enteroviruses from healthy children_ Yunnan Provine_:2016 (Part 2) :,,unknown,,healthy,,,,,legacy_excel_title_key_table
+300,M12197,Mapping of sequences required for mouse neurovirulence of:poliovirus type 2 Lansing :,3003384,Lansing,,Lansing,,,,,legacy_excel_title_key_table
+301,M14761,The mechanism of RNA recombination in poliovirus:,3021340,,,,,yes,Lansing fragment,,legacy_excel_title_key_table
+302,M17494,Poliovirus replication proteins: RNA sequence encoding P3-1b and:the sites of proteolytic processing :,6267593,,,,,yes,Mahoney clone,,legacy_excel_title_key_table
+303,M19629,Geographic distribution of wild poliovirus type 1 genotypes:,2821678,wild,,AFP,,,,,legacy_excel_title_key_table
+304,M29183,Mapping and sequencing of RNAs without recourse to molecular :cloning: application to RNAs of the Sabin 1 strain of poliovirus:and its defective interfering particles :,3007445,,,,,yes,lab fragment,,legacy_excel_title_key_table
+305,M37321 M36161 M36162,Nucleotide sequence from neurovirulent and attenuated strains of:type 3 poliovirus :,6330844,,,,,yes,Sabin 3 clone,,legacy_excel_title_key_table
+306,NC_002058 NC_001428 NC_014336,Polypyrimidine tract-binding protein stimulates the poliovirus IRES:by modulating eIF4G binding :,20859255,,,,,yes,Mahoney 5' NCR,,legacy_excel_title_key_table
+307,S65450,Functional and genetic plasticities of the poliovirus genome: :quasi-infectious RNAs modified in the 5'-untranslated region yield:a variety of pseudorevertants :,8396686,,,,,yes,engineered fragments,,legacy_excel_title_key_table
+308,V01132 J02284,Location and primary structure of a major antigenic site for:poliovirus neutralization :,6186919,,,,,yes,Leon segment,,legacy_excel_title_key_table
+309,V01148,Sequence of 1060 3'-terminal nucleotides of poliovirus RNA as:determined by a modification of the dideoxynucleotide method :,6158042,,,,,yes,redundant with more modern entries,,legacy_excel_title_key_table
+310,V01150 J02282 J02285 J02286 V01133,Carboxy-terminal analysis of poliovirus proteins: termination of:poliovirus RNA translation and location of unique poliovirus :polyprotein cleavage sites :,6283138,,,,,yes,redundant with more modern entries,,legacy_excel_title_key_table
+311,V01540,Nucleic acid sequence of the region of the genome encoding capsid:protein VP1 of neurovirulent and attenuated type 3 polioviruses :,6311539,,,,,yes,redundant with more modern entries,,legacy_excel_title_key_table
+312,X00596,Complete nucleotide sequences of all three poliovirus serotype :genomes. Implication for genetic relationship_ gene function and:antigenic determinants :,6202874,,,,,yes,redundant with more modern entries,,legacy_excel_title_key_table
+313,X00925 K00043,The nucleotide sequence of poliovirus type 3 leon 12 a1b::comparison with poliovirus type 1 :,6310508,,,,,yes,redundant with more modern entries,,legacy_excel_title_key_table
+314,X04468,The nucleotide sequence of a type 3 poliovirus isolated during a:recent outbreak of poliomyelitis in Finland :,3020156,wild,,AFP,,,,,legacy_excel_title_key_table
+315,X70507,[Probable compact structure of a cis-active translation element in:the 5'-untranslated region of the enterovirus and rhinovirus :genome] :,1328850,,,,,yes,fragments,,legacy_excel_title_key_table

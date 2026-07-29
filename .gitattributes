@@ -1,0 +1,16 @@
+# The frozen legacy registries are historical artifacts pinned by sha256 in
+# tests/test_legacy_registry.py, and three of the four carry CRLF line endings because they
+# originated in a Windows Excel export that no longer exists.
+#
+# Those bytes are the thing being preserved. The risk comes from whoever clones, not from this
+# repository: `.git/config` sets no core.autocrlf, but the author's global git config sets
+# `autocrlf=input`, and any contributor with that setting — or with autocrlf=true on Windows — would
+# have git store LF. The committed file would then differ from both the private original and the
+# pinned hash, and the test would pass in a working tree that predates the commit while failing in
+# every fresh clone. `-text` disables all end-of-line conversion regardless of the cloner's config,
+# so what is committed, what is checked out, and what the hashes describe are the same bytes
+# everywhere.
+#
+# Do not "clean up" these line endings. Re-normalizing them silently rewrites a frozen provenance
+# record.
+registry/legacy/*.csv -text

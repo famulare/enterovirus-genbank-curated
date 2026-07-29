@@ -29,6 +29,79 @@ shipped data.
 Because parity is byte-exact, this loss cannot be corrected without deliberately breaking the gate
 and cutting a new release. That is a real constraint, not an oversight.
 
+## The undeclared-input guard
+
+Self-containment is enforced at runtime, not documented and hoped for. `evgc build-source` and
+`evgc parity-source` accept `--guard-inputs`, which installs a `sys.addaudithook` that fails the
+build on the first undeclared access. CI runs the real 25,727-record parity build under it on every
+push.
+
+This exists because the pipeline being replaced read `~/Downloads/*.xlsx` and a sibling repository by
+absolute path for two of its stages, and nobody noticed until those files had been deleted. A prose
+rule would not have caught it; a failing build would have.
+
+**What it proves.** Within the guarded process, the build performed no read outside the clone, the
+scratch directory, and the interpreter's own installation; no read of the frozen
+[`registry/legacy/`](../registry/legacy/) tree; no write or filesystem mutation touching `final/` or
+`raw/`; no write outside the clone and scratch; no network call; and no child process by any of
+`subprocess`, `os.system`, `os.spawn*`, `os.exec*`, `os.posix_spawn` or a bare `os.fork`. It raises
+*and* records every violation, and `assert_no_violations()` re-checks the record after the build, so
+a caller that swallowed the exception in a bare `except` still fails. Paths are resolved before the
+allowlist decision, so a symlink sitting inside an allowed root cannot alias something outside one.
+
+The reproducible evidence for all of that is `tests/test_sandbox.py`: every rule in the event tables
+has a test that fails when the rule is removed, and positive controls assert legitimate work still
+succeeds so that a guard which refused everything could not pass. Deliberately planted mutations
+were also run by hand — a neutered containment check, a dropped violation record, an unguarded
+socket, an unguarded subprocess, an added read root, a forced-false write intent, an emptied
+`FROZEN_DIRS` and an emptied `MUTATION_EVENTS`, all caught — but that battery is a record of an
+exercise, not a runnable artifact, and should not be cited as the check.
+
+The scope above is narrower than what this section claimed before 2026-07-29, in the direction of
+being true. A review demonstrated live bypasses of two of the guarantees as then written, and the
+event tables in `sandbox.py` were extended to cover them: `os.system` and `os.spawnl` ran children
+the guard never saw, and every filesystem mutation that does not pass through `open` —
+`os.remove`, `os.rename`, `os.replace`, `os.mkdir`, `os.truncate`, `os.symlink`, `shutil.rmtree` —
+was invisible, so `os.replace(tmp, final/canonical/...)` could rewrite the immutable release under a
+clean `PASS`. Each is now refused and has a falsification test, alongside a negative control that
+mutating scratch is still allowed. `os.fork` is what actually closes the child-process family: on
+POSIX `os.spawnl` is fork+exec in Python and raises only that event, which was established
+empirically rather than read off the audit-event table, whose documented `os.spawn` event does not
+fire on this platform.
+
+**What it does not prove.** Five limits worth stating plainly:
+
+- **The allowlist is not just the clone.** `site-packages`, the stdlib, DuckDB's bundled extensions,
+  Biopython's data files, `$TMPDIR` and a fixed list of system paths are permitted, because a guard
+  that fired on `import` would test nothing. The home directory and sibling repositories are *not*
+  permitted, which is the property actually under test. One consequence: if a user site-packages
+  directory under `$HOME` is on `sys.path`, it is allowlisted along with the rest of `sys.path`.
+- **Reads are audited through the `open` event only.** A C extension calling `fopen()` directly does
+  not raise it and would not be seen. Child processes are *blocked* rather than guarded, for exactly
+  this reason — an unguarded child could read anything.
+- **The stat family is a genuine hole.** `os.stat`, `Path.exists()`, `os.listdir` and `os.scandir`
+  raise no event this hook subscribes to, so a build can probe for undeclared paths undetected. It
+  cannot *read* them, which is the property that matters for parity, but "did this file exist" is
+  observable. This is pinned by a test that asserts the hole, so if it ever closes the limits get
+  revisited rather than silently going stale.
+- **Hardlinks are not covered.** The path checks resolve symlinks, so aliasing through one is caught,
+  but a hardlink is a second directory entry for the same inode rather than a path that resolves
+  elsewhere. `os.link(final/audit/x, $TMPDIR/h)` followed by `open($TMPDIR/h)` is not seen. Closing
+  it would mean comparing `(st_dev, st_ino)` on every access, which is disproportionate to the
+  threat model here: this guard exists to catch a build that accidentally depends on an undeclared
+  file, not to contain an adversary.
+- **It says nothing about determinism or correctness.** Access scope only. Byte-stability is a
+  separate test, and parity against the release is a separate gate.
+- **It cannot show the declared inputs are sufficient.** It detects touching something undeclared,
+  not depending on something absent. A build can be fully self-contained and still wrong.
+
+The general lesson is the one this repository keeps relearning: a guarantee stated in prose and a
+guarantee implemented in an event table drift apart silently, and the prose is always the optimistic
+one. The tables in `sandbox.py` are the specification; this section summarises them.
+
+Audit hooks cannot be uninstalled, so a guarded build must be its own process; every guard test runs
+under `subprocess` for that reason.
+
 ## Frozen baseline
 
 `releases/2.1.5/parity.json` records the public release commit, source build commit, raw archive
@@ -54,7 +127,10 @@ Passing parity means at minimum:
 - identical source and canonical record identity;
 - identical vouched/provisional partitions;
 - identical FASTA identifiers and nucleotide sequences;
-- migration of all 2,753 human decisions and 25 deterministic rules;
+- migration of all 2,753 human decisions the release shipped, and 25 deterministic rules. The ledger
+  holds 2,756: the three extra are the `engineered_or_construct=FALSE` assertions added by the D2
+  adjudication, which is an approved curation change rather than a parity failure. See
+  [`registry/README.md`](../registry/README.md);
 - equivalent normalized source and canonical scientific values;
 - complete, referentially closed provenance;
 - deterministic repeated builds from declared inputs.

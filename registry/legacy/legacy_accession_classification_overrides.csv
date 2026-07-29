@@ -1,0 +1,31 @@
+legacy_row,accession,classification,notes,curation_source
+2,EF682352,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596052,legacy_accession_override
+3,EF682354,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596053,legacy_accession_override
+4,EF682359,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596054,legacy_accession_override
+5,EF682353,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596055,legacy_accession_override
+6,EF682349,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596057,legacy_accession_override
+7,EF682351,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596058,legacy_accession_override
+8,EF682350,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596059,legacy_accession_override
+9,EF682356,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596060,legacy_accession_override
+10,EF682358,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596061,legacy_accession_override
+11,EF682347,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596062,legacy_accession_override
+12,EF682357,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596063,legacy_accession_override
+13,EF682348,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596064,legacy_accession_override
+14,EF682346,iVDPV,amish immunocompromised infant identified from fig 1 of https://academic.oup.com/jid/article-lookup/doi/10.1086/596065,legacy_accession_override
+15,FJ769378,cVDPV,miscoded. Corrected via https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4658552/,legacy_accession_override
+16,FJ769385,cVDPV,miscoded. Corrected via https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4658552/,legacy_accession_override
+17,FJ769384,cVDPV,miscoded. Corrected via https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4658552/,legacy_accession_override
+18,FJ769383,cVDPV,miscoded. Corrected via https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4658552/,legacy_accession_override
+19,FJ769379,cVDPV,miscoded. Corrected via https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4658552/,legacy_accession_override
+20,FJ769382,cVDPV,miscoded. Corrected via https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4658552/,legacy_accession_override
+21,FJ769381,cVDPV,miscoded. Corrected via https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4658552/,legacy_accession_override
+22,FJ769380,cVDPV,miscoded. Corrected via https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4658552/,legacy_accession_override
+23,AJ416942,CHAT,miscoded. Corrected via http://www.ncbi.nlm.nih.gov/pubmed/11991962,legacy_accession_override
+24,KX162685,cVDPV,incomplete info in database. Clearly cVDPV2 by tree.,legacy_accession_override
+25,CS406436,engineered,miscoded. This is codon-deoptimized MEF1: https://encrypted.google.com/patents/WO2006042156A9?cl=en,legacy_accession_override
+26,CS406482,engineered,miscoded. This is codon-deoptimized MEF1: https://encrypted.google.com/patents/WO2006042156A9?cl=en,legacy_accession_override
+27,CS406483,engineered,miscoded. This is codon-deoptimized MEF1: https://encrypted.google.com/patents/WO2006042156A9?cl=en,legacy_accession_override
+28,DQ205099,engineered,miscoded. This is codon-deoptimized Sabin2: https://encrypted.google.com/patents/WO2006042156A9?cl=en,legacy_accession_override
+29,KR259356,iVDPV,https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4593449/,legacy_accession_override
+30,KR259357,iVDPV,https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4593449/,legacy_accession_override
+31,FJ517648,iVPDV,https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2655595/,legacy_accession_override
