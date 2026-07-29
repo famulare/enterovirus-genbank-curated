@@ -15,6 +15,20 @@ limitations without rewriting history or treating existing `final/` artifacts as
 identity, row counts, and authoritative release hashes used by the rewrite. The baseline is a test
 oracle only.
 
+The oracle is itself checked. `evgc validate-contracts` re-derives every claim in the contract from
+the shipped release on each CI run: file-byte hashes are recomputed, `logical_content` hashes are
+cross-checked against `final/audit/release_file_manifest.tsv`, row counts (including the
+vouched/provisional split, which is recounted from `curation_status` rather than inferred by
+subtraction) are recounted, the frozen archive's declared member is authenticated by name, size,
+and uncompressed hash, and `final/audit/build_manifest.json` must agree with the contract's source
+commit, schema version, and raw-snapshot hash. Editing the contract to make a future build pass
+therefore fails immediately, because the contract would no longer describe the release it is
+pinned to.
+
+`public_release_commit` is the one field that is documentary rather than verified: it names the
+commit at which this repository first published the release, which a later checkout cannot confirm
+from its own contents.
+
 Passing parity means at minimum:
 
 - identical source and canonical record identity;

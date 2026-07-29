@@ -25,6 +25,9 @@ This document is an architectural contract, not a claim that the pipeline is com
 4. Duplicate, conflicting, missing, or ambiguous inputs fail closed.
 5. Every canonical value must have machine-readable projection provenance.
 6. Release 2.1.5 is never regenerated in place or overwritten.
+7. The parity oracle is re-derived from the shipped release on every CI run. Its hashes, counts,
+   and raw-archive identity are recomputed, not taken on trust, so the oracle cannot be edited to
+   accommodate a build that disagrees with it.
 
 ## Package boundaries
 

@@ -59,6 +59,24 @@ After the migrated ledger is added:
 evgc validate-ledger registry/decisions.tsv
 ```
 
-The record-level schema is `registry/schemas/decisions.schema.json`. Deterministic rules are a
-separate concern governed by `registry/schemas/rules.schema.json`; human assertions must not be
-encoded as executable special cases.
+The record-level schema is `registry/schemas/decisions.schema.json`, and it is the *executable*
+source of truth: the validator derives the column set and order, the non-blank fields, the
+`decision_id` pattern, and the `status` vocabulary from the schema rather than restating them in
+Python. Tightening or loosening the published schema therefore changes what CI enforces, and the
+two cannot drift apart.
+
+Deterministic rules are a separate concern governed by `registry/schemas/rules.schema.json`; human
+assertions must not be encoded as executable special cases.
+
+## Migration
+
+`scripts/migrate_decisions.py` normalizes legacy CSV/TSV decision files into this contract and
+validates the result before it is written anywhere useful. It refuses to run when an input file
+carries a column with no destination in the ledger — silently dropping curator-entered data is the
+failure mode this repository exists to prevent. Columns that are genuinely out of scope must be
+named explicitly:
+
+```bash
+python scripts/migrate_decisions.py legacy/*.csv --output registry/decisions.tsv \
+  --drop-columns internal_row_id,spreadsheet_colour
+```
