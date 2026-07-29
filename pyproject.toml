@@ -10,7 +10,12 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = { text = "MIT" }
 authors = [{ name = "Mike Famulare" }]
-dependencies = []
+# Pinned exactly: these versions produced the v2.1.5 baseline the parity gate compares against,
+# and GenBank parse output is version-sensitive.
+dependencies = [
+    "biopython==1.87",
+    "duckdb==1.5.5",
+]
 
 [project.scripts]
 evgc = "enterovirus_genbank_curated.cli:main"
@@ -22,8 +27,11 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q -m 'not slow'"
 testpaths = ["tests"]
+markers = [
+    "slow: exercises the full 25,727-record corpus; run with -m slow",
+]
 
 [tool.ruff]
 target-version = "py312"

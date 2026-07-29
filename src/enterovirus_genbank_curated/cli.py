@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from enterovirus_genbank_curated.build import build_source_layer, verify_source_parity
 from enterovirus_genbank_curated.contracts import (
     DECISIONS_SCHEMA_PATH,
     ContractError,
@@ -36,6 +37,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ledger.add_argument("path", type=Path, nargs="?", default=Path("registry/decisions.tsv"))
     ledger.add_argument("--repository-root", type=Path, default=Path.cwd())
+
+    build_source = subparsers.add_parser(
+        "build-source",
+        help="regenerate the normalized source layer from the frozen GenBank archive",
+    )
+    build_source.add_argument("--repository-root", type=Path, default=Path.cwd())
+    build_source.add_argument(
+        "--output", type=Path, required=True,
+        help="destination directory; never write into final/, which stays immutable",
+    )
+    build_source.add_argument(
+        "--skip-relational", action="store_true",
+        help="write only the TSVs, skipping the DuckDB and Parquet exports",
+    )
+
+    parity_source = subparsers.add_parser(
+        "parity-source",
+        help="rebuild the source layer and byte-compare it against the shipped release",
+    )
+    parity_source.add_argument("--repository-root", type=Path, default=Path.cwd())
     return parser
 
 
@@ -54,6 +75,20 @@ def main(argv: list[str] | None = None) -> int:
             print(
                 f"decision ledger: PASS ({summary.rows} rows, "
                 f"{summary.active_rows} active)"
+            )
+            return 0
+        if args.command == "build-source":
+            output = args.output.resolve()
+            result = build_source_layer(root, output, relational=not args.skip_relational)
+            for name, count in result.row_counts.items():
+                print(f"  {name:32} {count:>8}")
+            print(f"source layer written to {output}")
+            return 0
+        if args.command == "parity-source":
+            results = verify_source_parity(root)
+            print(
+                f"source parity: PASS ({len(results)} artifacts match the hashes "
+                f"final/audit/release_file_manifest.tsv declares)"
             )
             return 0
     except ContractError as exc:

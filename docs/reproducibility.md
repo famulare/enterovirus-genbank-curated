@@ -2,12 +2,32 @@
 
 ## Current state
 
-Release 2.1.5 is a verified, internally consistent data release. It is not yet regenerable from
-`raw/` alone because the historical build depended on a curated registry and two frozen upstream
-processing stages that were not included in the initial public repository.
+Release 2.1.5 is a verified, internally consistent data release. **Its source layer is now
+regenerable from `raw/` alone**; the derived layers are not yet.
 
-PR 1 does not change that status. It establishes executable contracts for removing those
-limitations without rewriting history or treating existing `final/` artifacts as source data.
+**Reproducible today — `final/source/`.** `evgc parity-source` re-authenticates
+`raw/sequence.gb.zip`, reparses all 25,727 records, and compares every one of the twelve
+normalized relations plus their twelve Parquet counterparts against the `file_bytes` hashes
+declared in `final/audit/release_file_manifest.tsv`. All twenty-four match byte-for-byte, and
+repeated builds are byte-stable. Only `genbank_source.duckdb` is excluded, because DuckDB file
+bytes are not reproducible; the manifest records a logical-content hash for it.
+
+**Not yet reproducible — `final/canonical/`, `final/audit/`, `final/dictionaries/`,
+`final/alignments/`.** These still derive from a curated master produced outside this repository.
+Closing that is the remaining work.
+
+### Inherited parse loss
+
+Biopython's GenBank scanner silently discards text it cannot fit to the structured-comment
+grammar, and the shipped release inherits it. Three records (MH484164.1, MH484165.1, MH484166.1)
+lose their entire `##Assembly-Data-START##` block; two more (MN918613.1, PP461545.1) lose an
+`##Assembly-Data-END##` continuation line with **no warning at all**, leaving PP461545.1's comment
+ending mid-sentence. The parse emits exactly nine `BiopythonParserWarning`s, a count pinned by a
+test so that a Biopython upgrade which changes what is dropped fails rather than quietly altering
+shipped data.
+
+Because parity is byte-exact, this loss cannot be corrected without deliberately breaking the gate
+and cutting a new release. That is a real constraint, not an oversight.
 
 ## Frozen baseline
 

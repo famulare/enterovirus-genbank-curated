@@ -66,11 +66,22 @@ referentially closed, every controlled-vocabulary value is declared, and `final/
 just asserts — that its record-disposition table covers the full source snapshot exactly. See
 `final/audit/build_manifest.json` for the machine-readable validation record.
 
-**What is not yet true:** this repository does not yet contain a pipeline that regenerates
-`final/` from `raw/` alone. The curated master this release was built from depends on a hand-curated
-registry and two frozen upstream processing stages that are not yet part of the public build. None
-of that affects the correctness of what's shipped — it affects whether you can *regenerate* it
-yourself today.
+**The source layer regenerates from `raw/` alone, today:**
+
+```bash
+evgc parity-source    # reparse 25,727 records; compare 24 artifacts to the release manifest
+```
+
+This reparses the authenticated archive and checks every normalized relation and Parquet file
+against the hashes `final/audit/release_file_manifest.tsv` declares. All match byte-for-byte.
+`evgc build-source --output DIR` writes a build somewhere of your choosing; it refuses to write
+into `final/` or `raw/`, which are immutable.
+
+**What is not yet true:** the *derived* layers — `final/canonical/`, `final/audit/`,
+`final/dictionaries/`, `final/alignments/` — still come from a curated master produced outside this
+repository. None of that affects the correctness of what's shipped; it affects whether you can
+regenerate all of it yourself today. See [`docs/reproducibility.md`](docs/reproducibility.md),
+which also documents an inherited GenBank parse loss affecting five records.
 
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the

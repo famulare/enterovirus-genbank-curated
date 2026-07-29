@@ -28,3 +28,10 @@ jobs:
         run: python -m pytest
       - name: Validate repository contracts
         run: evgc validate-contracts
+      # The corpus tier: reparse all 25,727 records from raw/ and compare every source artifact
+      # against the hashes the release manifest declares. ~40s, so it belongs on every push. When
+      # the pipeline grows a multi-hour alignment stage this must split into its own scheduled
+      # workflow. `evgc parity-source` is deliberately not a separate step — the slow tier already
+      # calls it, and running it twice would just double the build cost.
+      - name: Test against the full corpus
+        run: python -m pytest -m slow
