@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Enterovirus GenBank Curated — data explorer</title>
+<meta name="description" content="An exploration surface for the enterovirus-genbank-curated data release: synonymous versus non-synonymous divergence, nucleotide distance, and phylogeny for 24,546 curated GenBank enterovirus sequences.">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body id="top">
+
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<header class="site-header">
+  <a class="wordmark" href="#top">ENTEROVIRUS GENBANK CURATED</a>
+  <nav class="chapter-nav" aria-label="Sections">
+    <a href="#divergence">Divergence</a>
+    <a href="#distance">Distance</a>
+    <a href="#phylogeny-nt">Phylogeny</a>
+    <a href="#phylogeny-aa">Protein</a>
+    <a href="#release">Release</a>
+  </nav>
+  <details class="section-nav">
+    <summary>Sections</summary>
+    <nav aria-label="Sections">
+      <a href="#divergence">Divergence</a>
+      <a href="#distance">Distance</a>
+      <a href="#phylogeny-nt">Phylogeny</a>
+      <a href="#phylogeny-aa">Protein</a>
+      <a href="#release">Release</a>
+    </nav>
+  </details>
+</header>
+
+<main id="main-content" class="app-shell">
+
+  <div class="hero">
+    <!-- The saffron band's wordmark is the visible page title; this carries the
+         same text into the document outline so the page is not h1-less. -->
+    <h1 class="visually-hidden">Enterovirus GenBank Curated — data explorer</h1>
+    <p class="lede">Curated GenBank enterovirus sequence data with all fields normalized and
+      missing epidemiological data pulled in from the many related papers. Descriptive data
+      visualizations, with one selection and one color driving all four views. Raw GenBank source
+      complete as of <span id="raw-date">…</span>.</p>
+    <p class="maintainer">Maintained by <a href="https://github.com/famulare">Mike Famulare</a> at
+      the <a href="https://www.idmod.org/">Institute for Disease Modeling</a>, part of the
+      <a href="https://www.gatesfoundation.org/">Gates Foundation</a>’s Global Health Division.
+      Data, provenance and pipeline:
+      <a href="https://github.com/famulare/enterovirus-genbank-curated">enterovirus-genbank-curated
+      on GitHub</a>.</p>
+    <div class="summary-band" id="release-band" aria-live="off">
+      <strong>Loading the release…</strong>
+    </div>
+  </div>
+
+  <section class="panel" id="controls" aria-labelledby="controls-heading">
+    <div class="panel-title">
+      <div>
+        <h2 class="eyebrow" id="controls-heading">Selection</h2>
+      </div>
+      <button type="button" class="text-button" id="reset-view">Reset</button>
+    </div>
+    <div id="control-row"></div>
+    <div id="control-filters"></div>
+    <p class="transaction-status" id="view-status" role="status">&nbsp;</p>
+  </section>
+
+  <section id="divergence" class="chapter" aria-labelledby="divergence-heading">
+    <div class="chapter-heading">
+      <h2 class="chapter-number" id="divergence-heading">01 / Divergence from reference</h2>
+      <p class="lede">Synonymous and non-synonymous codon differences from reference, each
+        normalized by the number of codons the two sequences can be compared at — those where both
+        carry three unambiguous bases, plus those an insertion or deletion touches. An indel
+        counts as one non-synonymous difference per codon it touches.</p>
+    </div>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="divergence-strip" role="group"
+           aria-label="Genome region — choose which one the large panel shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="divergence-note">
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="divergence-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks" id="divergence-canvas" tabindex="0"
+                    aria-describedby="divergence-readout"
+                    aria-label="Divergence scatter. Use arrow keys to move between sequences, Enter to pin one, Escape to clear."></canvas>
+            <svg class="scientific-chart plot-overlay" id="divergence-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="divergence-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="divergence-legend"></div>
+      </div>
+      <div class="readout" id="divergence-readout" role="status"></div>
+      <div class="detail" id="divergence-detail"></div>
+    </div>
+    <p class="warning">This is an uncorrected count-based similarity metric. It is not dN/dS, it
+      applies no per-site normalization and no multiple-hit correction, and it is not an
+      evolutionary rate.</p>
+  </section>
+
+  <section id="distance" class="chapter" aria-labelledby="distance-heading">
+    <div class="chapter-heading">
+      <h2 class="chapter-number" id="distance-heading">02 / Nucleotide distance</h2>
+      <p class="lede">Multidimensional scaling of pairwise nucleotide distance, each pair
+        normalized by the number of alignment columns where both sequences carry an unambiguous
+        base. Position here comes from every other sequence rather than from a reference, and
+        needing no reading frame, this view adds the two non-coding regions.</p>
+    </div>
+    <div class="wide-breakout figure-pending" data-figure="distance">
+      <p class="eyebrow">Figure pending</p>
+      <p>Stage 2 renders five panels here — 5′NCR, P1, P2, P3, 3′NCR. A filled dot is placed from
+        a dense distance profile; an open dot is projected from partial overlap and its position
+        carries less weight.</p>
+      <div class="pending-counts" data-counts="distance"></div>
+    </div>
+  </section>
+
+  <section id="phylogeny-nt" class="chapter" aria-labelledby="phylogeny-nt-heading">
+    <div class="chapter-heading">
+      <h2 class="chapter-number" id="phylogeny-nt-heading">03 / Nucleotide phylogeny</h2>
+      <p class="lede">Neighbour joining on the same distance matrices as the view above, so the
+        tree and the embedding cannot disagree about how partial overlap was handled. Rooted on
+        Sabin for poliovirus, midpoint for non-polio.</p>
+    </div>
+    <div class="wide-breakout figure-pending" data-figure="phylogeny-nt">
+      <p class="eyebrow">Figure pending</p>
+      <p>Stage 3 renders a zoomable rectangular tree per region, with a full-Auspice view
+        available alongside it.</p>
+    </div>
+  </section>
+
+  <section id="phylogeny-aa" class="chapter" aria-labelledby="phylogeny-aa-heading">
+    <div class="chapter-heading">
+      <h2 class="chapter-number" id="phylogeny-aa-heading">04 / Protein phylogeny</h2>
+      <p class="lede">The same three coding regions, built from translated amino acid distance.
+        Emphasizes convergent or divergent evolution over ancestry.</p>
+    </div>
+    <div class="wide-breakout figure-pending" data-figure="phylogeny-aa">
+      <p class="eyebrow">Figure pending</p>
+      <p>Stage 4 renders P1, P2 and P3 protein trees here.</p>
+    </div>
+  </section>
+
+  <section id="release" class="chapter closing" aria-labelledby="release-heading">
+    <div class="chapter-heading">
+      <h2 class="chapter-number" id="release-heading">05 / The release, and what is wrong with
+        it</h2>
+      <p class="lede">Every number on this page is recomputed from the shipped release at build
+        time, so it cannot drift from the data. That includes the problems: this page reports
+        data-quality issues and never repairs them.</p>
+    </div>
+
+    <div class="ruled-list" id="release-facts"></div>
+
+    <h3 class="section-subhead">Population per view</h3>
+    <p class="figure-lede">Coverage is bimodal rather than tapered — a region is either
+      near-complete or absent — so the four panels of a figure are four different populations.
+      P1 is fully populated because a record enters an alignment by capsid typing.</p>
+    <!-- Six columns do not fit the reading measure, and the whole point of this
+         table is comparing every selection at a glance, so it takes the wide
+         breakout rather than scrolling a column out of sight. -->
+    <div class="table-wrap record-table wide-breakout" id="population-table"></div>
+
+    <h3 class="section-subhead">Known data-quality issues</h3>
+    <p class="figure-lede">Counted live from the release. Each entry disappears on its own once
+      the generation pipeline fixes it upstream.</p>
+    <div id="data-quality"></div>
+
+    <div id="integrity-notes"></div>
+
+    <details id="method">
+      <summary>
+        <span>Coordinate frames and reference choice</span>
+        <small>How partial sequences are made comparable, and what stands in for Sabin when
+          there is no vaccine reference.</small>
+      </summary>
+      <div class="method-body">
+        <p>Poliovirus records are read in their own serotype's alignment, whose reference-frame
+          line is exactly Sabin genome coordinates, so the shipped region coordinate map applies
+          without inference. Non-polio records are read in the genus-wide alignment, which
+          contains the Sabin genomes and whose coding block is a codon alignment; the
+          polyprotein cleavage boundaries are projected from Sabin 1 through it. Cleavage sites
+          are homologous across the genus, and the projected region widths reproduce the
+          per-serotype widths exactly.</p>
+        <p>Non-polio enterovirus has no vaccine reference, so divergence is measured against a
+          consensus of the record's own virus type. There is deliberately no broader fallback: an
+          enterovirus species holds dozens of serotypes that differ by a quarter of their capsid,
+          so a consensus across one is a chimera, and distance from it would fold "how unusual is
+          this type" into "how far has this sequence drifted" on a single axis. A record whose
+          type is unrecorded, or holds too few sequences to support a consensus, is therefore
+          reported unmeasurable in this view rather than compared to something that does not mean
+          the same thing. Distance and phylogeny need no reference, and keep every record.</p>
+        <p class="warning">A consensus built from few sequences is defined largely by those
+          sequences, so they sit closer to it than a well-populated type would. Each reference
+          label carries the number of sequences that built it.</p>
+        <p class="warning">A known limitation, not yet fixed: a type's consensus carries a base
+          wherever <em>any</em> of its sequences does, so for a large and fragmentary type it is a
+          union of coverage rather than a typical genome. A partial record then reads as deleted
+          at every position it does not span but some relative does, which inflates its
+          non-synonymous rate. This affects a few hundred non-polio records, concentrated in the
+          largest types, and is why some of them sit far right and high with almost all of that
+          distance coming from indels rather than substitutions. The consensus stands in for
+          per-type reference sequences the release does not yet carry; the fix belongs
+          upstream.</p>
+        <p class="qualification">A record is compared to its reference only where both carry an
+          unambiguous base, so missing left and right tails cost coverage rather than counting as
+          difference, and an ambiguity code lowers the denominator instead of inventing a
+          mismatch. Insertions and deletions inside the covered span count as one non-synonymous
+          difference per codon they touch, and those codons join the denominator — which is what
+          keeps both axes inside zero and one. A record whose indels shift the reading frame is
+          marked rather than translated.</p>
+      </div>
+    </details>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <p id="build-line">Data release · site build</p>
+  <p><a href="https://github.com/famulare/enterovirus-genbank-curated">This dataset on
+    GitHub</a> · curated data dedicated to the public domain (CC0-1.0)</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

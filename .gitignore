@@ -7,3 +7,10 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+node_modules/
+# Local agent workspace. Holds git worktrees, and a skills symlink that points at an
+# absolute path outside this repository — committing it would give every other clone
+# a dangling link. The page style kit it references is documented in site/README.md.
+.claude/
+# site/data/ is deliberately NOT ignored: those artifacts are committed and
+# hash-gated by `site/pipeline/cli.py check`. site/dist/ is covered by `dist/`.

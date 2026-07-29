@@ -1,0 +1,483 @@
+/* ==========================================================================
+   Editorial scientific modernism — tokens and base element styles.
+
+   Drop-in. No build step, no preprocessor, no framework. Inline this in a
+   <style> block or link it; both work.
+
+   Transcribed from next-gen-polio-vax-TPP-generator/src/styles.css at commit
+   833f546. Deviations from as-built are marked  DEVIATION  with a reason.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* --- Palette -----------------------------------------------------------
+     Role-based, not decorative. Paper and ink carry the whole interface;
+     the other four hues each mean one thing and are not reused.
+
+       accent  saffron  header band, scenario-input tint, context callouts
+       russet  magenta  interactive marks, authoritative (decision) quantity
+       focus   navy     eyebrows, focus ring, held selection, "passes"
+       error   dark red failing threshold, error prose
+     ------------------------------------------------------------------- */
+  --paper: #F5F3ED;                  /* parchment */
+  --paper-deep: #FFFFFF;             /* panel and plot fills */
+  --ink: #313A44;                    /* weathered slate */
+  --muted: rgb(49 58 68 / 78%);
+  --faint: rgb(49 58 68 / 52%);
+  --line: rgb(49 58 68 / 28%);       /* quiet internal rule */
+  --line-dark: rgb(49 58 68 / 65%);  /* panel enclosure, form-control border */
+  --accent: #EBCB00;                 /* blooming saffron */
+  --russet: #6C1446;                 /* dark magenta */
+  --russet-soft: rgb(108 20 70 / 24%);
+  --focus: #12236D;                  /* dark blue */
+  --error: #771109;                  /* dark red */
+
+  /* DEVIATION: as-built also declares --russet-dark: #6C1446, identical to
+     --russet. The pair is vestigial; collapsed to one token here. If you port
+     CSS from the source repo, substitute --russet for --russet-dark. */
+
+  /* Figure-only diverging ramp for a threshold surface. NOT for UI chrome —
+     these are a scientific contract (below / at / above threshold), so
+     substituting brand colors here changes what the figure claims. In the
+     source these are declared in CSS but consumed only from TypeScript. */
+  --surface-blue: #2166AC;
+  --white-map: #F7F7F2;
+  --surface-red: #B2182B;
+
+  /* --- Typography --------------------------------------------------------
+     Two roles only: serif for claims, sans for everything operational.
+     DEVIATION: as-built is "Noto Serif"/"Noto Sans" with the WOFF2 bundled as
+     data URLs. Defaults here fall back to system faces so this file works
+     standalone — see the @font-face block below to switch. */
+  --serif: Georgia, "Iowan Old Style", "Times New Roman", serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+
+  /* There is no --mono role. Digit alignment uses font-variant-numeric:
+     tabular-nums instead, which keeps numbers in the serif/sans voice.
+     ADDITION (not as-built): uncomment for hashes, versions, field names.
+     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; */
+
+  /* Type scale: three headings (display/h2/h3), a serif accent, two intro
+     sizes (lede/intro), and the body size, which is the FLOOR — nothing
+     renders smaller. Labels and eyebrows carry hierarchy through weight and
+     caps, never through shrinking. */
+  --fs-display: clamp(2.5rem, 4.6vw, 4.2rem);
+  --fs-h2: clamp(1.7rem, 3.2vw, 2.9rem);
+  --fs-h3: 1.5rem;
+  --fs-accent: 1.3rem;
+  --fs-lede: clamp(1.12rem, 1.5vw, 1.35rem);
+  --fs-intro: 1.18rem;
+  --fs-body: 1.02rem;
+
+  /* --- Layout spine ------------------------------------------------------
+     One page shell, a left-anchored reading column for headings, prose,
+     controls, and conclusions, and a wider breakout for the few figures whose
+     interpretation needs simultaneous width. */
+  --page-max: 1240px;
+  --gutter: clamp(28px, 7vw, 96px);
+  --reading: 48rem;
+  --wide: 72rem;
+
+  /* Compact spacing scale (flow rhythm within sections; larger steps
+     between). Intra-component spacing is hand-tuned off-scale in the source;
+     the tokens govern section rhythm. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 14px;
+  --space-4: 22px;
+  --space-5: 36px;
+  --space-6: 60px;
+  --space-7: clamp(66px, 10vw, 130px);
+
+  font-family: var(--sans);
+  font-synthesis: none;
+}
+
+/* To use the as-built faces at ladder rung 5 (single-file artifact), bundle
+   variable-weight WOFF2 as data URLs and swap --serif/--sans above. A baked
+   CSP of `font-src data:` makes any CDN or remote font impossible, which is
+   why this is a data URL rather than a <link>.
+
+   @font-face { font-family: "Noto Sans";  font-style: normal; font-weight: 400 800; font-display: swap; src: url(data:font/woff2;base64,...) format("woff2"); }
+   @font-face { font-family: "Noto Serif"; font-style: normal; font-weight: 400 600; font-display: swap; src: url(data:font/woff2;base64,...) format("woff2"); }
+   :root { --serif: "Noto Serif", Georgia, serif; --sans: "Noto Sans", Arial, sans-serif; }
+*/
+
+/* ==========================================================================
+   Base elements
+   ========================================================================== */
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--paper); color: var(--ink); line-height: 1.55; font-size: var(--fs-body); }
+button, input, select { font: inherit; }
+a { color: inherit; text-underline-offset: .2em; }
+[hidden] { display: none !important; }
+
+h1, h2, h3, p { margin-top: 0; }
+h1, h2, h3 { font-family: var(--serif); }
+h1, h2 { font-weight: 600; }
+h3 { font-weight: 400; }
+h1 { max-width: 980px; margin-bottom: 24px; font-size: var(--fs-display); line-height: 1.05; letter-spacing: -.035em; }
+h2 { margin-bottom: 14px; font-size: var(--fs-h2); line-height: 1.16; letter-spacing: -.02em; }
+h3 { font-size: var(--fs-h3); }
+
+/* One global focus ring. Do not add per-component variants. */
+button:focus-visible, a:focus-visible, summary:focus-visible,
+select:focus-visible, input:focus-visible, svg:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.skip-link { position: fixed; z-index: 30; top: 8px; left: 8px; transform: translateY(-160%); background: var(--ink); color: var(--paper); padding: 8px 12px; }
+.skip-link:focus { transform: none; }
+
+/* --- Layout spine ------------------------------------------------------- */
+
+.app-shell, .site-footer { width: min(var(--page-max), calc(100% - var(--gutter))); margin-inline: auto; }
+/* Everything shares one left edge. `margin-inline: 0 auto` is the mechanism:
+   left margin 0 pins the element, auto on the right absorbs the slack, so
+   wide figures extend rightward only and never re-center. */
+.wide-breakout { width: 100%; max-width: var(--wide); margin-inline: 0 auto; }
+
+.chapter { padding: var(--space-7) 0; border-top: 1px solid var(--ink); }
+.chapter > * { max-width: var(--reading); margin-inline: 0 auto; }
+.chapter > .wide-breakout { max-width: var(--wide); }
+.chapter-heading { margin-bottom: var(--space-6); }
+.chapter-heading > div > p { color: var(--muted); font-size: var(--fs-intro); }
+.closing { padding-bottom: 70px; }
+
+.hero { max-width: var(--reading); padding: clamp(44px, 7vw, 92px) 0 var(--space-6); }
+.lede { max-width: 760px; margin-bottom: 28px; color: var(--muted); font-family: var(--serif); font-size: var(--fs-lede); }
+.orienting { max-width: 860px; margin: 0 0 28px; color: var(--muted); font-size: var(--fs-body); line-height: 1.6; }
+.orienting strong { color: var(--ink); }
+
+/* --- Header and no-JS nav ----------------------------------------------- */
+
+.site-header { position: sticky; z-index: 20; top: 0; display: flex; align-items: center; justify-content: space-between; min-height: 54px; padding: 0 clamp(16px, 4vw, 58px); border-bottom: 1px solid var(--ink); background: var(--accent); }
+.wordmark { flex: 0 0 auto; white-space: nowrap; font-weight: 800; letter-spacing: .12em; text-decoration: none; font-size: var(--fs-body); }
+.site-header nav a { color: rgb(49 58 68 / 85%); text-decoration: none; }
+.site-header nav a:hover { color: var(--ink); }
+/* Desktop shows the plain inline nav; the <details> "Sections" disclosure is
+   used only at the narrow breakpoint. Separate treatments avoid a Blink quirk
+   where a closed <details> collapses to zero intrinsic width and its links
+   overflow off the right edge. */
+.chapter-nav { display: flex; gap: clamp(12px, 2vw, 28px); font-size: var(--fs-body); }
+.section-nav { display: none; }
+
+.site-footer { display: flex; justify-content: space-between; gap: 30px; padding: 26px 0 40px; border-top: 1px solid var(--ink); color: var(--muted); font-size: var(--fs-body); }
+.site-footer p { margin: 0; }
+
+/* --- Eyebrow: the most-reused type role --------------------------------- */
+
+.eyebrow, .chapter-number, .result-label, .inspector-label { margin: 0 0 10px; color: var(--focus); font-size: var(--fs-body); font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+
+/* --- Ruled list: the anti-card primitive -------------------------------- */
+/* A vertically ordered sequence of definitions or steps, separated by thin
+   rules rather than boxed as cards. This system has NO card component. */
+
+.ruled-list { display: flex; flex-direction: column; }
+.ruled-list > * { padding: var(--space-4) 0; border-top: 1px solid var(--line); }
+.ruled-list > *:first-child { border-top: 0; }
+
+/* Datum row: label column left (eyebrow + big serif value), prose column
+   right spanning both rows, baselines aligned. */
+.datum-row { display: grid; grid-template-columns: minmax(0, 0.4fr) minmax(0, 0.6fr); gap: 4px 28px; align-items: baseline; }
+.datum-row > :not(p) { grid-column: 1; }
+.datum-row span { color: var(--muted); font-size: var(--fs-body); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.datum-row strong { display: block; font-family: var(--serif); font-size: var(--fs-accent); font-weight: 400; }
+.datum-row p { grid-column: 2; grid-row: 1 / 4; margin: 0; color: var(--muted); font-size: var(--fs-body); }
+/* `.authoritative` means "this is the decision quantity" — a cross-component
+   modifier, not a color choice. */
+.datum-row.authoritative strong { color: var(--russet); }
+
+/* --- Panel: the only boxed surface -------------------------------------- */
+
+.panel { min-width: 0; margin-top: var(--space-5); padding: var(--space-4); border: 1px solid var(--line-dark); background: var(--paper-deep); }
+.panel-title { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.panel-title > div { min-width: 0; }
+.panel-title h2, .panel-title h3 { font-family: var(--serif); font-size: var(--fs-h3); }
+.panel-title > .text-button { flex: 0 0 auto; white-space: nowrap; }
+
+/* --- Left-rule callouts ------------------------------------------------- */
+/* Width and color both carry meaning:
+     4px accent  qualification, held-fixed context
+     3px accent  italic interpretive aside
+     3px russet  warning, unquantified uncertainty
+     5px focus / 5px error   passing / failing threshold on a result box */
+
+.qualification { max-width: 760px; margin: 0; padding-left: 18px; border-left: 4px solid var(--accent); color: var(--muted); }
+.context-note { margin: 18px 0 0; padding: 13px 0 13px 16px; border-left: 4px solid var(--accent); color: var(--muted); }
+.context-note strong { color: var(--ink); }
+.aside-note { margin: 0 0 12px; padding: 10px 0 10px 16px; border-left: 3px solid var(--accent); color: var(--ink); font-size: var(--fs-body); font-style: italic; }
+.warning { margin: 14px 0 0; padding: 10px 0 10px 14px; border-left: 3px solid var(--russet); color: var(--russet); font-size: var(--fs-body); }
+.warning.notice { border-color: var(--line-dark); color: var(--muted); }
+.uncertainty-note { margin: 26px 0 0; padding: 16px 0 16px 18px; border-left: 3px solid var(--russet); color: var(--muted); font-size: var(--fs-body); }
+.meaning-note { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-body); }
+.meaning-note strong { display: block; margin-bottom: 6px; color: var(--ink); }
+.meaning-note p { margin: 0; }
+
+/* Result box: state by border color AND the text inside it, never color alone. */
+.threshold-box { display: inline-block; max-width: 250px; padding: 8px 10px; border: 1px solid var(--line-dark); font-weight: 800; text-align: right; }
+.threshold-box[data-state="below"] { border-left: 5px solid var(--focus); }
+.threshold-box[data-state="above"] { border-left: 5px solid var(--error); }
+
+/* --- Provenance badge --------------------------------------------------- */
+/* An inline epistemic chip. The tint set IS the grammar — keep the meanings
+   attached to the colors, and keep `not-measured` dashed so the distinction
+   survives grayscale and forced-colors. */
+
+/* justify-self and font-style are belt-and-braces: the badge must not stretch
+   if it lands as a grid item, and must not italicize if marked up as <em>. */
+.prov-tag { display: inline-block; justify-self: start; padding: 1px 7px; border: 1px solid var(--line-dark); border-radius: 0; font-size: var(--fs-body); font-style: normal; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--ink); white-space: nowrap; vertical-align: middle; }
+.prov-tag[data-kind="measured"] { background: rgb(33 102 172 / 13%); }
+.prov-tag[data-kind="derived"] { background: rgb(41 89 88 / 15%); }
+.prov-tag[data-kind="scenario-input"] { background: rgb(235 203 0 / 26%); }
+.prov-tag[data-kind="assumption"] { background: rgb(49 58 68 / 9%); }
+.prov-tag[data-kind="not-measured"] { background: rgb(178 24 43 / 11%); border-style: dashed; }
+
+/* --- Buttons ------------------------------------------------------------ */
+/* Square, ink-outline, invert on hover. Toggles use aria-pressed, not a class. */
+
+button { min-height: 40px; padding: 9px 15px; border: 1px solid var(--ink); border-radius: 0; background: transparent; color: var(--ink); cursor: pointer; font-size: var(--fs-body); font-weight: 760; }
+button:hover:not(:disabled) { background: var(--ink); color: var(--paper); }
+button.primary { background: var(--accent); color: var(--ink); }
+button.primary:hover:not(:disabled) { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+button.text-button { min-height: auto; padding: 3px 0; border: 0; border-bottom: 1px solid currentColor; color: var(--muted); }
+button:disabled { cursor: not-allowed; opacity: .38; }
+button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+
+.button-row { display: flex; flex-wrap: wrap; gap: 8px; }
+/* Export controls are secondary: compact, muted, below the closing prose. */
+.exports { margin-top: 56px; padding-top: 24px; border-top: 1px solid var(--ink); }
+.exports h3 { margin-bottom: 5px; font-size: var(--fs-accent); }
+.exports > p { max-width: 740px; color: var(--muted); font-size: var(--fs-body); }
+.export-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.export-actions button { min-height: 34px; padding: 6px 12px; border-color: var(--line-dark); color: var(--muted); font-weight: 700; }
+.export-actions button:hover:not(:disabled) { color: var(--paper); }
+
+/* --- Form controls ----------------------------------------------------- */
+/* <label> IS the layout container. Helper text nests inside it as <small> so
+   the label, the control, and its explanation can never separate.
+   Sliders are native, styled ONLY with accent-color — never rewrite the
+   track/thumb pseudo-elements; that discards their accessibility behavior. */
+
+label { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; font-size: var(--fs-body); font-weight: 750; letter-spacing: .02em; }
+label small { color: var(--muted); font-size: var(--fs-body); font-weight: 400; line-height: 1.4; letter-spacing: 0; }
+select, input[type="number"] { width: 100%; min-height: 42px; padding: 8px 9px; border: 1px solid var(--line-dark); border-radius: 0; background: var(--paper-deep); color: var(--ink); }
+select:hover, input[type="number"]:hover { border-color: var(--ink); }
+input[type="range"] { width: 100%; accent-color: var(--russet); }
+output { align-self: flex-end; color: var(--russet); font-variant-numeric: tabular-nums; }
+
+.control-row { display: grid; grid-template-columns: minmax(220px, 1.35fr) repeat(2, minmax(180px, .8fr)); gap: 24px; align-items: start; }
+.advanced-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 26px; }
+
+/* --- Disclosure -------------------------------------------------------- */
+/* Typographic +/- rather than a triangle or icon. */
+
+details { border-top: 1px solid var(--ink); border-bottom: 1px solid var(--ink); }
+summary { display: flex; justify-content: space-between; gap: 30px; padding: 20px 0; cursor: pointer; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary span { font-family: var(--serif); font-size: var(--fs-h3); }
+summary span::before { content: "+"; display: inline-block; width: 28px; color: var(--russet); }
+details[open] summary span::before { content: "−"; }
+summary small { max-width: 520px; color: var(--muted); font-size: var(--fs-body); }
+
+/* Nested variant: reuses the affordance inside a panel, so it drops the
+   full-width rules and uses a panel-scale label. Children carry their own
+   display, so the browser's closed-details hiding does not apply — collapse
+   explicitly. */
+.nested-disclosure { border: 0; }
+.nested-disclosure > summary { align-items: baseline; gap: 16px; padding: var(--space-3) 0; }
+.nested-disclosure > summary span { font-size: var(--fs-accent); }
+.nested-disclosure:not([open]) > :not(summary) { display: none; }
+
+/* --- Fieldset and legend ----------------------------------------------- */
+
+fieldset { margin: 0 0 40px; padding: 22px 0 0; border: 0; border-top: 1px solid var(--line); }
+legend { padding-right: 20px; font-family: var(--serif); font-size: var(--fs-accent); }
+fieldset > p { color: var(--muted); font-size: var(--fs-body); }
+
+/* Boxed variant. Float the legend to a full-width in-box heading so a
+   multi-line title never straddles and crosses the fieldset's top border. */
+.boxed-fieldset { margin: 0; padding: 18px; border: 1px solid var(--line-dark); background: var(--paper-deep); }
+.boxed-fieldset > legend { float: left; width: 100%; padding: 0; margin-bottom: 12px; font-size: var(--fs-accent); }
+.boxed-fieldset > *:not(legend) { clear: both; }
+.boxed-fieldset > p { margin: 14px 0 0; color: var(--muted); }
+
+/* --- Definition lists -------------------------------------------------- */
+
+dt { color: var(--muted); font-size: var(--fs-body); font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+dd { margin: 3px 0 0; font-family: var(--serif); font-size: var(--fs-body); font-variant-numeric: tabular-nums; }
+
+/* --- Table ------------------------------------------------------------- */
+
+.table-wrap { overflow-x: auto; border-top: 1px solid var(--ink); }
+table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: var(--fs-body); }
+th, td { padding: 16px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+thead th { color: var(--muted); font-size: var(--fs-body); letter-spacing: .1em; text-transform: uppercase; }
+tbody th { width: 21%; font-family: var(--serif); font-size: var(--fs-body); font-weight: 400; }
+
+/* --- Banded summary strips --------------------------------------------- */
+/* Hairline rules above and below, no box. Use before reaching for a panel. */
+
+.summary-band { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin: 0 0 30px; padding: 13px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); color: var(--muted); font-size: var(--fs-body); }
+.summary-band strong { color: var(--ink); font-family: var(--serif); font-size: var(--fs-accent); font-weight: 400; }
+
+/* --- Hero result number: the single loudest element on the page -------- */
+
+.result-status { padding: 0 0 30px; border-bottom: 1px solid var(--line); }
+.result-status h2 { max-width: 760px; }
+.result-status.fail h2 { color: var(--error); }
+.result-number { display: grid; grid-template-columns: auto 1fr; gap: 0 18px; align-items: end; width: fit-content; margin: 26px 0 24px; font-size: var(--fs-body); color: var(--muted); }
+.result-number strong { grid-row: span 2; grid-column: 1; color: var(--ink); font-family: var(--serif); font-size: clamp(3.8rem, 8vw, 7rem); font-weight: 400; line-height: .8; font-variant-numeric: tabular-nums; }
+.result-number span:first-child { grid-column: 2; align-self: end; color: var(--ink); font-weight: 750; }
+.result-number span:last-child { grid-column: 2; max-width: 340px; }
+
+/* --- Staleness --------------------------------------------------------- */
+/* When a computed result no longer matches the controls, desaturate it rather
+   than adding a badge. The reading stays visible; it just stops looking live. */
+
+.is-stale { opacity: .52; filter: grayscale(.65); transition: opacity .15s ease, filter .15s ease; }
+[aria-busy="true"] .panel { opacity: .64; }
+.transaction-status { min-height: 44px; margin: 0; padding: 12px 0; border-top: 1px solid var(--line); color: var(--muted); font-size: var(--fs-body); }
+.transaction-status.stale, .transaction-status.invalid { color: var(--russet); }
+
+/* --- Figures ----------------------------------------------------------- */
+/* See figures.md for the --u unit-ratio derivation and the full SVG class set. */
+
+figure { margin: 0; }
+.chart-slot { width: 100%; min-height: 120px; }
+.scientific-chart { display: block; width: 100%; height: auto; overflow: visible; }
+figcaption { max-width: 880px; margin: 13px 0 0; color: var(--muted); font-size: var(--fs-body); }
+figcaption strong { color: var(--ink); }
+.figure-lede { margin: 0 0 12px; color: var(--muted); font-size: var(--fs-body); }
+.figure-lede strong { color: var(--ink); }
+
+.plot-bg { fill: var(--paper-deep); }
+.grid-line { stroke: var(--ink); stroke-width: .7; stroke-opacity: .13; }
+.tick-mark { stroke: var(--ink); stroke-width: 1; }
+.tick, .chart-key { fill: var(--muted); font-family: var(--sans); font-size: calc(16px * var(--u, 1)); }
+.axis-label { fill: var(--ink); font-family: var(--sans); font-size: calc(16px * var(--u, 1)); font-weight: 800; }
+.chart-kicker { fill: var(--focus); font-family: var(--sans); font-size: calc(16px * var(--u, 1)); font-weight: 800; letter-spacing: 1.4px; }
+.chart-title { fill: var(--ink); font-family: var(--serif); font-size: calc(22px * var(--u, 1)); font-weight: 600; }
+.panel-bg { stroke: var(--line); stroke-width: 1; }
+
+/* Series encoding is always redundant: hue AND dash pattern AND a direct
+   label. Never let color alone carry the distinction. */
+.series-reference { fill: none; stroke: #F85C02; stroke-width: 3; stroke-dasharray: 6 4; vector-effect: non-scaling-stroke; }
+.series-candidate { fill: none; stroke: #6C1446; stroke-width: 3; vector-effect: non-scaling-stroke; }
+.threshold-line { fill: none; stroke: #111; stroke-width: 2.2; stroke-dasharray: 7 5; vector-effect: non-scaling-stroke; }
+
+/* Halo technique: a wide paper-colored stroke under the real mark, so a line
+   or a label stays legible crossing a busy fill. */
+.pareto-casing { fill: none; stroke: var(--paper); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.pareto-line { fill: none; stroke: #295958; stroke-width: 4.4; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; paint-order: stroke; }
+.side-label { fill: var(--ink); font-size: calc(16px * var(--u, 1)); font-weight: 800; letter-spacing: .7px; paint-order: stroke; stroke: rgba(247, 247, 242, .85); stroke-width: 3px; }
+.comparator-label, .selection-label { fill: var(--ink); font-size: calc(16px * var(--u, 1)); paint-order: stroke; stroke: var(--paper); stroke-width: 3px; }
+
+.anchor-point { fill: var(--paper); stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.comparator-marker { fill: var(--paper); stroke: var(--ink); stroke-width: 2; vector-effect: non-scaling-stroke; }
+/* Pass/fail by fill-vs-outline, not hue — survives grayscale and forced colors. */
+.effect-point { vector-effect: non-scaling-stroke; }
+.effect-point.passes { fill: var(--ink); stroke: none; opacity: .9; }
+.effect-point.fails { fill: none; stroke: var(--ink); stroke-width: .7; stroke-opacity: .4; }
+/* Two-tier interaction: transient hover russet, held selection navy. */
+.surface-cell, .design-cell { stroke: none; }
+.design-cell.is-inspected, .effect-point.is-inspected, .surface-cell.is-inspected { stroke: #6C1446; stroke-width: 3; opacity: 1; }
+.design-cell.is-persistent, .effect-point.is-persistent { stroke: var(--focus); stroke-width: 3; opacity: 1; }
+
+.chart-readout rect { fill: rgb(255 255 255 / .91); stroke: var(--ink); stroke-width: .8; }
+.chart-readout text { fill: var(--ink); font-size: calc(16px * var(--u, 1)); }
+.chart-readout text:first-of-type { fill: var(--focus); font-weight: 800; letter-spacing: 1px; }
+.interpolation-note { fill: var(--muted); font-size: calc(16px * var(--u, 1)); font-style: italic; }
+
+/* Mobile figure variants are separate SVGs, not a scaled one. See figures.md. */
+.chart-mobile { display: none; }
+
+/* ==========================================================================
+   Responsive. Mobile-last (max-width), four breakpoints.
+   ========================================================================== */
+
+@media (max-width: 980px) {
+  .advanced-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .control-row { grid-template-columns: 1fr 1fr; }
+  .control-row > :first-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 720px) {
+  .site-header { gap: 10px; padding-inline: 12px; }
+  /* The wordmark must yield to the Sections toggle: let it shrink and
+     ellipsize as a last resort so the header never overflows. */
+  .wordmark { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: .8rem; letter-spacing: .05em; }
+  .chapter-nav { display: none; }
+  .section-nav { display: block; flex: 0 0 auto; }
+  .section-nav > summary { display: block; list-style: none; padding: 6px 12px; border: 1px solid rgb(49 58 68 / 45%); font-weight: 800; font-size: var(--fs-body); cursor: pointer; }
+  .section-nav > summary::-webkit-details-marker { display: none; }
+  .section-nav > summary::after { content: " \25BE"; }
+  .section-nav[open] > summary::after { content: " \25B4"; }
+  .site-header .section-nav > nav { display: none; }
+  .site-header .section-nav[open] > nav { display: flex; flex-direction: column; position: absolute; top: 100%; right: clamp(16px, 4vw, 58px); z-index: 25; min-width: 190px; margin-top: 1px; padding: 12px 18px; gap: 12px; background: var(--accent); border: 1px solid var(--ink); }
+  .site-header .section-nav > nav a { white-space: nowrap; }
+  .datum-row { grid-template-columns: 1fr; gap: 2px; }
+  .summary-band { flex-direction: column; gap: 4px; }
+  summary { flex-direction: column; gap: 6px; }
+  .site-footer { flex-direction: column; gap: 8px; }
+  /* Swap desktop figures for their purpose-built mobile siblings. */
+  .chart-desktop { display: none; }
+  .chart-mobile { display: block; }
+}
+
+@media (max-width: 600px) {
+  /* De-tabulate: table semantics stay intact for assistive tech; sighted
+     narrow users get per-field labels via ::before, and no horizontal scroll.
+     Set the ::before content per column in your own CSS. */
+  .table-wrap { overflow-x: visible; }
+  .record-table table, .record-table tbody, .record-table tr, .record-table th, .record-table td { display: block; width: auto; }
+  .record-table table { min-width: 0; }
+  .record-table thead { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); }
+  .record-table tr { padding: 14px 0; border-bottom: 1px solid var(--line-dark); }
+  .record-table tbody th { padding: 0 0 8px; font-family: var(--serif); font-size: var(--fs-accent); }
+  .record-table tbody td { padding: 3px 0; border: 0; color: var(--ink); }
+  .record-table tbody td::before { display: block; color: var(--muted); font-size: var(--fs-body); font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+}
+
+@media (max-width: 480px) {
+  .app-shell, .site-footer { width: calc(100% - 28px); }
+  /* Grid children need min-width: 0 or long tokens force overflow. */
+  .chapter-heading > *, .panel-title > *, .control-row > *, .datum-row > * { min-width: 0; }
+  h1 { font-size: clamp(2.2rem, 11vw, 3.4rem); }
+  h2 { font-size: 1.9rem; }
+  .advanced-grid, .control-row { grid-template-columns: 1fr; }
+  .control-row > :first-child { grid-column: auto; }
+  .result-number { grid-template-columns: 1fr; gap: 6px; }
+  .result-number strong, .result-number span:first-child, .result-number span:last-child { grid-column: 1; grid-row: auto; }
+  .result-number span:first-child { order: -1; }
+  .panel { padding: 16px; }
+  .chart-slot { max-width: 100%; overflow-x: clip; }
+  .scientific-chart { max-width: 100%; overflow: hidden; }
+  .site-footer p { overflow-wrap: anywhere; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+@media (forced-colors: active) {
+  .surface-cell, .design-cell { forced-color-adjust: none; }
+  .threshold-line, .pareto-line, .anchor-point, .effect-point { stroke: CanvasText; }
+  .effect-point.passes { fill: CanvasText; }
+  .effect-point.fails { fill: Canvas; }
+}
+
+@media print {
+  .site-header, .panel, .export-actions, .transaction-status { display: none !important; }
+  body { background: white; }
+  .app-shell, .site-footer { width: 100%; }
+  .hero { min-height: 0; padding-top: 20px; }
+  .chapter { break-inside: avoid; padding-block: 35px; }
+  /* A stale reading must print at full contrast — never print a greyed result. */
+  .is-stale { opacity: 1; filter: none; }
+}

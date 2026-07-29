@@ -1,0 +1,24 @@
+{
+  "name": "enterovirus-genbank-curated-site",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Static exploration surface for the enterovirus-genbank-curated data release",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "//": "The test script runs .ts sources directly; unflagged type stripping lands in 23.6.",
+    "node": ">=23.6"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "check": "tsc --noEmit",
+    "test": "node --test",
+    "serve": "node scripts/build.mjs && node --run serve:only",
+    "serve:only": "node scripts/serve.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "esbuild": "0.25.12",
+    "typescript": "5.9.3"
+  }
+}

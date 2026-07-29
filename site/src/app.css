@@ -1,0 +1,210 @@
+/* Site-specific additions to tokens.css.
+   tokens.css must load FIRST — these rules override it at equal specificity.
+   Nothing here may introduce a border-radius, a box-shadow, or a card. */
+
+/* --- Headings ------------------------------------------------------------
+   DEVIATION from the kit's chapter block, which opens each section with a
+   display- or h2-scale claim sentence over an intro paragraph. This page is an
+   instrument, not an argument: a claim sentence per section would be five
+   assertions the figures are supposed to let the reader make for themselves.
+   So each section goes straight from its numbered label to descriptive prose at
+   the hero's lede size, and the display scale is unused.
+
+   The labels stay real <h2> elements — the document outline, the section
+   `aria-labelledby`, and the nav all depend on them — styled with the kit's
+   existing eyebrow role, which exists precisely to let a heading recede without
+   shrinking below the body floor. */
+
+.hero { padding: var(--space-5) 0 var(--space-4); }
+.hero .summary-band { margin-bottom: 0; }
+
+/* Attribution sits with the description rather than in the footer: someone who
+   lands here from a search result should see who maintains the data, and reach the
+   repository, before they start reading conclusions off it. Not capped to the
+   prose measure — this is a metadata line, not reading text, and the narrower
+   measure wrapped it to three lines. */
+.maintainer { margin: 0 0 var(--space-4); color: var(--muted); }
+#controls { margin-top: var(--space-4); }
+
+/* tokens.css sets serif on h1-h3 by type selector; .chapter-number wins on
+   everything except font-family, which it has no reason to declare. */
+h2.chapter-number, h2.eyebrow { font-family: var(--sans); line-height: 1.3; }
+.panel-title h2.eyebrow { margin-bottom: 0; }
+
+.chapter-heading { margin-bottom: var(--space-5); }
+.chapter-heading .lede { margin-bottom: 0; }
+.lede { max-width: 58ch; }
+
+/* The control panel already separates the first chapter from the hero, so it
+   does not need the full inter-chapter rhythm above it — and the space buys the
+   first figure a foothold above the fold. */
+#divergence { padding-top: var(--space-5); }
+
+/* --- Control bar ---------------------------------------------------------
+   The kit's .control-row is a three-column grid. This view has five selects
+   plus a boolean filter, so it gets its own grid with the same asymmetry: the
+   primary choice is wider than its qualifiers. Five across rather than wrapping
+   to a second row, because every row here costs the figure its foothold above
+   the fold. */
+
+.view-controls { display: grid; grid-template-columns: minmax(170px, 1.25fr) repeat(4, minmax(132px, .85fr)); gap: 20px 22px; align-items: start; }
+.view-controls > label { margin-bottom: 0; }
+
+.control-filters { display: flex; flex-wrap: wrap; gap: 10px 28px; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--line); }
+.check-row { flex-direction: row; align-items: baseline; gap: 9px; margin-bottom: 0; }
+.check-row input[type="checkbox"] { width: 17px; height: 17px; margin: 0; accent-color: var(--russet); }
+.check-row span { font-weight: 750; }
+.check-row small { display: block; font-weight: 400; }
+
+/* Trait note sits under its select and changes with the selection, so it needs
+   a reserved height or the panel jumps on every change. */
+#trait-note { display: block; min-height: 3em; }
+
+/* tokens.css clips a thead for the de-tabulated narrow form; a <caption> that
+   labels a table for assistive tech needs the same treatment. */
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* --- The figure ----------------------------------------------------------
+   Thumbnail strip above one focus panel, hairline-separated cells on the open
+   paper field. No cards: the strip is a row of rules, not tiles. */
+
+.figure { margin-top: var(--space-4); }
+
+.thumb-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--ink); border-bottom: 1px solid var(--line); }
+.thumb { display: block; width: 100%; min-height: 0; padding: 10px 12px 8px; border: 0; border-left: 1px solid var(--line); background: transparent; text-align: left; cursor: pointer; }
+.thumb:first-child { border-left: 0; }
+.thumb:hover:not([aria-pressed="true"]) { background: rgb(49 58 68 / 5%); color: var(--ink); }
+/* Held selection is navy and also carries a top rule, so it does not depend on hue. */
+.thumb[aria-pressed="true"] { background: var(--paper-deep); box-shadow: none; border-top: 3px solid var(--focus); padding-top: 7px; }
+.thumb[aria-pressed="true"] .thumb-label { color: var(--focus); }
+.thumb-label { display: block; color: var(--muted); font-size: var(--fs-body); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.thumb-canvas { display: block; width: 100%; height: auto; margin: 4px 0 2px; }
+.thumb-count { display: block; color: var(--ink); font-family: var(--serif); font-variant-numeric: tabular-nums; }
+.thumb-count.is-sparse { color: var(--russet); }
+
+.figure-main { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: var(--space-4); align-items: start; margin-top: var(--space-4); }
+
+.plot { min-width: 0; }
+/* The canvas carries the marks and the two SVGs carry everything with type on it,
+   stacked in one grid cell so they share exactly one coordinate space. */
+.plot-stack { display: grid; }
+.plot-stack > * { grid-area: 1 / 1; width: 100%; height: auto; }
+.plot-marks { display: block; }
+.plot-overlay { pointer-events: none; }
+.plot-axes { pointer-events: none; }
+.mark-inspected { stroke: var(--russet); stroke-width: 2.5; }
+.mark-held { stroke: var(--focus); stroke-width: 2.5; }
+/* The brush is a russet hairline over a faint wash — russet because the reader is
+   touching it, and no fill heavy enough to hide the marks being selected. */
+.brush { fill: var(--russet-soft); stroke: var(--russet); stroke-width: 1; }
+/* Drag-to-zoom, so the pointer should read as a crosshair over the plot. */
+.plot-marks { cursor: crosshair; }
+.plot-marks:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+
+.legend { min-width: 0; padding-top: 18px; }
+.legend-title { margin: 0 0 8px; color: var(--focus); font-size: var(--fs-body); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.legend-list { margin: 0; padding: 0; list-style: none; }
+.legend-list li { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 8px; align-items: baseline; padding: 3px 0; border-top: 1px solid var(--line); }
+.legend-list li:first-child { border-top: 0; }
+.legend-glyph { width: 14px; height: 14px; align-self: center; }
+.legend-label { overflow-wrap: anywhere; }
+.legend-count { color: var(--muted); font-variant-numeric: tabular-nums; }
+.legend-missing { margin: 10px 0 0; color: var(--muted); }
+.ramp { display: flex; height: 14px; border: 1px solid var(--line-dark); }
+.ramp span { flex: 1 1 0; }
+.ramp-ends { display: flex; justify-content: space-between; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.readout { display: flex; flex-wrap: wrap; gap: 2px 18px; min-height: 3.4em; margin-top: var(--space-3); padding: 10px 0; border-top: 1px solid var(--line); color: var(--muted); }
+.readout.is-active { border-top-color: var(--line-dark); }
+.readout-key { color: var(--ink); font-family: var(--serif); font-size: var(--fs-accent); }
+.readout b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.readout-hint { font-style: italic; }
+
+.detail:not([data-open]) { display: none; }
+.detail { margin-top: var(--space-4); padding: var(--space-4); border: 1px solid var(--line-dark); background: var(--paper-deep); }
+.detail-head { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.detail-head h3 { margin: 0; font-size: var(--fs-h3); }
+.detail-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--space-4) var(--space-5); margin-top: var(--space-3); }
+.detail-subhead { margin: 0 0 8px; color: var(--muted); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.detail-measured { margin: 0; }
+.detail-measured > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 14px; align-items: baseline; padding: 5px 0; border-top: 1px solid var(--line); }
+.detail-measured > div:first-child { border-top: 0; }
+.detail-measured dd { margin: 0; text-align: right; }
+.detail-links { margin: var(--space-3) 0 0; color: var(--muted); }
+.detail-fields table { min-width: 0; }
+.detail-fields th, .detail-fields td { padding: 5px 10px 5px 0; }
+.detail-fields tbody th { width: 44%; color: var(--muted); font-family: var(--sans); font-weight: 750; letter-spacing: .04em; text-transform: uppercase; }
+.detail-fields td { overflow-wrap: anywhere; }
+
+@media (max-width: 900px) {
+  .figure-main { grid-template-columns: minmax(0, 1fr); }
+  .legend { padding-top: 0; }
+  .legend-list { columns: 2; }
+  .detail-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (max-width: 600px) {
+  .thumb-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .thumb:nth-child(3) { border-left: 0; }
+  .thumb:nth-child(n + 3) { border-top: 1px solid var(--line); }
+  .legend-list { columns: 1; }
+}
+
+/* --- Figure placeholders (remaining stages) -------------------------------
+   Rules only, top and bottom, dashed to read as "nothing here yet" rather
+   than as an empty card. */
+
+.figure-pending { margin: var(--space-5) 0 0; padding: var(--space-5) 0; border-top: 1px dashed var(--line-dark); border-bottom: 1px dashed var(--line-dark); }
+.figure-pending > p { max-width: var(--reading); margin: 0 0 var(--space-3); color: var(--muted); }
+.figure-pending .eyebrow { color: var(--muted); }
+
+.pending-counts { display: flex; flex-wrap: wrap; gap: 4px 26px; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--line); color: var(--muted); }
+.pending-counts b { color: var(--ink); font-family: var(--serif); font-weight: 400; font-variant-numeric: tabular-nums; }
+.pending-counts .is-empty b { color: var(--russet); }
+/* Held selection is navy and stated in words, not carried by color alone. */
+.pending-counts [data-current="true"] { color: var(--focus); }
+.pending-counts [data-current="true"] b { color: var(--focus); }
+
+/* --- Closing chapter ----------------------------------------------------- */
+
+.section-subhead { margin: var(--space-6) 0 var(--space-2); font-size: var(--fs-accent); }
+.method-body { padding-bottom: var(--space-4); }
+.method-body > p { max-width: var(--reading); }
+
+/* Population table: numeric columns are tabular and right-aligned so the
+   bimodality between regions is legible as a shape down the column. */
+#population-table td { font-variant-numeric: tabular-nums; text-align: right; }
+#population-table td:first-child { text-align: left; }
+#population-table th[scope="col"]:not(:first-child) { text-align: right; }
+#population-table .is-sparse { color: var(--russet); }
+#population-table tbody tr[data-noncoding="true"] th { color: var(--muted); }
+
+/* The de-tabulated narrow form needs its column names supplied per table; the
+   @media wrapper is required, or `content` injects labels at every width. */
+@media (max-width: 600px) {
+  #population-table tbody td:nth-child(2)::before { content: "PV1"; }
+  #population-table tbody td:nth-child(3)::before { content: "PV2"; }
+  #population-table tbody td:nth-child(4)::before { content: "PV3"; }
+  #population-table tbody td:nth-child(5)::before { content: "Non-polio"; }
+  #population-table tbody td:nth-child(6)::before { content: "All"; }
+  #population-table td, #population-table th[scope="col"]:not(:first-child) { text-align: left; }
+}
+
+.finding { margin: 0 0 var(--space-3); padding: 12px 0 12px 16px; border-left: 3px solid var(--russet); color: var(--muted); }
+.finding strong { display: block; color: var(--ink); }
+.finding b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 1100px) {
+  .view-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 760px) {
+  .view-controls { grid-template-columns: 1fr 1fr; }
+  .view-controls > :first-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 480px) {
+  .view-controls { grid-template-columns: 1fr; }
+  .view-controls > :first-child { grid-column: auto; }
+  .view-controls > label, .pending-counts > *, .check-row { min-width: 0; }
+}
