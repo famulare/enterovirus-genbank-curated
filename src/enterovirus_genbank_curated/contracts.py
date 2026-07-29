@@ -167,8 +167,8 @@ def read_tsv_gz(path: Path) -> tuple[list[str], list[list[str]]]:
     as plain tab-delimited text counts continuation lines as rows. `comments.tsv.gz` is the live
     example — 18,476 real rows across 27,038 physical lines.
 
-    This is deliberately NOT the reader used for `registry/decisions.tsv`, which is contractually
-    plain tab-delimited with no quoting (tabs and newlines in values are rejected at write time).
+    `registry/decisions.tsv` uses the same standard quoting, but additionally guarantees that
+    nothing ever *needs* quoting — see `validate_decision_ledger`.
     """
     try:
         with gzip.open(path, "rt", encoding="utf-8", newline="") as handle:
@@ -267,8 +267,19 @@ def validate_decision_ledger(path: Path, contract: DecisionContract) -> LedgerSu
     except OSError as exc:
         raise ContractError(f"cannot read decision ledger {path}: {exc}") from exc
 
+    # Read with standard csv quoting, but require that nothing was actually quoted. The ledger's
+    # value proposition is that `cut -f5`, `awk -F'\t'`, a spreadsheet import and
+    # `pandas.read_csv(sep='\t')` all agree; a single escaped field would break the naive tools
+    # silently. The migration converts curator double quotes to typographic pairs precisely so this
+    # holds, and this check is what keeps it holding.
     with handle:
-        reader = csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_NONE)
+        text = path.read_text(encoding="utf-8")
+        if '"' in text:
+            raise ContractError(
+                f"{path} contains a double quote, so some field is escaped and naive "
+                f"tab-splitting is no longer safe; use typographic quotes in ledger text"
+            )
+        reader = csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
         if tuple(reader.fieldnames or ()) != contract.columns:
             raise ContractError(
                 "decision ledger columns must exactly match the documented contract"

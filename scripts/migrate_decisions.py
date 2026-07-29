@@ -106,12 +106,18 @@ def main() -> int:
                     f"decision {row['decision_id']} field {column!r} contains a tab or newline; "
                     f"the ledger is plain tab-delimited text and cannot represent it"
                 )
+            if '"' in value:
+                raise ContractError(
+                    f"decision {row['decision_id']} field {column!r} contains a double quote, "
+                    f"which would force csv escaping and break naive tab-splitting; use "
+                    f"typographic quotes (see scripts/migrate_legacy_registries.py)"
+                )
 
     rows.sort(key=lambda row: tuple(row[column] for column in LEDGER_SORT_COLUMNS))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
-            handle, fieldnames=list(contract.columns), delimiter="\t", quoting=csv.QUOTE_NONE
+            handle, fieldnames=list(contract.columns), delimiter="\t", lineterminator="\n"
         )
         writer.writeheader()
         writer.writerows(rows)
