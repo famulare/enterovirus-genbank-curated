@@ -1,14 +1,14 @@
 {
   "artifacts": {
-    "panels/NPEV.json": "1b00540725f70b1bb44041acc6fec69420102a882f1a6744ccdbdb62a49b89ea",
-    "panels/PV1.json": "bb5ebd3558545c915e12d3bb4155b89f6565cfc00c5c1e9832412f2504441686",
-    "panels/PV2.json": "b877d13ecfcc5738ae46c423ee6388e0bc3f16fa9e9299795d2d585e8b853ccf",
-    "panels/PV3.json": "52ded293e19ba088a8a4fafb598d111c0e184855883a9070fee9bd3ca330b222",
-    "panels/all.json": "14d8fd15ed18c99d09a1233c10c53437e5c4c031cca755283ba48d606282f6a9",
+    "panels/NPEV.json": "6cb2854baee50290f3ed121f6a5b14bd15778dd8ab953c5752f46479a3eb2eac",
+    "panels/PV1.json": "3065778241b6b72c4059cbec0bc68b38bb0490481d5f15fccad580edc6f6fc25",
+    "panels/PV2.json": "d2095f8579b948ace46e948d1722a7ee7edb491a323e976cf8a0e9e63d6f34b6",
+    "panels/PV3.json": "76fd28085f4147c4c2e5979e7c525ebc99d28f9c7f4632af6505c42085d36917",
+    "panels/all.json": "3068c51e1a0301d0ac3d6fef11c438bfc7dcb3a2902de44e1f8e55aa94dec406",
     "records.json": "a78fbae39f45cabd9a78714040392fb31def82aa355b45326d3c4c703f3945b3",
     "summary.json": "855ad5b7c3951fa55be3de8e9b217ba9ff8a79daf93c99b53ae2d504df7a8413"
   },
-  "build_identity": "src-2d46811d6c10dff2",
+  "build_identity": "src-47fb6d842aa67d6e",
   "inputs": {
     "final/alignments/EV_unified.provenance.json": "680a0830cb2cd29cdcc353924d3cb67e45ed42303c78cd76b9411bb9797fb3ad",
     "final/alignments/EV_unified.sto.gz": "32600d33fada27ea6ea8f9675d59c9247659512d00e2612a9a248c27f19375cf",
@@ -28,13 +28,16 @@
   "sources": {
     "site/pipeline/cli.py": "d2cd949179b9f9af829ab160caaa6756584a11e65a3e11fd2fcf0c6b3aada652",
     "site/pipeline/contract.py": "36f22ae6a6f29116997c64458f84b80a50fe01a10d2f00a73b83c2257f8cda91",
+    "site/pipeline/distances.py": "77223dfa183da0d408720b6f01dfa456c57b039b9c00b06e8ce2a6ea24ccda8b",
     "site/pipeline/divergence.py": "17700ff9c189114669586d089592b96d1c00ae2faec22c0ec57d7b36f9cf9b3c",
+    "site/pipeline/embed.py": "86b8bb1b6b82ba154879433b0dc4982399c127df09f654243fc6ad3e9895d5e1",
     "site/pipeline/frame.py": "71aeed1d6af87ab4941035b4adc7ae21fe81151445147a22afc347db64f0ebb9",
     "site/pipeline/manifest.py": "1fb7ea8a705e7fcd974badd6e37dcd215a5d2dfc1c117c4c77f003e99f48bb73",
-    "site/pipeline/panels.py": "6f0b71fbcd523351f47f9abce808f5b10abebc52a4d46077d41620469ae58406",
+    "site/pipeline/panels.py": "a66c30f17c7add8a3c6c55f02a9877b65a3f6c9b6627da38cc2df761e04b5962",
     "site/pipeline/records.py": "ba7ead9b3bbdca6ad09328b32d92ccb5745a0d6b91eb187e1f5d392fa6262c40",
     "site/pipeline/reference.py": "f320a749d8d0489fbf11fa2a965c420537ab725f906e7225fd81a38d5d34b634",
-    "site/pipeline/selftest.py": "4319d449cede55e9fb09cd2e5501def1ce3382f02519fae359b7e40cbad5b1d5",
+    "site/pipeline/scaling.py": "9ab94e2351b3b64784b791fa97bb7e1af867086c8ab7090837df24783fd5c44b",
+    "site/pipeline/selftest.py": "56800e8f70f805a4c7fae31f7161056b8a22a44d040dd670d8bab2528dbff8dc",
     "site/pipeline/summary.py": "5d356408b0564d3dfcd6d22a7fa93ba63ced9b0f38d415629d4419af73b40ee2",
     "site/pipeline/traits.py": "bd80255e728ecb4cf629cf81bec2c36451346b3b923ac7a510f79809063b40b9"
   },

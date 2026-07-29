@@ -106,13 +106,29 @@
         base. Position here comes from every other sequence rather than from a reference, and
         needing no reading frame, this view adds the two non-coding regions.</p>
     </div>
-    <div class="wide-breakout figure-pending" data-figure="distance">
-      <p class="eyebrow">Figure pending</p>
-      <p>Stage 2 renders five panels here — 5′NCR, P1, P2, P3, 3′NCR. A filled dot is placed from
-        a dense distance profile; an open dot is projected from partial overlap and its position
-        carries less weight.</p>
-      <div class="pending-counts" data-counts="distance"></div>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="distance-strip" role="group"
+           aria-label="Genome region — choose which one the large panel shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="distance-note">
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="distance-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks" id="distance-canvas" tabindex="0"
+                    aria-describedby="distance-readout"
+                    aria-label="Distance scaling scatter. Use arrow keys to move between sequences, Enter to pin one, Escape to clear."></canvas>
+            <svg class="scientific-chart plot-overlay" id="distance-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="distance-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="distance-legend"></div>
+      </div>
+      <div class="readout" id="distance-readout" role="status"></div>
+      <div class="detail" id="distance-detail"></div>
     </div>
+    <p class="warning">Both axes are scaling coordinates, not measured quantities: their units
+      are arbitrary, their signs are fixed only by convention, and only relative position carries
+      meaning. Two dimensions cannot hold all of the distance structure, and the figure states how
+      much of it they do hold.</p>
   </section>
 
   <section id="phylogeny-nt" class="chapter" aria-labelledby="phylogeny-nt-heading">

@@ -14,6 +14,7 @@ import {
   regionsFor,
   roundTrip,
   sameView,
+  traitAfterSelectionChange,
 } from "../src/model/view.ts";
 
 /** The real built artifact, not a fixture — so a schema drift fails here too. */
@@ -197,6 +198,35 @@ test("a malformed accession is rejected rather than pinned", () => {
   assert.equal(decode("#record=AY184219", summary).view.pinned, "AY184219");
 });
 
+test("an explicitly chosen trait survives a selection change", () => {
+  // Someone comparing countries across serotypes should not have to re-pick country.
+  for (const [from, to] of [["PV1", "PV2"], ["PV1", "NPEV"], ["NPEV", "PV3"], ["all", "PV1"]]) {
+    assert.equal(
+      traitAfterSelectionChange(summary, from!, to!, "country"),
+      "country",
+      `${from} -> ${to} keeps country`,
+    );
+  }
+});
+
+test("a trait left at the outgoing default moves to the incoming one", () => {
+  // Untouched, so it follows the selection — which is what stops a move onto non-polio
+  // from landing on a column that is empty for every non-polio record.
+  assert.equal(
+    traitAfterSelectionChange(summary, "PV1", "NPEV", "poliovirus_classification"),
+    "virus_type",
+  );
+  assert.equal(
+    traitAfterSelectionChange(summary, "NPEV", "PV1", "virus_type"),
+    "poliovirus_classification",
+  );
+  // Between two poliovirus selections the default is the same, so nothing moves.
+  assert.equal(
+    traitAfterSelectionChange(summary, "PV1", "PV2", "poliovirus_classification"),
+    "poliovirus_classification",
+  );
+});
+
 test("changing selection resets the trait to that selection's default", () => {
   assert.equal(decode("#sel=NPEV", summary).view.trait, "virus_type");
   assert.equal(decode("#sel=PV2", summary).view.trait, "poliovirus_classification");
@@ -204,6 +234,25 @@ test("changing selection resets the trait to that selection's default", () => {
 
 test("an explicit color survives a selection change in the same link", () => {
   assert.equal(decode("#sel=NPEV&color=species", summary).view.trait, "species");
+});
+
+test("a signed linear axis keeps the data's own limits and places ticks inside them", () => {
+  // Embedding coordinates have no meaningful zero end, so the axis must not anchor at
+  // zero the way a rate axis does.
+  const a = axis(-0.42, 0.31, "linear");
+  assert.ok(a.min < 0, `min stays negative (${a.min})`);
+  assert.ok(a.max > 0, `max stays positive (${a.max})`);
+  for (const tick of a.ticks) {
+    assert.ok(tick >= a.min - 1e-9 && tick <= a.max + 1e-9, `tick ${tick} inside the range`);
+  }
+  assert.ok(a.ticks.some((t) => t < 0), "and negative ticks are labelled");
+  assert.ok(Math.abs(a.invert(a.t(-0.2)) + 0.2) < 1e-9, "invert round-trips a negative value");
+});
+
+test("a square root refuses to go below zero, since it has no real value there", () => {
+  const a = axis(-0.5, 0.31, "sqrt");
+  assert.equal(a.min, 0, "the range is clamped at zero rather than producing NaN");
+  assert.ok(Number.isFinite(a.t(0)) && Number.isFinite(a.t(0.31)), "the transform stays finite");
 });
 
 test("divergence offers coding regions only; distance adds both non-coding regions", () => {

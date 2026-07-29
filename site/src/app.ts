@@ -1,10 +1,26 @@
-/** Mount. Loads the built artifacts, renders the chrome and the divergence figure,
- *  and keeps the URL hash and the control DOM in step with each other. */
+/** Mount. Loads the built artifacts, renders the chrome and both figure chapters, and
+ *  keeps the URL hash and the control DOM in step with each other.
+ *
+ *  One selection state drives every chapter, so a colour, a filter or a region chosen
+ *  once applies everywhere and a record noticed in one figure is findable in the next.
+ *  Brushing is the exception: a zoom belongs to the figure it was drawn on, so it is
+ *  tracked per chapter rather than in the shared view. */
 
 import { assertSchema, type Summary } from "./model/types.js";
-import { decode, defaultView, encode, sameView, type View } from "./model/view.js";
+import {
+  decode,
+  defaultView,
+  encode,
+  sameView,
+  traitAfterSelectionChange,
+  type View,
+  type Zoom,
+} from "./model/view.js";
 import { Records, type RecordTable } from "./model/records.js";
-import { decodeRegion, type Panel, type Point } from "./model/panel.js";
+import { assertPanelSchema } from "./model/panel.js";
+import type { Mark } from "./model/mark.js";
+import { DISTANCE, DIVERGENCE } from "./model/specs.js";
+import * as chapter from "./ui/chapter.js";
 import {
   onControlEdit,
   readControls,
@@ -18,12 +34,10 @@ import {
   renderDataQuality,
   renderFacts,
   renderIntegrityNotes,
-  renderPendingCounts,
   renderPopulationTable,
   renderRawDate,
   renderReleaseBand,
 } from "./ui/report.js";
-import * as figure from "./ui/figure.js";
 import { renderPinned, renderReadout } from "./ui/detail.js";
 import { byId } from "./ui/dom.js";
 
@@ -31,12 +45,20 @@ interface Manifest {
   build_identity: string;
 }
 
+const SPECS = [DIVERGENCE, DISTANCE];
+
 let summary: Summary;
 let records: Records;
 let view: View;
 let rejected: string[] = [];
-let state: figure.FigureState | null = null;
 let writingHash = false;
+
+/** Per-chapter runtime state. `zoom` lives here, not in the shared view, because a
+ *  brushed range means something only on the figure it was drawn on. */
+const chapters = new Map<
+  string,
+  { state: chapter.ChapterState | null; zoom: Zoom | null; heldRecord: number | null }
+>(SPECS.map((spec) => [spec.id, { state: null, zoom: null, heldRecord: null }]));
 
 async function loadJson<T>(path: string): Promise<T> {
   const response = await fetch(path, { cache: "no-cache" });
@@ -44,88 +66,112 @@ async function loadJson<T>(path: string): Promise<T> {
   return (await response.json()) as T;
 }
 
-function currentPanel(): Panel {
-  return (
-    state?.panels.get(view.region) ??
-    decodeRegion(state!.file, state!.regions[0]!)
-  );
+function slot(id: string) {
+  const found = chapters.get(id);
+  if (!found) throw new Error(`unknown chapter ${id}`);
+  return found;
 }
 
-/** Everything that depends on the view but not on the panel payload. */
 function refreshChrome(): void {
   syncControls(view);
   renderNotes(summary, view);
   renderStatus(summary, view, rejected);
-  renderPendingCounts(summary, view);
 }
 
-async function refreshFigure(): Promise<void> {
-  const figures = byId("divergence-strip").closest(".figure");
-  figures?.setAttribute("aria-busy", "true");
+/** A chapter's own view: the shared selection, with that chapter's brush applied. */
+function chapterView(id: string): View {
+  return { ...view, zoom: slot(id).zoom };
+}
+
+async function rebuild(spec: (typeof SPECS)[number]): Promise<void> {
+  const entry = slot(spec.id);
+  const container = byId(`${spec.id}-strip`).closest(".figure");
+  container?.setAttribute("aria-busy", "true");
   try {
-    const file = await figure.loadPanels(view.selection);
-    const previousHeld = state?.held ?? null;
-    state = figure.buildState(summary, records, view, file);
-    // A pinned record survives a region or colour change if it is still on screen.
-    if (previousHeld) {
-      state.held =
-        currentPanel().points.find((point) => point.record === previousHeld.record) ?? null;
-    }
-    figure.render(state);
-    renderReadout(records, currentPanel(), state.held, true);
-    renderPinned(records, currentPanel(), state.held);
-    wirePinnedControls();
+    const file = assertPanelSchema(await chapter.loadPanels(view.selection));
+    entry.state = chapter.buildState(
+      spec,
+      summary,
+      records,
+      chapterView(spec.id),
+      file,
+      entry.heldRecord,
+    );
+    chapter.render(entry.state);
+    paintInspection(spec.id);
   } catch (error) {
-    byId("divergence-note").textContent =
-      `Could not load the figure data: ${error instanceof Error ? error.message : String(error)}`;
+    byId(`${spec.id}-note`).textContent =
+      `Could not load this figure: ${error instanceof Error ? error.message : String(error)}`;
   } finally {
-    figures?.removeAttribute("aria-busy");
+    container?.removeAttribute("aria-busy");
   }
 }
 
-function commit(next: View): void {
-  const needsReload =
-    next.selection !== view.selection || next.region !== view.region || next.trait !== view.trait;
+/** Redraw without refetching — for a filter, colour or brush change. */
+function redraw(id: string): void {
+  const entry = slot(id);
+  if (!entry.state) return;
+  entry.state.view = chapterView(id);
+  entry.state.region = chapter.resolveRegion(entry.state.regions, view.region);
+  chapter.render(entry.state);
+  paintInspection(id);
+}
+
+function paintInspection(id: string): void {
+  const entry = slot(id);
+  if (!entry.state) return;
+  const spec = entry.state.spec;
+  const set = chapter.currentSet(entry.state);
+  renderReadout(spec, records, set, entry.state.held ?? entry.state.inspected, !!entry.state.held);
+  renderPinned(spec, records, set, entry.state.held);
+  wireRenderedControls(id);
+}
+
+/** Buttons that live inside re-rendered markup need rebinding, not one listener at
+ *  mount. */
+function wireRenderedControls(id: string): void {
+  byId(`${id}-detail`)
+    .querySelector<HTMLButtonElement>("[data-unpin]")
+    ?.addEventListener("click", () => setHeld(id, null));
+  byId(`${id}-note`)
+    .querySelector<HTMLButtonElement>("[data-reset-zoom]")
+    ?.addEventListener("click", () => {
+      slot(id).zoom = null;
+      redraw(id);
+    });
+}
+
+function commit(next: View, { reload }: { reload: boolean }): void {
   view = next;
   rejected = [];
   writeHash();
   refreshChrome();
-  if (needsReload || !state) {
-    void refreshFigure();
-    return;
+  for (const spec of SPECS) {
+    if (reload || !slot(spec.id).state) void rebuild(spec);
+    else redraw(spec.id);
   }
-  state.view = view;
-  figure.render(state);
-  wirePinnedControls();
 }
 
 function handleEdit(): void {
   const next = readControls(view);
-  if (sameView(next, view)) return;
+  if (sameView({ ...next, zoom: view.zoom }, view)) return;
   if (next.selection !== view.selection) {
-    next.trait = decode(`sel=${next.selection}`, summary).view.trait;
+    next.trait = traitAfterSelectionChange(summary, view.selection, next.selection, view.trait);
   }
-  // Filter changes need a redraw but not a reload; the scale is deliberately not
-  // rebuilt, so surviving categories keep their colors.
-  const redrawOnly =
-    next.selection === view.selection &&
-    next.region === view.region &&
-    next.trait === view.trait;
-  view = next;
-  rejected = [];
-  writeHash();
-  refreshChrome();
-  if (redrawOnly && state) {
-    state.view = view;
-    figure.render(state);
-    wirePinnedControls();
-  } else {
-    void refreshFigure();
+  // A new selection or region means new marks; a filter, colour or scale change only
+  // means a redraw, and the colour assignment is deliberately not rebuilt.
+  const reload = next.selection !== view.selection || next.region !== view.region;
+  if (next.selection !== view.selection) {
+    for (const entry of chapters.values()) {
+      entry.zoom = null;
+      entry.heldRecord = null;
+    }
   }
+  commit({ ...next, zoom: null }, { reload });
 }
 
 function writeHash(): void {
-  const encoded = encode(view, summary);
+  const encoded = encode({ ...view, zoom: null }, summary);
   const target = encoded ? `#${encoded}` : "#top";
   if (location.hash === target) return;
   writingHash = true;
@@ -139,156 +185,173 @@ function handleHashChange(): void {
   view = decoded.view;
   rejected = decoded.rejected;
   refreshChrome();
-  void refreshFigure();
+  for (const spec of SPECS) void rebuild(spec);
 }
 
-function setInspected(point: Point | null): void {
-  if (!state || state.inspected === point) return;
-  state.inspected = point;
-  figure.renderHighlight(state);
-  renderReadout(records, currentPanel(), point ?? state.held, state.held !== null);
+function setInspected(id: string, mark: Mark | null): void {
+  const entry = slot(id);
+  if (!entry.state || entry.state.inspected === mark) return;
+  entry.state.inspected = mark;
+  chapter.renderHighlight(entry.state);
+  const set = chapter.currentSet(entry.state);
+  renderReadout(entry.state.spec, records, set, mark ?? entry.state.held, !!entry.state.held);
 }
 
-function setHeld(point: Point | null): void {
-  if (!state) return;
-  state.held = point;
-  view.pinned = point ? records.accession(point.record) : null;
+function setHeld(id: string, mark: Mark | null): void {
+  const entry = slot(id);
+  if (!entry.state) return;
+  entry.state.held = mark;
+  entry.heldRecord = mark ? mark.record : null;
+  // A pinned record is a cross-chapter idea: pinning here highlights the same record
+  // in the other figure, which is what makes the two views one instrument.
+  for (const [other, otherEntry] of chapters) {
+    if (other === id || !otherEntry.state) continue;
+    otherEntry.heldRecord = entry.heldRecord;
+    otherEntry.state.held =
+      entry.heldRecord === null
+        ? null
+        : (otherEntry.state.visibleMarks.find((m) => m.record === entry.heldRecord) ?? null);
+    chapter.renderHighlight(otherEntry.state);
+    paintInspection(other);
+  }
+  view.pinned = mark ? records.accession(mark.record) : null;
   writeHash();
-  figure.renderHighlight(state);
-  renderPinned(records, currentPanel(), point);
-  renderReadout(records, currentPanel(), point ?? state.inspected, point !== null);
-  wirePinnedControls();
+  chapter.renderHighlight(entry.state);
+  paintInspection(id);
 }
 
-function wirePinnedControls(): void {
-  document.getElementById("unpin-record")?.addEventListener("click", () => setHeld(null));
-  // Rendered into the figure note, so it is replaced on every render and needs
-  // rebinding rather than one listener at mount.
-  document
-    .getElementById("reset-zoom")
-    ?.addEventListener("click", () => commit({ ...view, zoom: null }));
-}
-
-/** Brush state. A press becomes a zoom if the pointer travels past this many plot
- *  units, and a pin if it does not — so one gesture serves both without a modifier. */
-const DRAG_THRESHOLD = 5;
-let brushStart: [number, number] | null = null;
-let brushMoved = false;
-
-function wireFigure(): void {
-  const canvas = byId<HTMLCanvasElement>("divergence-canvas");
+function wireChapter(spec: (typeof SPECS)[number]): void {
+  const canvas = byId<HTMLCanvasElement>(`${spec.id}-canvas`);
+  const id = spec.id;
+  /** A press becomes a zoom if the pointer travels past this many plot units, and a
+   *  pin if it does not — one gesture serves both without a modifier. */
+  const DRAG_THRESHOLD = 5;
+  let start: [number, number] | null = null;
+  let moved = false;
 
   canvas.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
-    brushStart = figure.positionAt(event.clientX, event.clientY);
-    brushMoved = false;
-    if (brushStart) canvas.setPointerCapture(event.pointerId);
+    const state = slot(id).state;
+    if (event.button !== 0 || !state) return;
+    start = chapter.positionAt(state, event.clientX, event.clientY);
+    moved = false;
+    if (start) canvas.setPointerCapture(event.pointerId);
   });
 
   canvas.addEventListener("pointermove", (event) => {
+    const state = slot(id).state;
     if (!state) return;
-    if (brushStart) {
-      const at = figure.positionAt(event.clientX, event.clientY);
+    if (start) {
+      const at = chapter.positionAt(state, event.clientX, event.clientY);
       if (!at) return;
-      if (
-        Math.abs(at[0] - brushStart[0]) > DRAG_THRESHOLD ||
-        Math.abs(at[1] - brushStart[1]) > DRAG_THRESHOLD
-      ) {
-        brushMoved = true;
+      if (Math.abs(at[0] - start[0]) > DRAG_THRESHOLD || Math.abs(at[1] - start[1]) > DRAG_THRESHOLD) {
+        moved = true;
       }
-      if (brushMoved) {
-        figure.setBrush({ x0: brushStart[0], y0: brushStart[1], x1: at[0], y1: at[1] });
-        // Suppress the readout mid-drag: the reader is choosing a range, not a record.
-        setInspected(null);
-        figure.renderHighlight(state);
+      if (moved) {
+        state.brush = { x0: start[0], y0: start[1], x1: at[0], y1: at[1] };
+        setInspected(id, null);
+        chapter.renderHighlight(state);
       }
       return;
     }
-    setInspected(figure.pointAt(state, event.clientX, event.clientY));
+    setInspected(id, chapter.markAt(state, event.clientX, event.clientY));
   });
 
   canvas.addEventListener("pointerup", (event) => {
-    if (!state || !brushStart) return;
-    const at = figure.positionAt(event.clientX, event.clientY);
-    const start = brushStart;
-    const moved = brushMoved;
-    brushStart = null;
-    brushMoved = false;
-    figure.setBrush(null);
+    const state = slot(id).state;
+    if (!state || !start) return;
+    const at = chapter.positionAt(state, event.clientX, event.clientY);
+    const from = start;
+    const dragged = moved;
+    start = null;
+    moved = false;
+    state.brush = null;
 
-    if (moved && at) {
-      const zoom = figure.boxToZoom(state, { x0: start[0], y0: start[1], x1: at[0], y1: at[1] });
+    if (dragged && at) {
+      const zoom = chapter.boxToZoom(state, { x0: from[0], y0: from[1], x1: at[0], y1: at[1] });
       // A box holding nothing is a slip, not an instruction; leave the view alone.
       if (zoom) {
-        commit({ ...view, zoom });
-        return;
+        slot(id).zoom = zoom;
+        redraw(id);
+      } else {
+        chapter.renderHighlight(state);
       }
-      figure.renderHighlight(state);
       return;
     }
-    const point = figure.pointAt(state, event.clientX, event.clientY);
-    if (point) setHeld(point);
+    const mark = chapter.markAt(state, event.clientX, event.clientY);
+    if (mark) setHeld(id, mark);
   });
 
-  canvas.addEventListener("pointercancel", () => {
-    brushStart = null;
-    brushMoved = false;
-    figure.setBrush(null);
-    if (state) figure.renderHighlight(state);
-  });
-
+  const cancel = () => {
+    const state = slot(id).state;
+    start = null;
+    moved = false;
+    if (state) {
+      state.brush = null;
+      chapter.renderHighlight(state);
+    }
+  };
+  canvas.addEventListener("pointercancel", cancel);
   canvas.addEventListener("pointerleave", () => {
-    if (!brushStart) setInspected(null);
+    if (!start) setInspected(id, null);
   });
 
-  // Double-click is the fast way back out, alongside the note's button.
   canvas.addEventListener("dblclick", () => {
-    if (view.zoom) commit({ ...view, zoom: null });
+    if (slot(id).zoom) {
+      slot(id).zoom = null;
+      redraw(id);
+    }
   });
 
-  // Keyboard parity: the same values reachable by hover must be reachable without a
-  // pointer, so arrows walk the cloud in x order and Enter pins.
+  // Keyboard parity: every value reachable by hover must be reachable without a
+  // pointer, so arrows walk the cloud and Enter pins.
   canvas.addEventListener("keydown", (event) => {
+    const state = slot(id).state;
     if (!state) return;
-    const points = figure.ordered(state);
-    if (!points.length) return;
-    const at = state.inspected ? points.indexOf(state.inspected) : -1;
+    const marks = chapter.ordered(state);
+    if (!marks.length) return;
+    const at = state.inspected ? marks.indexOf(state.inspected) : -1;
     let next = at;
     switch (event.key) {
       case "ArrowRight":
       case "ArrowUp":
-        next = at < 0 ? 0 : Math.min(points.length - 1, at + 1);
+        next = at < 0 ? 0 : Math.min(marks.length - 1, at + 1);
         break;
       case "ArrowLeft":
       case "ArrowDown":
-        next = at < 0 ? points.length - 1 : Math.max(0, at - 1);
+        next = at < 0 ? marks.length - 1 : Math.max(0, at - 1);
         break;
       case "Home":
         next = 0;
         break;
       case "End":
-        next = points.length - 1;
+        next = marks.length - 1;
         break;
       case "Enter":
-        if (state.inspected) setHeld(state.inspected);
+        if (state.inspected) setHeld(id, state.inspected);
         event.preventDefault();
         return;
       case "Escape":
-        if (view.zoom) commit({ ...view, zoom: null });
-        setInspected(null);
-        setHeld(null);
+        if (slot(id).zoom) {
+          slot(id).zoom = null;
+          redraw(id);
+        }
+        setInspected(id, null);
+        setHeld(id, null);
         return;
       default:
         return;
     }
     event.preventDefault();
-    setInspected(points[next] ?? null);
+    setInspected(id, marks[next] ?? null);
   });
 
-  byId("divergence-strip").addEventListener("click", (event) => {
+  byId(`${id}-strip`).addEventListener("click", (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".thumb");
     if (!button?.dataset.region) return;
-    commit({ ...view, region: button.dataset.region });
+    // A region change invalidates every chapter's brush: the same rectangle means
+    // something different once the axes have moved.
+    for (const entry of chapters.values()) entry.zoom = null;
+    commit({ ...view, region: button.dataset.region, zoom: null }, { reload: false });
   });
 }
 
@@ -315,19 +378,26 @@ async function main(): Promise<void> {
 
   renderControls(summary, view);
   onControlEdit(handleEdit);
-  wireFigure();
+  for (const spec of SPECS) wireChapter(spec);
   refreshChrome();
-  await refreshFigure();
+  await Promise.all(SPECS.map((spec) => rebuild(spec)));
 
-  // A pinned accession restored from the URL has to wait for the panel to exist.
-  if (view.pinned && state) {
-    const target = currentPanel().points.find(
-      (point) => records.accession(point.record) === view.pinned,
+  // A pinned accession restored from the URL has to wait for the panels to exist.
+  if (view.pinned) {
+    const first = slot(DIVERGENCE.id).state;
+    const target = first?.visibleMarks.find(
+      (mark) => records.accession(mark.record) === view.pinned,
     );
-    if (target) setHeld(target);
+    if (target) setHeld(DIVERGENCE.id, target);
   }
 
-  byId("reset-view").addEventListener("click", () => commit(defaultView(summary)));
+  byId("reset-view").addEventListener("click", () => {
+    for (const entry of chapters.values()) {
+      entry.zoom = null;
+      entry.heldRecord = null;
+    }
+    commit(defaultView(summary), { reload: true });
+  });
   window.addEventListener("hashchange", handleHashChange);
 }
 

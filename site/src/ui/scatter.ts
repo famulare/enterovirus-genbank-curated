@@ -8,7 +8,8 @@
  */
 
 import * as palette from "../model/palette.js";
-import type { Axis, Panel, Point } from "../model/panel.js";
+import type { Axis } from "../model/panel.js";
+import type { Mark } from "../model/mark.js";
 
 export interface Plot {
   width: number;
@@ -105,16 +106,16 @@ function drawGlyph(
 
 export interface DrawOptions {
   radius: number;
-  /** Frameshift-flagged records get a visible marker rather than being plotted as
-   *  though their translation were trustworthy. */
-  markFrameshift: boolean;
+  /** Flagged records get a cross through them rather than being plotted as though
+   *  their value were trustworthy at face value. */
+  markFlagged: boolean;
 }
 
 export function drawMarks(
   canvas: HTMLCanvasElement,
   frame: Frame,
-  panel: Panel,
-  styleOf: (point: Point) => MarkStyle,
+  marks: Mark[],
+  styleOf: (mark: Mark) => MarkStyle,
   options: DrawOptions,
 ): void {
   const ratio = window.devicePixelRatio || 1;
@@ -130,12 +131,14 @@ export function drawMarks(
   context.globalAlpha = ALPHA;
   context.lineWidth = 1.1;
 
-  for (const point of panel.points) {
-    if (!within(frame, point.jx, point.jy)) continue;
-    const [sx, sy] = toScreen(frame, point.jx, point.jy);
-    const style = styleOf(point);
+  for (const mark of marks) {
+    if (!within(frame, mark.x, mark.y)) continue;
+    const [sx, sy] = toScreen(frame, mark.x, mark.y);
+    const style = styleOf(mark);
     const filled = palette.isFilled(style.glyph);
-    drawGlyph(context, style.glyph, sx, sy, options.radius);
+    // Weight below 1 shrinks the mark: a less certain position reads as a smaller
+    // one, without touching the fill that carries the category's identity.
+    drawGlyph(context, style.glyph, sx, sy, options.radius * mark.weight);
     if (filled) {
       context.fillStyle = style.color;
       context.fill();
@@ -145,14 +148,17 @@ export function drawMarks(
     }
   }
 
-  if (options.markFrameshift) {
-    context.globalAlpha = 0.95;
+  if (options.markFlagged) {
+    context.globalAlpha = 0.9;
     context.strokeStyle = palette.INK;
-    context.lineWidth = 1.4;
-    for (const point of panel.points) {
-      if (!point.frameshift || !within(frame, point.jx, point.jy)) continue;
-      const [sx, sy] = toScreen(frame, point.jx, point.jy);
-      const r = options.radius + 2.5;
+    context.lineWidth = 1;
+    for (const mark of marks) {
+      if (!mark.flagged || !within(frame, mark.x, mark.y)) continue;
+      const [sx, sy] = toScreen(frame, mark.x, mark.y);
+      // Proportionate to the mark, not a fixed inflation. A constant +2.5 made the
+      // cross about twice the dot diameter in a dense panel, so a footnote on one
+      // record read as major structure.
+      const r = options.radius * 1.35;
       context.beginPath();
       context.moveTo(sx - r, sy - r);
       context.lineTo(sx + r, sy + r);
@@ -218,9 +224,13 @@ export function axesMarkup(frame: Frame, xLabel: string, yLabel: string): string
  *  axis: a square-root axis carries ticks spanning several orders of magnitude. */
 function tickLabel(value: number, frame: Frame): string {
   if (value === 0) return "0";
-  const magnitude = Math.max(frame.x.max, frame.y.max);
-  if (value < 0.001) return value.toExponential(0);
-  const decimals = value < 0.01 ? 3 : value < 0.1 ? 2 : magnitude < 0.2 ? 3 : 2;
+  // On magnitude, not on the signed value: testing `value < 0.001` sent every
+  // negative tick down the exponential path, so a signed axis labelled -0.4 as
+  // "-4e-1".
+  const size = Math.abs(value);
+  const span = Math.max(frame.x.max - frame.x.min, frame.y.max - frame.y.min);
+  if (size < 0.001) return value.toExponential(0);
+  const decimals = size < 0.01 ? 3 : size < 0.1 ? 2 : span < 0.2 ? 3 : 2;
   return value.toFixed(decimals);
 }
 
@@ -228,13 +238,13 @@ function tickLabel(value: number, frame: Frame): string {
  *  page's two-tier interaction colors and crisp edges. */
 export function highlightMarkup(
   frame: Frame,
-  inspected: Point | null,
-  held: Point | null,
+  inspected: Mark | null,
+  held: Mark | null,
   radius: number,
 ): string {
-  const ring = (point: Point, className: string) => {
-    if (!within(frame, point.jx, point.jy)) return "";
-    const [sx, sy] = toScreen(frame, point.jx, point.jy);
+  const ring = (point: Mark, className: string) => {
+    if (!within(frame, point.x, point.y)) return "";
+    const [sx, sy] = toScreen(frame, point.x, point.y);
     return `<circle class="${className}" cx="${sx}" cy="${sy}" r="${radius + 4}" fill="none"/>`;
   };
   return (
@@ -278,16 +288,16 @@ export function plotPosition(
 /** Nearest mark to a plot-space position, within `limit` pixels. */
 export function nearest(
   frame: Frame,
-  panel: Panel,
+  marks: Mark[],
   px: number,
   py: number,
   limit = 14,
-): Point | null {
-  let best: Point | null = null;
+): Mark | null {
+  let best: Mark | null = null;
   let bestDistance = limit * limit;
-  for (const point of panel.points) {
-    if (!within(frame, point.jx, point.jy)) continue;
-    const [sx, sy] = toScreen(frame, point.jx, point.jy);
+  for (const point of marks) {
+    if (!within(frame, point.x, point.y)) continue;
+    const [sx, sy] = toScreen(frame, point.x, point.y);
     const dx = sx - px;
     const dy = sy - py;
     const distance = dx * dx + dy * dy;

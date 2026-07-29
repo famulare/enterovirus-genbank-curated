@@ -8,12 +8,21 @@ divergence, multidimensional scaling of nucleotide distance, nucleotide phylogen
 and amino-acid phylogeny. Its purpose is to make the structure in the release
 legible at a glance and to make misclassification noticeable.
 
-**Figure set 1 is what currently ships.** Synonymous against non-synonymous
-divergence, as a strip of four region thumbnails above one focus panel: square-root
-or linear axes, drag-to-brush zoom, per-panel auto-scaling, seven colored categories
-plus Other with glyph co-encoding, hover and full keyboard traversal, and click-to-pin
-showing every canonical field. Sets 2 to 4 carry placeholders naming what lands there.
-All state lives in the URL hash, so any view is a shareable link.
+**Figure sets 1 and 2 ship.** Both are the same instrument, from the same component
+in `src/ui/chapter.ts`: a strip of live region thumbnails above one focus panel, with
+drag-to-brush zoom, per-panel auto-scaling, seven colored categories plus Other with
+glyph co-encoding, hover and full keyboard traversal, and click-to-pin showing every
+canonical field. Pinning a record in one chapter highlights it in the other. All state
+lives in the URL hash, so any view is a shareable link.
+
+- **Set 1, divergence** — synonymous against non-synonymous codon differences from a
+  reference, over four coding regions. Square-root or linear axes.
+- **Set 2, distance** — classical multidimensional scaling of pairwise nucleotide
+  distance, over five regions including both non-coding ones, which it can reach
+  because it needs no reading frame. Linear only: the coordinates are signed and have
+  no meaningful zero end.
+
+Sets 3 and 4, the two phylogenies, carry placeholders naming what lands there.
 
 ## Reproducing from a fresh clone
 
@@ -27,7 +36,8 @@ npm --prefix site ci && npm --prefix site run build
 The Python step needs only `uv`; dependencies are declared inline in
 [`pipeline/cli.py`](pipeline/cli.py) (PEP 723) rather than in the project's
 `pyproject.toml`, so it does not require installing the package being rewritten
-alongside it. The Node step needs Node 22 or newer.
+alongside it. The Node step needs Node 23.6 or newer — `npm test` runs the TypeScript sources
+directly and relies on unflagged type stripping. Declared in `package.json` engines.
 
 To review locally:
 
@@ -78,11 +88,22 @@ pipeline/          Python. Reads final/, writes site/data/.
   contract.py        THE ONLY place naming a final/ path or a canonical column
   frame.py           Alignment loading; region -> alignment column mapping
   traits.py          Canonical records plus derived species / concordance / date
+  reference.py       What each sequence is measured against (set 1)
+  divergence.py      The synonymous / non-synonymous metric (set 1)
+  distances.py       Masked pairwise distance and landmark choice (sets 2-4)
+  embed.py           Classical scaling with out-of-sample placement (set 2)
+  scaling.py         One region's embedding, assembled (set 2)
+  records.py         The shared record table every figure reads
+  panels.py          Per-selection artifacts the browser loads
   summary.py         The counts, catalogs and caveats the page opens with
   manifest.py        Input hashing and the staleness gate
-  cli.py             `build` and `check`
+  selftest.py        Correctness checks; `cli.py selftest`
+  cli.py             `build`, `check`, `selftest`
 data/              Committed derived artifacts + manifest.json
 src/               TypeScript. model/ is DOM-free and unit-tested; ui/ renders.
+  ui/chapter.ts      ONE figure component; both chapters are instances of it
+  model/specs.ts     What each chapter adds beyond that component
+  model/mark.ts      The boundary between them: what a scatter draws
 test/              node --test over model/
 scripts/           esbuild build, and a dev server
 tokens.css         Vendored from the scientific-page-style kit
