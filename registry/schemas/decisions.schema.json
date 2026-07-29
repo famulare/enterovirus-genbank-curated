@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/famulare/enterovirus-genbank-curated/raw/main/registry/schemas/decisions.schema.json",
+  "title": "Curation decision record",
+  "description": "One human-authored field-level assertion in the authoritative curation ledger.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decision_id",
+    "decision_type",
+    "subject_key",
+    "accession",
+    "field_name",
+    "new_value",
+    "reason",
+    "evidence_reference",
+    "confirmed_by",
+    "source_artifact",
+    "status",
+    "effective_from",
+    "effective_through",
+    "notes"
+  ],
+  "properties": {
+    "decision_id": {
+      "type": "string",
+      "pattern": "^D-[0-9a-f]{12,64}$",
+      "description": "Content-stable decision identifier."
+    },
+    "decision_type": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Controlled category of human decision."
+    },
+    "subject_key": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Non-null identity of the accession or accession-less subject."
+    },
+    "accession": {
+      "type": "string",
+      "description": "Unversioned GenBank accession, blank for accession-less subjects."
+    },
+    "field_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Registry field asserted by this decision."
+    },
+    "new_value": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Value asserted by the decision."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Human-entered rationale; blank means not recorded."
+    },
+    "evidence_reference": {
+      "type": "string",
+      "description": "Supporting PMID, URL, citation, or evidence key; blank means not recorded."
+    },
+    "confirmed_by": {
+      "type": "string",
+      "description": "Person or process that ratified the assertion; blank means not recorded."
+    },
+    "source_artifact": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Legacy or current registry artifact from which the decision was migrated."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["active", "superseded", "retired"]
+    },
+    "effective_from": {
+      "type": "string",
+      "description": "Inclusive release or date boundary; blank when not applicable."
+    },
+    "effective_through": {
+      "type": "string",
+      "description": "Inclusive release or date boundary; blank when not applicable."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional migration or review notes."
+    }
+  }
+}
