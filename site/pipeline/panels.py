@@ -12,6 +12,7 @@ import numpy as np
 import contract
 import divergence
 import frame
+import scaling
 
 SCHEMA = 1
 
@@ -84,6 +85,26 @@ def build_selection(
             "min_nt": panel["min_nt"],
         }
 
+    distance = {}
+    for region in contract.DISTANCE_REGIONS:
+        placed = scaling.build_region(alignment, rows, columns[region], region, accessions)
+        keep = placed["row"]
+        distance[region] = {
+            "record": [record_rows[index] for index in keep],
+            # Four decimals is finer than a 720px panel can resolve, and keeps the
+            # payload from carrying float noise that would churn the committed diff.
+            "x": [round(float(v), 4) for v in placed["x"]],
+            "y": [round(float(v), 4) for v in placed["y"]],
+            "resolved": _ints(placed["resolved"]),
+            "thin": [int(i) for i, ok in enumerate(placed["confident"]) if not ok],
+            "landmarks": placed["landmarks"],
+            "explained": round(placed["explained"], 4),
+            "negative_share": round(placed["negative_share"], 4),
+            "excluded": placed["excluded"],
+            "columns": placed["columns"],
+            "min_nt": placed["min_nt"],
+        }
+
     return {
         "schema": SCHEMA,
         "selection": selection["id"],
@@ -96,4 +117,5 @@ def build_selection(
         # offset = (jitter / jitter_scale) * jitter_amplitude / comparable.
         "jitter_amplitude": 0.25,
         "divergence": panels,
+        "distance": distance,
     }

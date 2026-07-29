@@ -8,10 +8,11 @@ multiple-sequence alignments.
 **→ Explore the data in your browser:
 [famulare.github.io/enterovirus-genbank-curated](https://famulare.github.io/enterovirus-genbank-curated/)**
 
-Synonymous against non-synonymous divergence for every sequence in the release, colored by any
-curated trait, brushable, and linked to the full record — an exploration surface that shows the
-structure in the data and makes misclassification visible. Nucleotide distance and the two
-phylogeny views are still to come. Source and build instructions in [`site/`](site/README.md).
+Divergence from reference and multidimensional scaling of nucleotide distance, for every sequence
+in the release, colored by any curated trait, brushable, and linked back to the full record — an
+exploration surface that shows the structure in the data and makes misclassification visible. The
+two phylogeny views are still to come. Source and build instructions in
+[`site/`](site/README.md).
 
 This is a **data release** with an early public pipeline foundation. It is not yet a fully
 self-contained reproducible pipeline. See [Reproducibility status](#reproducibility-status) for the

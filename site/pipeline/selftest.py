@@ -14,7 +14,9 @@ from __future__ import annotations
 import numpy as np
 
 import contract
+import distances
 import divergence
+import embed
 import frame
 import reference
 
@@ -268,13 +270,120 @@ def axes_are_bounded() -> None:
     check(worst <= 1.0000001, f"worst observed x + y is {worst:.6f}")
 
 
+def distance_and_embedding_cases() -> None:
+    """Checks for figure set 2's distance and multidimensional scaling."""
+    print("\ndistance and embedding cases")
+
+    # Hand-checkable distances. Six columns, one mismatch, one ambiguity, one gap.
+    align = _alignment(
+        {
+            "same": "ACGTAC",
+            "one": "ACGTAG",  # one mismatch over six shared
+            "ambig": "ACGTAN",  # N is not comparable: five shared, zero mismatch
+            "short": "ACG---",  # three shared, zero mismatch
+        }
+    )
+    rows = np.arange(4)
+    shared, matches = distances.counts_against(align.matrix, rows, rows)
+    d = distances.distance_from_counts(shared, matches, min_shared=1)
+    check_equal(float(d[0, 0]), 0.0, "a sequence against itself is zero")
+    check_equal(round(float(d[0, 1]), 6), round(1 / 6, 6), "one mismatch over six shared")
+    check_equal(float(shared[0, 2]), 5.0, "an ambiguity code lowers the shared count")
+    check_equal(float(d[0, 2]), 0.0, "and contributes no mismatch")
+    check_equal(float(shared[0, 3]), 3.0, "a trailing gap lowers the shared count")
+    check_equal(float(d[0, 3]), 0.0, "and contributes no mismatch")
+
+    # Overlapping nowhere must be undefined, not distant.
+    disjoint = _alignment({"left": "ACGT--", "right": "--ACGT"})
+    pair = np.arange(2)
+    s2, m2 = distances.counts_against(disjoint.matrix, pair, pair)
+    check_equal(float(s2[0, 1]), 2.0, "partially overlapping rows share their overlap")
+    far = distances.distance_from_counts(s2, m2, min_shared=50)
+    check(bool(np.isnan(far[0, 1])), "too little overlap yields NaN, not a large distance")
+
+    # A landmark set must never contain an undefined pair.
+    ragged = _alignment(
+        {
+            "full1": "ACGTACGTAC",
+            "full2": "ACGTACGTAG",
+            "full3": "ACGTACGTTC",
+            "headonly": "ACGTA-----",
+            "tailonly": "-----CGTAC",
+        }
+    )
+    all_rows = np.arange(5)
+    chosen = distances.choose_landmarks(ragged.matrix, all_rows, min_shared=6, cap=5)
+    matrix = distances.landmark_matrix(ragged.matrix, chosen, min_shared=6)
+    check(not np.isnan(matrix).any(), "the landmark matrix has no undefined pair")
+    check(len(chosen) >= 3, f"the three full rows are all landmarks (got {len(chosen)})")
+
+    # Classical MDS must recover a geometry it is given exactly.
+    truth = np.array([[0.0, 0.0], [3.0, 0.0], [0.0, 4.0], [3.0, 4.0], [1.5, 2.0]])
+    exact = np.linalg.norm(truth[:, None, :] - truth[None, :, :], axis=2)
+    fitted = embed.Embedding(exact)
+    recovered = np.linalg.norm(
+        fitted.landmark_coordinates[:, None, :] - fitted.landmark_coordinates[None, :, :],
+        axis=2,
+    )
+    check(
+        float(np.abs(recovered - exact).max()) < 1e-8,
+        "a planar configuration is recovered to floating-point precision",
+    )
+    check(fitted.explained > 0.999, f"and two dimensions explain it all ({fitted.explained:.4f})")
+
+    # Nyström must put a known point where it belongs.
+    held_out = np.linalg.norm(truth - np.array([3.0, 4.0]), axis=1)
+    placed = fitted.place(held_out[None, :])
+    offset = float(np.linalg.norm(placed[0] - fitted.landmark_coordinates[3]))
+    check(offset < 1e-6, f"an out-of-sample point lands on its own landmark ({offset:.2e})")
+
+    # Orientation must be reproducible, and must not distort the geometry.
+    pinned = embed.pin_orientation(fitted.landmark_coordinates, anchor=0)
+    again = embed.pin_orientation(fitted.landmark_coordinates, anchor=0)
+    check(np.array_equal(pinned, again), "pinning is deterministic")
+    check(
+        bool((pinned[0] <= 1e-9).all()),
+        f"the anchor lands in the lower-left quadrant ({pinned[0]})",
+    )
+    after = np.linalg.norm(pinned[:, None, :] - pinned[None, :, :], axis=2)
+    check(
+        float(np.abs(after - exact).max()) < 1e-8,
+        "and pinning is a reflection, so every distance survives it",
+    )
+
+
+def embedding_confidence_is_informative() -> None:
+    """No region may mark its entire population thin, or the encoding says nothing.
+
+    A fixed 200-column confidence floor once exceeded the whole width of the 3'NCR
+    block, so every point in that panel rendered open. The floor is region-relative
+    now; this asserts the outcome rather than the rule.
+    """
+    print("\nembedding confidence is informative in every panel")
+    import json
+
+    for path in sorted((contract.DATA_OUT / "panels").glob("*.json")):
+        payload = json.loads(path.read_text())
+        for region, panel in payload.get("distance", {}).items():
+            total = len(panel["record"])
+            if total < 20:
+                continue
+            thin = len(panel["thin"])
+            check(
+                thin < total,
+                f"{payload['selection']} {region}: {thin} of {total} thin, not all of them",
+            )
+
+
 def run() -> int:
     synthetic_cases()
+    distance_and_embedding_cases()
     jitter_is_stable()
     region_widths_agree()
     sabin_against_itself()
     if (contract.DATA_OUT / "panels").is_dir():
         axes_are_bounded()
+        embedding_confidence_is_informative()
 
     print()
     if FAILURES:

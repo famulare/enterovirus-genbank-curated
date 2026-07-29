@@ -17,10 +17,11 @@ export interface PanelFile {
   orphaned: number;
   jitter_scale: number;
   jitter_amplitude: number;
-  divergence: Record<string, RegionFile>;
+  divergence: Record<string, DivergenceRegion>;
+  distance: Record<string, DistanceRegion>;
 }
 
-export interface RegionFile {
+export interface DivergenceRegion {
   record: number[];
   comparable: number[];
   assessable: number[];
@@ -38,38 +39,22 @@ export interface RegionFile {
   min_nt: number;
 }
 
+export interface DistanceRegion {
+  record: number[];
+  x: number[];
+  y: number[];
+  resolved: number[];
+  /** Indices into `record` whose placement rests on too little overlap. */
+  thin: number[];
+  landmarks: number;
+  explained: number;
+  negative_share: number;
+  excluded: { below_coverage: number };
+  columns: number;
+  min_nt: number;
+}
+
 export const PANEL_SCHEMA = 1;
-
-export interface Point {
-  /** Index into records.json. */
-  record: number;
-  /** True position: differences per comparable codon. */
-  x: number;
-  y: number;
-  /** Position with the build's deterministic jitter applied — what is drawn. */
-  jx: number;
-  jy: number;
-  synonymous: number;
-  nonsynonymous: number;
-  /** Codons an insertion or deletion touches. Included in `nonsynonymous`. */
-  indelCodons: number;
-  /** Maximal indel runs. Reported, but not a numerator — see divergence.py. */
-  indelEvents: number;
-  comparable: number;
-  /** The denominator: comparable codons plus indel codons. */
-  assessable: number;
-  frameshift: boolean;
-  reference: number;
-}
-
-export interface Panel {
-  region: string;
-  points: Point[];
-  references: { kind: string; label: string }[];
-  excluded: { below_coverage: number; no_reference: number };
-  codons: number;
-  minNt: number;
-}
 
 export function assertPanelSchema(file: PanelFile): PanelFile {
   if (file.schema !== PANEL_SCHEMA) {
@@ -79,53 +64,6 @@ export function assertPanelSchema(file: PanelFile): PanelFile {
     );
   }
   return file;
-}
-
-export function decodeRegion(file: PanelFile, region: string): Panel {
-  const raw = file.divergence[region];
-  if (!raw) throw new Error(`panel ${file.selection} has no region ${region}`);
-
-  const shifted = new Set(raw.frameshift);
-  const amplitude = file.jitter_amplitude;
-  const scale = file.jitter_scale;
-
-  const points: Point[] = raw.record.map((record, i) => {
-    const comparable = raw.comparable[i]!;
-    const assessable = raw.assessable[i]!;
-    const synonymous = raw.synonymous[i]!;
-    const nonsynonymous = raw.nonsynonymous[i]!;
-    // Assessable, not comparable: it includes the indel codons that the numerator
-    // counts, which is what keeps both axes inside 0-1 with x + y <= 1.
-    const x = synonymous / assessable;
-    const y = nonsynonymous / assessable;
-    // Amplitude is a fraction of one count, so it shrinks as the denominator grows:
-    // a whole genome needs less nudging than a 17-codon fragment.
-    const step = amplitude / assessable;
-    return {
-      record,
-      x,
-      y,
-      jx: x + (raw.jitter_x[i]! / scale) * step,
-      jy: y + (raw.jitter_y[i]! / scale) * step,
-      synonymous,
-      nonsynonymous,
-      indelCodons: raw.indel_codons[i]!,
-      indelEvents: raw.indel_events[i]!,
-      comparable,
-      assessable,
-      frameshift: shifted.has(i),
-      reference: raw.reference[i]!,
-    };
-  });
-
-  return {
-    region,
-    points,
-    references: raw.references,
-    excluded: raw.excluded,
-    codons: raw.codons,
-    minNt: raw.min_nt,
-  };
 }
 
 /** An axis with a transform, a range, and ticks that land inside it.
@@ -220,19 +158,23 @@ export function axis(
   scale: AxisScale,
   target = 5,
 ): Axis {
-  const min = Math.max(0, rawMin);
-  let max = rawMax;
+  // A signed range is legal on a linear axis — an embedding coordinate has no
+  // meaningful zero end — but not under a square root, which has no real value below
+  // zero. Callers that can produce negative values are linear-only.
+  const min = scale === "sqrt" ? Math.max(0, rawMin) : rawMin;
+  let max = Math.max(rawMax, min + Number.EPSILON);
   let ticks: number[];
 
   if (scale === "linear") {
     // Snap the maximum up to a whole number of steps so the last tick is the edge.
-    const step = niceStep(Math.max(max - min, Number.EPSILON), target);
+    // Only meaningful for a zero-anchored axis; a signed range keeps the data's own
+    // limits and simply places whatever nice ticks fall inside them.
+    const step = niceStep(max - min, target);
     if (min === 0) {
       max = Number((step * Math.max(1, Math.ceil(max / step - 1e-9))).toFixed(10));
     }
     ticks = linearTicks(min, max, target);
   } else {
-    max = Math.max(max, min + Number.EPSILON);
     ticks = sqrtTicks(min, max);
   }
 
@@ -255,31 +197,6 @@ export function axis(
       return scale === "sqrt" ? mapped * mapped : mapped;
     },
   };
-}
-
-/** Data extent of one panel, anchored at zero.
- *
- *  Deliberately per-panel rather than shared across the four regions. Absolute
- *  divergence differs by gene segment — P1 is under capsid selection, P3 is not — so
- *  a common range would compress most panels to serve a comparison that is not the
- *  one being made. The reading here is qualitative shape, and each panel gets the
- *  room to show its own. Positions are therefore not comparable between panels, and
- *  the focus panel's labelled axes are what state its range. The thumbnails do not
- *  print theirs: at that size the comparison a reader can make is shape, and shape
- *  stays fair across differing ranges.
- *
- *  Anchored at zero rather than at the data minimum, because zero is occupied and
- *  meaningful: it is the reference measured against itself.
- */
-export function extent(panel: Panel, scale: AxisScale): { x: Axis; y: Axis } {
-  let x = 0;
-  let y = 0;
-  for (const point of panel.points) {
-    if (point.jx > x) x = point.jx;
-    if (point.jy > y) y = point.jy;
-  }
-  // Headroom so the outermost mark is not clipped by the frame.
-  return { x: axis(0, x * 1.04, scale), y: axis(0, y * 1.04, scale) };
 }
 
 /** The frame a brushed range asks for, with no headroom — the reader chose the edges. */
