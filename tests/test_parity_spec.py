@@ -5,6 +5,8 @@ notices. A contract nothing can contradict is not a contract.
 """
 
 import copy
+import csv
+import gzip
 import json
 import shutil
 from pathlib import Path
@@ -16,6 +18,7 @@ from enterovirus_genbank_curated.contracts import (
     PARITY_SPEC_PATH,
     RELEASE_FILE_MANIFEST_PATH,
     ContractError,
+    read_tsv_gz,
     validate_parity_spec,
     verify_build_manifest,
     verify_expected_artifacts,
@@ -119,6 +122,26 @@ def test_raw_archive_is_tied_to_the_release_build_manifest(
 
 def test_parity_spec_path_constant_points_at_the_shipped_contract(repository_root: Path) -> None:
     assert (repository_root / PARITY_SPEC_PATH).is_file()
+
+
+def test_quoted_multiline_fields_are_counted_as_one_row(tmp_path: Path) -> None:
+    """Release tables are written QUOTE_MINIMAL; reading them as plain TSV overcounts rows."""
+    path = tmp_path / "t.tsv.gz"
+    with gzip.open(path, "wt", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["id", "text"])
+        writer.writerow(["a", "one\ntext\nspanning\nlines"])
+        writer.writerow(["b", "plain"])
+    header, rows = read_tsv_gz(path)
+    assert header == ["id", "text"]
+    assert len(rows) == 2
+    assert rows[0][1] == "one\ntext\nspanning\nlines"
+
+
+def test_shipped_comments_table_row_count_matches_its_dictionary(repository_root: Path) -> None:
+    """The live instance of the bug above: 18,476 rows across 27,038 physical lines."""
+    _, rows = read_tsv_gz(repository_root / "final/source/normalized_tsv/comments.tsv.gz")
+    assert len(rows) == 18476
 
 
 def test_drifted_artifact_bytes_are_caught(

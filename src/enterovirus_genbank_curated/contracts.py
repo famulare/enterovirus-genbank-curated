@@ -160,10 +160,19 @@ def sha256_file(path: Path) -> str:
 
 
 def read_tsv_gz(path: Path) -> tuple[list[str], list[list[str]]]:
-    """Read a shipped TSV.gz as plain tab-delimited text (no quoting semantics)."""
+    """Read a shipped TSV.gz with the same quoting the release writer used.
+
+    The release tables are written by `csv.DictWriter` at its default QUOTE_MINIMAL, so free-text
+    columns containing tabs or newlines are quoted. They must be read the same way: reading them
+    as plain tab-delimited text counts continuation lines as rows. `comments.tsv.gz` is the live
+    example — 18,476 real rows across 27,038 physical lines.
+
+    This is deliberately NOT the reader used for `registry/decisions.tsv`, which is contractually
+    plain tab-delimited with no quoting (tabs and newlines in values are rejected at write time).
+    """
     try:
         with gzip.open(path, "rt", encoding="utf-8", newline="") as handle:
-            reader = csv.reader(handle, delimiter="\t", quoting=csv.QUOTE_NONE)
+            reader = csv.reader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
             rows = list(reader)
     except OSError as exc:
         raise ContractError(f"cannot read {path}: {exc}") from exc
@@ -373,13 +382,16 @@ def validate_parity_spec(path: Path) -> dict[str, Any]:
 
 
 def load_release_file_manifest(path: Path) -> dict[str, tuple[str, str]]:
-    """Read the release's own file manifest as {path relative to final/: (hash_scope, sha256)}."""
+    """Read the release's own file manifest as {path relative to final/: (hash_scope, sha256)}.
+
+    Written by the same release writer as the tables, so QUOTE_MINIMAL — see `read_tsv_gz`.
+    """
     try:
         handle = path.open("r", encoding="utf-8", newline="")
     except OSError as exc:
         raise ContractError(f"cannot read release file manifest {path}: {exc}") from exc
     with handle:
-        reader = csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_NONE)
+        reader = csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
         required = {"path", "hash_scope", "sha256"}
         if not required <= set(reader.fieldnames or ()):
             raise ContractError(f"{path} must declare columns {sorted(required)}")
