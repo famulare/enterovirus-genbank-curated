@@ -1,0 +1,27 @@
+{
+  "stage": "GH#10/#5 unify",
+  "description": "Whole-genome Stockholm per serotype: structure-aware, indel-complete 5'NCR + 3'NCR (MAFFT X-INS-i seed -> RNAalifold consensus -> hand-RF Stockholm -> cmbuild --hand -> cmalign, full any-overlap population) stitched to the existing codon-aware CDS block from PV{st}_refframe_alignment.fasta.gz (unchanged, reused as-is). See docs/decision-log.md for the full narrative, the empirically-confirmed cmbuild --hand RF-line convention, and validation detail.",
+  "git_sha": "8759574516b036c4309e0ff361fe609c914c2f8d",
+  "population": "accessions with a valid serotype_assigned in the BS0a archive (status=='aligned', serotype_assignable=='TRUE') -- EXACTLY matches build_reference_msa.py's (BS0b's) own scope for the existing CDS ref-frame FASTA; smaller than the raw poliovirus-partition-per-serotype count (curated serotype_sequence) because ~1,326 partition records have no sequence-based serotype_assigned at all (too divergent/fragmentary for BS0a's capsid-based typing) and are already absent from the existing CDS file today.",
+  "hand_rf_convention": "cmbuild --hand reads a GAP CHARACTER in the input #=GC RF line as an INSERT column and any non-gap character as a MATCH/consensus column -- confirmed empirically this session (NOT an upper/lowercase convention, which is unrelated display-side behavior of cmbuild's own auto-inferred RF line).",
+  "validation": "Sabin reference row recovered exactly (100% match, T/U notation aside) at RF match columns across the FULL stitched genome width for all 3 serotypes -- the definitive end-to-end correctness check.",
+  "gap_semantics_caveat": "'-' represents BOTH a genuine deletion at a covered position AND 'this record's block was entirely absent' (zero NCR overlap) -- not distinguished by a separate character. A missing block is always a full contiguous span of '-' across the whole block width, distinct in practice from scattered genuine deletions, but not flagged by dedicated metadata.",
+  "out_of_scope": "LocARNA cross-check (declared out of scope, Mike's decision, 2026-07-23, not deferred); full-scale Infernal homology scan and ensemble/basin test (undecided); oriR 3'NCR tertiary 'kissing' interaction (not captured -- SS_cons reflects secondary structure only).",
+  "per_serotype": {
+    "1": {
+      "n_records": 3732,
+      "alignment_width": 7866,
+      "n_sabin_reference_columns": 7441
+    },
+    "2": {
+      "n_records": 3604,
+      "alignment_width": 8093,
+      "n_sabin_reference_columns": 7439
+    },
+    "3": {
+      "n_records": 1425,
+      "alignment_width": 8094,
+      "n_sabin_reference_columns": 7432
+    }
+  }
+}

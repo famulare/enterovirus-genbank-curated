@@ -1,0 +1,11 @@
+{
+  "genbank_query": "data/genbank/raw/genbank_query.md",
+  "retrieval_date": "2026-05-07",
+  "record_count": 25727,
+  "archive": "data/genbank/raw/sequence.gb.zip",
+  "archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
+  "archive_member": "sequence.gb",
+  "uncompressed_bytes": 144258569,
+  "uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
+  "source_mad_vdpv_commit": "b10763f9592794461eee94a7a36798f48b7503a0"
+}

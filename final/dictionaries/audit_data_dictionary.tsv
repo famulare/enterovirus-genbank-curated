@@ -1,0 +1,54 @@
+table_name	column_name	definition	logical_type	physical_type	nullable	key_role	row_count
+manual_decisions	decision_id	Content-stable decision id (D-<hash>); one per field-level assertion, stable across registry row reordering (P2/F10).	string	string	FALSE	primary key	2753
+manual_decisions	decision_type	Kind of human decision (FK -> controlled_vocabularies decision_type).	string	string	FALSE	FK -> controlled_vocabularies decision_type	2753
+manual_decisions	accession	Unversioned GenBank accession the row concerns.	string	string	TRUE	join key (nullable; blank for accession-less decisions)	2753
+manual_decisions	subject_key	Non-null subject the decision concerns: the accession when present, else the reference/family label for an accession-less decision (Blocking-1). Anchors decision_id.	string	string	FALSE	subject identity (non-null; accession or reference-family label)	2753
+manual_decisions	field_name	The field the decision asserts: the verbatim registry column where the source has one (e.g. classification, specimen_type), or a normalized synthetic assertion for constant-flag registries (e.g. carve_excluded, membership_excluded, is_poliovirus, canonical_reference_available). See DECISION_FIELD_TO_CANONICAL for the canonical effect.	string	string	FALSE		2753
+manual_decisions	old_value	Prior value (not tracked upstream; emitted blank).	string	string	TRUE		2753
+manual_decisions	new_value	Value the decision asserts.	string	string	FALSE		2753
+manual_decisions	reason	Human-entered rationale from the registry file.	string	string	TRUE		2753
+manual_decisions	evidence_reference	Supporting reference (PMID/link/linked sibling) from the registry file.	string	string	TRUE		2753
+manual_decisions	confirmed_by	Who ratified the decision.	string	string	TRUE		2753
+manual_decisions	source_artifact	Registry CSV the decision was read from.	string	string	FALSE		2753
+record_disposition	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	25727
+record_disposition	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per candidate record)	25727
+record_disposition	candidate_query_member	TRUE if the record was in the source GenBank query result set.	string	string	FALSE		25727
+record_disposition	virus_group	dataset partition at disposition time.	string	string	FALSE		25727
+record_disposition	curation_status	vouched/provisional/excluded disposition of this candidate record.	string	string	FALSE		25727
+record_disposition	canonical_included	TRUE if the record appears in canonical; FALSE if excluded.	string	string	FALSE		25727
+record_disposition	exclusion_reason	Reason the record was excluded from canonical, when excluded.	string	string	TRUE		25727
+record_disposition	sequence_sha256	SHA-256 of the nucleotide sequence (renamed from source_record_sha256; F3).	string	string	FALSE	content hash; FK -> source.records.sequence_sha256	25727
+canonical_projection_provenance	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	270006
+canonical_projection_provenance	version	accession.version the row concerns.	string	string	FALSE	composite PK (version, canonical_field)	270006
+canonical_projection_provenance	canonical_field	Canonical column whose provenance this row records.	string	string	FALSE	composite PK (version, canonical_field)	270006
+canonical_projection_provenance	final_value	Value written to the canonical column.	string	string	TRUE		270006
+canonical_projection_provenance	source_field	Upstream curated field the canonical value was projected from.	string	string	FALSE		270006
+canonical_projection_provenance	source_value	Value of that upstream field.	string	string	TRUE		270006
+canonical_projection_provenance	winning_rule_id	Rule id (FK -> rules.rule_id) governing the projection.	string	string	FALSE	FK -> rules.rule_id	270006
+canonical_projection_provenance	evidence_basis	Basis for the value (e.g. name_derived, sequence_derived_confident, canonical_projection).	string	string	FALSE		270006
+canonical_projection_provenance	manual_override	TRUE if any normalized human decision asserts a field aliasing to this canonical column for this accession (P2; DECISION_FIELD_TO_CANONICAL).	string	string	FALSE		270006
+sequence_evidence	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	24546
+sequence_evidence	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per canonical record)	24546
+sequence_evidence	serotype_sequence	Sequence-derived poliovirus serotype (VP1/capsid), independent of the text label.	string	string	TRUE		24546
+sequence_evidence	serotype_sequence_confident	TRUE if the sequence-derived serotype meets the confidence thresholds.	string	string	TRUE		24546
+sequence_evidence	classification_sequence_tier	Sequence-derived classification tier (Sabin-like / VDPV / wild) from divergence-from-Sabin.	string	string	TRUE		24546
+sequence_evidence	classification_sequence_basis	Region the sequence classification was computed on (e.g. VP1).	string	string	TRUE		24546
+sequence_evidence	classification_sequence_vp1_based	TRUE if the sequence classification used VP1 rather than another region.	string	string	TRUE		24546
+sequence_evidence	classification_sequence_divergence_pct	Percent nucleotide divergence from the matched Sabin reference.	string	string	TRUE		24546
+sequence_evidence	classification_sequence_threshold_pct	Divergence threshold applied for the tier call.	string	string	TRUE		24546
+sequence_evidence	sequence_min_capsid_pdist_pct	Minimum capsid nucleotide p-distance to any reference (percent).	string	string	TRUE		24546
+sequence_evidence	sequence_capsid_aa_pdist_pct	Capsid amino-acid p-distance used for membership/typing (percent).	string	string	TRUE		24546
+sequence_evidence	sequence_capsid_aa_compared	Number of capsid codons compared for the AA p-distance.	string	string	TRUE		24546
+sequence_evidence	sequence_vp1_capsid_serotype_agree	TRUE if the VP1- and capsid-derived serotypes agree.	string	string	TRUE		24546
+sequence_evidence	sequence_cds_frameshift_anomaly	TRUE if a CDS frameshift/internal-stop anomaly was detected.	string	string	TRUE		24546
+sequence_evidence	recombinant_junction	TRUE if a Sabin/wild recombination junction was detected.	string	string	TRUE		24546
+sequence_evidence	recombination_breakpoint_ref	Reference-frame coordinate of the detected recombination breakpoint.	string	string	TRUE		24546
+sequence_evidence	sabin_segment_divergence_pct	Divergence (percent) of the Sabin-derived segment when recombinant.	string	string	TRUE		24546
+sequence_evidence	sabin_segment_nt	Length in nt of the Sabin-derived segment when recombinant.	string	string	TRUE		24546
+sequence_evidence	enterovirus_type_sequence	Sequence-derived non-polio enterovirus type (VP1 nucleotide identity).	string	string	TRUE		24546
+sequence_evidence	enterovirus_type_sequence_confident	TRUE if the sequence-derived EV type meets identity/overlap thresholds.	string	string	TRUE		24546
+sequence_evidence	enterovirus_type_basis	Basis for the EV type call (name-derived vs sequence-derived).	string	string	TRUE		24546
+rules	rule_id	Stable rule identifier.	string	string	FALSE	primary key	25
+rules	rule_version	Schema version the rule text is pinned to.	string	string	FALSE		25
+rules	field_name	The canonical field or threshold parameter this rule governs.	string	string	FALSE		25
+rules	description	Human-readable rule statement (thresholds interpolated from code constants).	string	string	FALSE		25

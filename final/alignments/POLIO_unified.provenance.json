@@ -1,0 +1,73 @@
+{
+  "artifact": "POLIO_unified",
+  "description": "All-serotype poliovirus whole-genome Stockholm MSA (anchor-free consensus-RF)",
+  "built_from": "data/genbank/final/curated/poliovirus_metadata_v1.tsv",
+  "n_rows": 9988,
+  "width_nt": 8928,
+  "block_widths": {
+    "5ncr": 746,
+    "cds": 8112,
+    "3ncr": 70
+  },
+  "rows_with_5ncr": 2036,
+  "rows_with_3ncr": 1902,
+  "tiers": {
+    "addon": 1252,
+    "backbone": 8736
+  },
+  "types": {
+    "PV1": 4392,
+    "PV2": 3915,
+    "PV3": 1661,
+    "PV?": 20
+  },
+  "rf": "per-column majority nucleotide per block (consensus reference; NOT the Sabin hand-RF true-coordinate convention of PV{1,2,3}_unified)",
+  "ss_cons": "5'NCR + 3'NCR structure-aware (RNAalifold consensus via cmbuild CM); CDS is all-'.' (protein-coding)",
+  "cds_block": {
+    "block": "cds_codon_msa",
+    "n_rows": 9988,
+    "width_nt": 8112,
+    "width_aa": 2704,
+    "tiers": {
+      "seed": 6,
+      "backbone_rest": 8730,
+      "addon": 1252
+    },
+    "seed_min_aa": 2000,
+    "seed_per_type": 2,
+    "pass1_gap_open": 3.0,
+    "pass2_gap_open": 6.0,
+    "mafft_threads": 8,
+    "seed_mode": "mafft-linsi --anysymbol",
+    "pass1_mode": "mafft --add --op 3.0 (backbone)",
+    "pass2_mode": "mafft --addfragments --op 6.0 (addon, steeper gaps; residues preserved)"
+  },
+  "ncr_block": {
+    "block": "ncr_structural",
+    "sides": {
+      "5p": {
+        "side": "5p",
+        "population": 2036,
+        "seed": 80,
+        "block_width": 746,
+        "block_rows": 2036,
+        "ss_cons_pairs": 35
+      },
+      "3p": {
+        "side": "3p",
+        "population": 1902,
+        "seed": 100,
+        "block_width": 70,
+        "block_rows": 1902,
+        "ss_cons_pairs": 0
+      }
+    }
+  },
+  "md5_sto": "f0abf890071986c7007b7e31c64bc157",
+  "producers": [
+    "build_polio_segmentation.py",
+    "build_polio_cds_codon_msa.py",
+    "build_polio_ncr_structural.py",
+    "build_polio_unified_stockholm.py"
+  ]
+}

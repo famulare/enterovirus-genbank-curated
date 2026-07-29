@@ -1,0 +1,27 @@
+NOTICE — Underlying GenBank data
+
+The nucleotide sequences and associated record metadata normalized and curated in this repository
+originate from GenBank, the NIH genetic sequence database, maintained by the National Center for
+Biotechnology Information (NCBI), U.S. National Library of Medicine.
+
+NCBI/GenBank places no general restriction on the use or redistribution of data in GenBank
+(https://www.ncbi.nlm.nih.gov/genbank/). However, individual data submitters may claim rights
+(e.g., patent rights) in specific submitted sequences or associated information, independent of
+GenBank's own distribution policy. This repository makes no representation as to the copyright or
+other proprietary rights status of any individual underlying GenBank record beyond what NCBI itself
+states, and redistributes the frozen `raw/sequence.gb.zip` snapshot and the curated tables derived
+from it in that spirit: as a faithful, provenance-tracked transformation of public GenBank data, not
+as an assertion of any additional rights over the underlying submitted sequences.
+
+The specific GenBank query that defined this release's candidate record set is recorded in
+`raw/genbank_query.md`. The exact frozen snapshot this release was built from is authenticated
+end-to-end (archive hash, archived member name, member size, and uncompressed content hash) by
+`raw/raw_manifest.json`.
+
+This repository's own curation work — the classification, exclusion, projection, and provenance
+tables in `final/`, and the reference alignments in `final/alignments/` — is original curatorial and
+computational work by the repository's maintainer(s), dedicated to the public domain under
+`LICENSE-DATA` (CC0-1.0). The NOTICE above concerns only the underlying GenBank records themselves.
+
+Please cite this repository if it is useful to your work — see `CITATION.cff`. Citation is a
+request, not a license condition.

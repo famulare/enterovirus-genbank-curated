@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use this dataset, please cite it as below. Citation is a request, not a license condition — see LICENSE-DATA (CC0-1.0)."
+type: dataset
+title: "enterovirus-genbank-curated: a curated, provenance-tracked GenBank Enterovirus sequence database"
+authors:
+  - family-names: Famulare
+    given-names: Mike
+version: "2.1.5"
+date-released: "2026-07-29"
+license: CC0-1.0
+license-url: "https://creativecommons.org/publicdomain/zero/1.0/legalcode"
+keywords:
+  - enterovirus
+  - poliovirus
+  - GenBank
+  - genomic surveillance
+  - curated database
+abstract: >
+  A curated, versioned view of publicly available GenBank Enterovirus sequence data —
+  poliovirus (with Sabin 1/2/3 vaccine reference alignments) and non-polio enterovirus —
+  with epidemiology-first metadata, full field-level curation provenance, and reference
+  multiple-sequence alignments. See README.md for the reproducibility status of this release.

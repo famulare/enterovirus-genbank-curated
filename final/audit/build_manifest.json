@@ -1,0 +1,35 @@
+{
+  "schema_version": "2.1.5",
+  "built": "2026-07-29",
+  "git_sha": "b95b34b981e0047e5bcce6bde35ac902be057b07",
+  "git_tree_clean": true,
+  "source_genbank": "data/genbank/raw/sequence.gb",
+  "source_genbank_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
+  "canonical_rows": 24546,
+  "vouched_rows": 10086,
+  "provisional_rows": 14460,
+  "source_records": 25727,
+  "validation": "PASS",
+  "input_provenance_caveats": [
+    {
+      "stage": "extract_genbank_metadata.py",
+      "frozen_outputs": [
+        "genbank_metadata.csv",
+        "genbank_features.csv",
+        "genbank_project_triage.csv",
+        "legacy_title_key_table.csv",
+        "legacy_accession_classification_overrides.csv"
+      ],
+      "frozen_as_of": "2026-05-27",
+      "issue": "Reads external files not present in this repo (~/Downloads/prepareAlignments/titleList_withKeys_merged.xlsx, amendedClassification.csv). Checked 2026-07-28: those source files no longer exist on disk. The listed outputs are frozen and must be treated as committed inputs-of-record, not regenerable from raw + registry alone, until/unless a future rewrite ports this stage."
+    },
+    {
+      "stage": "reconstruct_archival_wpv1_dates.py",
+      "frozen_outputs": [
+        "legacy_date_location_extract.csv"
+      ],
+      "frozen_as_of": "2026-05-27",
+      "issue": "Reads a sibling repo (iVDPV-vs-cVDPV, a real, separate, still-existing public predecessor project) and another external project (AfgPak-sequence-analysis) by absolute path. Checked 2026-07-28: the referenced genbank_metadata.csv was never present in iVDPV-vs-cVDPV's git history at that path (confirmed via full history search); the other two referenced files (a legacy dated CSV and an R script) do exist on disk in AfgPak-sequence-analysis, but archiving those two alone would not make this stage runnable. The output is frozen and must be treated as a committed input-of-record, not regenerable from raw + registry alone."
+    }
+  ]
+}

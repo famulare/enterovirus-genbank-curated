@@ -1,0 +1,44 @@
+field	value	definition
+virus_group	poliovirus	Poliovirus partition (vouched carve).
+virus_group	non_polio_enterovirus	Non-polio enterovirus partition (provisional).
+curation_status	vouched	Reviewed poliovirus carve; shipped as gold-standard.
+curation_status	provisional	Non-polio EV; typing/classification not vouched.
+curation_status	excluded	Candidate record removed from canonical (see record_disposition; audit only).
+sequence_scope	complete_genome	Whole-genome record.
+sequence_scope	capsid	P1/capsid region.
+sequence_scope	vp1_complete	Complete VP1.
+sequence_scope	vp1_partial	Partial VP1.
+sequence_scope	other_fragment	Non-VP1 or other fragment.
+sequence_scope	unknown	Region not determinable from pipeline record_type.
+collection_date_precision	day	Full YYYY-MM-DD.
+collection_date_precision	month	YYYY-MM.
+collection_date_precision	year	YYYY.
+collection_date_precision	unknown	Precision not determinable, or collection date absent (P3: was observed but undeclared in 2.1.0).
+boolean	TRUE	Boolean true.
+boolean	FALSE	Boolean false.
+decision_type	manual_override	A per-accession manual field override (manual_review_overrides.csv).
+decision_type	carve_exclusion	Confirmed exclusion from the shipped carve (carve_exclusions_confirmed.csv).
+decision_type	membership_exclusion	Confirmed exclusion from the poliovirus-membership set (membership_exclusions_confirmed.csv).
+decision_type	isolate_linkage_approval	Approved isolate-linkage classification (isolate_linkage_manual_verified.csv).
+decision_type	canonical_reference_confirmation	Canonical-reference decision (canonical_reference_confirmed.csv): with a canonical_accession, confirms canonical_reference=TRUE for that accession; accession-less, asserts canonical_reference_available=FALSE for the labeled reference family (e.g. Lansing).
+decision_type	legacy_classification_override	Legacy accession classification override (legacy_accession_classification_overrides.csv).
+decision_type	date_override	Curated collection-date override (date_review_overrides.csv).
+decision_type	membership_confirmation_polio	Confirmed poliovirus membership (membership_poliovirus_confirmed.csv).
+decision_type	membership_confirmation_not_polio	Confirmed non-poliovirus with corrected type (membership_not_poliovirus_confirmed.csv).
+decision_type	polio_recovery_confirmation	Confirmed recovered poliovirus serotype (polio_recovery_confirmed.csv).
+poliovirus_classification	Sabin	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	Sabin-like	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	VDPV	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	VDPV-n	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	cVDPV	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	cVDPV-n	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	defective-interfering particle	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	engineered/lab	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	iVDPV	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	nOPV	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	nOPV-L	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	recombinant/lab	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	reference/lab	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	unresolved	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	vaccine	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	wild	GPLN reconciled poliovirus classification tier (observed value).
