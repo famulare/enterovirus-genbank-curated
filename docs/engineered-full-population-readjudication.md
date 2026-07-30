@@ -120,17 +120,25 @@ The 7 SYN are `MN654096` and `PP068131`–`PP068136`. The 1 VRL is `DQ205099`.
 | # | family | n | what it is | proposed |
 |---|---|---|---|---|
 | A | **Byte-identical re-deposits** | 25 | sha256-identical to a natural VRL reference | all **FALSE** |
-| B | **Verbatim-containment re-deposits** | 6 | contain, or are contained by, a natural genome verbatim + flanking | all **FALSE** |
+| B | **Verbatim-containment re-deposits** | 8 | contain, or are contained by, a natural genome verbatim + flanking | all **FALSE** |
 | C | **MEF-1 / Mahoney lab-stock deposits** | 5 | 4–7 nt from the reference, every difference attested in nature | all **FALSE** |
 | D | **1980s JPO Sabin transcriptions** | 3 | Sabin 1/2/3 with a non-biological C↔G character artifact | all **FALSE** |
 | E | **CAVA cold-adaptation deposits** | 4 | 11 and 24 nt from MEF-1 / Saukett; one unique position each | **FALSE**, flagged (§5) |
 | F | **Genuinely engineered viral constructs** | 9 | AgeI cassette site; recoded-capsid nOPV2; six capsid-swap S19 chimeras | all **TRUE** |
 | G | **Bisulfite-converted reference strings** | 3 | not viruses at all (§6.1) | **TRUE**, but see §6.1 |
+| — | **`DQ205099`**, in no family | 1 | Sabin 2 cDNA clone; the one `VRL` record in the population | **FALSE** (§4) |
 
-25 + 6 + 5 + 3 + 4 + 9 + 3 = 58. **46 FALSE, 12 TRUE** on the evidence alone —
+25 + 8 + 5 + 3 + 4 + 9 + 3 + 1 = 58. **46 FALSE, 12 TRUE** on the evidence alone —
 **42 FALSE / 14 TRUE / 2 open after [Appendix B](#appendix-b-curator-answers-2026-07-29--decided)**,
 which moves family E's `LY501107`/`LZ216102` to TRUE, leaves E's `LY501105`/`LZ216100` open, and
 carve-excludes family G rather than shipping it TRUE.
+
+**Two corrections to this table, 2026-07-30.** It previously gave family B as 6 and omitted
+`DQ205099` entirely, so the stated sum was `25 + 6 + 5 + 3 + 4 + 9 + 3 = 58` — which is **55**. The
+gap was not a typo in the addition: §3B's heading says 6 but its evidence covers **8** patent records
+(`LY501104`/`LZ216099`, `LY501108`/`LZ216103`, `LY501109`/`LZ216104`, `LY501110`/`LZ216105`), and
+§4 marks all eight VH FALSE by containment. Cross-checks against §4: 35 VH FALSE rows decompose as
+family A (25) + family B (8) + `PU749305` + `PU749297`.
 
 ---
 
@@ -518,14 +526,15 @@ natural-occurrence + restriction evidence all concordant, **M** = defensible eit
 | `PP068135` | SYN | 7434 | engineered/lab | TRUE | **TRUE** | MEF-1 capsid swap; all 733 mm in 790–3415 | VH |
 | `PP068136` | SYN | 7432 | engineered/lab | TRUE | **TRUE** | Saukett capsid swap; all 315 mm in 790–3412 | VH |
 
-**Totals on the evidence alone: 46 → FALSE (36 VH, 6 H, 4 M), 12 stay TRUE.**
+**Totals on the evidence alone: 46 → FALSE (35 VH, 7 H, 4 M), 12 stay TRUE.**
 
-**After [Appendix B](#appendix-b-curator-answers-2026-07-29--decided): 42 → FALSE (36 VH, 6 H),
+**After [Appendix B](#appendix-b-curator-answers-2026-07-29--decided): 42 → FALSE (35 VH, 7 H),
 14 stay TRUE, 2 open.** Three corrections to the table above, all from Appendix B:
 
 - **`LY501107`/`LZ216102` read TRUE, not FALSE** (Q1 — directed cold-adaptation selection satisfies
   the revised criterion). They were 2 of the 4 confidence-**M** rows, so the FALSE set's confidence
-  split becomes 36 VH / 6 H / **0 M**.
+  split becomes 35 VH / 7 H / **0 M**. (Extracted programmatically from the table above on
+  2026-07-30; two earlier statements of this split said 36/6, which the table does not support.)
 - **`LY501105`/`LZ216100` are open, not FALSE.** They are the other 2 M rows and the only remaining
   M in the population; not implemented in either direction until the curator rules.
 - **`FV537075`/`FV537076`/`FV537077` are carve-excluded, not TRUE** (Q5). They stay inside the 14
@@ -535,10 +544,11 @@ natural-occurrence + restriction evidence all concordant, **M** = defensible eit
 The flip set that actually lands is therefore **42 + `A09260` = 43 records**.
 
 Label inheritance (Q8), where a flipped record's other fields disagree with its parent's, is
-tabulated in §6.3 — **18 of the 25 byte-identical records** need one or more of
+tabulated in §6.3 — **16 of the 25 byte-identical records** need one or more of
 `poliovirus_classification`/`sample_origin`/`surveillance_stream` moved as well, and two of those
-inheritances are themselves questionable (Q3). (The denominator is the 25 of family A, not the 46
-flips; §6.3 states it correctly and this line previously did not.)
+inheritances are themselves questionable (Q3). Both figures are counted from §6.3's own table:
+16 accessions across its first nine rows need a move, 9 already match, 16 + 9 = 25. Earlier drafts
+said "18 of the 46" (wrong denominator) and then "18 of the 25" (wrong numerator).
 
 **Partly overtaken by concurrent private curation, 2026-07-29.** A separate curation pass in the
 private repository (its commit `f848530`, "Fix 19 patent-deposit reference-strain
@@ -738,7 +748,11 @@ Also, likely omission: `AY082681` (`strain_name='FOX3'`, `cls=vaccine`) is **byt
 `AY082681` does not, that group becomes a new sha256 contradiction of exactly the kind §7 is
 designed to catch.
 
-### 6.3 Label-inheritance deltas for the 46 (Q8 input)
+### 6.3 Label-inheritance deltas for the flip set (Q8 input)
+
+*"The 46" throughout this section and §8.7/§9 means the pre-Appendix-B flip set. The decided set is
+**42**, plus `A09260`; see [Appendix B](#appendix-b-curator-answers-2026-07-29--decided). The
+per-record content below is unaffected — only the count is.*
 
 Of the 25 byte-identical records, 18 disagree with their parent on at least one of
 `poliovirus_classification` / `sample_origin` / `surveillance_stream`:
@@ -876,7 +890,8 @@ no floor, explicit allowlist.**
 
 Nothing anywhere currently pins the number of `engineered=TRUE` records (the prior report's R4
 finding). Add pinned expectations for: total `engineered=TRUE` (543 today), `engineered=TRUE` at
-≥3000 nt (58 today → **14 proposed**, per Appendix B; 12 on the evidence alone), and `PAT`-division
+≥3000 nt (58 today → **13 proposed**: the 14 that stay TRUE minus the 3 carve-excluded, plus the 2
+still open, which currently ship TRUE — 11 if the open pair resolves FALSE), and `PAT`-division
 records shipping TRUE (506 today). Those three numbers moving silently is what made a
 full-population re-adjudication necessary.
 
@@ -999,38 +1014,50 @@ records; union (3 overlap) → **113 records**. Current rule: **954**. So the ru
 
 **Canonical layer** (the shipped 24,546):
 
+**Re-measured 2026-07-30 against the shipped release and the active ledger.** Two earlier versions
+of this table were derived rather than measured, and both were wrong — see the correction note below.
+The predicate after the rewrite is `structurally reachable OR curated TRUE`, so the population that
+survives is the union of those two sets, and it is measurable directly:
+
 | | count |
 |---|---|
 | ships TRUE today | **543** |
 | reachable by the new structured signal | **12** |
-| — of which the 7 genuine polio constructs | `MN654096` `PP068131` `PP068132` `PP068133` `PP068134` `PP068135` `PP068136` |
-| — of which 70-nt `synthetic construct` PAT oligos | `JA792237` `JA792238` `JA792249` `JA792250` `JA792251` |
-| need an explicit TRUE ledger row to hold TRUE | **4** — `CS406483` `PU749298` `LY501107` `LZ216102` |
-| **TRUE after the change** | **16** |
-| **carve-excluded rather than valued** | **3** — `FV537075` `FV537076` `FV537077` |
-| **flip TRUE→FALSE** | **524** |
+| — the 7 genuine polio constructs | `MN654096` `PP068131`–`PP068136` |
+| — 70-nt `synthetic construct` PAT oligos | `JA792237` `JA792238` `JA792249` `JA792250` `JA792251` |
+| already held by an **active curated TRUE row** | **21** |
+| — correctly, per Appendix B | `PP068131`–`PP068136`, `LY501107`, `LZ216102`, `JN105289`–`JN105295` (15) |
+| — **contradicting this report**, so they need *retiring* | `AJ512791` `AJ512792` (Q8→FALSE), `DD214215` `DD214221` (§4→FALSE) |
+| — outside this report's population, unadjudicated | `JC013129` (179 nt), `MA400487` (672 nt) |
+| union — **TRUE after the change** | **27** |
+| carry an active curated **FALSE** row while shipping TRUE | **3** — `CS406436` `CS406482` `CS406483` |
+| **flip TRUE→FALSE** | **516** |
 
-**Revised by Appendix B; the original row is preserved here because the arithmetic matters.** The
-held-TRUE list first read *5 — `CS406483` `PU749298` `FV537075` `FV537076` `FV537077`*, giving 17
-TRUE and 526 flips. Two changes:
+**Correction, and it matters more than the numbers.** This table twice claimed
+`LY501107`/`LZ216102` "need an explicit TRUE ledger row to hold TRUE", calling that a trap the rule
+rewrite would fall into. **They already have active TRUE rows**, migrated from
+`manual_review_overrides.csv` — the applied source of truth. So do `JN105289`–`JN105295`, which the
+previous count treated as flips even though Q1 decides them TRUE. The stated held-TRUE set of 4 was
+wrong on three of its four members:
 
-- `FV537075`/`FV537076`/`FV537077` do **not** need a TRUE ledger row. Q5 carve-excludes them from
-  `final/` with a recorded reason, so they carry no `engineered` value at all. Note the knock-on:
-  `FV537076`/`FV537077` are a byte-identical PAT pair forming one of Invariant A's 178 constrained
-  groups, so carve-excluding them moves that pin to **177 groups / 372 records**.
-- `LY501107`/`LZ216102` **do** need one (Q1, directed selection). They are PAT-division and not
-  reachable by `division == "SYN"` or `organism == "synthetic construct"`, so without an explicit
-  ledger row the rewritten rule would flip them to FALSE — which is exactly the failure the "reason
-  and rule agree" check below was meant to catch, and it would have been missed.
+- `LY501107`, `LZ216102` — already held. No action.
+- `CS406483` — has an active **FALSE** row, which the re-adjudication says is wrong (unique AgeI
+  site). Needs **correcting**, not adding.
+- `PU749298` — genuinely has no row. This is the only one of the four that needed adding.
+
+The general lesson is the D2 lesson again, pointed the other way: it is not enough to reason about
+what curation *ought* to say, because the applied artifact may already say something else. Check the
+ledger. `FV537075`–`FV537077` do **not** need a row either — Q5 carve-excludes them, so they carry no
+value at all; the knock-on is that dropping all three moves the pins to **177 groups / 372 records**
+and `EXPECTED_SCOPED_RECORDS` 513 → **510**.
 
 Every one of the 12 structurally-reachable records currently ships TRUE, so **the new rule creates
-zero new TRUEs** — it only removes. And all of my §4 "stays TRUE" records are reachable: 7 by
-`division=SYN`, the rest by explicit curation. The rule and the hand adjudication agree exactly,
-which is the check I most wanted to pass. (Post-Appendix-B that is 7 by `division=SYN` + 4 by
-explicit curation, with 3 carve-excluded; the agreement still holds, but only because
-`LY501107`/`LZ216102` were added to the explicit set — see the revision note above.)
+zero new TRUEs** — it only removes. All of §4's "stays TRUE" records survive: 7 structurally, the
+rest by curation rows that already exist. The rule and the hand adjudication agree — but note that
+agreement now rests on four rows that need *changing* (three FALSE→retired-or-TRUE, one added), not
+on rows that need writing from scratch.
 
-**Blast-radius honesty — 478 of the 524 flips are unadjudicated by me.** This is the single most
+**Blast-radius honesty — 473 of the 516 flips are unadjudicated by me.** This is the single most
 important caveat in the report and it is deliberately not in the headline summary, so read it here:
 **this report adjudicated 58 of the 543 records shipping TRUE.** The remaining 485 are not covered
 by any per-record judgement, and the rule rewrite flips almost all of them mechanically. That is the
@@ -1122,7 +1149,7 @@ the residual while removing only 4.
    `:725` for non-polio records, which is why the CVA11 quartet ships `not_applicable`), but it is
    what will keep re-deriving `engineered/lab` for `DQ205099` and `HV202313` after their
    `engineered` rows are patched, unless the ledger rows also set `sampling_frame`. **Any ledger patch
-   for the 46 must set `sampling_frame` explicitly, or line 727 must change too.**
+   for the flip set must set `sampling_frame` explicitly, or line 727 must change too.**
 3. **`review_genbank_reference_or_construct.csv` records `evidence = "No named reference strain in
    GenBank text"` for the S19 six** — i.e. the review queue's own evidence field says the opposite of
    what the six records' reference title says ("Six New S19 Poliovirus **Reference Strains**"). Not
@@ -1164,7 +1191,7 @@ recommendation is to correct the reason regardless, and to hold the conclusion u
 since Q1 decides it.
 
 **Q3. When a re-deposit's parent is a field isolate, what `surveillance_stream` does it inherit?**
-Q8 said `vaccine/reference` for the Sabin/MEF-1/patent re-deposits. But three of the 46 have parents
+Q8 said `vaccine/reference` for the Sabin/MEF-1/patent re-deposits. But three of the flip set have parents
 that are **AFP/clinical field isolates**: `DD214218` (parent `K01392`, PV3 Leon/37) and
 `PE314016`/`PH149759` (parent `AF111984`, wild PV1 CHN-Jiangxi/89-1, `AFP/clinical`). Literally
 inheriting the reference's label would create three fake AFP surveillance records out of patent
@@ -1214,7 +1241,7 @@ checking.
 **Q7. Do you want `A09260` added to this flip set?**
 It is a 900-nt PAT VP1 fragment, byte-identical to **234 natural Sabin-like records**, shipping TRUE
 against their FALSE. It is the twelfth and only sub-3000-nt failure of Invariant B, and it is exactly
-the same class of re-deposit as the 46. Including it makes Invariant B land green with an **empty**
+the same class of re-deposit as the flip set. Including it makes Invariant B land green with an **empty**
 allowlist; excluding it means the invariant needs an allowlist entry on day one. I did not include it
 in the 58 because it is below the length cut, not because it differs in kind.
 

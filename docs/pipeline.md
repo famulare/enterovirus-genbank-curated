@@ -138,7 +138,7 @@ ways.** Corrected 2026-07-29 after a full-population re-adjudication
    flip ~478 unadjudicated records mechanically. `CS406433` (2,745 nt, same patent family as the D2
    trio, verbatim Sabin 2 substring) sits just under the floor and is backlog item B1.
 2. **Not one field.** Taking the reference's label also moves `poliovirus_classification`,
-   `sample_origin` and `surveillance_stream` on 18 of the 25 byte-identical records. Separately,
+   `sample_origin` and `surveillance_stream` on 16 of the 25 byte-identical records. Separately,
    `classification` already disagrees on six records nobody documented (`AJ416942`, `DQ205099`,
    `FJ517648`, `KR259356`, `KR259357`, `KX162685`) — that field feeds reconciliation, so a mismatch
    there is not automatically an error, but it was never true that the disagreement was one field.
@@ -166,10 +166,14 @@ with a recorded reason, not to ship them as TRUE. Current counts are pinned in
 [`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py) so that none of these
 numbers can move silently again, which is how the delta grew unnoticed in the first place.
 
-Of those eleven, only four need an explicit TRUE curation row to survive the rule rewrite —
-`CS406483`, `PU749298`, `LY501107`, `LZ216102`. The other seven are reachable structurally by
-`division == "SYN"`. `LY501107`/`LZ216102` are the trap: they are `PAT`-division, so without a row
-the rewritten rule would silently flip them to FALSE.
+Of those eleven, seven are reachable structurally by `division == "SYN"`. Of the remaining four,
+**three already carry active curation rows** — `LY501107` and `LZ216102` hold TRUE (migrated from
+`manual_review_overrides.csv`), and `CS406483` holds **FALSE**, which the re-adjudication says is
+wrong and which therefore needs *correcting* rather than adding. Only `PU749298` has no row at all.
+
+An earlier version of this paragraph called `LY501107`/`LZ216102` a trap the rewrite would fall
+into. They were already held. That mistake is the D2 lesson pointed the other way: reasoning about
+what curation ought to say is not a substitute for reading what the applied artifact already says.
 
 **A concurrent private curation pass has partly overtaken point 2.** The private repository's
 commit `f848530` moved `poliovirus_classification` / `sample_origin` / `surveillance_stream` on six
