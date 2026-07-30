@@ -6,9 +6,9 @@ only one that needs to change. Nothing else under `site/pipeline/` may hardcode 
 path into `final/` or a canonical column name.
 
 One upstream change is expected and is marked `# UPCOMING:` below — an added
-date-range field. `collection_date` is expected to stay canonical, holding the value as
-GenBank recorded it, so `traits.parse_collection_date` is the permanent way this site
-gets a plottable date rather than a stopgap awaiting normalization.
+date-range field. Whether `collection_date` is normalized to ISO is undecided, and
+`traits.parse_collection_date` does not depend on the answer: it reads both the ISO
+shapes and the ones GenBank records verbatim.
 """
 
 from __future__ import annotations
@@ -98,10 +98,12 @@ CANONICAL_COLUMNS = (
 # UPCOMING: an added date-range field will appear here. Add it to CANONICAL_COLUMNS
 # and, if it should be colorable, to TRAITS.
 #
-# `collection_date` stays canonical — the value as GenBank recorded it, `Oct-2010` and
-# `2020/2021` included. So the parsed decimal year in traits.py is a permanent derived
-# field, not a stopgap, and the record inspector labels it as derived beside the raw
-# value rather than quietly replacing it.
+# Whether `collection_date` gets normalized to ISO is undecided — it may stay as GenBank
+# recorded it, `Oct-2010` and `2020/2021` included. Nothing here rests on that. The
+# parser in traits.py reads both shapes, so the derived decimal year is correct either
+# way: if the column is normalized it simply agrees with the raw value, and if it is not
+# it keeps doing the work. The record inspector labels it as derived beside the raw
+# value rather than replacing it, which is right under either outcome.
 
 GROUP_POLIO = "poliovirus"
 GROUP_NPEV = "non_polio_enterovirus"

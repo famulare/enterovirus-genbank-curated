@@ -8,7 +8,7 @@
     "records.json": "5b7a10279f154a874f5fedb82341860c730a8f3b1ed86325a4256afeb166563c",
     "summary.json": "855ad5b7c3951fa55be3de8e9b217ba9ff8a79daf93c99b53ae2d504df7a8413"
   },
-  "build_identity": "src-e39f92d3a8f1d989",
+  "build_identity": "src-8dc95cd0c6c68a3e",
   "inputs": {
     "final/alignments/EV_unified.provenance.json": "680a0830cb2cd29cdcc353924d3cb67e45ed42303c78cd76b9411bb9797fb3ad",
     "final/alignments/EV_unified.sto.gz": "32600d33fada27ea6ea8f9675d59c9247659512d00e2612a9a248c27f19375cf",
@@ -27,7 +27,7 @@
   "schema": 1,
   "sources": {
     "site/pipeline/cli.py": "d2cd949179b9f9af829ab160caaa6756584a11e65a3e11fd2fcf0c6b3aada652",
-    "site/pipeline/contract.py": "e0c825fbdd912d8ef05c880b8c045067ad69062f61fe258950d151708b662844",
+    "site/pipeline/contract.py": "393916b97eb7dcd156446cdb82ebf74b2f2977e1525e3e552da5184042d8b175",
     "site/pipeline/distances.py": "77223dfa183da0d408720b6f01dfa456c57b039b9c00b06e8ce2a6ea24ccda8b",
     "site/pipeline/divergence.py": "17700ff9c189114669586d089592b96d1c00ae2faec22c0ec57d7b36f9cf9b3c",
     "site/pipeline/embed.py": "2ca31f99667badc9de8e64dd702d5d87e97edc65df94507c98c6af59d65c9f1e",
