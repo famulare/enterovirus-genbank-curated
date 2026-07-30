@@ -91,8 +91,12 @@
         <div class="legend" id="divergence-legend"></div>
       </div>
       <div class="readout" id="divergence-readout" role="status"></div>
-      <div class="detail" id="divergence-detail"></div>
     </div>
+    <!-- One pinned-record inspector for the whole page. Pinning is cross-chapter — the
+         same record highlights in every figure — so a per-chapter block rendered the
+         same record twice. It lives after the first figure and reports what every
+         figure measured. -->
+    <div class="detail" id="record-detail"></div>
     <p class="warning">This is an uncorrected count-based similarity metric. It is not dN/dS, it
       applies no per-site normalization and no multiple-hit correction, and it is not an
       evolutionary rate.</p>
@@ -123,7 +127,6 @@
         <div class="legend" id="distance-legend"></div>
       </div>
       <div class="readout" id="distance-readout" role="status"></div>
-      <div class="detail" id="distance-detail"></div>
     </div>
     <p class="warning">Both axes are scaling coordinates, not measured quantities: their units
       are arbitrary, their signs are fixed only by convention, and only relative position carries

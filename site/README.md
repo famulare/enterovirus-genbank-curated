@@ -135,6 +135,12 @@ name is declared there once. Two changes are already expected and are marked
 field. A `# SWITCHOVER:` note marks where the derived species trait moves to a
 native canonical column once one exists.
 
+`collection_date` stays canonical, holding the value as GenBank recorded it, so the
+parsed decimal year is a permanent derived field rather than a stopgap. The record
+inspector shows both, the derived one tagged and separately labelled — they were briefly
+two rows called "Collection date" with different values, which is worse than either
+alone.
+
 ## Deviations from the scientific-page-style kit
 
 The kit is at `~/git/famulare/my_environments/web/scientific-page-style/` and is

@@ -14,6 +14,8 @@ export type Column =
 export interface RecordTable {
   schema: number;
   n: number;
+  /** Column names this site computed rather than read from the release. */
+  derived: string[];
   accession: string[];
   manual_decision: number[];
   columns: Record<string, Column>;
@@ -25,6 +27,7 @@ export const RECORDS_SCHEMA = 1;
 export class Records {
   private readonly table: RecordTable;
   private readonly decided: Set<number>;
+  private readonly derivedFields: Set<string>;
 
   constructor(table: RecordTable) {
     if (table.schema !== RECORDS_SCHEMA) {
@@ -35,6 +38,7 @@ export class Records {
     }
     this.table = table;
     this.decided = new Set(table.manual_decision);
+    this.derivedFields = new Set(table.derived ?? []);
   }
 
   get size(): number {
@@ -92,11 +96,25 @@ export class Records {
     return counts;
   }
 
-  /** Every canonical field of one record, in declared order, for the detail view. */
-  detail(row: number): { field: string; label: string; value: string }[] {
-    const out = [{ field: "accession", label: this.label("accession"), value: this.accession(row) }];
+  /** Every field of one record, in declared order, for the detail view. `derived`
+   *  marks a value this site computed rather than read, so the inspector can label it
+   *  as such instead of listing it among the release's own fields. */
+  detail(row: number): { field: string; label: string; value: string; derived: boolean }[] {
+    const out = [
+      {
+        field: "accession",
+        label: this.label("accession"),
+        value: this.accession(row),
+        derived: false,
+      },
+    ];
     for (const field of this.fields) {
-      out.push({ field, label: this.label(field), value: this.text(field, row) });
+      out.push({
+        field,
+        label: this.label(field),
+        value: this.text(field, row),
+        derived: this.derivedFields.has(field),
+      });
     }
     return out;
   }

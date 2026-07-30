@@ -53,13 +53,15 @@ export function buildScale(
   trait: Trait,
   rows: number[],
   valueFor?: (row: number) => string,
+  /** For a trait that is not a record column — a per-panel measurement, say. */
+  numberFor?: (row: number) => number | null,
 ): Scale {
   if (trait.kind === "continuous") {
     let min = Infinity;
     let max = -Infinity;
     let missing = 0;
     for (const row of rows) {
-      const value = records.number(trait.id, row);
+      const value = numberFor ? numberFor(row) : records.number(trait.id, row);
       if (value === null) missing += 1;
       else {
         if (value < min) min = value;
@@ -110,9 +112,15 @@ export function buildScale(
 }
 
 /** Fill color for one record under a scale. */
-export function colorOf(scale: Scale, records: Records, row: number, raw?: string): string {
+export function colorOf(
+  scale: Scale,
+  records: Records,
+  row: number,
+  raw?: string,
+  numeric?: number | null,
+): string {
   if (scale.kind === "continuous") {
-    const value = records.number(scale.trait.id, row);
+    const value = numeric !== undefined ? numeric : records.number(scale.trait.id, row);
     if (value === null) return palette.NO_VALUE_COLOR;
     const span = scale.max - scale.min;
     return palette.viridis(span === 0 ? 0.5 : (value - scale.min) / span);
@@ -125,11 +133,16 @@ export function colorOf(scale: Scale, records: Records, row: number, raw?: strin
 
 /** Glyph for one record. Continuous scales use one glyph throughout; the ramp is
  *  already doing the encoding, and varying shape would imply a second variable. */
-export function glyphOf(scale: Scale, records: Records, row: number, raw?: string): palette.Glyph {
+export function glyphOf(
+  scale: Scale,
+  records: Records,
+  row: number,
+  raw?: string,
+  numeric?: number | null,
+): palette.Glyph {
   if (scale.kind === "continuous") {
-    return records.number(scale.trait.id, row) === null
-      ? palette.MISSING_GLYPH
-      : "circle";
+    const value = numeric !== undefined ? numeric : records.number(scale.trait.id, row);
+    return value === null ? palette.MISSING_GLYPH : "circle";
   }
   const value = raw ?? records.text(scale.trait.id, row);
   if (!value) return palette.MISSING_GLYPH;

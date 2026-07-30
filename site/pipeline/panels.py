@@ -69,6 +69,10 @@ def build_selection(
         keep = panel["row"]
         panels[region] = {
             "record": [record_rows[index] for index in keep],
+            # Unambiguous nucleotides this record carries in this region. A property of
+            # record x region rather than of either figure, but shipped per block
+            # because the two figures keep different row sets per region.
+            "coverage": _ints(frame.coverage(alignment, columns[region])[rows][keep]),
             "comparable": _ints(panel["comparable"]),
             "assessable": _ints(panel["assessable"]),
             "synonymous": _ints(panel["synonymous"]),
@@ -91,6 +95,7 @@ def build_selection(
         keep = placed["row"]
         distance[region] = {
             "record": [record_rows[index] for index in keep],
+            "coverage": _ints(frame.coverage(alignment, columns[region])[rows][keep]),
             "resolved": _ints(placed["resolved"]),
             "thin": [int(i) for i, ok in enumerate(placed["confident"]) if not ok],
             "landmarks": placed["landmarks"],
