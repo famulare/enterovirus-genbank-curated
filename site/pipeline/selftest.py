@@ -474,7 +474,7 @@ def square_root_never_worsens_the_geometry() -> None:
 def _additive_matrix() -> tuple[np.ndarray, list[str]]:
     """Pairwise path lengths through a tree written out by hand.
 
-    Neighbour joining is provably exact on an additive matrix, so this is the check
+    Neighbor joining is provably exact on an additive matrix, so this is the check
     that distinguishes a correct implementation from one that merely returns a tree.
     """
     edges = {
@@ -499,9 +499,9 @@ def _additive_matrix() -> tuple[np.ndarray, list[str]]:
             node, total, seen = stack.pop()
             if node == end:
                 return total
-            for neighbour, length in adjacency[node]:
-                if neighbour not in seen:
-                    stack.append((neighbour, total + length, seen | {neighbour}))
+            for neighbor, length in adjacency[node]:
+                if neighbor not in seen:
+                    stack.append((neighbor, total + length, seen | {neighbor}))
         raise AssertionError("disconnected")
 
     tips = ["A", "B", "C", "D", "E", "F"]
@@ -520,9 +520,9 @@ def _paths_through(tree: trees.Unrooted) -> np.ndarray:
             node, total, seen = stack.pop()
             if node == end:
                 return total
-            for neighbour, length in adjacency[node]:
-                if neighbour not in seen:
-                    stack.append((neighbour, total + length, seen | {neighbour}))
+            for neighbor, length in adjacency[node]:
+                if neighbor not in seen:
+                    stack.append((neighbor, total + length, seen | {neighbor}))
         raise AssertionError("disconnected")
 
     n = tree.n_tips
@@ -533,9 +533,9 @@ def tree_cases() -> None:
     print("\ntree cases")
 
     truth, tips = _additive_matrix()
-    tree = trees.neighbour_join(truth)
+    tree = trees.neighbor_join(truth)
     error = float(np.abs(_paths_through(tree) - truth).max())
-    check(error < 1e-9, f"neighbour joining recovers an additive tree exactly ({error:.1e})")
+    check(error < 1e-9, f"neighbor joining recovers an additive tree exactly ({error:.1e})")
     check_equal(tree.n_tips, len(tips), "every tip survives the join")
     check_equal(
         len(tree.edges), 2 * len(tips) - 3, "an unrooted binary tree has 2n-3 edges"
@@ -545,14 +545,14 @@ def tree_cases() -> None:
     check_equal(negative, 0, "an additive tree needs no clamping")
 
     # Determinism, because the trees are committed behind a hash gate: a rebuild that
-    # reordered two equidistant neighbours would look like a data change.
+    # reordered two equidistant neighbors would look like a data change.
     check(
-        trees.neighbour_join(truth).edges == tree.edges,
+        trees.neighbor_join(truth).edges == tree.edges,
         "the same matrix yields the same tree twice",
     )
     star = np.ones((8, 8)) - np.eye(8)
     check(
-        trees.neighbour_join(star).edges == trees.neighbour_join(star).edges,
+        trees.neighbor_join(star).edges == trees.neighbor_join(star).edges,
         "tie-breaking is deterministic when every distance is equal",
     )
 

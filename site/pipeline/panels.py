@@ -66,7 +66,7 @@ def resolve_population(
     accessions = [alignment.ids[index] for index in rows]
 
     # Rows whose accession is absent from the canonical table cannot be shown: the
-    # figure has nothing to colour or label them with. Counted, never silently kept.
+    # figure has nothing to color or label them with. Counted, never silently kept.
     placed = np.array(
         [index for index, accession in enumerate(accessions) if accession in record_index],
         dtype=np.int64,

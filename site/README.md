@@ -21,7 +21,7 @@ hash, so any view is a shareable link.
 - **Set 2, distance** — classical multidimensional scaling of pairwise nucleotide
   distance, over five regions including both non-coding ones, which it can reach
   because it needs no reading frame.
-- **Set 3, nucleotide phylogeny** — neighbour joining on those same distances, over the
+- **Set 3, nucleotide phylogeny** — neighbor joining on those same distances, over the
   same five regions.
 - **Set 4, protein distance** — set 2 again in residue space, for the three coding
   regions. Read against set 2: structure that survives translation is structure in the
@@ -46,7 +46,7 @@ excluded from this rule: clipping a tip would leave its branch running off the p
 
 A tree is a scatter with a link layer: x is distance from the root, y is position in the
 ladder, and one mark per tip. That is why the trees reuse the component rather than
-getting one of their own — the colour scale, legend, hover, brush, pin and keyboard
+getting one of their own — the color scale, legend, hover, brush, pin and keyboard
 traversal are all the same code, and a reader does not relearn the controls between
 chapters. What a tree adds is an ordinal vertical axis, which carries no ticks because a
 place in a ladder is not a quantity, and a taller panel.
@@ -72,7 +72,7 @@ the variance is spread across dimensions that genuinely exist.
 
 ### Sets 3 and 5: not every sequence can be on a tree
 
-Neighbour joining needs a distance for every pair, and pairwise deletion does not
+Neighbor joining needs a distance for every pair, and pairwise deletion does not
 supply one — two fragments covering disjoint parts of a region share no columns, so
 their distance does not exist. The tips are therefore
 `distances.comparable_set`: the largest mutually-comparable set a greedy finds,
@@ -91,7 +91,7 @@ embedded 409.
 Branch lengths are observed differences per position compared, in the same
 uncorrected currency as the rest of the site. No substitution model is applied, so a
 long branch is a statement about observed difference and nothing more. Negative
-branches — which neighbour joining produces routinely, because real distances are not
+branches — which neighbor joining produces routinely, because real distances are not
 exactly additive — are clamped to zero and the count is reported on the figure.
 
 Rooting is on Sabin for the poliovirus selections and for `all`, at the midpoint of
@@ -120,12 +120,11 @@ To review locally:
 npm --prefix site run serve
 ```
 
-There is deliberately no third toolchain. An earlier plan built `decenttree` from
+I keep this to two toolchains. An earlier plan built `decenttree` from
 source for the trees; the implementation in [`pipeline/trees.py`](pipeline/trees.py)
-replaced it. Neighbour joining is forty lines of deterministic arithmetic rather than a
-heuristic search, and two things decided it. A fresh clone needs no bioinformatics
-toolchain at all — which matters most on the machine where Homebrew has a non-standard
-prefix and builds from source. And the artifacts are committed behind a hash gate, so a
+replaced it. Neighbor joining is forty lines of deterministic arithmetic rather than a
+heuristic search, and I chose it for two reasons. A fresh clone needs no bioinformatics
+toolchain at all. And the artifacts are committed behind a hash gate, so a
 rebuild has to reproduce the same tree bit for bit, which a multithreaded tool's
 tie-breaking will not promise. `selftest` asserts both the exactness (an additive
 matrix is recovered to 2e-16) and the determinism (identical trees across runs,
@@ -138,7 +137,7 @@ That is the right trade for a step that runs on one machine and ships its output
 ## Why the data is committed rather than built on deploy
 
 Distances are cheap (~30 s for the full 24,038² masked-Hamming matrix), but forty
-neighbour joins are not, and neither has any business running in a Pages workflow on
+neighbor joins are not, and neither has any business running in a Pages workflow on
 every deploy. So the derived artifacts under `site/data/` are committed, and
 `.github/workflows/ci.yml` runs
 
@@ -191,7 +190,7 @@ native canonical column once one exists.
 Whether `collection_date` gets normalized to ISO upstream is undecided, and nothing here
 rests on the answer: `traits.parse_collection_date` reads both the ISO shapes and the
 ones GenBank records verbatim, so the derived decimal year is correct either way. The
-record inspector shows both values, the derived one tagged and separately labelled — they
+record inspector shows both values, the derived one tagged and separately labeled — they
 were briefly two rows called "Collection date" with different values, which is worse than
 either alone.
 

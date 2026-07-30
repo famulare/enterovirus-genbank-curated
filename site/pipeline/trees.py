@@ -1,4 +1,4 @@
-"""Figure sets 3 and 4: neighbour-joining trees over the same pairwise distances.
+"""Figure sets 3 and 4: neighbor-joining trees over the same pairwise distances.
 
 The distances are the ones `distances.py` already defines — mismatches over the
 positions where both sequences carry readable material, pairwise, with a length
@@ -9,7 +9,7 @@ number.
 Two things follow from that shared definition and are worth stating plainly.
 
 **Not every sequence can be on a tree.** Pairwise deletion leaves some pairs with no
-comparable positions at all, and neighbour joining needs a complete matrix. So the tips
+comparable positions at all, and neighbor joining needs a complete matrix. So the tips
 are `distances.comparable_set` — the largest mutually-comparable set the greedy finds,
 capped for cost — and every panel reports how many sequences that left off.
 
@@ -18,7 +18,7 @@ currency as the rest of the site: observed differences per position compared. Th
 not substitutions per site, not time, and not corrected for multiple hits, so a long
 branch is a statement about observed difference and nothing more.
 
-Neighbour joining is implemented here rather than shelled out to decenttree or rapidNJ.
+Neighbor joining is implemented here rather than shelled out to decenttree or rapidNJ.
 It is forty lines of deterministic arithmetic, not a heuristic search, and the two
 properties that decided it are that a fresh clone needs no bioinformatics toolchain at
 all, and that the committed artifacts are hash-gated — so a rebuild has to reproduce
@@ -35,7 +35,7 @@ import contract
 import distances
 import frame
 
-# Tips per tree. Neighbour joining is O(n^3) — 1,500 tips takes 2 s, 2,500 takes 10 s,
+# Tips per tree. Neighbor joining is O(n^3) — 1,500 tips takes 2 s, 2,500 takes 10 s,
 # 4,000 would take a minute — and forty trees are built per release. 2,500 is also past
 # the point where a 900 px panel resolves individual tips, so a larger tree would cost
 # build time to draw marks on top of each other.
@@ -44,7 +44,7 @@ TIP_CAP = 2500
 
 @dataclass
 class Unrooted:
-    """Neighbour joining's own output: an unrooted tree as a list of weighted edges.
+    """Neighbor joining's own output: an unrooted tree as a list of weighted edges.
     Tips are nodes `0..n_tips-1`; internal nodes follow."""
 
     n_tips: int
@@ -61,21 +61,21 @@ class Rooted:
     children: list[list[int]] = field(default_factory=list)
 
 
-def neighbour_join(distance: np.ndarray) -> Unrooted:
-    """Saitou-Nei neighbour joining.
+def neighbor_join(distance: np.ndarray) -> Unrooted:
+    """Saitou-Nei neighbor joining.
 
     Deterministic: ties in the Q criterion are broken by position in the working
     matrix, whose evolution is itself a deterministic function of the input, so the
     same matrix always yields the same tree. That matters more here than it usually
     does — the trees are committed artifacts behind a hash gate, so a rebuild that
-    reordered two zero-length neighbours would show up as a spurious data change.
+    reordered two zero-length neighbors would show up as a spurious data change.
 
     The working matrix shrinks in place rather than being masked, which turns the total
     work from n * n^2 into the sum of k^2 over the merges.
     """
     n = int(len(distance))
     if n < 3:
-        raise ValueError(f"neighbour joining needs at least 3 tips, got {n}")
+        raise ValueError(f"neighbor joining needs at least 3 tips, got {n}")
 
     working = np.array(distance, dtype=np.float64, copy=True)
     node = np.arange(n, dtype=np.int64)
@@ -120,7 +120,7 @@ def neighbour_join(distance: np.ndarray) -> Unrooted:
 def clamp_negative(tree: Unrooted) -> tuple[Unrooted, int, float]:
     """Negative branch lengths set to zero, and how much was removed.
 
-    Neighbour joining produces them routinely: the formula distributes a pair's
+    Neighbor joining produces them routinely: the formula distributes a pair's
     distance between two branches and can hand one of them a negative share when the
     distances are not exactly additive, which real ones never are. Setting them to zero
     is the standard remedy. Reported rather than hidden, because a panel with a lot of
@@ -153,14 +153,14 @@ def _farthest(adjacency: list[list[tuple[int, float]]], start: int) -> tuple[int
     best, best_distance = start, 0.0
     while stack:
         current = stack.pop()
-        for neighbour, length in adjacency[current]:
-            if neighbour in total:
+        for neighbor, length in adjacency[current]:
+            if neighbor in total:
                 continue
-            total[neighbour] = total[current] + length
-            came_from[neighbour] = current
-            if total[neighbour] > best_distance:
-                best, best_distance = neighbour, total[neighbour]
-            stack.append(neighbour)
+            total[neighbor] = total[current] + length
+            came_from[neighbor] = current
+            if total[neighbor] > best_distance:
+                best, best_distance = neighbor, total[neighbor]
+            stack.append(neighbor)
     return best, best_distance, came_from
 
 
@@ -194,14 +194,14 @@ def _root_on_edge(tree: Unrooted, a: int, b: int, from_a: float) -> Rooted:
     stack = [root]
     while stack:
         current = stack.pop()
-        for neighbour, branch in adjacency[current]:
-            if neighbour in seen:
+        for neighbor, branch in adjacency[current]:
+            if neighbor in seen:
                 continue
-            seen.add(neighbour)
-            parent[neighbour] = current
-            length[neighbour] = branch
-            children[current].append(neighbour)
-            stack.append(neighbour)
+            seen.add(neighbor)
+            parent[neighbor] = current
+            length[neighbor] = branch
+            children[current].append(neighbor)
+            stack.append(neighbor)
 
     return Rooted(n_tips=tree.n_tips, root=root, parent=parent, length=length, children=children)
 
@@ -236,15 +236,15 @@ def midpoint_root(tree: Unrooted) -> Rooted:
     while came_from[walk[-1]] != -1:
         walk.append(came_from[walk[-1]])
 
-    travelled = 0.0
+    traveled = 0.0
     for index in range(len(walk) - 1):
         here, following = walk[index], walk[index + 1]
         step = next(
             length for x, y, length in tree.edges if {x, y} == {here, following}
         )
-        if travelled + step >= diameter / 2:
-            return _root_on_edge(tree, here, following, diameter / 2 - travelled)
-        travelled += step
+        if traveled + step >= diameter / 2:
+            return _root_on_edge(tree, here, following, diameter / 2 - traveled)
+        traveled += step
     return _root_on_edge(tree, walk[0], walk[1], 0.0)
 
 
@@ -442,7 +442,7 @@ def build_region(
         found = np.flatnonzero(members == required)
         root_tip = int(found[0]) if len(found) else None
 
-    tree, negative, clamped = clamp_negative(neighbour_join(distance))
+    tree, negative, clamped = clamp_negative(neighbor_join(distance))
     rooted = (
         root_at_tip(tree, root_tip) if root_tip is not None else midpoint_root(tree)
     )

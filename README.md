@@ -9,7 +9,7 @@ multiple-sequence alignments.
 [famulare.github.io/enterovirus-genbank-curated](https://famulare.github.io/enterovirus-genbank-curated/)**
 
 Five linked views of every sequence in the release — divergence from reference,
-multidimensional scaling of nucleotide and of protein distance, and neighbour-joining trees over
+multidimensional scaling of nucleotide and of protein distance, and neighbor-joining trees over
 those same distances — colored by any curated trait, brushable, and linked back to the full
 record. An exploration surface that shows the structure in the data and makes
 misclassification visible. Source and build instructions in [`site/`](site/README.md).

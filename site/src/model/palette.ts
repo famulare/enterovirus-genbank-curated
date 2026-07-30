@@ -13,13 +13,13 @@
  *
  *  Eight is not a tuning problem. Dichromacy collapses the hue circle onto roughly
  *  one axis, so lightness is the only channel that survives it, and the widest legal
- *  lightness band is 0.34 — which over eight slots leaves 0.049 between neighbours,
+ *  lightness band is 0.34 — which over eight slots leaves 0.049 between neighbors,
  *  or ΔE 4.9, below the floor of 6 no matter how the hues are ordered. Seven slots
  *  leave enough room, so seven is the cap.
  *
  *  Hues are therefore ordered to maximize the worst all-pairs separation rather than
  *  by aesthetics, and every category also carries a distinct glyph. With CVD passing
- *  the shapes are no longer load-bearing for colour vision, but they keep the two
+ *  the shapes are no longer load-bearing for color vision, but they keep the two
  *  lightest slots legible against parchment (both sit under 3:1 contrast) and they
  *  satisfy the page's rule against encoding status by hue alone.
  *
@@ -83,7 +83,7 @@ export function isFilled(glyph: Glyph): boolean {
 }
 
 /** Slot for the nth most frequent category. `slot` beyond the palette, or a
- *  negative slot for "no recorded value", both fall to a reserved grey. */
+ *  negative slot for "no recorded value", both fall to a reserved gray. */
 export function swatch(slot: number): Swatch {
   if (slot < 0) return { color: MISSING_COLOR, glyph: MISSING_GLYPH, filled: false };
   if (slot >= CATEGORICAL.length) {

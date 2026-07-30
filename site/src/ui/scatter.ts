@@ -274,7 +274,7 @@ export function axesMarkup(frame: Frame, xLabel: string, yLabel: string): string
 function tickLabel(value: number, frame: Frame): string {
   if (value === 0) return "0";
   // On magnitude, not on the signed value: testing `value < 0.001` sent every
-  // negative tick down the exponential path, so a signed axis labelled -0.4 as
+  // negative tick down the exponential path, so a signed axis labeled -0.4 as
   // "-4e-1".
   const size = Math.abs(value);
   const span = Math.max(frame.x.max - frame.x.min, frame.y.max - frame.y.min);

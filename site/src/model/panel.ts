@@ -141,10 +141,22 @@ function linearTicks(min: number, max: number, target: number): number[] {
  *  reader is judging a diagonal. */
 const MIN_TICK_GAP = 0.075;
 
+/** Square root continued through zero, so an axis can carry a hair of negative range.
+ *
+ *  Deterministic jitter nudges a record either way, and a record at exactly zero on one
+ *  axis lands below it half the time: 460 of PV1's 3,732 polyprotein records sit at zero
+ *  synonymous or zero non-synonymous. Clamping the axis at zero dropped every one of them
+ *  — the least-diverged sequences, which is exactly what a reader looking for near-vaccine
+ *  material wants to see. Reflecting the jitter upward instead would double the mark
+ *  density just above zero and so misreport it, so the axis carries the excursion. */
+function root(value: number): number {
+  return Math.sign(value) * Math.sqrt(Math.abs(value));
+}
+
 function sqrtTicks(min: number, max: number): number[] {
-  const lo = Math.sqrt(min);
-  const span = Math.sqrt(max) - lo;
-  const at = (value: number) => (span <= 0 ? 0 : (Math.sqrt(value) - lo) / span);
+  const lo = root(min);
+  const span = root(max) - lo;
+  const at = (value: number) => (span <= 0 ? 0 : (root(value) - lo) / span);
 
   const candidates: number[] = [];
   if (min <= 0) candidates.push(0);
@@ -157,8 +169,8 @@ function sqrtTicks(min: number, max: number): number[] {
   }
   candidates.sort((a, b) => a - b);
 
-  // Keep the endpoint, then walk inward from it so the labelled edge is never the
-  // one dropped, and thin anything that would render on top of its neighbour.
+  // Keep the endpoint, then walk inward from it so the labeled edge is never the
+  // one dropped, and thin anything that would render on top of its neighbor.
   const kept: number[] = [Number(max.toPrecision(12))];
   for (let i = candidates.length - 1; i >= 0; i -= 1) {
     const value = candidates[i]!;
@@ -173,10 +185,7 @@ export function axis(
   scale: AxisScale,
   target = 5,
 ): Axis {
-  // A signed range is legal on a linear axis — an embedding coordinate has no
-  // meaningful zero end — but not under a square root, which has no real value below
-  // zero. Callers that can produce negative values are linear-only.
-  const min = scale === "sqrt" ? Math.max(0, rawMin) : rawMin;
+  const min = rawMin;
   let max = Math.max(rawMax, min + Number.EPSILON);
   let ticks: number[];
 
@@ -193,8 +202,8 @@ export function axis(
     ticks = sqrtTicks(min, max);
   }
 
-  const lo = scale === "sqrt" ? Math.sqrt(min) : min;
-  const hi = scale === "sqrt" ? Math.sqrt(max) : max;
+  const lo = scale === "sqrt" ? root(min) : min;
+  const hi = scale === "sqrt" ? root(max) : max;
   const span = hi - lo;
 
   return {
@@ -204,19 +213,29 @@ export function axis(
     ticks,
     t: (value) => {
       if (span <= 0) return 0;
-      const mapped = scale === "sqrt" ? Math.sqrt(Math.max(0, value)) : value;
+      const mapped = scale === "sqrt" ? root(value) : value;
       return (mapped - lo) / span;
     },
     invert: (fraction) => {
       const mapped = lo + fraction * span;
-      return scale === "sqrt" ? mapped * mapped : mapped;
+      return scale === "sqrt" ? Math.sign(mapped) * mapped * mapped : mapped;
     },
   };
 }
 
-/** The frame a brushed range asks for, with no headroom — the reader chose the edges. */
+/** The frame a brushed range asks for, with no headroom — the reader chose the edges.
+ *
+ *  The one liberty taken with those edges: the sliver of negative range a square-root
+ *  axis carries exists to hold jitter, not to be explored, so a brush that lands wholly
+ *  inside it has its far edge pulled back to zero. Otherwise the panel would come back
+ *  labeled with a single tick at -2e-4 differences per codon, which is not a quantity.
+ */
 export function zoomed(zoom: Zoom, scale: AxisScale): { x: Axis; y: Axis } {
-  return { x: axis(zoom.x0, zoom.x1, scale), y: axis(zoom.y0, zoom.y1, scale) };
+  const far = (value: number) => (scale === "sqrt" ? Math.max(value, 0) : value);
+  return {
+    x: axis(zoom.x0, far(zoom.x1), scale),
+    y: axis(zoom.y0, far(zoom.y1), scale),
+  };
 }
 
 /** An axis over positions in an ordering rather than over a quantity.

@@ -1,6 +1,6 @@
 /** What a scatter draws, independent of which figure produced it.
  *
- *  Both figure sets place one mark per sequence and colour it by the same trait, so
+ *  Both figure sets place one mark per sequence and color it by the same trait, so
  *  they share a renderer, a legend, an inspect/pin interaction and a brush. They
  *  differ only in where the marks come from and what the readout says about one. This
  *  is the shape that boundary takes.
@@ -68,7 +68,7 @@ export interface PanelFacts {
 }
 
 /** Axis pair for a set of marks. Anchored at zero when every value is non-negative —
- *  zero is then a real, occupied position — and centred on the data otherwise, which
+ *  zero is then a real, occupied position — and centered on the data otherwise, which
  *  is what a signed embedding coordinate needs. */
 export function markExtent(
   marks: Mark[],
@@ -99,6 +99,11 @@ export function markExtent(
     }
     if (!Number.isFinite(low)) return [0, 1];
     if (low >= 0) return [0, high * 1.04];
+    // A square-root axis is only ever chosen for a quantity that cannot be negative, so
+    // a negative value under one is jitter around zero rather than a measurement. Expand
+    // just past it: padding symmetrically would open a stretch of axis no real value can
+    // occupy, and clamping at zero would drop the marks sitting on it.
+    if (scale === "sqrt") return [low * 1.08, high * 1.04];
     // Symmetric padding, so a signed axis does not appear to lean.
     const pad = (high - low) * 0.04 || Math.abs(high) * 0.04 || 1;
     return [low - pad, high + pad];

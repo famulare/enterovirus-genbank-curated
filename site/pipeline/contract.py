@@ -341,7 +341,7 @@ DEFAULT_REGION = REGION_POLYPROTEIN
 
 # Number of discrete categories given their own hue before the rest collapse into a
 # single `Other` bucket. Seven is not a preference: it is the largest number of hues
-# that clears all-pairs colour-vision separation on a scatter plot. See the
+# that clears all-pairs color-vision separation on a scatter plot. See the
 # measurements in site/src/model/palette.ts.
 MAX_DISCRETE_CATEGORIES = 7
 OTHER_CATEGORY = "Other"

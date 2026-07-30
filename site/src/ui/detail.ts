@@ -56,7 +56,7 @@ export interface PinnedPanel {
 }
 
 /** A value that is not a recorded field — derived here, or specific to the current
- *  selection — but which the colour control can paint by, so the inspector has to
+ *  selection — but which the color control can paint by, so the inspector has to
  *  account for it or the reader cannot see what they are looking at. */
 export interface DerivedField {
   label: string;

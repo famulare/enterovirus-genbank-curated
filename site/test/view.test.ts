@@ -5,7 +5,8 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { assertSchema, type Summary } from "../src/model/types.ts";
-import { axis } from "../src/model/panel.ts";
+import { axis, zoomed } from "../src/model/panel.ts";
+import { type Mark, markExtent } from "../src/model/mark.ts";
 import {
   decode,
   defaultView,
@@ -245,14 +246,62 @@ test("a signed linear axis keeps the data's own limits and places ticks inside t
   for (const tick of a.ticks) {
     assert.ok(tick >= a.min - 1e-9 && tick <= a.max + 1e-9, `tick ${tick} inside the range`);
   }
-  assert.ok(a.ticks.some((t) => t < 0), "and negative ticks are labelled");
+  assert.ok(a.ticks.some((t) => t < 0), "and negative ticks are labeled");
   assert.ok(Math.abs(a.invert(a.t(-0.2)) + 0.2) < 1e-9, "invert round-trips a negative value");
 });
 
-test("a square root refuses to go below zero, since it has no real value there", () => {
+test("a square root continues through zero rather than clamping there", () => {
   const a = axis(-0.5, 0.31, "sqrt");
-  assert.equal(a.min, 0, "the range is clamped at zero rather than producing NaN");
-  assert.ok(Number.isFinite(a.t(0)) && Number.isFinite(a.t(0.31)), "the transform stays finite");
+  assert.equal(a.min, -0.5, "the negative end is carried, not clamped away");
+  for (const value of [-0.5, -0.1, 0, 0.1, 0.31]) {
+    assert.ok(Number.isFinite(a.t(value)), `t(${value}) is finite`);
+  }
+  // Monotone across zero, or a mark's position would not order with its value.
+  const positions = [-0.5, -0.1, 0, 0.1, 0.31].map(a.t);
+  for (let i = 1; i < positions.length; i += 1) {
+    assert.ok(positions[i]! > positions[i - 1]!, `t rises across zero at index ${i}`);
+  }
+  for (const value of [-0.5, -0.02, 0, 0.25]) {
+    assert.ok(Math.abs(a.invert(a.t(value)) - value) < 1e-9, `invert round-trips ${value}`);
+  }
+});
+
+test("a brush inside the jitter fringe cannot label an axis with a negative count", () => {
+  // Reachable: the fringe is real screen space, so a reader can drag a box wholly inside
+  // it. Before the far edge was pulled back to zero, that returned a panel whose only
+  // tick read -2e-4 differences per codon.
+  const inFringe = zoomed({ x0: -0.0002, x1: -0.00005, y0: -0.0003, y1: -0.0001 }, "sqrt");
+  for (const a of [inFringe.x, inFringe.y]) {
+    assert.equal(a.max, 0, "the far edge comes back to zero");
+    for (const tick of a.ticks) assert.ok(tick >= 0, `tick ${tick} is not negative`);
+  }
+  // A brush anywhere real keeps exactly the edges the reader chose.
+  const real = zoomed({ x0: 0.02, x1: 0.31, y0: 0.001, y1: 0.05 }, "sqrt");
+  assert.equal(real.x.min, 0.02);
+  assert.equal(real.x.max, 0.31);
+  // And a linear axis is untouched, since a signed embedding coordinate is a real value.
+  const signed = zoomed({ x0: -0.4, x1: -0.1, y0: -0.3, y1: -0.05 }, "linear");
+  assert.equal(signed.x.max, -0.1, "a signed linear range keeps its negative edge");
+});
+
+test("a jittered zero stays on the panel instead of falling off its left edge", () => {
+  // Divergence jitter nudges a record either way, so a record at exactly zero on one axis
+  // lands below zero half the time — 460 of PV1's 3,732 polyprotein records. Clamping the
+  // axis at zero silently dropped every one of them, and they are the least-diverged
+  // sequences on the figure.
+  const at = (x: number, y: number): Mark => ({ record: 0, x, y, weight: 1, flagged: false });
+  const marks = [at(-0.00011, 0.02), at(0, -0.0003), at(0.31, 0.42)];
+  const frame = markExtent(marks, "sqrt", axis);
+  for (const mark of marks) {
+    assert.ok(
+      mark.x >= frame.x.min && mark.y >= frame.y.min,
+      `(${mark.x}, ${mark.y}) is inside the frame`,
+    );
+  }
+  // Only just past the data: a symmetric pad would open a stretch of axis that no real
+  // value can occupy.
+  assert.ok(frame.x.min < 0 && frame.x.min > -0.001, `x.min ${frame.x.min} is barely negative`);
+  assert.equal(markExtent([at(0.1, 0.2)], "sqrt", axis).x.min, 0, "an all-positive set still anchors at zero");
 });
 
 test("divergence offers coding regions only; distance adds both non-coding regions", () => {

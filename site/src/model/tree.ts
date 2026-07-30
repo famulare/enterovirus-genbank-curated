@@ -3,7 +3,7 @@
  *  A rectangular phylogeny is a scatter of tips plus a link layer: x is distance from
  *  the root, y is position in the ladder. Decoding it into the same `Mark` shape the
  *  two scatter figures use is what lets all four chapters share one instrument — the
- *  same colour scale, legend, hover, keyboard traversal, click-to-pin and brush.
+ *  same color scale, legend, hover, keyboard traversal, click-to-pin and brush.
  *
  *  Internal nodes are not records and so are not marks. They exist only in the link
  *  layer, which nothing hovers.

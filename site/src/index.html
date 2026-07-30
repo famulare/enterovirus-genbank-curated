@@ -139,7 +139,7 @@
   <section id="phylogeny-nt" class="chapter" aria-labelledby="phylogeny-nt-heading">
     <div class="chapter-heading">
       <h2 class="chapter-number" id="phylogeny-nt-heading">03 / Nucleotide phylogeny</h2>
-      <p class="lede">Neighbour joining on the same distance matrices as the view above, so the
+      <p class="lede">Neighbor joining on the same distance matrices as the view above, so the
         tree and the embedding cannot disagree about how partial overlap was handled. Rooted on
         Sabin for poliovirus, midpoint for non-polio.</p>
     </div>
@@ -193,17 +193,18 @@
       </div>
       <div class="readout" id="distance-aa-readout" role="status"></div>
     </div>
-    <p class="warning">A codon counts only where all three of its bases are unambiguous in both
-      sequences being compared, so a synonymous change moves nothing in this view. Two sequences at
-      the same point are not the same sequence — they encode the same protein over what they
-      share.</p>
+    <p class="warning">Proximity here is protein similarity over the codons two records share. It
+      is not sequence identity, and it is not evidence of common ancestry: unrelated lineages under
+      similar constraint can arrive at the same residues.</p>
   </section>
 
   <section id="phylogeny-aa" class="chapter" aria-labelledby="phylogeny-aa-heading">
     <div class="chapter-heading">
       <h2 class="chapter-number" id="phylogeny-aa-heading">05 / Protein phylogeny</h2>
       <p class="lede">The same three coding regions, built from translated amino acid distance.
-        Emphasizes convergent or divergent evolution over ancestry.</p>
+        A synonymous change moves nothing here, so sequences that reached the same residues by
+        different codons sit at zero distance and the tree joins them, whether or not they
+        share recent ancestry.</p>
     </div>
     <div class="wide-breakout figure">
       <div class="thumb-strip" id="phylogeny-aa-strip" role="group"
@@ -223,10 +224,10 @@
       </div>
       <div class="readout" id="phylogeny-aa-readout" role="status"></div>
     </div>
-    <p class="warning">A codon counts only where all three of its bases are unambiguous in both
-      sequences being compared, so a synonymous change is invisible here by construction. Two
-      sequences at the same point in this figure are not the same sequence — they encode the same
-      protein.</p>
+    <p class="warning">This tree groups by residue identity, which is not the same thing as
+      descent: it will join lineages that arrived at the same residues independently, and one amino
+      acid change separates two sequences that dozens of synonymous changes would not. Read it as a
+      statement about the protein, and read 03 for ancestry.</p>
   </section>
 
   <section id="release" class="chapter closing" aria-labelledby="release-heading">
@@ -250,8 +251,8 @@
     <div class="table-wrap record-table wide-breakout" id="population-table"></div>
 
     <h3 class="section-subhead">Known data-quality issues</h3>
-    <p class="figure-lede">Counted live from the release. Each entry disappears on its own once
-      the generation pipeline fixes it upstream.</p>
+    <p class="figure-lede">Counted live from the release. Each entry disappears on its own once I
+      fix it in the generation pipeline.</p>
     <div id="data-quality"></div>
 
     <div id="integrity-notes"></div>
@@ -271,7 +272,7 @@
           are homologous across the genus, and the projected region widths reproduce the
           per-serotype widths exactly.</p>
         <p>Non-polio enterovirus has no vaccine reference, so divergence is measured against a
-          consensus of the record's own virus type. There is deliberately no broader fallback: an
+          consensus of the record's own virus type. I give it no broader fallback than that: an
           enterovirus species holds dozens of serotypes that differ by a quarter of their capsid,
           so a consensus across one is a chimera, and distance from it would fold "how unusual is
           this type" into "how far has this sequence drifted" on a single axis. A record whose
@@ -288,8 +289,8 @@
           non-synonymous rate. This affects a few hundred non-polio records, concentrated in the
           largest types, and is why some of them sit far right and high with almost all of that
           distance coming from indels rather than substitutions. The consensus stands in for
-          per-type reference sequences the release does not yet carry; the fix belongs
-          upstream.</p>
+          per-type reference sequences the release does not yet carry, and I would rather fix that
+          by curating them than by patching the metric here.</p>
         <p class="qualification">A record is compared to its reference only where both carry an
           unambiguous base, so missing left and right tails cost coverage rather than counting as
           difference, and an ambiguity code lowers the denominator instead of inventing a

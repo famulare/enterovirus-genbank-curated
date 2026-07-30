@@ -62,7 +62,7 @@ def build_region(
 
     # Pin on Sabin where the alignment carries it, so poliovirus panels always open
     # with the vaccine reference in the same corner. Otherwise pin on the
-    # confidently-placed centre of mass, which is stable for a stable population.
+    # confidently-placed center of mass, which is stable for a stable population.
     anchor = None
     for accession in contract.SABIN_REFERENCE.values():
         if accession in alignment.index:

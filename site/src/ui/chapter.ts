@@ -39,7 +39,7 @@ export interface ChapterSpec {
   yLabel: string;
   /** False for a chapter whose coordinates are signed, where a square root has no
    *  meaning; such a chapter is drawn linear whatever the control says. */
-  honoursScale: boolean;
+  honorsScale: boolean;
   /** `ordinal` for an axis whose values are positions in an ordering rather than
    *  quantities — a tree's ladder — which is drawn without ticks or a numbered scale. */
   yAxis?: "quantitative" | "ordinal";
@@ -139,10 +139,10 @@ export function buildState(
   return state;
 }
 
-/** The colour scale for a view.
+/** The color scale for a view.
  *
  *  Built over the whole selection — not the current region, and not the filtered
- *  subset — so a colour means the same thing in every panel of every chapter and does
+ *  subset — so a color means the same thing in every panel of every chapter and does
  *  not move when a filter changes.
  */
 function buildColorScale(
@@ -178,8 +178,8 @@ function buildColorScale(
 
 /** Push a new view onto an existing chapter without refetching or re-decoding marks.
  *
- *  The colour scale has to be rebuilt here. Leaving it to `buildState` alone meant a
- *  colour change updated the control and the URL while the marks kept their old
+ *  The color scale has to be rebuilt here. Leaving it to `buildState` alone meant a
+ *  color change updated the control and the URL while the marks kept their old
  *  palette — the control looked live and did nothing. */
 export function applyView(state: ChapterState, view: View): void {
   const traitChanged = state.view.trait !== view.trait;
@@ -216,7 +216,7 @@ function emptyFacts() {
   };
 }
 
-/** Filters change which marks are drawn; they never change the colour assignment, so
+/** Filters change which marks are drawn; they never change the color assignment, so
  *  surviving categories keep their hues. */
 function passes(state: ChapterState, record: number): boolean {
   const { view, records } = state;
@@ -237,7 +237,7 @@ function visible(state: ChapterState, set: MarkSet): Mark[] {
  *  square root to draw, so its axes stay linear even when the control says otherwise —
  *  there, the control has already done its work on the distances themselves. */
 function effectiveScale(state: ChapterState): AxisScale {
-  return state.spec.honoursScale ? state.view.scale : "linear";
+  return state.spec.honorsScale ? state.view.scale : "linear";
 }
 
 function styleOf(state: ChapterState) {
@@ -254,7 +254,7 @@ function styleOf(state: ChapterState) {
 
 /** The frame one mark set occupies.
  *
- *  Every panel snaps to its own data, recomputed on region, colour and filter changes:
+ *  Every panel snaps to its own data, recomputed on region, color and filter changes:
  *  absolute values differ by segment, so a shared range would compress most panels to
  *  serve a comparison that is not the one being made.
  */
@@ -356,7 +356,7 @@ function renderThumbnails(
 
     // Each thumbnail carries its own range and does not print it. At this size the
     // comparison a reader can make is shape, which stays fair across ranges; the
-    // focus panel's labelled axes are where the numbers live.
+    // focus panel's labeled axes are where the numbers live.
     const own = markExtent(marks, scale, axis, state.spec.frameFromConfident);
     const thumbFrame: scatter.Frame = {
       plot: scatter.THUMB_PLOT,
@@ -442,7 +442,7 @@ function renderLegend(state: ChapterState, marks: Mark[]): void {
       ${
         state.scale.missingCount
           ? `<p class="legend-missing">${num(state.scale.missingCount)} with no recorded
-               value, drawn grey</p>`
+               value, drawn gray</p>`
           : ""
       }${footnote}`;
     return;

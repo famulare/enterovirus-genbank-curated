@@ -185,7 +185,7 @@ def comparable_set(
 
     Pairwise deletion with a length minimum — the same rule figure set 1 uses — leaves
     some pairs with no comparable positions at all, and those distances do not exist.
-    Anything that needs a complete matrix (an eigendecomposition, a neighbour join) has
+    Anything that needs a complete matrix (an eigendecomposition, a neighbor join) has
     to work on a subset where none are missing, so this finds one.
 
     Ordered by **overlap degree**: how many other candidates a row is comparable to at

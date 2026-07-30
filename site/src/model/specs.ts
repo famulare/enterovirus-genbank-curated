@@ -1,7 +1,7 @@
 /** The four chapter specifications: what each figure set contributes beyond the shared
  *  instrument in ui/chapter.ts.
  *
- *  All four place one mark per sequence, colour it by the same trait and answer the same
+ *  All four place one mark per sequence, color it by the same trait and answer the same
  *  kind of question about the same records, so they share one renderer, one legend, one
  *  hover, one keyboard traversal and one brush. What a spec supplies is where its marks
  *  come from and what a readout says about one. The two trees additionally supply a link
@@ -54,9 +54,9 @@ const divergenceDetail = new WeakMap<
   }
 >();
 
-/** The panel-scoped numeric a colour scale can paint by. Without this,
- *  `region_coverage_nt` sat in the colour menu returning null for every record and
- *  painted the whole panel one grey. */
+/** The panel-scoped numeric a color scale can paint by. Without this,
+ *  `region_coverage_nt` sat in the color menu returning null for every record and
+ *  painted the whole panel one gray. */
 export function coverageOf(mark: Mark): number | null {
   return (
     divergenceDetail.get(mark)?.coverage ??
@@ -147,7 +147,7 @@ export const DIVERGENCE: ChapterSpec = {
   title: "Divergence",
   xLabel: "Synonymous differences per codon compared",
   yLabel: "Non-synonymous per codon compared",
-  honoursScale: true,
+  honorsScale: true,
 
   sets(selection, regions) {
     return decodeAll<PanelFile>(
@@ -241,9 +241,8 @@ function distanceMarks(
   ];
   if (what === "residue") {
     notes.push(
-      `A codon counts only where all three of its bases are readable in both sequences, so
-       a synonymous change moves nothing here. Two sequences at the same point encode the
-       same protein over what they share; they are not the same sequence.`,
+      `A codon counts only where all three of its bases are unambiguous in both sequences,
+       so a synonymous change moves nothing here.`,
     );
   }
   if (fit.negative_share > 0.005) {
@@ -259,7 +258,7 @@ function distanceMarks(
   if (thin.size) {
     notes.push(
       `${n(thin.size)} are drawn smaller: they overlap too few landmarks for a confident
-       position, and sit nearer the centre than they should.`,
+       position, and sit nearer the center than they should.`,
     );
   }
 
@@ -287,8 +286,8 @@ export const DISTANCE: ChapterSpec = {
   // The scale control selects which embedding to show — the one fitted to the
   // distances, or the one fitted to their square roots — rather than transforming the
   // drawn axis. The coordinates are signed, so the axis itself is always linear;
-  // `honoursScale` governs the axis, and is false for exactly that reason.
-  honoursScale: false,
+  // `honorsScale` governs the axis, and is false for exactly that reason.
+  honorsScale: false,
 
   sets(selection, regions, scale) {
     return decodeAll<PanelFile>(
@@ -339,7 +338,7 @@ export const PROTEIN_DISTANCE: ChapterSpec = {
   title: "Protein distance",
   xLabel: "Scaling axis 1 (arbitrary units)",
   yLabel: "Scaling axis 2",
-  honoursScale: false,
+  honorsScale: false,
   frameFromConfident: true,
 
   sets(selection, regions, scale) {
@@ -423,7 +422,7 @@ function treeMarks(
   );
   if (dropped) {
     notes.push(
-      `Neighbour joining needs a distance for every pair, and ${n(dropped)} sequences overlap
+      `Neighbor joining needs a distance for every pair, and ${n(dropped)} sequences overlap
        the rest too little for one to exist, so they are left off. Those sequences are in the
        two views above, which need no complete matrix.`,
     );
@@ -432,7 +431,7 @@ function treeMarks(
     notes.push(
       `${n(tree.negative_branches)} branches came out negative and were set to zero,
        ${tree.clamped_total.toFixed(4)} in total: real distances are never exactly
-       additive, and neighbour joining absorbs the discrepancy into branch lengths.`,
+       additive, and neighbor joining absorbs the discrepancy into branch lengths.`,
     );
   }
   if (thin.size) {
@@ -461,7 +460,7 @@ function treeMarks(
 
 /** Tips are drawn small on purpose. A 2,500-tip ladder gives each tip a third of a
  *  pixel of height, so a dot sized for a scatter would merge into a solid bar and hide
- *  the very thing the figure is for — one differently-coloured tip inside a clade. */
+ *  the very thing the figure is for — one differently-colored tip inside a clade. */
 function tipRadius(count: number, thumbnail = false): number {
   if (thumbnail) return count > 1200 ? 0.7 : 1;
   if (count > 1800) return 1.5;
@@ -516,7 +515,7 @@ export const NUCLEOTIDE_TREE: ChapterSpec = {
   // the misclassification this page exists to surface. Hiding them is not an option, and
   // on a linear axis they flatten everything else. The square root spreads the crowded
   // near-root region; the note says what that costs.
-  honoursScale: true,
+  honorsScale: true,
   tall: true,
   radius: tipRadius,
 
@@ -549,7 +548,7 @@ export const PROTEIN_TREE: ChapterSpec = {
   xLabel: "Distance from the root (differences per residue compared)",
   yLabel: "",
   yAxis: "ordinal",
-  honoursScale: true,
+  honorsScale: true,
   tall: true,
   radius: tipRadius,
 
