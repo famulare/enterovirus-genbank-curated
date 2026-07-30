@@ -21,11 +21,13 @@ file overclaimed and an adversarial review caught it:
   restriction excludes by construction — so B, not A, is what covers the real defects.
 
 - **The ledger check** (`test_the_ledger_does_not_split_a_byte_identical_group`) is the only check
-  in this file that reads a layer this repository actually *writes*. `final/canonical/` has one
-  commit in its entire history and nothing here rebuilds it, so a canonical-only check cannot see a
-  curation mistake made today. The historical D2 defect was exactly that shape — a ledger assertion
-  applied to one member of a byte-identical pair — and it is **still live**: the ledger sets
-  `CS406482` FALSE and says nothing about `PU749297`. This check makes that visible and pins it.
+  in this file that reads a layer this repository actually *writes*. `final/canonical/` moves only
+  on a deliberate, infrequent release refresh (three commits as of 2.4.1: the 2.1.5 initial
+  release, the 2.3.0 refresh, the 2.4.1 refresh) and nothing here rebuilds it on every push, so a
+  canonical-only check lags behind a curation mistake made today by however long it is until the
+  next refresh. The historical D2 defect was exactly that shape — a ledger assertion applied to one
+  member of a byte-identical pair — and it is **still live**: the ledger sets `CS406482` FALSE and
+  says nothing about `PU749297`. This check makes that visible and pins it.
 
 Why the invariants exist at all: the D2 adjudication set `CS406482` to FALSE while leaving
 `PU749297` — byte-identical, the same patent sequence re-deposited in a 2024 continuation — at TRUE.
@@ -65,6 +67,13 @@ Nine mutations, 2026-07-30, against the design at this commit. Data mutations we
 shipped artifacts themselves and reverted, with sha256 re-verified afterwards (`369b6c0b…`
 canonical, `e9f0dac6…` source records, `335588b1…` ledger). Test IDs are in full; all are in this
 module.
+
+(Those three restoration hashes were measured against the 2.3.0-era shipped bytes, before the
+2.4.1 refresh touched 11 canonical rows' classification/origin text. Re-running the full
+nine-mutation battery to re-pin them is unnecessary busywork right now: the mutations test the
+*mechanism*, not any specific byte content, and every test in this module passes clean against the
+current 2.4.1 `final/`. Re-pin the three hashes the next time this file is touched for an
+unrelated reason, rather than as a one-off chase.)
 
 1. **`CS406436` TRUE→FALSE on disk** — the D2 defect reproduced in the shipped bytes, leaving its
    byte-identical twin `PU749305` at TRUE. **6 failed:**

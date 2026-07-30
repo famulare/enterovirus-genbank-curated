@@ -1,0 +1,66 @@
+{
+  "contract_version": 1,
+  "baseline_release": "2.4.1",
+  "public_release_commit": "3e3a0c3e92fd5e0c2df1bf673e982e2b5892b48a",
+  "source_release_commit": "67554e25a2acead0b635469e46b1ff14a3e96851",
+  "source_schema_version": "2.4.1",
+  "raw_input": {
+    "path": "raw/sequence.gb.zip",
+    "record_count": 25727,
+    "archive_member": "sequence.gb",
+    "archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
+    "uncompressed_bytes": 144258569,
+    "uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3"
+  },
+  "expected_counts": {
+    "source_records": 25727,
+    "canonical_rows": 24301,
+    "vouched_rows": 10084,
+    "provisional_rows": 14217,
+    "manual_decisions": 2912,
+    "rules": 28
+  },
+  "expected_artifacts": [
+    {
+      "path": "final/audit/manual_decisions.tsv.gz",
+      "hash_scope": "file_bytes",
+      "sha256": "307b810cdf88d0e11e48203898ac126e38dffa43a9a9cdf3c5a2a618df9ed577"
+    },
+    {
+      "path": "final/audit/record_disposition.tsv.gz",
+      "hash_scope": "file_bytes",
+      "sha256": "2de98c63e822ec5352921a71bb801d99f3ed5639ce4f1020dbe22c88c835871a"
+    },
+    {
+      "path": "final/audit/rules.tsv.gz",
+      "hash_scope": "file_bytes",
+      "sha256": "4cdca41e65bbfdcb29b0505c1eb53eb772d812538a133b820d82464d077df28c"
+    },
+    {
+      "path": "final/canonical/sequence_metadata.tsv.gz",
+      "hash_scope": "file_bytes",
+      "sha256": "bde4be0f7383575efd16fb664407332fd106efba730e8cb71de10d1a4935cb7f"
+    },
+    {
+      "path": "final/canonical/sequence_metadata_vouched.tsv.gz",
+      "hash_scope": "file_bytes",
+      "sha256": "83e382ca6d6cb9265f7f60703aa706dc587ecadd84657a4184901d33ec64c010"
+    },
+    {
+      "path": "final/canonical/sequences.fasta.gz",
+      "hash_scope": "file_bytes",
+      "sha256": "083432c2ddddac5486608e9d0cfdf1c964a522436c4c8df4a05f93b7a71248c0"
+    },
+    {
+      "path": "final/source/genbank_source.duckdb",
+      "hash_scope": "logical_content",
+      "sha256": "5d90c5b2f856f12a1b7133460f79f543d6d2c39aae77272d0ae53b504010dbfc"
+    }
+  ],
+  "policy": {
+    "existing_final_is_pipeline_input": false,
+    "baseline_release_mutable": false,
+    "scientific_changes_require_explicit_review": true,
+    "undeclared_external_inputs_allowed": false
+  }
+}

@@ -11,10 +11,15 @@ Two things are validated here, and the distinction matters:
 Without the second half the parity contract would be self-certifying: a wrong hash or a wrong
 row count would sit in the parity spec and never be contradicted by anything.
 
-The active baseline is **2.3.0**. `releases/2.1.5/parity.json` is retained as the historical
-record of the first public release and is **no longer verified against the tree** — there is only
-one `final/`, and once it holds 2.3.0 bytes a spec describing 2.1.5 cannot be satisfied by it. The
-2.1.5 release itself remains immutable in git history at `82f2966`.
+The active baseline is **2.4.1**. `releases/2.1.5/parity.json` and `releases/2.3.0/parity.json`
+are retained as the historical record of superseded public releases and are **no longer verified
+against the tree** — there is only one `final/`, and once it holds 2.4.1 bytes a spec describing an
+earlier release cannot be satisfied by it. Each retired release remains immutable in git history
+(2.1.5 at `82f2966`; 2.3.0 at `edbacc6`..`134f899`, the four-commit refresh that retargeted it).
+
+`HISTORICAL_PARITY_SPEC_PATHS` below is exactly that: a record of which specs are retired, not a
+check. Nothing in this module reads it — it is not wired into `validate_contracts` or anything
+else, and finding it referenced somewhere would be a bug, not a feature waiting to be turned on.
 
 `BASELINE_RELEASE` below is a hardcoded literal on purpose, and `validate_parity_spec` compares
 the spec against it rather than trusting the spec's own `baseline_release` field. Reading the
@@ -37,10 +42,10 @@ from typing import Any
 
 DECISIONS_SCHEMA_PATH = "registry/schemas/decisions.schema.json"
 RULES_SCHEMA_PATH = "registry/schemas/rules.schema.json"
-BASELINE_RELEASE = "2.3.0"
+BASELINE_RELEASE = "2.4.1"
 PARITY_SPEC_PATH = f"releases/{BASELINE_RELEASE}/parity.json"
 # Retained, unverified. See the module docstring.
-HISTORICAL_PARITY_SPEC_PATHS = ("releases/2.1.5/parity.json",)
+HISTORICAL_PARITY_SPEC_PATHS = ("releases/2.1.5/parity.json", "releases/2.3.0/parity.json")
 BUILD_MANIFEST_PATH = "final/audit/build_manifest.json"
 RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
 
@@ -67,16 +72,23 @@ ACTIVE_STATUS = "active"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
-# Measured from the shipped 2.3.0 release, not derived from the 2.1.5 figures. The 2.1.5 values,
-# for the record, were 25727 / 24546 / 10086 / 14460 / 2753 / 25. `source_records` is unchanged
-# because 2.3.0 is a strict subset of 2.1.5 by accession over the same frozen raw archive: 245
-# canonical records were removed and none added, so the source snapshot did not move.
+# Measured from the shipped 2.4.1 release, not derived from earlier figures. For the record:
+# 2.1.5 shipped 25727 / 24546 / 10086 / 14460 / 2753 / 25; 2.3.0 shipped 25727 / 24301 / 10084 /
+# 14217 / 2800 / 28 (245 canonical records removed between 2.1.5 and 2.3.0, none added, so
+# source_records did not move). Neither 2.4.0 nor 2.4.1 changes any row in or out of the corpus or
+# any sequence -- both are classification/origin/reference_label text edits on already-shipped
+# records, so all four population counts here are identical to 2.3.0's. manual_decisions moves
+# 2800 (2.3.0, last public baseline) -> 2912 (2.4.1): +97 from 2.4.0's 19-record K1-K3 fix (2.4.0
+# itself was never a public baseline -- it shipped privately with a defective provenance stamp,
+# see docs/decision-log.md in the private repo) and a further +15 from 2.4.1's own fix to 11 of
+# those same records (3 regressed or left inconsistent by 2.4.0, plus the 2,643nt/JC0131xx twins
+# it never touched).
 EXPECTED_BASELINE_COUNTS = {
     "source_records": 25727,
     "canonical_rows": 24301,
     "vouched_rows": 10084,
     "provisional_rows": 14217,
-    "manual_decisions": 2800,
+    "manual_decisions": 2912,
     "rules": 28,
 }
 
