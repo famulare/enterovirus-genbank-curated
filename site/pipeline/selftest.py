@@ -708,6 +708,9 @@ def figures_nest() -> None:
       distance    the widest population: everything clearing the region's coverage floor.
       both trees  need a complete distance matrix, so they drop what cannot be compared
                   to everything else. Subset of distance.
+      protein     translates first, so a codon must be readable in full. Its floor is the
+                  nucleotide floor rounded up, so it is a subset of distance too, and the
+                  protein tree is in turn a subset of the protein scaling figure.
 
     The trees are deliberately NOT a subset of divergence. A non-polio record with no
     reference consensus is measured perfectly well by distance and belongs on the tree;
@@ -731,6 +734,14 @@ def figures_nest() -> None:
                 problems.append(
                     f"{selection} {region}: {len(measured - placed)} in divergence but not distance"
                 )
+            protein = set(panels.get("protein_distance", {}).get(region, {}).get("record", []))
+            if protein:
+                checked += 1
+                if protein - placed:
+                    problems.append(
+                        f"{selection} {region} protein distance: {len(protein - placed)} "
+                        "records absent from the nucleotide distance view"
+                    )
             for family in ("nucleotide", "protein"):
                 tips = set(forest.get(family, {}).get(region, {}).get("tip_record", []))
                 if not tips:
@@ -740,6 +751,13 @@ def figures_nest() -> None:
                     problems.append(
                         f"{selection} {region} {family} tree: {len(tips - placed)} tips "
                         "absent from the distance view"
+                    )
+                # A protein tree's tips must also be inside the protein scaling figure:
+                # same alphabet, same floor, so the tree can only be narrower.
+                if family == "protein" and protein and tips - protein:
+                    problems.append(
+                        f"{selection} {region} protein tree: {len(tips - protein)} tips "
+                        "absent from the protein distance view"
                     )
     check(checked > 0, f"{checked} tree panels compared against their distance panel")
     check_equal(

@@ -12,6 +12,8 @@ import { test } from "node:test";
 import { assertSchema, type Summary } from "../src/model/types.ts";
 import { ordinal, ordinalExtent } from "../src/model/panel.ts";
 import { assertTreeSchema, links, type TreeFile, type TreeRegion } from "../src/model/tree.ts";
+import { assertPanelSchema, axis, type PanelFile } from "../src/model/panel.ts";
+import { type Mark, markExtent } from "../src/model/mark.ts";
 
 const summary: Summary = assertSchema(
   JSON.parse(readFileSync(new URL("../data/summary.json", import.meta.url), "utf8")) as Summary,
@@ -215,4 +217,68 @@ test("a degenerate ordinal range does not divide by zero", () => {
   const axis = ordinalExtent(0);
   assert.ok(Number.isFinite(axis.t(0)));
   assert.ok(Number.isFinite(axis.invert(1)));
+});
+
+// --- The protein scaling figure, and how the two scatters choose a range ------
+
+function panels(selection: string): PanelFile {
+  return assertPanelSchema(
+    JSON.parse(
+      readFileSync(new URL(`../data/panels/${selection}.json`, import.meta.url), "utf8"),
+    ) as PanelFile,
+  );
+}
+
+test("protein scaling covers the coding regions and counts in codons", () => {
+  const regions = summary.regions.filter((r) => r.in_protein_distance).map((r) => r.id);
+  assert.deepEqual(regions, ["P1", "P2", "P3"]);
+  for (const selection of summary.selections) {
+    const file = panels(selection.id);
+    assert.deepEqual(Object.keys(file.protein_distance).sort(), [...regions].sort());
+    for (const region of regions) {
+      const block = file.protein_distance[region]!;
+      const nucleotide = file.distance[region]!;
+      assert.equal(block.unit, "codons", `${selection.id} ${region} unit`);
+      assert.equal(nucleotide.unit, "nt", `${selection.id} ${region} nucleotide unit`);
+      // A codon floor of 17 is 51 nt, so it can only ever be stricter than the 50 nt one.
+      assert.ok(
+        block.min_nt * 3 >= nucleotide.min_nt,
+        `${selection.id} ${region}: codon floor ${block.min_nt} is looser than ${nucleotide.min_nt} nt`,
+      );
+      assert.equal(
+        block.columns * 3,
+        nucleotide.columns,
+        `${selection.id} ${region}: width in codons should be a third of the columns`,
+      );
+      // Coverage is quoted in the block's own unit, so it can never exceed the width.
+      for (const value of block.coverage) {
+        assert.ok(value <= block.columns, `${selection.id} ${region}: coverage ${value} > width`);
+      }
+      for (const name of ["linear", "sqrt"]) {
+        const fit = block.transforms[name];
+        assert.ok(fit, `${selection.id} ${region} ${name} fit missing`);
+        assert.equal(fit!.x.length, block.record.length);
+        assert.equal(fit!.y.length, block.record.length);
+      }
+    }
+  }
+});
+
+test("a scatter's range comes from the marks it trusts, not the ones it doubts", () => {
+  const confident = (x: number, y: number): Mark => ({ record: 0, x, y, weight: 1, flagged: false });
+  const thin = (x: number, y: number): Mark => ({ record: 0, x, y, weight: 0.62, flagged: false });
+  // The shape that motivated this: a cluster of trusted marks, plus one thin mark an
+  // order of magnitude further out.
+  const marks = [confident(-0.1, -0.1), confident(0.1, 0.1), thin(0.2, 1.7)];
+
+  const all = markExtent(marks, "linear", axis);
+  const trusted = markExtent(marks, "linear", axis, true);
+  assert.ok(all.y.max > 1.6, "including every mark, the thin one sets the range");
+  assert.ok(trusted.y.max < 0.5, `trusting only the confident marks, ${trusted.y.max} stays tight`);
+  assert.ok(all.x.max >= trusted.x.max, "the confident range is never the wider one");
+
+  // With nothing confident, it must still draw rather than collapse to an empty range.
+  const nothingTrusted = markExtent([thin(0.2, 1.7), thin(-0.2, -1.7)], "linear", axis, true);
+  assert.ok(nothingTrusted.y.max > 1.6, "falls back to every mark when none is confident");
+  assert.ok(Number.isFinite(nothingTrusted.y.t(0)));
 });

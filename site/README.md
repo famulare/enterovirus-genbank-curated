@@ -3,12 +3,13 @@
 The static exploration surface published at
 <https://famulare.github.io/enterovirus-genbank-curated/>.
 
-Four figure sets over one shared selection state: synonymous versus non-synonymous
+Five figure sets over one shared selection state: synonymous versus non-synonymous
 divergence, multidimensional scaling of nucleotide distance, nucleotide phylogeny,
-and amino-acid phylogeny. Its purpose is to make the structure in the release
-legible at a glance and to make misclassification noticeable.
+multidimensional scaling of protein distance, and protein phylogeny. Its purpose is to
+make the structure in the release legible at a glance and to make misclassification
+noticeable.
 
-All four are the same instrument, from the same component in `src/ui/chapter.ts`: a
+All five are the same instrument, from the same component in `src/ui/chapter.ts`: a
 strip of live region thumbnails above one focus panel, with drag-to-brush zoom,
 per-panel auto-scaling, seven colored categories plus Other with glyph co-encoding,
 hover and full keyboard traversal, and click-to-pin showing every canonical field.
@@ -22,8 +23,26 @@ hash, so any view is a shareable link.
   because it needs no reading frame.
 - **Set 3, nucleotide phylogeny** — neighbour joining on those same distances, over the
   same five regions.
-- **Set 4, protein phylogeny** — the same over translated residue distance, for the
-  three coding regions.
+- **Set 4, protein distance** — set 2 again in residue space, for the three coding
+  regions. Read against set 2: structure that survives translation is structure in the
+  protein, and structure that disappears was synonymous all along.
+- **Set 5, protein phylogeny** — set 3 in residue space, over the same three regions.
+
+Residue space is not a second metric. `distances.py` is parameterized over an `Alphabet`,
+so the nucleotide and protein figures run one procedure over one definition, and
+`distances.in_alphabet` is the single place a nucleotide floor becomes a codon floor —
+rounded **up**, so a record in a protein figure is always in the nucleotide figures too.
+
+### The axis is set by the placements the figure trusts
+
+The two scaling figures take their default range from the confidently-placed marks only.
+Letting the least reliable mark define the frame contradicts the encoding: a thin mark is
+already drawn smaller *because* its position is approximate. On PV1's protein scaling,
+seven records carrying 19 readable codons out of 881 stretched the second axis to 1.66 and
+squashed 3,158 confident placements into 3% of it. Thin marks inside the resulting range
+still draw, and each panel states how many fall outside — 134 on that panel, 10 on its
+nucleotide counterpart, which is how little this changes a healthy one. The trees are
+excluded from this rule: clipping a tip would leave its branch running off the panel.
 
 A tree is a scatter with a link layer: x is distance from the root, y is position in the
 ladder, and one mark per tip. That is why the trees reuse the component rather than
@@ -51,14 +70,14 @@ that is not a real loss. Under the linear fit part of that 0.61 rested on a geom
 plane could not honestly represent; under the square root the geometry is sound and
 the variance is spread across dimensions that genuinely exist.
 
-### Sets 3 and 4: not every sequence can be on a tree
+### Sets 3 and 5: not every sequence can be on a tree
 
 Neighbour joining needs a distance for every pair, and pairwise deletion does not
 supply one — two fragments covering disjoint parts of a region share no columns, so
 their distance does not exist. The tips are therefore
 `distances.comparable_set`: the largest mutually-comparable set a greedy finds,
 capped at 2,500 for cost. Every panel states how many sequences that left off, and
-those sequences are still in sets 1 and 2, which need no complete matrix.
+those sequences are still in the scaling views, which need no complete matrix.
 
 That set is ordered by **overlap degree**, not by coverage, and the difference is
 large. Ordering by coverage admits the longest sequence first, and one early fragment

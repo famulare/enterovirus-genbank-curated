@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Enterovirus GenBank Curated — data explorer</title>
-<meta name="description" content="An exploration surface for the enterovirus-genbank-curated data release: synonymous versus non-synonymous divergence, nucleotide distance, and phylogeny for 24,546 curated GenBank enterovirus sequences.">
+<meta name="description" content="An exploration surface for the enterovirus-genbank-curated data release: synonymous versus non-synonymous divergence, nucleotide and protein distance, and nucleotide and protein phylogeny over every curated GenBank enterovirus sequence.">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="app.css">
 </head>
@@ -18,7 +18,8 @@
     <a href="#divergence">Divergence</a>
     <a href="#distance">Distance</a>
     <a href="#phylogeny-nt">Phylogeny</a>
-    <a href="#phylogeny-aa">Protein</a>
+    <a href="#distance-aa">Protein distance</a>
+    <a href="#phylogeny-aa">Protein tree</a>
     <a href="#release">Release</a>
   </nav>
   <details class="section-nav">
@@ -27,7 +28,8 @@
       <a href="#divergence">Divergence</a>
       <a href="#distance">Distance</a>
       <a href="#phylogeny-nt">Phylogeny</a>
-      <a href="#phylogeny-aa">Protein</a>
+      <a href="#distance-aa">Protein distance</a>
+      <a href="#phylogeny-aa">Protein tree</a>
       <a href="#release">Release</a>
     </nav>
   </details>
@@ -41,7 +43,7 @@
     <h1 class="visually-hidden">Enterovirus GenBank Curated — data explorer</h1>
     <p class="lede">Curated GenBank enterovirus sequence data with all fields normalized and
       missing epidemiological data pulled in from the many related papers. Descriptive data
-      visualizations, with one selection and one color driving all four views. Raw GenBank source
+      visualizations, with one selection and one color driving all five views. Raw GenBank source
       complete as of <span id="raw-date">…</span>.</p>
     <p class="maintainer">Maintained by <a href="https://github.com/famulare">Mike Famulare</a> at
       the <a href="https://www.idmod.org/">Institute for Disease Modeling</a>, part of the
@@ -165,9 +167,41 @@
       a place in the ladder, not a measured quantity, which is why that axis carries no scale.</p>
   </section>
 
+  <section id="distance-aa" class="chapter" aria-labelledby="distance-aa-heading">
+    <div class="chapter-heading">
+      <h2 class="chapter-number" id="distance-aa-heading">04 / Protein distance</h2>
+      <p class="lede">The same scaling as view 02, over translated amino acid distance, each pair
+        normalized by the number of codons where both sequences carry three unambiguous bases.
+        Read it against 02: structure that survives translation is structure in the protein, and
+        structure that disappears was synonymous all along.</p>
+    </div>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="distance-aa-strip" role="group"
+           aria-label="Coding region — choose which one the large panel shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="distance-aa-note">
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="distance-aa-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks" id="distance-aa-canvas" tabindex="0"
+                    aria-describedby="distance-aa-readout"
+                    aria-label="Protein distance scaling scatter. Use arrow keys to move between sequences, Enter to pin one, Escape to clear."></canvas>
+            <svg class="scientific-chart plot-overlay" id="distance-aa-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="distance-aa-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="distance-aa-legend"></div>
+      </div>
+      <div class="readout" id="distance-aa-readout" role="status"></div>
+    </div>
+    <p class="warning">A codon counts only where all three of its bases are unambiguous in both
+      sequences being compared, so a synonymous change moves nothing in this view. Two sequences at
+      the same point are not the same sequence — they encode the same protein over what they
+      share.</p>
+  </section>
+
   <section id="phylogeny-aa" class="chapter" aria-labelledby="phylogeny-aa-heading">
     <div class="chapter-heading">
-      <h2 class="chapter-number" id="phylogeny-aa-heading">04 / Protein phylogeny</h2>
+      <h2 class="chapter-number" id="phylogeny-aa-heading">05 / Protein phylogeny</h2>
       <p class="lede">The same three coding regions, built from translated amino acid distance.
         Emphasizes convergent or divergent evolution over ancestry.</p>
     </div>
@@ -197,7 +231,7 @@
 
   <section id="release" class="chapter closing" aria-labelledby="release-heading">
     <div class="chapter-heading">
-      <h2 class="chapter-number" id="release-heading">05 / The release, and what is wrong with
+      <h2 class="chapter-number" id="release-heading">06 / The release, and what is wrong with
         it</h2>
       <p class="lede">Every number on this page is recomputed from the shipped release at build
         time, so it cannot drift from the data. That includes the problems: this page reports

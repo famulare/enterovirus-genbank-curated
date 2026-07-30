@@ -27,7 +27,12 @@ import { byId, esc, num } from "./dom.js";
 export interface ChapterSpec {
   /** Matches the element id prefix in index.html, and the region catalog flag. */
   id: string;
-  regionFlag: "in_divergence" | "in_distance" | "in_nucleotide_tree" | "in_protein_tree";
+  regionFlag:
+    | "in_divergence"
+    | "in_distance"
+    | "in_nucleotide_tree"
+    | "in_protein_distance"
+    | "in_protein_tree";
   /** Shown in the pinned inspector as the name of what this figure measured. */
   title: string;
   xLabel: string;
@@ -43,6 +48,9 @@ export interface ChapterSpec {
   tall?: boolean;
   /** Overrides how mark size falls off with population. */
   radius?: (count: number, thumbnail?: boolean) => number;
+  /** Take the default axis range from the confidently-placed marks only. Scatters may;
+   *  trees may not, because clipping a tip leaves its branch running off the panel. */
+  frameFromConfident?: boolean;
   /** Fetch and decode every region this chapter covers. The chapter owns its own
    *  source: the two scatters read a panel file, the two trees read a tree file. Takes
    *  the scale because for one chapter it selects which embedding to show. */
@@ -256,7 +264,7 @@ function frameFor(
   plot: scatter.Plot,
   scale: AxisScale,
 ): scatter.Frame {
-  const own = markExtent(marks, scale, axis);
+  const own = markExtent(marks, scale, axis, state.spec.frameFromConfident);
   const range = state.view.zoom ? zoomed(state.view.zoom, scale) : own;
   if (state.spec.yAxis === "ordinal") {
     range.y = state.view.zoom
@@ -349,7 +357,7 @@ function renderThumbnails(
     // Each thumbnail carries its own range and does not print it. At this size the
     // comparison a reader can make is shape, which stays fair across ranges; the
     // focus panel's labelled axes are where the numbers live.
-    const own = markExtent(marks, scale, axis);
+    const own = markExtent(marks, scale, axis, state.spec.frameFromConfident);
     const thumbFrame: scatter.Frame = {
       plot: scatter.THUMB_PLOT,
       x: own.x,
@@ -474,12 +482,19 @@ function renderNote(state: ChapterState, set: MarkSet, marks: Mark[]): void {
       : `<strong>${num(marks.length)}</strong> sequences with at least ${minNt} ${unit} in
          ${label}, ${width}.`;
 
+  const offPanel = marks.length - inRange;
   const parts = [
     state.view.zoom
       ? `<strong>${num(inRange)}</strong> of ${num(marks.length)} sequences inside the brushed
          range. <button type="button" class="text-button" data-reset-zoom>Show all</button>`
       : "",
     lead,
+    // Silence here would be the dishonest option: the range is set by the confident
+    // placements, so anything beyond it is off the panel and has to be counted.
+    !state.view.zoom && offPanel > 0
+      ? `${num(offPanel)} sit outside this range and are not drawn — their positions rest on
+         too little overlap to set the axis. Brushing a range shows what is inside it.`
+      : "",
     set.facts.excludedBelowCoverage
       ? `${num(set.facts.excludedBelowCoverage)} fall below that floor and are not drawn.`
       : "",

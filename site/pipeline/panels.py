@@ -12,6 +12,7 @@ from dataclasses import dataclass
 import numpy as np
 
 import contract
+import distances
 import divergence
 import frame
 import scaling
@@ -123,13 +124,61 @@ def build_selection(
             "min_nt": panel["min_nt"],
         }
 
+    distance = _distance_block(
+        alignment, rows, columns, record_rows, contract.DISTANCE_REGIONS, distances.NUCLEOTIDE
+    )
+    protein_distance = _distance_block(
+        alignment,
+        rows,
+        columns,
+        record_rows,
+        contract.PROTEIN_DISTANCE_REGIONS,
+        distances.RESIDUE,
+    )
+
+    return {
+        "schema": SCHEMA,
+        "selection": selection["id"],
+        "alignment": alignment.name,
+        "frame": selection["frame"],
+        "n_rows": int(len(rows)),
+        "orphaned": orphaned,
+        "jitter_scale": divergence.JITTER_SCALE,
+        # Amplitude of the jitter, as a fraction of one count. The browser applies
+        # offset = (jitter / jitter_scale) * jitter_amplitude / comparable.
+        "jitter_amplitude": 0.25,
+        "divergence": panels,
+        "distance": distance,
+        "protein_distance": protein_distance,
+    }
+
+
+def _distance_block(
+    alignment: frame.Alignment,
+    rows: np.ndarray,
+    columns: dict[str, np.ndarray],
+    record_rows: list[int],
+    regions: tuple[str, ...],
+    alphabet: distances.Alphabet,
+) -> dict:
+    """One scaling figure's regions. Nucleotide and residue space differ only in the
+    alphabet, so they are emitted by one function and read by one decoder."""
     distance = {}
-    for region in contract.DISTANCE_REGIONS:
-        placed = scaling.build_region(alignment, rows, columns[region], region, accessions)
+    for region in regions:
+        placed = scaling.build_region(
+            alignment, rows, columns[region], region, [], alphabet
+        )
         keep = placed["row"]
+        # Coverage is quoted in the figure's own unit, so a residue panel does not
+        # report a nucleotide count beside a codon threshold.
+        coverage = frame.coverage(alignment, columns[region])[rows]
+        if alphabet is distances.RESIDUE:
+            coverage = frame.is_residue(
+                frame.residue_block(alignment.matrix[np.ix_(rows, columns[region])])
+            ).sum(axis=1)
         distance[region] = {
             "record": [record_rows[index] for index in keep],
-            "coverage": _ints(frame.coverage(alignment, columns[region])[rows][keep]),
+            "coverage": _ints(coverage[keep]),
             "resolved": _ints(placed["resolved"]),
             "thin": [int(i) for i, ok in enumerate(placed["confident"]) if not ok],
             "landmarks": placed["landmarks"],
@@ -149,19 +198,6 @@ def build_selection(
                 }
                 for name, fit in placed["transforms"].items()
             },
+            "unit": placed["unit"],
         }
-
-    return {
-        "schema": SCHEMA,
-        "selection": selection["id"],
-        "alignment": alignment.name,
-        "frame": selection["frame"],
-        "n_rows": int(len(rows)),
-        "orphaned": orphaned,
-        "jitter_scale": divergence.JITTER_SCALE,
-        # Amplitude of the jitter, as a fraction of one count. The browser applies
-        # offset = (jitter / jitter_scale) * jitter_amplitude / comparable.
-        "jitter_amplitude": 0.25,
-        "divergence": panels,
-        "distance": distance,
-    }
+    return distance

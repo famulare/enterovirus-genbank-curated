@@ -19,6 +19,8 @@ export interface PanelFile {
   jitter_amplitude: number;
   divergence: Record<string, DivergenceRegion>;
   distance: Record<string, DistanceRegion>;
+  /** The same scaling, over translated residue distance. Coding regions only. */
+  protein_distance: Record<string, DistanceRegion>;
 }
 
 export interface DivergenceRegion {
@@ -59,6 +61,9 @@ export interface DistanceRegion {
   excluded: { below_coverage: number };
   columns: number;
   min_nt: number;
+  /** What `columns`, `min_nt` and `coverage` are counted in — nt, or codons for the
+   *  residue figure, where a codon counts only if all three bases are readable. */
+  unit: string;
   /** One fit per dissimilarity transform. Which records are placed and how well is
    *  shared; only the coordinates and the goodness of fit differ. */
   transforms: Record<string, DistanceFit>;

@@ -74,11 +74,25 @@ export function markExtent(
   marks: Mark[],
   scale: AxisScale,
   axis: (min: number, max: number, scale: AxisScale) => Axis,
+  /** Set the range from the confidently-placed marks only.
+   *
+   *  For a figure whose positions vary in trustworthiness, letting the least reliable
+   *  mark define the frame contradicts the encoding: a thin mark is already drawn
+   *  smaller *because* its position is approximate. On PV1's protein scaling, seven
+   *  records with 19 readable codons out of 881 stretched the second axis to 1.66 and
+   *  squashed 3,158 confident placements into 3% of it. Thin marks inside the resulting
+   *  range still draw; the figure states how many fall outside. Only a scatter may do
+   *  this — clipping a tree's tip would leave its branch running off the panel. */
+  confidentOnly = false,
 ): { x: Axis; y: Axis } {
+  const framing = confidentOnly ? marks.filter((mark) => mark.weight >= 1) : marks;
+  // Fall back to everything rather than to an empty range: a panel where nothing is
+  // confidently placed still has to draw.
+  const basis = framing.length ? framing : marks;
   const span = (get: (m: Mark) => number): [number, number] => {
     let low = Infinity;
     let high = -Infinity;
-    for (const mark of marks) {
+    for (const mark of basis) {
       const value = get(mark);
       if (value < low) low = value;
       if (value > high) high = value;

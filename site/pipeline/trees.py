@@ -398,20 +398,12 @@ def build_region(
     alphabet: distances.Alphabet,
 ) -> dict:
     """One tree. `rows` indexes the alignment; `record_rows` maps to records.json."""
-    threshold = contract.min_nt(region)
-    width = int(len(columns))
-    block = alignment.matrix[np.ix_(rows, columns)]
-    if alphabet is distances.RESIDUE:
-        block = frame.residue_block(block)
-        # A codon is the unit, so both the floor and the width convert rather than
-        # carrying over. Rounded UP, which matters: 50 nt is 16.7 codons, and rounding
-        # down to 16 made the protein floor 48 nt — looser than the nucleotide floor it
-        # was meant to restate. AM056056 has exactly 16 readable codons in P2 and duly
-        # appeared on the protein tree while being absent from every other figure. At 17
-        # codons the floor is 51 nt, so a record on a protein tree is always in the
-        # nucleotide figures too. `selftest.figures_nest` holds that.
-        threshold = max(1, -(-threshold // 3))
-        width //= 3
+    block, threshold, width = distances.in_alphabet(
+        alignment.matrix[np.ix_(rows, columns)],
+        contract.min_nt(region),
+        int(len(columns)),
+        alphabet,
+    )
 
     eligible = distances.eligible(block, threshold, alphabet)
     if len(eligible) < 3:

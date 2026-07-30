@@ -18,7 +18,13 @@ import {
 } from "./model/view.js";
 import { Records, type RecordTable } from "./model/records.js";
 import type { Mark } from "./model/mark.js";
-import { DISTANCE, DIVERGENCE, NUCLEOTIDE_TREE, PROTEIN_TREE } from "./model/specs.js";
+import {
+  DISTANCE,
+  DIVERGENCE,
+  NUCLEOTIDE_TREE,
+  PROTEIN_DISTANCE,
+  PROTEIN_TREE,
+} from "./model/specs.js";
 import * as chapter from "./ui/chapter.js";
 import {
   onControlEdit,
@@ -49,7 +55,8 @@ interface Manifest {
   build_identity: string;
 }
 
-const SPECS = [DIVERGENCE, DISTANCE, NUCLEOTIDE_TREE, PROTEIN_TREE];
+// Page order. Each id matches an element id prefix in index.html.
+const SPECS = [DIVERGENCE, DISTANCE, NUCLEOTIDE_TREE, PROTEIN_DISTANCE, PROTEIN_TREE];
 
 let summary: Summary;
 let records: Records;

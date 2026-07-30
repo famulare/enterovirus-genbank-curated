@@ -8,7 +8,7 @@
  *  layer; in every other respect they are the same instrument as the two scatters.
  */
 
-import { assertPanelSchema, type PanelFile } from "./panel.js";
+import { assertPanelSchema, type DistanceRegion, type PanelFile } from "./panel.js";
 import { assertTreeSchema, links as treeLinks, type TreeFile, type TreeRegion } from "./tree.js";
 import { loadFile } from "./source.js";
 import type { ChapterSpec } from "../ui/chapter.js";
@@ -198,12 +198,19 @@ export const DIVERGENCE: ChapterSpec = {
 
 const distanceDetail = new WeakMap<
   Mark,
-  { resolved: number; landmarks: number; transform: string; coverage: number }
+  { resolved: number; landmarks: number; transform: string; coverage: number; unit: string }
 >();
 
-function distanceMarks(file: PanelFile, region: string, scale: string): MarkSet {
-  const raw = file.distance[region];
-  if (!raw) throw new Error(`${file.selection} has no distance region ${region}`);
+/** One decoder for both scaling figures. Nucleotide and residue space run the same
+ *  procedure over the same metric, so the only thing that differs is which block of the
+ *  panel file it reads and what a difference means once read. */
+function distanceMarks(
+  raw: DistanceRegion | undefined,
+  region: string,
+  scale: string,
+  what: "nucleotide" | "residue",
+): MarkSet {
+  if (!raw) throw new Error(`no ${what} distance region ${region}`);
   const fit = raw.transforms[scale] ?? raw.transforms.linear!;
   const thin = new Set(raw.thin);
   const marks: Mark[] = raw.record.map((record, i) => {
@@ -221,6 +228,7 @@ function distanceMarks(file: PanelFile, region: string, scale: string): MarkSet 
       landmarks: raw.landmarks,
       transform: scale,
       coverage: raw.coverage[i]!,
+      unit: raw.unit,
     });
     return mark;
   });
@@ -228,9 +236,16 @@ function distanceMarks(file: PanelFile, region: string, scale: string): MarkSet 
   const notes = [
     `Scaling the ${
       scale === "sqrt" ? "square roots of the" : ""
-    } distances, against ${n(raw.landmarks)} landmark sequences whose distances are all
-     defined; two dimensions carry ${(fit.explained * 100).toFixed(0)}% of the variance.`,
+    } ${what} distances, against ${n(raw.landmarks)} landmark sequences whose distances are
+     all defined; two dimensions carry ${(fit.explained * 100).toFixed(0)}% of the variance.`,
   ];
+  if (what === "residue") {
+    notes.push(
+      `A codon counts only where all three of its bases are readable in both sequences, so
+       a synonymous change moves nothing here. Two sequences at the same point encode the
+       same protein over what they share; they are not the same sequence.`,
+    );
+  }
   if (fit.negative_share > 0.005) {
     notes.push(
       `${(fit.negative_share * 100).toFixed(1)}% of the geometry is non-Euclidean, so
@@ -255,7 +270,7 @@ function distanceMarks(file: PanelFile, region: string, scale: string): MarkSet 
       total: marks.length,
       minNt: raw.min_nt,
       columns: raw.columns,
-      unit: "nt",
+      unit: raw.unit,
       excludedBelowCoverage: raw.excluded.below_coverage,
       notes,
     },
@@ -268,6 +283,7 @@ export const DISTANCE: ChapterSpec = {
   title: "Distance",
   xLabel: "Scaling axis 1 (arbitrary units)",
   yLabel: "Scaling axis 2",
+  frameFromConfident: true,
   // The scale control selects which embedding to show — the one fitted to the
   // distances, or the one fitted to their square roots — rather than transforming the
   // drawn axis. The coordinates are signed, so the axis itself is always linear;
@@ -279,7 +295,7 @@ export const DISTANCE: ChapterSpec = {
       `data/panels/${selection}.json`,
       assertPanelSchema,
       regions,
-      (file, region) => distanceMarks(file, region, scale),
+      (file, region) => distanceMarks(file.distance[region], region, scale, "nucleotide"),
     );
   },
 
@@ -298,15 +314,46 @@ export const DISTANCE: ChapterSpec = {
     const d = distanceDetail.get(mark);
     if (!d) return [];
     return [
-      ["Region coverage", `${n(d.coverage)} nt`],
+      ["Region coverage", `${n(d.coverage)} ${d.unit}`],
       ["Scaling axis 1", mark.x.toFixed(4)],
       ["Scaling axis 2", mark.y.toFixed(4)],
       ["Dissimilarity scaled", d.transform === "sqrt" ? "square root of distance" : "distance"],
       ["Landmark distances defined", `${n(d.resolved)} of ${n(d.landmarks)}`],
       ["Placement", mark.weight < 1 ? "thin — treat position as approximate" : "confident"],
-      ["Region width", `${n(set.facts.columns)} alignment columns`],
+      [
+        "Region width",
+        `${n(set.facts.columns)} ${set.facts.unit === "nt" ? "alignment columns" : set.facts.unit}`,
+      ],
     ];
   },
+};
+
+/** Figure set 4: the same scaling in protein space.
+ *
+ *  Worth its own chapter rather than a toggle on set 2, because the comparison a reader
+ *  makes is between the two pictures: structure that survives translation is structure in
+ *  the protein, and structure that vanishes was synonymous all along. */
+export const PROTEIN_DISTANCE: ChapterSpec = {
+  id: "distance-aa",
+  regionFlag: "in_protein_distance",
+  title: "Protein distance",
+  xLabel: "Scaling axis 1 (arbitrary units)",
+  yLabel: "Scaling axis 2",
+  honoursScale: false,
+  frameFromConfident: true,
+
+  sets(selection, regions, scale) {
+    return decodeAll<PanelFile>(
+      `data/panels/${selection}.json`,
+      assertPanelSchema,
+      regions,
+      (file, region) =>
+        distanceMarks(file.protein_distance[region], region, scale, "residue"),
+    );
+  },
+
+  readout: DISTANCE.readout,
+  measured: DISTANCE.measured,
 };
 
 // --- Figure sets 3 and 4: the two phylogenies -------------------------------

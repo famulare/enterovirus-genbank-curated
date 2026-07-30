@@ -66,6 +66,23 @@ RESIDUE = Alphabet(
     "residue", "codons", frame.is_residue, tuple(range(1, len(frame.RESIDUE_SYMBOLS) + 1))
 )
 
+
+def in_alphabet(
+    block: np.ndarray, min_nt: int, columns: int, alphabet: Alphabet
+) -> tuple[np.ndarray, int, int]:
+    """A nucleotide block, floor and width, restated in the alphabet's own unit.
+
+    Every protein figure goes through here, so they cannot end up disagreeing about what
+    the floor means. The floor rounds UP, which is the part that bites: 50 nt is 16.7
+    codons, and rounding down to 16 makes the protein floor 48 nt — looser than the
+    nucleotide floor it is meant to restate, which let one record onto a protein figure
+    while being absent from every nucleotide one. At 17 codons the floor is 51 nt, so a
+    record in a protein figure is always in the nucleotide figures too.
+    """
+    if alphabet is NUCLEOTIDE:
+        return block, min_nt, columns
+    return frame.residue_block(block), max(1, -(-min_nt // 3)), columns // 3
+
 # A row needs at least this fraction of the landmarks resolved before its position is
 # treated as confident. Below it the point is drawn open.
 CONFIDENT_LANDMARK_FRACTION = 0.9
