@@ -696,6 +696,60 @@ def trees_are_populated() -> None:
     )
 
 
+def figures_nest() -> None:
+    """Which figure can contain which.
+
+    Pinning is cross-figure, so a reader who finds a sequence on a tree expects to find
+    it in the views above. That holds only if the populations nest, and they nest for a
+    reason rather than by luck:
+
+      divergence  needs a reference to measure against, so it drops records whose virus
+                  type supports no consensus. Subset of distance.
+      distance    the widest population: everything clearing the region's coverage floor.
+      both trees  need a complete distance matrix, so they drop what cannot be compared
+                  to everything else. Subset of distance.
+
+    The trees are deliberately NOT a subset of divergence. A non-polio record with no
+    reference consensus is measured perfectly well by distance and belongs on the tree;
+    dropping it because a different figure cannot measure it would make the tree worse
+    for a reason that has nothing to do with trees.
+    """
+    import json
+
+    print("\nfigure populations nest")
+    problems = []
+    checked = 0
+    for path in sorted((contract.DATA_OUT / "panels").glob("*.json")):
+        panels = json.loads(path.read_text())
+        selection = panels["selection"]
+        tree_path = contract.DATA_OUT / "trees" / f"{selection}.json"
+        forest = json.loads(tree_path.read_text()) if tree_path.exists() else {}
+        for region, block in panels["distance"].items():
+            placed = set(block["record"])
+            measured = set(panels["divergence"].get(region, {}).get("record", []))
+            if measured - placed:
+                problems.append(
+                    f"{selection} {region}: {len(measured - placed)} in divergence but not distance"
+                )
+            for family in ("nucleotide", "protein"):
+                tips = set(forest.get(family, {}).get(region, {}).get("tip_record", []))
+                if not tips:
+                    continue
+                checked += 1
+                if tips - placed:
+                    problems.append(
+                        f"{selection} {region} {family} tree: {len(tips - placed)} tips "
+                        "absent from the distance view"
+                    )
+    check(checked > 0, f"{checked} tree panels compared against their distance panel")
+    check_equal(
+        len(problems),
+        0,
+        "divergence and both trees are subsets of distance"
+        + (f": {'; '.join(problems[:3])}" if problems else ""),
+    )
+
+
 def run() -> int:
     synthetic_cases()
     distance_and_embedding_cases()
@@ -709,6 +763,7 @@ def run() -> int:
         square_root_never_worsens_the_geometry()
     if (contract.DATA_OUT / "trees").is_dir():
         trees_are_populated()
+        figures_nest()
 
     print()
     if FAILURES:

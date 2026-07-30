@@ -404,8 +404,13 @@ def build_region(
     if alphabet is distances.RESIDUE:
         block = frame.residue_block(block)
         # A codon is the unit, so both the floor and the width convert rather than
-        # carrying over: 50 nt of comparable material is between 16 and 17 codons of it.
-        threshold = max(1, threshold // 3)
+        # carrying over. Rounded UP, which matters: 50 nt is 16.7 codons, and rounding
+        # down to 16 made the protein floor 48 nt — looser than the nucleotide floor it
+        # was meant to restate. AM056056 has exactly 16 readable codons in P2 and duly
+        # appeared on the protein tree while being absent from every other figure. At 17
+        # codons the floor is 51 nt, so a record on a protein tree is always in the
+        # nucleotide figures too. `selftest.figures_nest` holds that.
+        threshold = max(1, -(-threshold // 3))
         width //= 3
 
     eligible = distances.eligible(block, threshold, alphabet)
