@@ -209,6 +209,7 @@ def test_raw_columns_are_a_subset_of_declared_columns() -> None:
         assert raw <= set(TABLE_COLUMNS[name]), f"{name} marks undeclared columns as raw"
 
 
+@pytest.mark.slow
 def test_raw_columns_covers_every_column_the_release_stores_unnormalized(
     repository_root: Path,
 ) -> None:
@@ -217,6 +218,12 @@ def test_raw_columns_covers_every_column_the_release_stores_unnormalized(
     Any column whose shipped values differ from `collapse(value)` is prose and MUST be declared in
     `RAW_COLUMNS`; otherwise the writer would whitespace-collapse it and silently lose formatting.
     Testing that `RAW_COLUMNS` names exist (above) cannot catch an omission.
+
+    Marked slow on 2026-07-30: it reads all twelve shipped TSVs in full, 4.2 s, which was the second
+    largest cost in the fast tier. Nothing is lost in CI, which runs both tiers on every push. It is
+    kept as its own check rather than left to byte-parity — a `RAW_COLUMNS` omission *would* fail
+    parity, but as a byte diff pointing at the writer instead of a named column pointing at the
+    declaration.
     """
     undeclared: dict[str, set[str]] = {}
     for name, columns in TABLE_COLUMNS.items():

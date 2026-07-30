@@ -28,10 +28,11 @@ def test_repository_contracts_validate(repository_root: Path) -> None:
     validate_contracts(repository_root)
 
 
-def test_shape_only_validation_is_available(repository_root: Path) -> None:
-    validate_contracts(repository_root, verify_baseline=False)
-
-
+# A companion `test_shape_only_validation_is_available`, calling the same function with
+# `verify_baseline=False`, was removed on 2026-07-30. It exercised a strict code subset of the test
+# above and reddened only alongside it, and it could not detect the failure worth catching — a
+# `verify_baseline` that was ignored and always ran would leave it passing on a clean tree. If the
+# flag is to be tested, the check has to be that it *skips* the baseline work, not that it returns.
 def test_ledger_contract_is_derived_from_the_published_schema(
     decision_contract: DecisionContract,
 ) -> None:

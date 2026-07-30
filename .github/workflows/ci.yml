@@ -34,8 +34,20 @@ jobs:
       # the guard's mechanism, not the real build.
       - name: Test
         run: python -m pytest
-      - name: Validate repository contracts
-        run: evgc validate-contracts
+      #
+      # There is deliberately no separate `evgc validate-contracts` step. The tier above already runs
+      # `validate_contracts` against the real tree with full baseline verification, via
+      # tests/test_contracts.py::test_repository_contracts_validate — a step here would re-hash the
+      # shipped release a second time to reach the same assertions. Removed 2026-07-30.
+      #
+      # Known consequence: `validate-contracts` joins `validate-ledger` and `build-source` as cli.py
+      # branches no CI job executes. Only `parity-source` is, by the guarded corpus test below — the
+      # sole test that shells out to the CLI at all. So this step was covering one of three otherwise
+      # unexercised branches, which is worth more than the assertions it duplicated. If that coverage
+      # is wanted back, the proportionate fix is a fast test per branch calling `cli.main([...])`
+      # directly — `validate-contracts --skip-baseline-verification` costs milliseconds — rather than
+      # a step that re-hashes all of final/ to reach conclusions pytest already reached.
+      #
       # The corpus tier: reparse all 25,727 records from raw/ and compare every source artifact
       # against the hashes the release manifest declares. ~40s, so it belongs on every push. When
       # the pipeline grows a multi-hour alignment stage this must split into its own scheduled

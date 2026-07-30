@@ -335,12 +335,14 @@ path that resolves into the tree; that is a documented limit rather than a defen
 [`registry/legacy/README.md`](legacy/README.md) for the per-file reach analysis, the three large
 derived tables deliberately *not* carried, and the DQ205099 disposition.
 
-`scripts/migrate_decisions.py` is the generic normalizer for *future* legacy imports. It refuses to
-run when an input file carries a column with no destination in the ledger — silently dropping
-curator-entered data is the failure mode this repository exists to prevent. Columns that are
-genuinely out of scope must be named explicitly:
+There is no generic normalizer for *future* legacy imports. `scripts/migrate_decisions.py` was
+offered as one and was deleted on 2026-07-30: it hashed `source_artifact` into `decision_id` and
+emitted 20-hex digests, so using it would have reproduced the exact failure D3 exists to prevent — a
+source-file rename rehashing every id — and mixed 20-hex ids into a ledger of 12-hex ones. Both forms
+satisfy the schema pattern, so nothing would have caught it (backlog B21). It had produced no
+committed artifact and had never been run against real data; three passing tests certified it anyway.
 
-```bash
-python scripts/migrate_decisions.py legacy/*.csv --output registry/decisions.tsv \
-  --drop-columns internal_row_id,spreadsheet_colour
-```
+When another registry genuinely needs importing, write the normalizer then, against
+`ID_COLUMNS` and the digest length in `scripts/migrate_legacy_registries.py`. Refusing to run on a
+column with no destination in the ledger is the one behaviour worth carrying over — silently dropping
+curator-entered data is the failure mode this repository exists to prevent.

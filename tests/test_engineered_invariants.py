@@ -64,16 +64,20 @@ reached. The method could not support the claim being made with it. Mutation 6 b
 with one verified scope-neutral *and* count-neutral first, so the digest is genuinely isolated.
 
 Nine mutations, 2026-07-30, against the design at this commit. Data mutations were applied to the
-shipped artifacts themselves and reverted, with sha256 re-verified afterwards (`369b6c0b…`
-canonical, `e9f0dac6…` source records, `335588b1…` ledger). Test IDs are in full; all are in this
-module.
+shipped artifacts themselves and reverted, with sha256 re-verified afterwards. Test IDs are in full;
+all are in this module.
 
-(Those three restoration hashes were measured against the 2.3.0-era shipped bytes, before the
-2.4.1 refresh touched 11 canonical rows' classification/origin text. Re-running the full
-nine-mutation battery to re-pin them is unnecessary busywork right now: the mutations test the
-*mechanism*, not any specific byte content, and every test in this module passes clean against the
-current 2.4.1 `final/`. Re-pin the three hashes the next time this file is touched for an
-unrelated reason, rather than as a one-off chase.)
+The three files the battery mutates, at their current 2.4.1 bytes — re-pinned 2026-07-30, since the
+figures recorded here previously were measured against 2.3.0-era bytes and two of the three had
+moved. Restoration after any future mutation means matching these:
+
+    canonical        `bde4be0f…`   final/canonical/sequence_metadata.tsv.gz
+    source records   `e9f0dac6…`   final/source/normalized_tsv/records.tsv.gz   (unchanged by 2.4.1)
+    ledger           `a3fa5087…`   registry/decisions.tsv
+
+The battery itself was not re-run to re-pin them: the mutations test the *mechanism*, not any
+specific byte content, and every test in this module passes clean against the current 2.4.1
+`final/`.
 
 1. **`CS406436` TRUE→FALSE on disk** — the D2 defect reproduced in the shipped bytes, leaving its
    byte-identical twin `PU749305` at TRUE. **6 failed:**
@@ -787,8 +791,12 @@ def test_the_ledger_does_not_split_a_byte_identical_group(
     """Curation must not assert a value for part of a byte-identical group.
 
     This is the only check here with real detection power over work done *today*. It reads
-    `registry/decisions.tsv`, which this repository writes, rather than `final/canonical/`, which
-    it does not — `git log -- final/canonical` has exactly one commit, the initial release.
+    `registry/decisions.tsv`, which this repository writes, rather than `final/canonical/`, which it
+    does not — `git log -- final/canonical` has three commits, all deliberate release refreshes
+    (`82f2966` 2.1.5, `edbacc6` 2.3.0, `3e3a0c3` 2.4.1). This said "exactly one commit, the initial
+    release" until 2026-07-30, which was true when written and stale for two refreshes after; the
+    module docstring above had the correct count throughout. The argument is unaffected — three
+    deliberate refreshes still means a canonical-only check lags a curation mistake made today.
 
     Compares group *content*, not a before/after digest diff. See `ledger_incoherent_groups` for why
     the differential version was blind across 280 records, including the population this whole

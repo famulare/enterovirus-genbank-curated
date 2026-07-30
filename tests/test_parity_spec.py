@@ -2,6 +2,14 @@
 
 Every test below mutates a copy of the real specification and asserts that verification
 notices. A contract nothing can contradict is not a contract.
+
+Five tests were removed on 2026-07-30 that restated, as plain assertions over the real spec, checks
+`validate_parity_spec` and `verify_release_baseline` already make on the same file in the same run —
+the frozen counts, the two policy booleans, `verify_release_baseline` itself, the
+build-manifest/raw-hash tie, and the spec's existence. `validate_contracts` reaches all of them via
+`tests/test_contracts.py::test_repository_contracts_validate`, and every mutation that reddened one
+of the five reddened that test too. Restating an enforced check does not add a second guarantee; it
+adds a second thing to update. Falsification of that enforcement is what belongs here.
 """
 
 import copy
@@ -15,7 +23,6 @@ import pytest
 
 from enterovirus_genbank_curated.contracts import (
     EXPECTED_BASELINE_COUNTS,
-    PARITY_SPEC_PATH,
     RELEASE_FILE_MANIFEST_PATH,
     ContractError,
     read_tsv_gz,
@@ -24,23 +31,7 @@ from enterovirus_genbank_curated.contracts import (
     verify_expected_artifacts,
     verify_expected_counts,
     verify_raw_input,
-    verify_release_baseline,
 )
-
-
-def test_parity_spec_records_frozen_release_counts(parity_spec: dict) -> None:
-    assert parity_spec["expected_counts"] == EXPECTED_BASELINE_COUNTS
-
-
-def test_parity_spec_never_treats_final_as_input(parity_spec: dict) -> None:
-    assert parity_spec["policy"]["existing_final_is_pipeline_input"] is False
-    assert parity_spec["policy"]["baseline_release_mutable"] is False
-
-
-def test_shipped_release_matches_the_parity_contract(
-    repository_root: Path, parity_spec: dict
-) -> None:
-    verify_release_baseline(repository_root, parity_spec)
 
 
 def test_undeclared_parity_keys_are_rejected(tmp_path: Path, parity_spec: dict) -> None:
@@ -108,20 +99,6 @@ def test_build_manifest_disagreement_is_caught(
     spec["source_release_commit"] = "0" * 40
     with pytest.raises(ContractError, match="git_sha"):
         verify_build_manifest(repository_root, spec)
-
-
-def test_raw_archive_is_tied_to_the_release_build_manifest(
-    repository_root: Path, parity_spec: dict
-) -> None:
-    """The shipped raw archive must be the snapshot the release says it was built from."""
-    manifest = json.loads(
-        (repository_root / "final/audit/build_manifest.json").read_text(encoding="utf-8")
-    )
-    assert manifest["source_genbank_sha256"] == parity_spec["raw_input"]["uncompressed_sha256"]
-
-
-def test_parity_spec_path_constant_points_at_the_shipped_contract(repository_root: Path) -> None:
-    assert (repository_root / PARITY_SPEC_PATH).is_file()
 
 
 def test_quoted_multiline_fields_are_counted_as_one_row(tmp_path: Path) -> None:

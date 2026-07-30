@@ -10,8 +10,9 @@ readme = "README.md"
 requires-python = ">=3.12,<3.14"
 license = { text = "MIT" }
 authors = [{ name = "Mike Famulare" }]
-# Pinned exactly: these versions produced the v2.1.5 baseline the parity gate compares against,
-# and GenBank parse output is version-sensitive.
+# Pinned exactly: these versions reproduce the source layer of the baseline the parity gate compares
+# against — currently 2.4.1, and unchanged since 2.1.5, since no refresh has touched final/source/.
+# GenBank parse output is version-sensitive.
 dependencies = [
     "biopython==1.87",
     "duckdb==1.5.5",
