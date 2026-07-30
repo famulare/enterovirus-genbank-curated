@@ -30,17 +30,15 @@ hold a GenBank value moved into a canonical column — `accession`, `version`, `
 `country`, `admin1`, `locality`, `biosample_accession`. Every one of those cells matches the
 release exactly, in the same row order, and repeated builds are byte-stable. The split is not a
 judgement call: `final/audit/canonical_projection_provenance.tsv.gz` carries a projection row for
-exactly the other fourteen columns, minus `locality`, whose rule (R-GEO-LOCALITY-1) is closed-form
-over one GenBank string.
+exactly the other fourteen columns, minus `locality`, whose rule is closed-form over one GenBank
+string.
 
-`locality` is also reproduced *with its provenance*. `evgc parity-metadata` compares the generated
-projection rows against `final/audit/canonical_projection_provenance.tsv.gz` on all nine shipped
-columns for all 24,284 shared records — the value, the upstream field and value it came from, the
-winning rule, and the branch label — and both shipped branches come out right
-(`geo_parse` 1,033 / `duplicate_of_admin1_suppressed` 23,251). That is a deliberately small first
-column: reproducing a value while mislabelling which way the rule went is right by luck, and this is
-the cheapest place to establish that the rule catalog, the outcome type and the provenance writer all
-agree with the release before a harder column is attempted.
+`locality` is also produced *with its provenance*, and it was the deliberately small first column for
+that: reproducing a value while mislabelling which way the rule went is right by luck, so the cheapest
+place to establish that the rule catalog, the outcome type and the provenance writer all agree with the
+release is on one closed-form rule before a harder column is attempted. Its **value** matches the
+release on all 24,284 shared records. Its **branch label** does not, and comparing the label is what
+found that the shipped label was wrong — see [the second deliberate break](#the-second-deliberate-break-localitys-basis).
 
 `virus_group` and `curation_status` are projected the same way, and they are where the rewrite first
 **declines** rather than guessing. Poliovirus sits inside one enterovirus species — *Enterovirus C*,
@@ -61,10 +59,10 @@ Of the 22,551 rows the rule does decide, every one matches the release, includin
 first place a recorded decision is shown to reach a generated provenance row rather than merely
 existing in the ledger, which is the D2 failure stated positively.
 
-### The one deliberate break so far: `collection_date_precision`
+### The first deliberate break: `collection_date_precision`
 
-Everything above reproduces the release. The date family does not, on purpose, and this is the first
-place the rewrite corrects rather than reproduces.
+The date family does not reproduce the release, on purpose. This is the first place the rewrite
+corrects rather than reproduces, and the second follows it.
 
 For every record that deposited a `/collection_date`, the canonical date **is** the ISO normalization
 of that qualifier and the precision **is** its shape — 19,730 rows, exactly, with no curated input,
