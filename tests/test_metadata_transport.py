@@ -16,13 +16,16 @@ from pathlib import Path
 import pytest
 
 from enterovirus_genbank_curated.contracts import DECISION_COLUMNS
+from enterovirus_genbank_curated.derive.geo import parse_geo_loc_name
 from enterovirus_genbank_curated.derive.metadata import (
     SEQUENCE_RESCUED_INCLUSIONS,
     UNDECLARED_EXCLUSIONS,
-    load_excluded_accessions,
-    parse_geo_loc_name,
 )
-from enterovirus_genbank_curated.oracle.parity import verify_metadata_parity
+from enterovirus_genbank_curated.oracle.parity import (
+    UNRESOLVED_PARTITION_ROWS,
+    verify_metadata_parity,
+)
+from enterovirus_genbank_curated.registry.decisions import load_excluded_accessions
 
 
 @pytest.mark.parametrize(
@@ -99,9 +102,21 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
     assert set(parity.absent_from_release) == UNDECLARED_EXCLUSIONS
 
     # Provenance for every implemented rule, compared on all nine shipped columns — value, the
-    # upstream field and value it came from, the winning rule, and the branch label.
-    assert provenance.fields == ("locality",)
-    assert provenance.compared_rows == 24284
+    # upstream field and value it came from, the winning rule, and the branch label. `virus_group`
+    # is the first field where `manual_override` is non-trivial: it is TRUE on exactly the seventeen
+    # records the ledger's `is_poliovirus` decisions resolve, so this also proves the decision
+    # reaches the provenance row rather than merely existing in the ledger.
+    assert provenance.fields == ("curation_status", "locality", "virus_group")
+    assert provenance.compared_rows == 24284 + 2 * (24284 - UNRESOLVED_PARTITION_ROWS)
     assert sum(provenance.basis_counts.values()) == provenance.compared_rows
-    assert provenance.absent_from_build == len(SEQUENCE_RESCUED_INCLUSIONS)
-    assert provenance.absent_from_release == len(UNDECLARED_EXCLUSIONS)
+    # Counted as (version, field) keys, so the declared row-set gap scales with the number of
+    # projected fields: every gap record is missing one row per implemented rule.
+    fields = len(provenance.fields)
+    assert provenance.absent_from_build == len(SEQUENCE_RESCUED_INCLUSIONS) * fields
+    assert provenance.absent_from_release == len(UNDECLARED_EXCLUSIONS) * fields
+
+    # Both partition columns decline on the same population, and never on a different one.
+    assert provenance.unresolved_by_field == {
+        "virus_group": UNRESOLVED_PARTITION_ROWS,
+        "curation_status": UNRESOLVED_PARTITION_ROWS,
+    }

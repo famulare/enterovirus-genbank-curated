@@ -42,6 +42,25 @@ column: reproducing a value while mislabelling which way the rule went is right 
 the cheapest place to establish that the rule catalog, the outcome type and the provenance writer all
 agree with the release before a harder column is attempted.
 
+`virus_group` and `curation_status` are projected the same way, and they are where the rewrite first
+**declines** rather than guessing. Poliovirus sits inside one enterovirus species — *Enterovirus C*,
+renamed *Enterovirus coxsackiepol* — so a GenBank organism name decides membership only when it names
+something at or below the type level. Six names cannot: the polio-containing species under either
+name, the bare genus, and three that are not virus identifications at all (`unidentified`,
+`synthetic construct`, `Homo sapiens`). The rule returns unresolved for all of them.
+
+That matters more than it looks. Defaulting those names to non-polio scores **98.3%** against the
+release, which reads as success and is a guess on 414 records — and `virus_group` gates
+`sequence_scope`, `curation_status`, `poliovirus_classification` and the whole epi partition, so four
+later columns would inherit the guess and each look right for the wrong reason. The honest population
+is **1,733 declined rows**, not 414: 414 is only where a default would have landed wrong. Sizing an
+ambiguity by its disagreements rather than by its inputs is the specific mistake being avoided here.
+
+Of the 22,551 rows the rule does decide, every one matches the release, including `manual_override`
+— TRUE on exactly the seventeen records the ledger's `is_poliovirus` decisions resolve. That is the
+first place a recorded decision is shown to reach a generated provenance row rather than merely
+existing in the ledger, which is the D2 failure stated positively.
+
 One shipped label is reproduced despite overstating its case, and is pinned rather than quietly
 inherited: `duplicate_of_admin1_suppressed` covers 2,048 records that deposited no
 `/geo_loc_name` at all, where there was never a locality to suppress. Splitting it would mean moving
@@ -62,7 +81,9 @@ does not actively exclude the accession — which reproduces 24,284 of the 24,30
 - Seventeen shipped records it cannot reach: patent-division deposits whose organism is
   `unidentified`, `Homo sapiens` or `synthetic construct`, recovered upstream by capsid amino-acid
   distance to a poliovirus reference (R-MEMBERSHIP-AA-1). Eight name polio in their `DEFINITION`;
-  nine do not, so no text rule recovers the set — it needs the sequence stage.
+  nine do not, so no text rule recovers the set — it needs the sequence stage. The curator confirmed
+  on 2026-07-30 that these records belong in the carve, so this is a gap to close by implementing the
+  membership rule rather than one to close by excluding them.
 - One record it carves that the release excludes: `AF326751.2` (Simian agent 5 strain B165) carries
   `Enterovirus` in its lineage but ships as `non_ev_other` with no exclusion reason and no row in
   `registry/decisions.tsv`. The call is real; its basis is not in any declared input.

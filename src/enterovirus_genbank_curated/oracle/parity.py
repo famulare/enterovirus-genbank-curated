@@ -245,6 +245,27 @@ def compare_metadata_to_release(
     )
 
 
+# Declared residuals live here rather than beside the rules, so the build cannot reach them at all:
+# `tests/test_module_boundaries.py` forbids `derive/` from importing `oracle`. The two sets in
+# `derive/metadata.py` predate this file and should move here too.
+#
+# `virus_group` declines on every record whose organism name cannot determine polio membership — the
+# polio-containing species at species level, the bare genus, or a non-identification. Upstream
+# resolved these by capsid amino-acid distance (R-MEMBERSHIP-AA-1).
+#
+# The count is the *input* population, not the population where a default would have landed wrong.
+# That second number is 414, and an earlier draft of this work mistook it for the size of the
+# problem — which is how a rule ends up scoring 98.3% by guessing.
+#
+# 1,733 = 1,765 records carrying an uninformative organism name in the shipped canonical table
+#         − 17 that are `SEQUENCE_RESCUED_INCLUSIONS` and so are not in the carve at all
+#         − 15 carved ones the ledger's `is_poliovirus` decisions resolve
+#              (17 such decisions exist; 2 are on records literally named `Poliovirus 2`/`3`, which
+#               the name predicate already decides, so only 15 land on uninformative names).
+UNRESOLVED_PARTITION_ROWS = 1733
+PARTITION_FIELDS = ("virus_group", "curation_status")
+
+
 @dataclass(frozen=True)
 class ProvenanceParityResult:
     fields: tuple[str, ...]
@@ -252,6 +273,7 @@ class ProvenanceParityResult:
     basis_counts: dict[str, int]
     absent_from_build: int
     absent_from_release: int
+    unresolved_by_field: dict[str, int]
 
 
 def compare_provenance_to_release(
@@ -280,9 +302,26 @@ def compare_provenance_to_release(
     # The provenance row set inherits the carve's declared 18-record gap exactly, and inheriting it
     # is checked rather than assumed. Skipping unmatched rows would let a rule that projected the
     # wrong population pass by producing rows nothing compares against.
-    built_keys = {(row["version"], row["canonical_field"]) for row in rows}
+    # A declined row has no shipped counterpart to compare against — the release always produced a
+    # value. It is counted, required to match the declared residual, and never compared. Comparing
+    # it would fail; silently dropping it would let a rule decline its way to a clean gate.
+    unresolved = [row for row in rows if row.get("unresolved_reason")]
+    unresolved_by_field: dict[str, int] = {}
+    for row in unresolved:
+        field = row["canonical_field"]
+        unresolved_by_field[field] = unresolved_by_field.get(field, 0) + 1
+    for field in PARTITION_FIELDS:
+        if field in unresolved_by_field and unresolved_by_field[field] != UNRESOLVED_PARTITION_ROWS:
+            raise ContractError(
+                f"{field} declined on {unresolved_by_field[field]} records, not the declared "
+                f"{UNRESOLVED_PARTITION_ROWS}; the uninformative-organism population has moved"
+            )
+
+    resolved = [row for row in rows if not row.get("unresolved_reason")]
+    built_keys = {(row["version"], row["canonical_field"]) for row in resolved}
+    unresolved_keys = {(row["version"], row["canonical_field"]) for row in unresolved}
     built_only = built_keys - set(shipped)
-    release_only = set(shipped) - built_keys
+    release_only = set(shipped) - built_keys - unresolved_keys
     if {version for version, _ in built_only} != UNDECLARED_EXCLUSIONS:
         raise ContractError(
             "provenance rows with no shipped counterpart are not the declared exclusion set: "
@@ -295,7 +334,7 @@ def compare_provenance_to_release(
         )
 
     differences: list[str] = []
-    for row in rows:
+    for row in resolved:
         key = (row["version"], row["canonical_field"])
         want = shipped.get(key)
         if want is None:
@@ -312,18 +351,19 @@ def compare_provenance_to_release(
         )
 
     # Counted over compared rows only, so the reported branch tallies sum to `compared_rows` rather
-    # than silently including the row that has no shipped counterpart.
+    # than silently including rows that have no shipped counterpart.
     basis_counts: dict[str, int] = {}
-    for row in rows:
+    for row in resolved:
         if (row["version"], row["canonical_field"]) in built_only:
             continue
         basis_counts[row["evidence_basis"]] = basis_counts.get(row["evidence_basis"], 0) + 1
     return ProvenanceParityResult(
         fields=tuple(fields),
-        compared_rows=len(rows) - len(built_only),
+        compared_rows=len(resolved) - len(built_only),
         basis_counts=basis_counts,
         absent_from_build=len(release_only),
         absent_from_release=len(built_only),
+        unresolved_by_field=unresolved_by_field,
     )
 
 

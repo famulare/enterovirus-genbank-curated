@@ -36,6 +36,12 @@ PROVENANCE_COLUMNS = (
     "manual_override",
 )
 
+# The rewrite's own tenth column, alongside the nine the release ships. A rule that declines has to
+# say so somewhere, and the alternative — inferring "declined" from a blank `final_value` — cannot
+# distinguish it from a value the rule deliberately blanked, which `locality` does 23,251 times.
+UNRESOLVED_REASON_COLUMN = "unresolved_reason"
+PROVENANCE_OUTPUT_COLUMNS = (*PROVENANCE_COLUMNS, UNRESOLVED_REASON_COLUMN)
+
 
 def write_rules_view(output_dir: Path, specs: Iterable[RuleSpec]) -> int:
     """Project the catalog onto the four shipped columns, in catalog order."""
@@ -47,4 +53,4 @@ def write_rules_view(output_dir: Path, specs: Iterable[RuleSpec]) -> int:
 
 def write_projection_provenance(output_dir: Path, rows: list[dict[str, str]]) -> int:
     """Write the projection rows exactly as the rules produced them, in emission order."""
-    return write_tsv(output_dir / PROVENANCE_RELATIVE, PROVENANCE_COLUMNS, rows)
+    return write_tsv(output_dir / PROVENANCE_RELATIVE, PROVENANCE_OUTPUT_COLUMNS, rows)

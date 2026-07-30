@@ -11,18 +11,21 @@ increment that applies decisions, which is also where `decision_id` joins on.
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.derive.outcome import RecordView, RuleOutcome
 from enterovirus_genbank_curated.registry.rules import BoundRule
 
 NO_OVERRIDE = "FALSE"
+OVERRIDE = "TRUE"
 SOURCE_FEATURE_KEY = "source"
 
 
 def build_record_views(
-    tables: dict[str, list[dict[str, str]]], versions: Iterable[str]
+    tables: dict[str, list[dict[str, str]]],
+    versions: Iterable[str],
+    decisions: Mapping[str, Mapping[str, str]] | None = None,
 ) -> list[RecordView]:
     """One view per requested version, in the corpus order the parser emitted.
 
@@ -48,12 +51,14 @@ def build_record_views(
             row["qualifier_name"], row["qualifier_value"]
         )
 
+    ledger = decisions or {}
     return [
         RecordView(
             version=record["version"],
             accession=record["accession"],
             record=record,
             qualifiers=qualifiers.get(record["version"], {}),
+            decisions=ledger.get(record["accession"], {}),
         )
         for record in tables["records"]
         if record["version"] in wanted
@@ -92,7 +97,8 @@ def project_field(bound: BoundRule, views: Sequence[RecordView]) -> list[dict[st
                 "source_value": outcome.source_value,
                 "winning_rule_id": bound.spec.rule_id,
                 "evidence_basis": outcome.evidence_basis,
-                "manual_override": NO_OVERRIDE,
+                "manual_override": OVERRIDE if outcome.manual_override else NO_OVERRIDE,
+                "unresolved_reason": outcome.unresolved_reason,
             }
         )
     return rows

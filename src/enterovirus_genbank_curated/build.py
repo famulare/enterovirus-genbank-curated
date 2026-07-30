@@ -37,10 +37,7 @@ from enterovirus_genbank_curated.contracts import (
     verify_raw_input,
 )
 from enterovirus_genbank_curated.derive.apply import build_record_views, project_field
-from enterovirus_genbank_curated.derive.metadata import (
-    load_excluded_accessions,
-    transport_metadata,
-)
+from enterovirus_genbank_curated.derive.metadata import transport_metadata
 from enterovirus_genbank_curated.export.audit import write_projection_provenance
 from enterovirus_genbank_curated.export.metadata import write_metadata_transport
 from enterovirus_genbank_curated.export.source import (
@@ -48,6 +45,10 @@ from enterovirus_genbank_curated.export.source import (
     write_source_tsv,
 )
 from enterovirus_genbank_curated.genbank.parse import parse_source_tables
+from enterovirus_genbank_curated.registry.decisions import (
+    load_active_decisions,
+    load_excluded_accessions,
+)
 from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 from enterovirus_genbank_curated.registry.rules import (
     RULES_CATALOG_PATH,
@@ -187,7 +188,11 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     load_rule_implementations()
     rule_contract = load_rule_contract(repository_root / RULES_SCHEMA_PATH)
     catalog = load_rule_catalog(repository_root / RULES_CATALOG_PATH, rule_contract)
-    views = build_record_views(tables, (row["version"] for row in transport.rows))
+    views = build_record_views(
+        tables,
+        (row["version"] for row in transport.rows),
+        load_active_decisions(ledger_path),
+    )
     provenance = [
         row
         for rule in bind_rules(catalog).values()

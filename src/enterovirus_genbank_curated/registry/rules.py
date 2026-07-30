@@ -121,8 +121,6 @@ RULE_IMPLEMENTATIONS: dict[str, RuleImplementation] = {}
 # `derive/metadata.py`'s `PENDING_COLUMNS` provides for columns, at the rule layer: 28 of 28 today.
 PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.scope.sequence_scope": "needs record_type, derived against Sabin VP1 coordinates",
-    "derive.partition.virus_group": "needs capsid AA distance for 417 generic-organism records",
-    "derive.partition.curation_status": "follows virus_group",
     "derive.typing.virus_type": "needs the coverage-guarded serotype and EV sequence typing",
     "derive.classification.poliovirus_classification": (
         "needs classification_reconciled: text classification plus the sequence tier"

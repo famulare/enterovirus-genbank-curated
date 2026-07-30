@@ -28,6 +28,12 @@ from enterovirus_genbank_curated.derive.geo import (
     unsuppressed_locality,
 )
 from enterovirus_genbank_curated.derive.outcome import RecordView, RuleOutcome
+from enterovirus_genbank_curated.derive.partition import (
+    UNINFORMATIVE_ORGANISMS,
+    UNRESOLVED_UNINFORMATIVE,
+    curation_status,
+    virus_group,
+)
 from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 from enterovirus_genbank_curated.registry.rules import (
     RULE_IMPLEMENTATIONS,
@@ -51,6 +57,7 @@ def view(**qualifiers: str) -> RecordView:
         accession="AB000001",
         record={"version": "AB000001.1", "accession": "AB000001"},
         qualifiers=qualifiers,
+        decisions={},
     )
 
 
@@ -137,6 +144,87 @@ def test_an_unresolved_outcome_may_not_carry_a_value() -> None:
 def test_unsuppressed_locality_keeps_the_whole_remainder() -> None:
     assert unsuppressed_locality("Congo: Kinshasa: Limete") == "Kinshasa: Limete"
     assert unsuppressed_locality("Congo") == ""
+
+
+def partition_view(organism: str, **decisions: str) -> RecordView:
+    return RecordView(
+        version="AB000001.1",
+        accession="AB000001",
+        record={"version": "AB000001.1", "accession": "AB000001", "organism_name": organism},
+        qualifiers={},
+        decisions=decisions,
+    )
+
+
+@pytest.mark.parametrize(
+    ("organism", "group"),
+    [
+        ("Poliovirus 1", "poliovirus"),
+        ("Human poliovirus 2", "poliovirus"),
+        ("Coxsackievirus A24", "non_polio_enterovirus"),
+        ("Enterovirus B", "non_polio_enterovirus"),
+        ("Enterovirus D68", "non_polio_enterovirus"),
+    ],
+)
+def test_a_type_level_organism_name_decides_membership(organism: str, group: str) -> None:
+    outcome = virus_group({"groups": ["poliovirus", "non_polio_enterovirus"]},
+                          partition_view(organism))
+    assert outcome.value == group
+    assert outcome.resolved
+    assert not outcome.manual_override
+
+
+@pytest.mark.parametrize("organism", sorted(UNINFORMATIVE_ORGANISMS))
+def test_an_uninformative_organism_name_declines(organism: str) -> None:
+    """The whole point of the rule.
+
+    Every one of these names is either the species that contains poliovirus, the bare genus, or not
+    a virus identification at all. Defaulting them to non-polio would score 98.3% against the
+    release and be a guess on 414 records — and four downstream columns would inherit it.
+    """
+    outcome = virus_group({"groups": ["poliovirus", "non_polio_enterovirus"]},
+                          partition_view(organism))
+    assert not outcome.resolved
+    assert outcome.value == ""
+    assert outcome.unresolved_reason == UNRESOLVED_UNINFORMATIVE
+
+
+@pytest.mark.parametrize(("asserted", "group"), [("TRUE", "poliovirus"),
+                                                 ("FALSE", "non_polio_enterovirus")])
+def test_a_ledger_decision_resolves_an_uninformative_name_and_is_recorded(
+    asserted: str, group: str
+) -> None:
+    """A decision that reached the value has to say so, or `manual_override` is decoration."""
+    outcome = virus_group(
+        {"groups": ["poliovirus", "non_polio_enterovirus"]},
+        partition_view("Enterovirus C", is_poliovirus=asserted),
+    )
+    assert outcome.value == group
+    assert outcome.manual_override
+
+
+def test_a_ledger_decision_beats_the_name_predicate() -> None:
+    """Curation the text overrides is curation that does not exist — the D2 failure."""
+    outcome = virus_group(
+        {"groups": ["poliovirus", "non_polio_enterovirus"]},
+        partition_view("Poliovirus 2", is_poliovirus="FALSE"),
+    )
+    assert outcome.value == "non_polio_enterovirus"
+    assert outcome.manual_override
+
+
+def test_curation_status_follows_the_partition_without_claiming_an_override() -> None:
+    """The curator adjudicated membership, not the vouching policy that follows from it."""
+    parameters = {
+        "poliovirus_status": "vouched",
+        "non_poliovirus_status": "provisional",
+        "carve_excluded_status": "excluded",
+    }
+    vouched = curation_status(parameters, partition_view("Enterovirus C", is_poliovirus="TRUE"))
+    assert vouched.value == "vouched"
+    assert not vouched.manual_override
+    assert curation_status(parameters, partition_view("Echovirus 6")).value == "provisional"
+    assert not curation_status(parameters, partition_view("unidentified")).resolved
 
 
 @pytest.mark.slow
