@@ -824,12 +824,22 @@ def test_the_ledger_does_not_split_a_byte_identical_group(
     )
 
 
+@pytest.mark.slow
 def test_the_ledger_split_check_detects_a_partial_assertion_in_every_group(
     engineered_by_accession: dict[str, str],
     sha256_by_accession: dict[str, str],
     active_engineered_ledger_values: dict[str, str],
 ) -> None:
     """Falsification control for the ledger check, over **every** multi-member group.
+
+    Marked slow on 2026-07-30 — on cost, with the population left alone. It plants one assertion per
+    member per group across 1,625 groups, which is 10.5 s and was over half the fast tier by itself.
+    The alternative considered was sampling the groups, and that was rejected: this control's whole
+    argument is that its population is *not* drawn from where the guard already works, so thinning
+    it would trade away the property it exists to establish for seconds. CI runs both tiers on every
+    push, so nothing is lost there; a local `pytest` no longer pays for it. The guard it falsifies,
+    `test_the_ledger_does_not_split_a_byte_identical_group`, stays in the fast tier — the live check
+    runs on every invocation, the exhaustive proof that it bites runs with the corpus.
 
     Deliberately not restricted to currently-agreeing groups. An earlier version was, and that is
     how the differential formulation's blind spot survived review: a control whose population is
