@@ -39,19 +39,25 @@ export interface DivergenceRegion {
   min_nt: number;
 }
 
-export interface DistanceRegion {
-  record: number[];
+export interface DistanceFit {
   x: number[];
   y: number[];
+  explained: number;
+  negative_share: number;
+}
+
+export interface DistanceRegion {
+  record: number[];
   resolved: number[];
   /** Indices into `record` whose placement rests on too little overlap. */
   thin: number[];
   landmarks: number;
-  explained: number;
-  negative_share: number;
   excluded: { below_coverage: number };
   columns: number;
   min_nt: number;
+  /** One fit per dissimilarity transform. Which records are placed and how well is
+   *  shared; only the coordinates and the goodness of fit differ. */
+  transforms: Record<string, DistanceFit>;
 }
 
 export const PANEL_SCHEMA = 1;

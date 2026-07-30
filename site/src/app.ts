@@ -158,9 +158,15 @@ function handleEdit(): void {
   if (next.selection !== view.selection) {
     next.trait = traitAfterSelectionChange(summary, view.selection, next.selection, view.trait);
   }
-  // A new selection or region means new marks; a filter, colour or scale change only
-  // means a redraw, and the colour assignment is deliberately not rebuilt.
-  const reload = next.selection !== view.selection || next.region !== view.region;
+  // A new selection, region or scale means new marks — the scale selects which
+  // embedding the distance chapter shows, not just how its axis is drawn. A filter or
+  // colour change is only a redraw, and the colour assignment is deliberately not
+  // rebuilt. Rebuilding is cheap after the first load: the panel file is cached, so
+  // this re-decodes rather than refetches.
+  const reload =
+    next.selection !== view.selection ||
+    next.region !== view.region ||
+    next.scale !== view.scale;
   if (next.selection !== view.selection) {
     for (const entry of chapters.values()) {
       entry.zoom = null;

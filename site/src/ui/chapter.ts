@@ -32,8 +32,10 @@ export interface ChapterSpec {
   /** False for a chapter whose coordinates are signed, where a square root has no
    *  meaning; such a chapter is drawn linear whatever the control says. */
   honoursScale: boolean;
-  /** Decode one region of a panel file into marks plus the facts the note states. */
-  marks: (file: PanelFile, region: string) => MarkSet;
+  /** Decode one region of a panel file into marks plus the facts the note states.
+   *  Takes the scale because for one chapter it selects the axis transform and for the
+   *  other it selects which embedding to show. */
+  marks: (file: PanelFile, region: string, scale: AxisScale) => MarkSet;
   /** Lines for the compact hover readout, after the shared identity lines. */
   readout: (records: Records, set: MarkSet, mark: Mark) => string[];
   /** Rows for the pinned detail's "measured in this panel" list. */
@@ -98,7 +100,9 @@ export function buildState(
   previousHeld: number | null,
 ): ChapterState {
   const regions = summary.regions.filter((r) => r[spec.regionFlag]).map((r) => r.id);
-  const sets = new Map(regions.map((region) => [region, spec.marks(file, region)]));
+  const sets = new Map(
+    regions.map((region) => [region, spec.marks(file, region, view.scale)]),
+  );
   const region = resolveRegion(regions, view.region);
 
   const trait = summary.traits.find((entry) => entry.id === view.trait);
@@ -173,6 +177,9 @@ function visible(state: ChapterState, set: MarkSet): Mark[] {
   return set.marks.filter((mark) => passes(state, mark.record));
 }
 
+/** The scale the AXES are drawn on. A chapter whose coordinates are signed has no real
+ *  square root to draw, so its axes stay linear even when the control says otherwise —
+ *  there, the control has already done its work on the distances themselves. */
 function effectiveScale(state: ChapterState): AxisScale {
   return state.spec.honoursScale ? state.view.scale : "linear";
 }

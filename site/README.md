@@ -19,8 +19,26 @@ lives in the URL hash, so any view is a shareable link.
   reference, over four coding regions. Square-root or linear axes.
 - **Set 2, distance** — classical multidimensional scaling of pairwise nucleotide
   distance, over five regions including both non-coding ones, which it can reach
-  because it needs no reading frame. Linear only: the coordinates are signed and have
-  no meaningful zero end.
+  because it needs no reading frame.
+
+The square-root toggle does something different in each, which is why one control
+serves both. In set 1 it transforms the drawn **axis**. In set 2 it selects which
+**embedding** to show: the one fitted to the distances, or the one fitted to their
+square roots. The drawn axis there is always linear, because scaling coordinates are
+signed.
+
+Scaling square roots is not cosmetic. Masked Hamming distance is not Euclidean, so
+part of the geometry cannot be drawn in a plane at all — up to 44% of it in the 3'NCR.
+Square roots usually fix that. Measured on this release, the non-Euclidean share falls
+from 0.199 to 0.037 (PV1 5'NCR) and from 0.436 to 0.159 (PV1 3'NCR), and reaches
+**exactly zero** for the non-polio 5'NCR and P1. Across all twenty-five panels the
+selftest asserts no panel is made less Euclidean, twenty-five improve, and five become
+exact.
+
+Two dimensions then carry less of the variance — 0.61 down to 0.51 for PV1 P1 — and
+that is not a real loss. Under the linear fit part of that 0.61 rested on a geometry a
+plane could not honestly represent; under the square root the geometry is sound and
+the variance is spread across dimensions that genuinely exist.
 
 Sets 3 and 4, the two phylogenies, carry placeholders naming what lands there.
 

@@ -77,7 +77,7 @@ export function renderControls(summary: Summary, view: View): void {
         ${option("sqrt", "Square root", view.scale === "sqrt")}
         ${option("linear", "Linear", view.scale === "linear")}
       </select>
-      <small>Square root spreads the low-divergence corner. Zero stays on the axis.</small>
+      <small id="scale-note"></small>
     </label>
   `;
 
@@ -135,6 +135,13 @@ export function renderNotes(summary: Summary, view: View): void {
       ? "in Sabin genome coordinates."
       : "with regions projected from Sabin 1.");
   byId("trait-note").textContent = traitNote(summary, view);
+  // The one control does something different in each figure, so it says both.
+  byId("scale-note").textContent =
+    view.scale === "sqrt"
+      ? "Divergence: square-root axes, spreading the low corner. Distance: scales the " +
+        "square roots of the distances, which is usually the more Euclidean geometry."
+      : "Divergence: linear axes. Distance: scales the distances as given, which fits " +
+        "more variance into two dimensions but less of it honestly.";
 }
 
 function traitNote(summary: Summary, view: View): string {

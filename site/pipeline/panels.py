@@ -91,18 +91,25 @@ def build_selection(
         keep = placed["row"]
         distance[region] = {
             "record": [record_rows[index] for index in keep],
-            # Four decimals is finer than a 720px panel can resolve, and keeps the
-            # payload from carrying float noise that would churn the committed diff.
-            "x": [round(float(v), 4) for v in placed["x"]],
-            "y": [round(float(v), 4) for v in placed["y"]],
             "resolved": _ints(placed["resolved"]),
             "thin": [int(i) for i, ok in enumerate(placed["confident"]) if not ok],
             "landmarks": placed["landmarks"],
-            "explained": round(placed["explained"], 4),
-            "negative_share": round(placed["negative_share"], 4),
             "excluded": placed["excluded"],
             "columns": placed["columns"],
             "min_nt": placed["min_nt"],
+            # Which records are placed, how well, and against how many landmarks is
+            # shared by both transforms; only the coordinates and the fit differ.
+            "transforms": {
+                name: {
+                    # Four decimals is finer than a 720px panel can resolve, and keeps
+                    # the payload from carrying float noise that churns the diff.
+                    "x": [round(float(v), 4) for v in fit["x"]],
+                    "y": [round(float(v), 4) for v in fit["y"]],
+                    "explained": round(fit["explained"], 4),
+                    "negative_share": round(fit["negative_share"], 4),
+                }
+                for name, fit in placed["transforms"].items()
+            },
         }
 
     return {
