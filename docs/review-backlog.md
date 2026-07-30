@@ -38,9 +38,10 @@ emergency.
 
 **R1 — `grep` on the author's machine silently skips `.gitignore`d files.** It is a shell function
 shimming to `ugrep --ignore-files`. Every "read by nothing" / "zero consumers" reachability
-conclusion in this repository was produced with it. That is why B24 below is wrong. **Use
-`command grep` for all reachability work.** Verified: a needle in a gitignored directory is invisible
-to `grep -rn` and visible to `command grep -rn`.
+conclusion in this repository was produced with it. That is the root cause of the false
+"effect on canonical output: none" claim B24 records. **Use `command grep` for all reachability
+work.** Verified: a needle in a gitignored directory is invisible to `grep -rn` and visible to
+`command grep -rn`.
 
 **R2 — prose guarantees drift from the event tables and rule sets that implement them, in the
 optimistic direction, every time.** B2, B12, B14, B19, B21, B26, B30 are all this shape. The
@@ -55,6 +56,17 @@ roughly a coin flip. **A check is not finished until a recorded mutation proves 
 **R4 — the boundary of an analysis is inherited from whatever artifact framed it.** The four tests
 guarding "the four `engineered` calls" take their universe from a legacy CSV, so they structurally
 cannot see `CS406433` (B1). Ask what population a claim is *about* before trusting a check over it.
+
+**R5 — identifiers that are constructed at runtime are invisible to a literal search, so grep
+absence is not absence.** Found while re-verifying B24 with `command grep`, which was supposed to be
+immune to R1. Searching the private repo for the column name `scan_legacy_override_classification`
+returns **zero hits**, and that is not because nothing uses it: `build_candidate_table.py:100`
+creates it with `.rename(columns={c: f"scan_{c}" for c in scan_cols ...})`, so the name only ever
+exists as an f-string prefix plus a value read out of a CSV header. The column is real and populated
+(1,129 and 15 nonblank rows in `vdpv_candidate_table.csv`). **A negative grep result over a
+dynamically-composed name means nothing.** For reachability, follow the *artifacts* — read each
+stage's declared inputs and outputs — rather than searching for field names. R1 and R5 are different
+mechanisms with the same consequence, and R5 survives the `command grep` fix for R1.
 
 ---
 
@@ -329,7 +341,7 @@ Each of these is a false or misleading statement; the underlying code or data is
 |---|---|---|
 | B22 | `README.md:50-53` | The vouched/provisional split described does not exist. `curation_status` is a pure restatement of `virus_group` — all 10,086 poliovirus rows are `vouched`, **zero** provisional; the parentheticals ("confirmed canonical reference or membership-verified" vs "name/annotation-derived") describe a distinction absent from the data. Contradicts `R-STATUS-1` and the shipped dictionary. This is the release's headline confidence tier. |
 | B23 | `docs/pipeline.md:117-119`, `registry/README.md:126-127` | "Disagree on exactly one field for exactly three records" — there are **nine**. Six undocumented `classification` disagreements: `AJ416942`, `DQ205099`, `FJ517648`, `KR259356`, `KR259357`, `KX162685`. (`classification` is an input to `classification_reconciled`, so a mismatch is not automatically an error — but the claim is stated absolutely.) |
-| B24 | `registry/legacy/README.md:46,56-73`, `docs/pipeline.md:86-88` | `legacy_2026_bridge.csv` "effect on canonical output: none" is **false**. `vdpv_accession_scan.csv` has a sixth reader the trace missed; the chain reaches `manual_review_overrides.csv` (2,467 of the ledger's decisions) for 1,565 accessions, 571 carrying a bridge-derived `scan_legacy_*` value. Root cause R1. |
+| B24 | `registry/legacy/README.md:46,56-73`, `docs/pipeline.md:86-88` | **CONFIRMED 2026-07-29, chain traced end to end.** `legacy_2026_bridge.csv` "effect on canonical output: none" is **false**, and the enumeration of "all five readers" is incomplete. Verified chain: bridge → `scan_vdpv_classification_artifacts.py:30,118,578` → `legacy_possible_classifications` / `legacy_override_classification` in `vdpv_accession_scan.csv` (1,889 / 23 nonblank) → **`build_candidate_table.py:98-100`**, the reader the trace missed, which carries both columns forward renamed `scan_legacy_*` (1,129 / 15 nonblank in `vdpv_candidate_table.csv`) → `triage.py` → `vdpv_candidate_triage.csv` → `stage_metadata_only_candidates.py` → `*.STAGED.csv` → `consolidate_promotion_overrides.py`, whose own docstring reads *"Consolidate the ratified papers-review flips into one manual_review_overrides row-set. Ratified promotion set (Mike, 2026-07-24): 1,387 clean paper-confirmed cVDPV/iVDPV + 46 Madagascar-2005"* → `manual_review_overrides.csv` (private commit `71f9ea3`, "Promote 1,518 VDPV->cVDPV/iVDPV (papers review)") → canonical `poliovirus_classification`. **One correction to the finding:** the last step is a deliberate human ratification, not code — `consolidated_promotion_overrides.csv` has zero automated readers and `manual_review_overrides.csv` is hand-maintained (20 commits). So the bridge reaches canonical output through curator judgment rather than a closed code loop. That does not rescue the README: the claim is "effect on canonical output: none", and the effect is real, large, and undocumented. Root cause R1 for the original miss, **R5 for why a `command grep` re-check initially appeared to exonerate it.** |
 | B25 | `registry/README.md:105-110` | The 7,435 reconciliation is wrong for `CS406436`: its curator rows say `4nt/6621`, not 7435. Only CS406482/83 use 7435, so "the curator's rows report the same counts over 7,435 positions" and "keeps 7,435" are false for that record. |
 | B26 | `README.md:104` | "Every declared hash is recomputed from the shipped bytes" — only `file_bytes` scope is. `docs/reproducibility.md:112-113` words it honestly; the README does not. |
 | B27 | `README.md:59-60` | "Traceable to the specific decision" — no join key exists. `canonical_projection_provenance` has no `decision_id`, and the field-name vocabularies are nearly disjoint: 33 of 2,476 manual-override provenance pairs match a decision by `(accession, field_name)`; 2,443 do not. |
