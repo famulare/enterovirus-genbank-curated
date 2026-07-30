@@ -7,7 +7,7 @@ views and must never be edited by hand.
 
 ## What the row count does and does not mean
 
-The ledger has **2,921 rows**. Read that number carefully:
+The ledger has **3,164 rows**. Read that number carefully:
 
 - It migrates from **2,282 input rows** across ten hand-maintained registries, because one curator
   row can assert several fields (`manual_review_overrides.csv` alone, as of the 2.4.1 resync: 2,008
@@ -19,8 +19,10 @@ The ledger has **2,921 rows**. Read that number carefully:
   `manual_review_overrides.csv` alone carries 313 distinct notes and 80 distinct sources across its
   2,008 rows — still the same order of duplication, not recomputed further across all ten.)
 
-So "2,921 decisions" is an accurate count of *field-level assertions* and overstates *human
-judgments* by roughly the same order as at 2.1.5. It is not a measure of curation effort.
+So "3,164 decisions" is an accurate count of *field-level assertions* and overstates *human
+judgments* by roughly the same order as at 2.1.5. It is not a measure of curation effort. The
+reconciliation allowlist below is the clearest case: 154 of its 243 rows share one batch-citation
+finding.
 
 Reconciliation against release 2.4.1, which shipped 2,912 rows in
 `final/audit/manual_decisions.tsv.gz`. (For the record: 2.1.5 shipped 2,753; 2.3.0 shipped 2,800 —
@@ -32,8 +34,9 @@ public baseline, see [`docs/pipeline.md`](../docs/pipeline.md).)
 | shipped in v2.4.1 | 2,912 |
 | shipped decisions absent from this ledger | **0** |
 | added here, carried forward (D2: 3, AB180070-73: 4, JC013129: 2 — see below) | +9 |
-| **ledger total** | **2,921** |
-| — of which `active` | 2,895 |
+| added here, the reconciliation allowlist (see below) | +243 |
+| **ledger total** | **3,164** |
+| — of which `active` | 3,138 |
 | — `retired` (redundant duplicates) | 17 |
 | — `superseded` (all 9 carried-forward rows above) | 9 |
 
@@ -73,7 +76,7 @@ file contains a double quote or if naive tab-splitting yields inconsistent field
 **`decision_id` excludes `source_artifact`.** Previously the bare source filename was hashed into the
 identity, so moving a registry to a public path would rehash every id. Ids are recomputed once here
 from `(decision_type, subject_key, field_name, new_value)` and are then stable against file renames.
-All 2,921 are unique.
+All 3,164 are unique.
 
 **Subject attributes are carried as attributes, not as evidence.** The release wrote
 `evidence_reference = "reference_label: Sabin1 | serotype: 1"`, but a reference's name and serotype

@@ -90,7 +90,11 @@ rule would not have caught it; a failing build would have.
 scratch directory, and the interpreter's own installation; **no read of `final/` at all**; no read of
 the frozen [`registry/legacy/`](../registry/legacy/) tree; no write or filesystem mutation touching
 `final/` or `raw/`; no write outside the clone and scratch; no network call; and no child process by
-any of `subprocess`, `os.system`, `os.spawn*`, `os.exec*`, `os.posix_spawn` or a bare `os.fork`.
+any of `subprocess`, `os.system`, `os.spawn*`, `os.exec*`, `os.posix_spawn` or a bare `os.fork`. It
+raises *and* records every violation, and `assert_no_violations()` re-checks the record after the
+build, so a caller that swallowed the exception in a bare `except` still fails. Paths are resolved
+before the allowlist decision, so a symlink sitting inside an allowed root cannot alias something
+outside one.
 
 The `final/` read refusal is new, and it changed how the `parity-*` verbs run. Refusing only *writes*
 left the failure that matters wide open: a derive stage that reads the shipped canonical table can
@@ -100,10 +104,7 @@ someone calibrates a rule against the oracle. The comparison itself must read `f
 child process** and compares in the unguarded parent, and it fails unless that child reported the
 guard's own PASS line. Before this, the guard was installed in the same process that then read the
 release, which made it structurally unable to distinguish a build reading the comparison target from
-the comparison itself. It raises
-*and* records every violation, and `assert_no_violations()` re-checks the record after the build, so
-a caller that swallowed the exception in a bare `except` still fails. Paths are resolved before the
-allowlist decision, so a symlink sitting inside an allowed root cannot alias something outside one.
+the comparison itself.
 
 The reproducible evidence for all of that is `tests/test_sandbox.py`: every rule in the event tables
 has a test that fails when the rule is removed, and positive controls assert legitimate work still
@@ -185,10 +186,13 @@ Passing parity means at minimum:
 - identical vouched/provisional partitions;
 - identical FASTA identifiers and nucleotide sequences;
 - migration of all 2,912 human decisions the release shipped, and 28 deterministic rules. The ledger
-  holds 2,921: the nine extra are carried-forward `superseded` assertions (the three
-  `engineered_or_construct=FALSE` D2 rows, plus curator revisions to `AB180070-73` and `JC013129`
-  that a from-scratch regeneration would otherwise have dropped silently), which are approved
-  curation history rather than a parity failure. See [`registry/README.md`](../registry/README.md);
+  holds 3,164, and both differences are approved curation history rather than a parity failure. Nine
+  are carried-forward `superseded` assertions (the three `engineered_or_construct=FALSE` D2 rows,
+  plus curator revisions to `AB180070-73` and `JC013129` that a from-scratch regeneration would
+  otherwise have dropped silently). The other 243 are the locked VDPV/wild reconciliation allowlist,
+  migrated 2026-07-30 — the last input to `poliovirus_classification` with no counterpart here, and
+  every row already agrees with the shipped column, which a test asserts. See
+  [`registry/README.md`](../registry/README.md);
 - equivalent normalized source and canonical scientific values;
 - complete, referentially closed provenance;
 - deterministic repeated builds from declared inputs.

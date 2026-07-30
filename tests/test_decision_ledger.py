@@ -57,7 +57,19 @@ SUPERSEDED_CARRY_FORWARD_ADDITIONS = {
 }
 LEDGER_ONLY_ADDITIONS = D2_ADDITIONS | SUPERSEDED_CARRY_FORWARD_ADDITIONS
 
-EXPECTED_STATUS = {"active": 2895, "retired": 17, "superseded": 9}
+# The locked VDPV/wild reconciliation allowlist, migrated 2026-07-30 by
+# `scripts/migrate_vdpv_reconciliation.py`. These are not enumerated as 243 literal tuples; they are
+# identified by `source_artifact` and then pinned three ways — count, value distribution, and
+# agreement with the shipped canonical column. Deriving the *membership* from the ledger would be
+# self-certifying on its own, which is why the third pin is the load-bearing one: every row has to
+# match what the release already ships, so a fabricated or altered row fails against `final/` rather
+# than against a list this file could also have been edited to accept.
+VDPV_SOURCE = "vdpv_wild_reconciliation.csv"
+EXPECTED_VDPV_ROWS = 243
+EXPECTED_VDPV_VALUES = {"wild": 237, "VDPV": 6}
+CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
+
+EXPECTED_STATUS = {"active": 2895 + EXPECTED_VDPV_ROWS, "retired": 17, "superseded": 9}
 
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
 # so a registry rename does not rehash every id.
@@ -89,7 +101,7 @@ def test_ledger_satisfies_its_own_contract(
     repository_root: Path, decision_contract: DecisionContract
 ) -> None:
     summary = validate_decision_ledger(repository_root / LEDGER, decision_contract)
-    assert summary.rows == 2921
+    assert summary.rows == 3164
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
 
@@ -105,9 +117,10 @@ def test_every_addition_is_an_approved_one(
     ledger: list[dict[str, str]], shipped: list[dict[str, str]]
 ) -> None:
     added = Counter(map(assertion_key, ledger)) - Counter(map(assertion_key, shipped))
-    assert set(added) == LEDGER_ONLY_ADDITIONS, (
-        f"unapproved additions: {set(added) - LEDGER_ONLY_ADDITIONS}"
-    )
+    approved = LEDGER_ONLY_ADDITIONS | {
+        assertion_key(r) for r in ledger if r["source_artifact"] == VDPV_SOURCE
+    }
+    assert set(added) == approved, f"unapproved additions: {set(added) - approved}"
 
 
 def test_decision_type_counts_match_except_the_approved_additions(
@@ -115,12 +128,45 @@ def test_decision_type_counts_match_except_the_approved_additions(
 ) -> None:
     got = Counter(r["decision_type"] for r in ledger)
     want = Counter(r["decision_type"] for r in shipped)
-    want["manual_override"] += len(LEDGER_ONLY_ADDITIONS)
+    want["manual_override"] += len(LEDGER_ONLY_ADDITIONS) + EXPECTED_VDPV_ROWS
     assert got == want
 
 
 def test_status_distribution_is_exactly_as_documented(ledger: list[dict[str, str]]) -> None:
     assert Counter(r["status"] for r in ledger) == Counter(EXPECTED_STATUS)
+
+
+def test_the_reconciliation_allowlist_agrees_with_the_shipped_column(
+    repository_root: Path, ledger: list[dict[str, str]]
+) -> None:
+    """The migrated allowlist records curation that is *already applied*, and this proves it.
+
+    That distinction is the whole reason these 243 rows are safe to add without adjudicating each
+    one. A ledger assertion the release contradicts is the D2 failure mode; a ledger assertion the
+    release already reflects is history being captured. If any row disagreed, the migration would
+    have introduced a pending delta nobody decided on.
+    """
+    rows = [r for r in ledger if r["source_artifact"] == VDPV_SOURCE]
+    assert len(rows) == EXPECTED_VDPV_ROWS
+    assert Counter(r["new_value"] for r in rows) == Counter(EXPECTED_VDPV_VALUES)
+    assert {r["field_name"] for r in rows} == {"classification"}
+    assert {r["status"] for r in rows} == {"active"}
+
+    with gzip.open(
+        repository_root / CANONICAL_METADATA, "rt", encoding="utf-8", newline=""
+    ) as handle:
+        shipped = {
+            r["accession"]: r["poliovirus_classification"]
+            for r in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
+        }
+    disagreements = {
+        r["accession"]: (r["new_value"], shipped.get(r["accession"]))
+        for r in rows
+        if shipped.get(r["accession"]) != r["new_value"]
+    }
+    assert not disagreements, (
+        f"allowlist rows the release does not already reflect: {disagreements}"
+    )
 
 
 def test_decision_ids_are_unique_without_source_artifact_in_the_hash(
@@ -352,7 +398,10 @@ def test_ledger_reproduces_every_shipped_column_not_just_the_key(
         for column in ("confirmed_by", "accession", "source_artifact"):
             assert row[column] == want[column], f"{key}: {column} diverged"
 
-    assert {u[1] for u in unmatched} == {a for a, _, _ in LEDGER_ONLY_ADDITIONS}, (
+    approved_absent = {a for a, _, _ in LEDGER_ONLY_ADDITIONS} | {
+        r["subject_key"] for r in ledger if r["source_artifact"] == VDPV_SOURCE
+    }
+    assert {u[1] for u in unmatched} == approved_absent, (
         f"rows absent from the release that are not the approved additions: {unmatched}"
     )
 
@@ -445,15 +494,19 @@ def test_ledger_text_uses_typographic_quotes(ledger: list[dict[str, str]]) -> No
 
 
 def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]]) -> None:
-    """Ten migrated registries, plus the adjudication that authored the three new rows.
+    """Eleven migrated registries, plus the adjudication that authored the three new rows.
 
     An earlier version asserted "10 sources, all .csv", which forced the D2 additions to claim
     `manual_review_overrides.csv` — a file that does not record them. A test should not make the
     honest answer fail.
+
+    Eleven since 2026-07-30: `vdpv_wild_reconciliation.csv` is the locked reconciliation allowlist,
+    the last input to `poliovirus_classification` that had no counterpart here.
     """
     sources = Counter(r["source_artifact"] for r in ledger)
     registries = {s for s in sources if s.endswith(".csv")}
-    assert len(registries) == 10
+    assert len(registries) == 11
+    assert sources[VDPV_SOURCE] == EXPECTED_VDPV_ROWS
     assert sources["curator_adjudication_2026-07-29"] == len(D2_ADDITIONS)
     assert set(sources) == registries | {"curator_adjudication_2026-07-29"}
 

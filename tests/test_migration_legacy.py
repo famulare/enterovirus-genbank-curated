@@ -19,10 +19,10 @@ import pytest
 from enterovirus_genbank_curated.contracts import ContractError
 
 
-def load_migration(repository_root: Path) -> ModuleType:
-    """Import the script by path; `scripts/` is not an installed package."""
-    path = repository_root / "scripts/migrate_legacy_registries.py"
-    spec = importlib.util.spec_from_file_location("migrate_legacy_registries", path)
+def load_script(repository_root: Path, name: str) -> ModuleType:
+    """Import a script by path; `scripts/` is not an installed package."""
+    path = repository_root / "scripts" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
@@ -30,9 +30,18 @@ def load_migration(repository_root: Path) -> ModuleType:
     return module
 
 
+def load_migration(repository_root: Path) -> ModuleType:
+    return load_script(repository_root, "migrate_legacy_registries")
+
+
 @pytest.fixture(scope="module")
 def mig(repository_root: Path) -> ModuleType:
     return load_migration(repository_root)
+
+
+@pytest.fixture(scope="module")
+def vdpv(repository_root: Path) -> ModuleType:
+    return load_script(repository_root, "migrate_vdpv_reconciliation")
 
 
 def decision(**overrides: str) -> dict[str, str]:
@@ -359,7 +368,7 @@ def test_the_baseline_pin_refuses_a_source_that_gained_decisions(mig: ModuleType
 
 
 def test_the_pinned_baseline_matches_the_committed_ledger(
-    mig: ModuleType, repository_root: Path
+    mig: ModuleType, vdpv: ModuleType, repository_root: Path
 ) -> None:
     """The pin and the shipped artifact must describe the same release.
 
@@ -370,12 +379,15 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     with (repository_root / "registry/decisions.tsv").open(encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
     carried = len(mig.SUPERSEDED_CARRY_FORWARD)
-    expected = mig.EXPECTED_BASELINE_DECISIONS + len(mig.D2_ACCESSIONS) + carried
+    reconciled = vdpv.EXPECTED_SOURCE_ROWS
+    expected = (
+        mig.EXPECTED_BASELINE_DECISIONS + len(mig.D2_ACCESSIONS) + carried + reconciled
+    )
     assert len(rows) == expected, (
-        f"registry/decisions.tsv holds {len(rows)} decisions but the migration is pinned to "
+        f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
         f"{mig.EXPECTED_BASELINE_DECISIONS} baseline + {len(mig.D2_ACCESSIONS)} D2 additions + "
-        f"{carried} carried-forward supersessions = {expected}. Bumping one without the others is "
-        f"the drift the pin exists to catch."
+        f"{carried} carried-forward supersessions + {reconciled} reconciliation-allowlist rows = "
+        f"{expected}. Bumping one without the others is the drift the pin exists to catch."
     )
 
 
