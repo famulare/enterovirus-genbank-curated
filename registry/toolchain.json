@@ -1,0 +1,31 @@
+{
+  "canonical_platform": "linux-64",
+  "pixi_lock_sha256": "ccee8ff12462682a6c8bcb0ed23c3e7f593247bf2bf7d05dd8c83a4ffa632cc0",
+  "platforms": {
+    "linux-64": {
+      "align": {
+        "infernal": {
+          "build": "pl5321h7b50bb2_4",
+          "version": "1.1.5"
+        },
+        "mafft": {
+          "build": "h4bc722e_0",
+          "version": "7.526"
+        }
+      }
+    },
+    "osx-arm64": {
+      "align": {
+        "infernal": {
+          "build": "pl5321hd34ca47_4",
+          "version": "1.1.5"
+        },
+        "mafft": {
+          "build": "h99b78c6_0",
+          "version": "7.526"
+        }
+      }
+    }
+  },
+  "schema": 1
+}

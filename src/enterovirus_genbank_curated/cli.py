@@ -97,6 +97,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="run the build in a guarded child process; the comparison itself reads final/ and "
              "therefore cannot be guarded",
     )
+
+    alignment_population = subparsers.add_parser(
+        "alignment-population",
+        help="derive each alignment's row set from final metadata; needs no aligner",
+    )
+    alignment_population.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_population.add_argument(
+        "--artifact", action="append", dest="artifacts", metavar="NAME",
+        help="restrict to one alignment; repeatable. Default: all six.",
+    )
+
+    alignment_toolchain = subparsers.add_parser(
+        "alignment-toolchain",
+        help="resolve the native aligners and check them against registry/toolchain.json",
+    )
+    alignment_toolchain.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_toolchain.add_argument(
+        "--write-declaration", action="store_true",
+        help="re-stamp registry/toolchain.json from the installed environment and the lock",
+    )
     return parser
 
 
@@ -179,6 +199,61 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"    {basis:36} {count:>8}")
             if requested_guard:
                 print(GUARD_PASS_LINE)
+            return 0
+        if args.command == "alignment-population":
+            from enterovirus_genbank_curated.align.contract import ARTIFACTS
+            from enterovirus_genbank_curated.align.population import load_all_records, select
+
+            names = args.artifacts or list(ARTIFACTS)
+            unknown = [name for name in names if name not in ARTIFACTS]
+            if unknown:
+                raise ContractError(
+                    f"unknown alignment(s) {unknown}; declared: {sorted(ARTIFACTS)}"
+                )
+            records = load_all_records(root)
+            print(f"canonical records: {len(records)}")
+            for name in names:
+                pop = select(records, ARTIFACTS[name])
+                tiers = pop.tier_counts()
+                status = "ok" if len(pop.records) == pop.spec.expected_rows else "UNEXPECTED"
+                print(
+                    f"\n{name}  {len(pop.records)} rows "
+                    f"(expected {pop.spec.expected_rows}: {status})"
+                )
+                print(f"  population sha256  {pop.digest()}")
+                print(f"  tiers              backbone {tiers['backbone']}, addon {tiers['addon']}")
+                all_types = pop.type_counts()
+                shown = list(all_types.items())[:8]
+                types = ", ".join(f"{k} {v}" for k, v in shown)
+                if len(all_types) > len(shown):
+                    types += f", … ({len(all_types)} types total)"
+                print(f"  types              {types}")
+                families = ", ".join(f"{k} {v}" for k, v in pop.family_counts().items())
+                print(f"  families           {families}")
+            return 0
+        if args.command == "alignment-toolchain":
+            import json
+
+            from enterovirus_genbank_curated.align import toolchain as tc
+
+            resolved = tc.resolve(root)
+            print(f"platform     {resolved.platform}")
+            print(f"environment  {resolved.environment}")
+            print(f"prefix       {resolved.prefix}")
+            for name, tool in sorted(resolved.tools.items()):
+                print(
+                    f"  {name:12} {tool.package:9} {tool.version:8} {tool.build:24} "
+                    f"{tool.self_reported}"
+                )
+            if args.write_declaration:
+                declaration = tc.build_declaration(root, [resolved])
+                target = root / tc.TOOLCHAIN_DECLARATION
+                target.write_text(
+                    json.dumps(declaration, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
+                print(f"wrote {tc.TOOLCHAIN_DECLARATION}")
+            tc.assert_declared(root, resolved)
+            print("alignment toolchain: PASS (matches registry/toolchain.json and pixi.lock)")
             return 0
     except ContractError as exc:
         print(f"contract validation failed: {exc}", file=sys.stderr)

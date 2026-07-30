@@ -54,6 +54,19 @@ SHIPPED_PROVENANCE = "final/audit/canonical_projection_provenance.tsv.gz"
 VERSION_COLUMN = "version"
 GUARD_PASS_MARKER = "undeclared-input guard: PASS"
 
+# `final/` paths the alignment layer (`align/`) derives from, declared here rather than in
+# `align/contract.py` so that module has exactly one path to `final/canonical/sequence_metadata`
+# rather than two. `align/` reads the release for the same reason this module does — the stages
+# that would produce these inputs natively (`derive`, `curate`, and an eventual alignment-specific
+# stage) do not exist yet — so it is oracle-adjacent rather than a build module, and
+# `test_module_boundaries.py` does not constrain it. It still must not *redeclare* a path oracle
+# already owns; `SHIPPED_CANONICAL_METADATA` above is that path for the canonical metadata table.
+SHIPPED_CANONICAL_FASTA = "final/canonical/sequences.fasta.gz"
+SHIPPED_SEQUENCE_EVIDENCE = "final/audit/sequence_evidence.tsv.gz"
+SHIPPED_SOURCE_FEATURES = "final/source/normalized_tsv/features.tsv.gz"
+SHIPPED_SOURCE_FEATURE_PARTS = "final/source/normalized_tsv/feature_location_parts.tsv.gz"
+SHIPPED_SOURCE_FEATURE_QUALIFIERS = "final/source/normalized_tsv/feature_qualifiers.tsv.gz"
+
 
 def run_guarded_build(repository_root: Path, verb: str, output_dir: Path) -> None:
     """Run one build verb in a guarded child, and require the guard to have passed.
