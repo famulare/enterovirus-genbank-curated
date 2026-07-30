@@ -33,6 +33,20 @@ judgement call: `final/audit/canonical_projection_provenance.tsv.gz` carries a p
 exactly the other fourteen columns, minus `locality`, whose rule (R-GEO-LOCALITY-1) is closed-form
 over one GenBank string.
 
+`locality` is also reproduced *with its provenance*. `evgc parity-metadata` compares the generated
+projection rows against `final/audit/canonical_projection_provenance.tsv.gz` on all nine shipped
+columns for all 24,284 shared records — the value, the upstream field and value it came from, the
+winning rule, and the branch label — and both shipped branches come out right
+(`geo_parse` 1,033 / `duplicate_of_admin1_suppressed` 23,251). That is a deliberately small first
+column: reproducing a value while mislabelling which way the rule went is right by luck, and this is
+the cheapest place to establish that the rule catalog, the outcome type and the provenance writer all
+agree with the release before a harder column is attempted.
+
+One shipped label is reproduced despite overstating its case, and is pinned rather than quietly
+inherited: `duplicate_of_admin1_suppressed` covers 2,048 records that deposited no
+`/geo_loc_name` at all, where there was never a locality to suppress. Splitting it would mean moving
+a published controlled value, which belongs to a release that can afford it.
+
 The other thirteen columns are not written at all, and the build ships a
 `metadata_transport_coverage.json` next to the table naming each one and the input it needs —
 `sample_origin`, `surveillance_stream`, `specimen_type` and the `collection_date` family project

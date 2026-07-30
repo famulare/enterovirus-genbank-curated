@@ -30,37 +30,7 @@ from enterovirus_genbank_curated.contracts import (
     ACTIVE_STATUS,
     ContractError,
 )
-
-# Shipped column order of `final/canonical/sequence_metadata.tsv.gz`. Declared here rather than
-# read from the release so that a column appearing or moving upstream is a code change.
-CANONICAL_COLUMNS = (
-    "accession",
-    "version",
-    "sequence_sha256",
-    "sequence_length_nt",
-    "sequence_scope",
-    "ncbi_taxid",
-    "organism_name",
-    "virus_group",
-    "virus_type",
-    "poliovirus_classification",
-    "curation_status",
-    "isolate_name",
-    "strain_name",
-    "host_name",
-    "sample_origin",
-    "surveillance_stream",
-    "specimen_type",
-    "collection_date",
-    "collection_date_precision",
-    "collection_year_earliest",
-    "collection_year_latest",
-    "country",
-    "admin1",
-    "locality",
-    "engineered_or_construct",
-    "biosample_accession",
-)
+from enterovirus_genbank_curated.derive.geo import GEO_QUALIFIER, parse_geo_loc_name
 
 # Canonical column <- `records` column, for the columns that are a straight rename or identity.
 RECORD_COLUMNS = {
@@ -79,7 +49,6 @@ QUALIFIER_COLUMNS = {
     "host_name": "host",
 }
 
-GEO_QUALIFIER = "geo_loc_name"
 GEO_COLUMNS = ("country", "admin1", "locality")
 BIOSAMPLE_DATABASE = "BioSample"
 SOURCE_FEATURE_KEY = "source"
@@ -138,37 +107,6 @@ SEQUENCE_RESCUED_INCLUSIONS = frozenset(
 # `non_ev_other` with no exclusion reason and it has no row in `registry/decisions.tsv`. The call is
 # real but its basis is not in any declared input, so it is recorded rather than guessed at.
 UNDECLARED_EXCLUSIONS = frozenset({"AF326751.2"})
-
-
-@dataclass(frozen=True)
-class GeoParse:
-    country: str
-    admin1: str
-    locality: str
-
-
-def parse_geo_loc_name(value: str) -> GeoParse:
-    """Split one GenBank `/geo_loc_name` into country, admin1 and sub-admin1 locality.
-
-    The qualifier's grammar is `country[: region[, finer detail]]`. Two consequences are easy to
-    get wrong and are load-bearing for parity:
-
-    * `locality` holds the *whole* remainder after the colon, not just the part past the comma, so
-      it always starts with `admin1`;
-    * a remainder with no comma carries no sub-admin1 information, so R-GEO-LOCALITY-1 blanks
-      `locality` whenever it would merely repeat `admin1` — 4,285 of 5,319 rows in the release. A
-      non-blank `locality` therefore means genuine detail rather than a duplicated region name.
-    """
-    if not value:
-        return GeoParse("", "", "")
-    country, separator, remainder = value.partition(":")
-    country = country.strip()
-    remainder = remainder.strip()
-    if not separator or not remainder:
-        return GeoParse(country, "", "")
-    admin1 = remainder.partition(",")[0].strip()
-    locality = "" if remainder == admin1 else remainder
-    return GeoParse(country, admin1, locality)
 
 
 def load_excluded_accessions(ledger_path: Path) -> frozenset[str]:

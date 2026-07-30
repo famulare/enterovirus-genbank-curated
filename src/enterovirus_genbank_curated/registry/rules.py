@@ -51,8 +51,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from enterovirus_genbank_curated.contracts import ContractError, validate_schema_document
-from enterovirus_genbank_curated.derive.metadata import CANONICAL_COLUMNS
+from enterovirus_genbank_curated.contracts import (
+    CANONICAL_COLUMNS,
+    ContractError,
+    validate_schema_document,
+)
 
 RULES_CATALOG_PATH = "registry/rules.json"
 RULES_SCHEMA_TITLE = "Deterministic curation rule"
@@ -134,7 +137,6 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.engineered.engineered_or_construct": (
         "the shipped values are superseded by the re-adjudication; the rewrite is increment 8"
     ),
-    "derive.geo.locality": "not yet written; increment 2",
     "derive.carve.canonical_inclusion": (
         "the carve predicate exists in derive/metadata.py but is not yet a bound rule"
     ),
@@ -383,7 +385,9 @@ def assert_parameters_are_described(specs: Iterable[RuleSpec]) -> None:
 def validate_rule_catalog(repository_root: Path) -> tuple[RuleSpec, ...]:
     """Shape, binding and description coherence, for `evgc validate-contracts`."""
     from enterovirus_genbank_curated.contracts import RULES_SCHEMA_PATH
+    from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 
+    load_rule_implementations()
     contract = load_rule_contract(repository_root / RULES_SCHEMA_PATH)
     specs = load_rule_catalog(repository_root / RULES_CATALOG_PATH, contract)
     if len(specs) != EXPECTED_RULE_COUNT:

@@ -67,6 +67,39 @@ DECISION_COLUMNS = (
     "notes",
 )
 
+# Shipped column order of `final/canonical/sequence_metadata.tsv.gz`. Declared here rather than
+# read from the release, so a column appearing or moving upstream is a code change. It lives with
+# the other declared schemas rather than in `derive/metadata.py` because both the transport and the
+# rule catalog need it, and routing it through the transport made `registry` and `derive` circular.
+CANONICAL_COLUMNS = (
+    "accession",
+    "version",
+    "sequence_sha256",
+    "sequence_length_nt",
+    "sequence_scope",
+    "ncbi_taxid",
+    "organism_name",
+    "virus_group",
+    "virus_type",
+    "poliovirus_classification",
+    "curation_status",
+    "isolate_name",
+    "strain_name",
+    "host_name",
+    "sample_origin",
+    "surveillance_stream",
+    "specimen_type",
+    "collection_date",
+    "collection_date_precision",
+    "collection_year_earliest",
+    "collection_year_latest",
+    "country",
+    "admin1",
+    "locality",
+    "engineered_or_construct",
+    "biosample_accession",
+)
+
 LEDGER_SORT_COLUMNS = ("decision_type", "subject_key", "field_name", "decision_id")
 ACTIVE_STATUS = "active"
 

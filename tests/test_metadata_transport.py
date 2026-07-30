@@ -92,8 +92,16 @@ def test_only_active_ledger_rows_exclude_a_record(tmp_path: Path) -> None:
 
 @pytest.mark.slow
 def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path) -> None:
-    parity = verify_metadata_parity(repository_root)
+    parity, provenance = verify_metadata_parity(repository_root)
     assert parity.compared_rows == 24284
     assert len(parity.compared_columns) == 13
     assert set(parity.absent_from_build) == SEQUENCE_RESCUED_INCLUSIONS
     assert set(parity.absent_from_release) == UNDECLARED_EXCLUSIONS
+
+    # Provenance for every implemented rule, compared on all nine shipped columns — value, the
+    # upstream field and value it came from, the winning rule, and the branch label.
+    assert provenance.fields == ("locality",)
+    assert provenance.compared_rows == 24284
+    assert sum(provenance.basis_counts.values()) == provenance.compared_rows
+    assert provenance.absent_from_build == len(SEQUENCE_RESCUED_INCLUSIONS)
+    assert provenance.absent_from_release == len(UNDECLARED_EXCLUSIONS)

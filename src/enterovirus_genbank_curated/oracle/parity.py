@@ -26,15 +26,20 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from enterovirus_genbank_curated.build import build_metadata_layer, build_source_layer
-from enterovirus_genbank_curated.contracts import ContractError, sha256_file
-from enterovirus_genbank_curated.derive.metadata import (
+from enterovirus_genbank_curated.contracts import (
     CANONICAL_COLUMNS,
+    ContractError,
+    sha256_file,
+)
+from enterovirus_genbank_curated.derive.metadata import (
     SEQUENCE_RESCUED_INCLUSIONS,
     UNDECLARED_EXCLUSIONS,
 )
+from enterovirus_genbank_curated.export.audit import PROVENANCE_COLUMNS
 from enterovirus_genbank_curated.export.metadata import (
     TRANSPORT_COLUMN_ORDER,
     read_metadata_transport,
+    read_projection_provenance,
 )
 from enterovirus_genbank_curated.genbank.parse import TABLE_COLUMNS
 from enterovirus_genbank_curated.oracle.release import (
@@ -45,6 +50,7 @@ from enterovirus_genbank_curated.oracle.release import (
 
 SHIPPED_SOURCE_DIR = "final/source"
 SHIPPED_CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
+SHIPPED_PROVENANCE = "final/audit/canonical_projection_provenance.tsv.gz"
 VERSION_COLUMN = "version"
 GUARD_PASS_MARKER = "undeclared-input guard: PASS"
 
@@ -239,14 +245,101 @@ def compare_metadata_to_release(
     )
 
 
+@dataclass(frozen=True)
+class ProvenanceParityResult:
+    fields: tuple[str, ...]
+    compared_rows: int
+    basis_counts: dict[str, int]
+    absent_from_build: int
+    absent_from_release: int
+
+
+def compare_provenance_to_release(
+    repository_root: Path, rows: list[dict[str, str]]
+) -> ProvenanceParityResult:
+    """Compare generated projection rows to the shipped provenance, on all six semantic columns.
+
+    Comparing only `final_value` would leave the interesting half invisible. `source_field`,
+    `source_value`, `winning_rule_id` and `evidence_basis` are the upstream decision tree's own
+    trace; reproducing the value while getting the branch label wrong means the rule is right by
+    luck, and that is exactly what has to be caught before any harder column is attempted.
+    """
+    header, shipped_rows = read_tsv_gz(repository_root / SHIPPED_PROVENANCE)
+    if tuple(header) != PROVENANCE_COLUMNS:
+        raise ContractError(
+            f"{SHIPPED_PROVENANCE} columns are not the declared provenance schema: {header}"
+        )
+    index = {column: position for position, column in enumerate(header)}
+    fields = sorted({row["canonical_field"] for row in rows})
+    shipped = {
+        (row[index["version"]], row[index["canonical_field"]]): row
+        for row in shipped_rows
+        if row[index["canonical_field"]] in set(fields)
+    }
+
+    # The provenance row set inherits the carve's declared 18-record gap exactly, and inheriting it
+    # is checked rather than assumed. Skipping unmatched rows would let a rule that projected the
+    # wrong population pass by producing rows nothing compares against.
+    built_keys = {(row["version"], row["canonical_field"]) for row in rows}
+    built_only = built_keys - set(shipped)
+    release_only = set(shipped) - built_keys
+    if {version for version, _ in built_only} != UNDECLARED_EXCLUSIONS:
+        raise ContractError(
+            "provenance rows with no shipped counterpart are not the declared exclusion set: "
+            f"expected {sorted(UNDECLARED_EXCLUSIONS)}, got {sorted(built_only)}"
+        )
+    if {version for version, _ in release_only} != SEQUENCE_RESCUED_INCLUSIONS:
+        raise ContractError(
+            "shipped provenance rows the build does not produce are not the declared gap: "
+            f"expected {sorted(SEQUENCE_RESCUED_INCLUSIONS)}, got {sorted(release_only)}"
+        )
+
+    differences: list[str] = []
+    for row in rows:
+        key = (row["version"], row["canonical_field"])
+        want = shipped.get(key)
+        if want is None:
+            continue
+        for column in PROVENANCE_COLUMNS:
+            if row[column] != want[index[column]]:
+                differences.append(
+                    f"{key}.{column}: built {row[column]!r} != shipped {want[index[column]]!r}"
+                )
+    if differences:
+        shown = "; ".join(differences[:10])
+        raise ContractError(
+            f"{len(differences)} provenance cells disagree with the shipped release — {shown}"
+        )
+
+    # Counted over compared rows only, so the reported branch tallies sum to `compared_rows` rather
+    # than silently including the row that has no shipped counterpart.
+    basis_counts: dict[str, int] = {}
+    for row in rows:
+        if (row["version"], row["canonical_field"]) in built_only:
+            continue
+        basis_counts[row["evidence_basis"]] = basis_counts.get(row["evidence_basis"], 0) + 1
+    return ProvenanceParityResult(
+        fields=tuple(fields),
+        compared_rows=len(rows) - len(built_only),
+        basis_counts=basis_counts,
+        absent_from_build=len(release_only),
+        absent_from_release=len(built_only),
+    )
+
+
 def verify_metadata_parity(
     repository_root: Path, *, guarded: bool = False
-) -> MetadataParityResult:
-    """Rebuild the metadata transport and check it against the shipped release."""
+) -> tuple[MetadataParityResult, ProvenanceParityResult]:
+    """Rebuild the metadata transport and check both it and its provenance against the release."""
     with tempfile.TemporaryDirectory(prefix="evgc-metadata-parity-") as scratch:
         if guarded:
             run_guarded_build(repository_root, "build-metadata", Path(scratch))
             rows = read_metadata_transport(Path(scratch))
+            provenance = read_projection_provenance(Path(scratch))
         else:
-            rows = build_metadata_layer(repository_root, Path(scratch)).rows
-        return compare_metadata_to_release(repository_root, rows)
+            built = build_metadata_layer(repository_root, Path(scratch))
+            rows, provenance = built.rows, built.provenance
+        return (
+            compare_metadata_to_release(repository_root, rows),
+            compare_provenance_to_release(repository_root, provenance),
+        )

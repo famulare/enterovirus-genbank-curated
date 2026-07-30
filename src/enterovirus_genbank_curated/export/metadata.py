@@ -13,12 +13,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from enterovirus_genbank_curated.contracts import ContractError
-from enterovirus_genbank_curated.derive.metadata import (
-    CANONICAL_COLUMNS,
-    PENDING_COLUMNS,
-    TRANSPORTED_COLUMNS,
-)
+from enterovirus_genbank_curated.contracts import CANONICAL_COLUMNS, ContractError
+from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPORTED_COLUMNS
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 
 METADATA_TRANSPORT_RELATIVE = "canonical/sequence_metadata_transport.tsv.gz"
@@ -34,7 +30,10 @@ TRANSPORT_COLUMN_ORDER = tuple(c for c in CANONICAL_COLUMNS if c in set(TRANSPOR
 
 
 def write_metadata_transport(
-    output_dir: Path, rows: list[dict[str, str]], row_counts: dict[str, int]
+    output_dir: Path,
+    rows: list[dict[str, str]],
+    row_counts: dict[str, int],
+    provenance: list[dict[str, str]] | None = None,
 ) -> int:
     written = write_tsv(output_dir / METADATA_TRANSPORT_RELATIVE, TRANSPORT_COLUMN_ORDER, rows)
     coverage: dict[str, Any] = {
@@ -43,6 +42,11 @@ def write_metadata_transport(
         "canonical_columns": list(CANONICAL_COLUMNS),
         "transported_columns": list(TRANSPORT_COLUMN_ORDER),
         "pending_columns": dict(PENDING_COLUMNS),
+        # Which canonical fields carry a machine-readable projection row. A transported column is
+        # not the same thing: twelve of the thirteen are the source value and have no projection,
+        # while `locality` is a rule and does. Declaring both makes the difference legible to a
+        # reader of the artifact rather than only to someone reading the rule catalog.
+        "provenance_fields": sorted({row["canonical_field"] for row in provenance or []}),
         "row_counts": dict(row_counts),
     }
     with deterministic_text_writer(output_dir / COVERAGE_RELATIVE) as handle:
@@ -50,21 +54,33 @@ def write_metadata_transport(
     return written
 
 
-def read_metadata_transport(output_dir: Path) -> list[dict[str, str]]:
-    """Read back a written transport, for a parity run whose build happened in another process.
+def read_written_tsv(path: Path, columns: tuple[str, ...]) -> list[dict[str, str]]:
+    """Read back an artifact this package wrote, for a parity run that built in another process.
 
     Reads with the same quoting the writer used, and requires the declared header exactly — a
     truncated or reordered artifact must fail here rather than produce a comparison against
     whatever columns happened to survive.
     """
-    path = output_dir / METADATA_TRANSPORT_RELATIVE
     try:
         with gzip.open(path, "rt", encoding="utf-8", newline="") as handle:
             reader = csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
-            if tuple(reader.fieldnames or ()) != TRANSPORT_COLUMN_ORDER:
+            if tuple(reader.fieldnames or ()) != columns:
                 raise ContractError(
-                    f"{path} header is {reader.fieldnames}, not the declared transport columns"
+                    f"{path} header is {reader.fieldnames}, not the declared columns {columns}"
                 )
             return list(reader)
     except OSError as exc:
-        raise ContractError(f"cannot read the metadata transport {path}: {exc}") from exc
+        raise ContractError(f"cannot read {path}: {exc}") from exc
+
+
+def read_metadata_transport(output_dir: Path) -> list[dict[str, str]]:
+    return read_written_tsv(output_dir / METADATA_TRANSPORT_RELATIVE, TRANSPORT_COLUMN_ORDER)
+
+
+def read_projection_provenance(output_dir: Path) -> list[dict[str, str]]:
+    from enterovirus_genbank_curated.export.audit import (
+        PROVENANCE_COLUMNS,
+        PROVENANCE_RELATIVE,
+    )
+
+    return read_written_tsv(output_dir / PROVENANCE_RELATIVE, PROVENANCE_COLUMNS)

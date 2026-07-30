@@ -44,8 +44,8 @@ The intended package is `src/enterovirus_genbank_curated/` with these responsibi
 - `export`: write canonical, audit, dictionary, alignment, and manifest artifacts;
 - `validation`: enforce referential closure, parity, and determinism.
 
-`genbank`, `export` and the transport half of `derive` exist. `derive/metadata.py` covers only the
-canonical columns whose value is a source value; the typing, classification and sequence-evidence
+`genbank`, `export`, `registry` and the transport half of `derive` exist. `derive/metadata.py`
+covers only the canonical columns whose value is a source value; the typing, classification and sequence-evidence
 half of that responsibility is still unwritten, and its module docstring states which columns are
 out of reach and why.
 
@@ -92,8 +92,11 @@ is declared in code, compared for equality, and invisible to the build — see
 4. Retirement — not replacement — of the two frozen legacy upstream stages. Investigating them
    showed there is nothing to rebuild: see below.
 5. Deterministic derivation and versioned rules. **Partly delivered:** the canonical metadata
-   transport (`evgc parity-metadata`) covers the thirteen columns that are source values. The
-   sequence-derived and curated-master columns remain.
+   transport (`evgc parity-metadata`) covers the thirteen columns that are source values, and
+   `registry/rules.json` now declares all 28 rules with their thresholds as data, regenerating the
+   shipped rule table byte-for-byte. `locality` is projected through the rule catalog with its
+   provenance row compared to the release on all nine columns. The sequence-derived and
+   curated-master columns remain.
 6. Decision application, disposition, and complete provenance.
 7. Dictionaries, references, and reproducible alignments.
 8. Full fresh-clone parity and deterministic rebuild gate.

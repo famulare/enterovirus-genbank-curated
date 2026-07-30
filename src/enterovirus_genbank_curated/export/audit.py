@@ -19,6 +19,23 @@ from enterovirus_genbank_curated.registry.rules import RuleSpec
 RULES_VIEW_RELATIVE = "audit/rules.tsv.gz"
 RULES_VIEW_COLUMNS = ("rule_id", "rule_version", "field_name", "description")
 
+# Deliberately not the shipped name. The release's own projection-provenance table carries fourteen
+# canonical fields; this holds only the fields whose rule is implemented, so it is written under its
+# own name with the covered set declared alongside it — the same reason the transport is not written
+# as `sequence_metadata.tsv.gz`.
+PROVENANCE_RELATIVE = "audit/projection_provenance.tsv.gz"
+PROVENANCE_COLUMNS = (
+    "accession",
+    "version",
+    "canonical_field",
+    "final_value",
+    "source_field",
+    "source_value",
+    "winning_rule_id",
+    "evidence_basis",
+    "manual_override",
+)
+
 
 def write_rules_view(output_dir: Path, specs: Iterable[RuleSpec]) -> int:
     """Project the catalog onto the four shipped columns, in catalog order."""
@@ -26,3 +43,8 @@ def write_rules_view(output_dir: Path, specs: Iterable[RuleSpec]) -> int:
         {column: getattr(spec, column) for column in RULES_VIEW_COLUMNS} for spec in specs
     ]
     return write_tsv(output_dir / RULES_VIEW_RELATIVE, RULES_VIEW_COLUMNS, rows)
+
+
+def write_projection_provenance(output_dir: Path, rows: list[dict[str, str]]) -> int:
+    """Write the projection rows exactly as the rules produced them, in emission order."""
+    return write_tsv(output_dir / PROVENANCE_RELATIVE, PROVENANCE_COLUMNS, rows)

@@ -29,22 +29,32 @@ from enterovirus_genbank_curated.contracts import (
     DECISIONS_LEDGER_PATH,
     DECISIONS_SCHEMA_PATH,
     PARITY_SPEC_PATH,
+    RULES_SCHEMA_PATH,
     ContractError,
     load_decision_contract,
     validate_decision_ledger,
     validate_parity_spec,
     verify_raw_input,
 )
+from enterovirus_genbank_curated.derive.apply import build_record_views, project_field
 from enterovirus_genbank_curated.derive.metadata import (
     load_excluded_accessions,
     transport_metadata,
 )
+from enterovirus_genbank_curated.export.audit import write_projection_provenance
 from enterovirus_genbank_curated.export.metadata import write_metadata_transport
 from enterovirus_genbank_curated.export.source import (
     write_source_relational,
     write_source_tsv,
 )
 from enterovirus_genbank_curated.genbank.parse import parse_source_tables
+from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
+from enterovirus_genbank_curated.registry.rules import (
+    RULES_CATALOG_PATH,
+    bind_rules,
+    load_rule_catalog,
+    load_rule_contract,
+)
 
 IMMUTABLE_DIRS = ("final", "raw")
 
@@ -146,9 +156,11 @@ def build_source_layer(
         write_source_relational(output_dir)
     return SourceBuildResult(row_counts=counts, output_dir=output_dir)
 
+
 @dataclass(frozen=True)
 class MetadataBuildResult:
     rows: list[dict[str, str]]
+    provenance: list[dict[str, str]]
     row_counts: dict[str, int]
     output_dir: Path
 
@@ -168,15 +180,35 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
 
     tables = parse_authenticated_source(repository_root)
     transport = transport_metadata(tables, excluded)
+
+    # Provenance for every canonical field whose rule is implemented, over the carved rows only. The
+    # value and its provenance row come from the same `RuleOutcome`, so a canonical value without a
+    # provenance row is not expressible — boundary 5 held structurally rather than by convention.
+    load_rule_implementations()
+    rule_contract = load_rule_contract(repository_root / RULES_SCHEMA_PATH)
+    catalog = load_rule_catalog(repository_root / RULES_CATALOG_PATH, rule_contract)
+    views = build_record_views(tables, (row["version"] for row in transport.rows))
+    provenance = [
+        row
+        for rule in bind_rules(catalog).values()
+        if rule.implementation is not None
+        for row in project_field(rule, views)
+    ]
+
     row_counts = {
         "source_records": len(tables["records"]),
         "transported": len(transport.rows),
         "excluded_by_ledger": transport.excluded_by_ledger,
         "excluded_as_non_enterovirus": transport.excluded_as_non_enterovirus,
+        "provenance_rows": len(provenance),
     }
-    write_metadata_transport(output_dir, transport.rows, row_counts)
+    write_metadata_transport(output_dir, transport.rows, row_counts, provenance)
+    write_projection_provenance(output_dir, provenance)
     return MetadataBuildResult(
-        rows=transport.rows, row_counts=row_counts, output_dir=output_dir
+        rows=transport.rows,
+        provenance=provenance,
+        row_counts=row_counts,
+        output_dir=output_dir,
     )
 
 

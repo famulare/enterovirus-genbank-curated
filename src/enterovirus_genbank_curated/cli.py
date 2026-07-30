@@ -160,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(GUARD_PASS_LINE)
             return 0
         if args.command == "parity-metadata":
-            parity = verify_metadata_parity(root, guarded=requested_guard)
+            parity, provenance = verify_metadata_parity(root, guarded=requested_guard)
             print(
                 f"metadata parity: PASS ({parity.compared_rows} rows x "
                 f"{len(parity.compared_columns)} transported columns match "
@@ -171,6 +171,12 @@ def main(argv: list[str] | None = None) -> int:
                 f"cannot carve, {len(parity.absent_from_release)} it carves that the release "
                 f"excludes"
             )
+            print(
+                f"provenance parity: PASS ({provenance.compared_rows} rows for "
+                f"{', '.join(provenance.fields)} match all nine shipped columns)"
+            )
+            for basis, count in sorted(provenance.basis_counts.items()):
+                print(f"    {basis:36} {count:>8}")
             if requested_guard:
                 print(GUARD_PASS_LINE)
             return 0

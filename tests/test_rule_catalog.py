@@ -23,9 +23,11 @@ import pytest
 
 from enterovirus_genbank_curated.contracts import RULES_SCHEMA_PATH, ContractError
 from enterovirus_genbank_curated.export.audit import RULES_VIEW_RELATIVE, write_rules_view
+from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 from enterovirus_genbank_curated.registry.rules import (
     EXPECTED_RULE_COUNT,
     RULE_FIELD_ORDER,
+    RULE_IMPLEMENTATIONS,
     RULES_CATALOG_PATH,
     RuleImplementation,
     assert_parameters_are_described,
@@ -176,7 +178,12 @@ def test_a_key_that_is_both_registered_and_pending_is_refused(
 def test_an_implementation_no_rule_declares_is_refused(
     repository_root: Path, contract
 ) -> None:
-    """The direction that catches B18: code computing a value the rule table never published."""
+    """The direction that catches B18: code computing a value the rule table never published.
+
+    The real registrations are kept, so the orphan is the *only* anomaly — otherwise the genuinely
+    bound rules would trip the unbound-key check first and the test would pass for the wrong reason.
+    """
+    load_rule_implementations()
     specs = load_rule_catalog(repository_root / RULES_CATALOG_PATH, contract)
     orphan = RuleImplementation(
         key="derive.nowhere.orphan",
@@ -185,7 +192,7 @@ def test_an_implementation_no_rule_declares_is_refused(
         fn=lambda *a, **k: None,
     )
     with pytest.raises(ContractError, match="no published rule declares"):
-        bind_rules(specs, implementations={orphan.key: orphan})
+        bind_rules(specs, implementations={**RULE_IMPLEMENTATIONS, orphan.key: orphan})
 
 
 def test_a_parameter_set_that_disagrees_with_its_implementation_is_refused(
