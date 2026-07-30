@@ -119,8 +119,6 @@ import pytest
 
 from enterovirus_genbank_curated.contracts import ACTIVE_STATUS, read_tsv_gz
 
-csv.field_size_limit(10**9)
-
 CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 SOURCE_RECORDS = "final/source/normalized_tsv/records.tsv.gz"
 LEDGER = "registry/decisions.tsv"
@@ -132,17 +130,22 @@ DELIBERATE_DEPOSIT_DIVISIONS = frozenset({"PAT", "SYN"})
 
 LONG_SEQUENCE_NT = 3000
 
-# Invariant B escape hatch: a record that legitimately carries TRUE while a byte-identical record
-# carries FALSE, with the reason it is allowed to.
+# Invariant B escape hatch: a same-sequence split that is *legitimate*, keyed by the group's TRUE
+# members (the same shape as `KNOWN_SAME_SEQUENCE_SPLITS`) with the reason it is allowed.
+#
+# Keyed by group rather than by accession on purpose. A per-accession suppressor let a group whose
+# every TRUE member was exempt vanish from the comparison altogether, which is the F1 defect again;
+# see `unexplained_true_members`. Pinning the group means an exemption records a state instead of
+# hiding one.
 #
 # Empty today, and **empty is not the end state.** The curator's CDC-convention rule (Q6) means a
 # primary named vaccine-seed deposit is TRUE while a field isolate byte-identical to it stays FALSE
 # — a real distinction between a manufactured product and a virus sampled out of the world. §7 of
 # the re-adjudication measures that once the Q5/Q6 vaccine-source set flips, **about 10 entries are
 # required**, and 6 of those are the same groups listed in `KNOWN_SAME_SEQUENCE_SPLITS` below,
-# re-disagreeing in the opposite direction. So entries migrate from that pin into this allowlist;
-# they do not simply disappear.
-SAME_SEQUENCE_EXEMPTIONS: dict[str, str] = {}
+# re-disagreeing in the opposite direction. So entries migrate from that pin into this one; they do
+# not simply disappear.
+LEGITIMATE_SAME_SEQUENCE_SPLITS: dict[tuple[str, ...], str] = {}
 
 # Population pins for the column itself. Nothing anywhere pinned these before, which is precisely
 # how the values drifted far enough to need a full re-adjudication: 543 records shipped TRUE and no
@@ -218,15 +221,23 @@ KNOWN_SAME_SEQUENCE_SPLITS: frozenset[tuple[str, ...]] = frozenset(
     }
 )
 
-# Same-sequence groups the *ledger* splits: it asserts a value for some members and is silent about
-# the byte-identical rest. These three are the live D2 defect, and they are why this check exists —
-# `CS406483`/`PU749298` additionally carry the wrong value, since the re-adjudication found that
-# pair to be genuinely engineered (a unique AgeI site) rather than a parental re-deposit.
-KNOWN_LEDGER_CREATED_SPLITS: frozenset[tuple[str, ...]] = frozenset(
+# Byte-identical groups where the ledger's own assertions are partial: it speaks for some members
+# and either contradicts, or stays silent about, byte-identical siblings that ship a different
+# value. Keyed by the asserted accessions.
+#
+# The first three are the live D2 defect. `CS406483` additionally carries the *wrong* value — the
+# re-adjudication found that pair genuinely engineered (a unique AgeI site), so its active FALSE row
+# needs correcting rather than extending to its twin.
+#
+# `DD214221` is a fourth instance nobody had recorded, and it was invisible to the differential
+# formulation this check replaced: an active TRUE assertion whose byte-identical twin `X00595`
+# (Sabin 2, shipping FALSE) has no row at all. Same defect shape as D2 with the polarity reversed.
+KNOWN_LEDGER_INCOHERENT_GROUPS: frozenset[tuple[str, ...]] = frozenset(
     {
-        ("CS406436", "PU749305"),
-        ("CS406482", "PU749297"),
-        ("CS406483", "PU749298"),
+        ("CS406436",),
+        ("CS406482",),
+        ("CS406483",),
+        ("DD214221",),
     }
 )
 
@@ -308,25 +319,75 @@ def disagreeing_groups(
 def unexplained_true_members(
     groups: dict[str, list[tuple[str, str]]],
 ) -> frozenset[tuple[str, ...]]:
-    """The TRUE members of every group that splits TRUE/FALSE without an allowlist entry.
+    """The TRUE members of every group that splits TRUE/FALSE.
 
     Keyed by accession tuple rather than digest: an accession belongs to exactly one sha256 group,
     so the tuples are disjoint, and a diff of two of these sets names records rather than hashes.
+
+    **No exemption filtering happens here, deliberately.** An earlier version subtracted exempt
+    members before building the tuple and dropped the group entirely when the result was empty. That
+    reintroduced the F1 defect this file exists to close: with every TRUE member of a group exempt,
+    the group became invisible in *both* directions, so a silent resolution inside it produced no
+    red. Demonstrated by exempting `DD214217` and then flipping it FALSE — identical offender set,
+    suite green. It was masked only by the blanket-patent test, which is scheduled for deletion in
+    the same change that populates the allowlist.
+
+    So exemptions do not suppress; they are pinned separately in `LEGITIMATE_SAME_SEQUENCE_SPLITS`
+    and the caller asserts against the union. A split always registers; what changes is which pinned
+    bucket it belongs to.
     """
-    offenders: set[tuple[str, ...]] = set()
-    for members in groups.values():
-        if {value for _, value in members} != {"TRUE", "FALSE"}:
+    return frozenset(
+        tuple(sorted(accession for accession, value in members if value == "TRUE"))
+        for members in groups.values()
+        if {value for _, value in members} == {"TRUE", "FALSE"}
+    )
+
+
+def ledger_incoherent_groups(
+    engineered: dict[str, str],
+    sha256: dict[str, str],
+    ledger: dict[str, str],
+) -> dict[str, tuple[tuple[str, ...], tuple[str, ...]]]:
+    """Byte-identical groups where the ledger's assertions are partial or self-contradictory.
+
+    Returns digest -> (asserted accessions, silent accessions whose canonical value disagrees).
+
+    This replaces a differential formulation that computed canonical disagreements before and after
+    applying the ledger and kept only groups whose digest was *new*. That filter made the check
+    blind inside the 12 groups canonical already splits — 280 records, and precisely the
+    `DD2142xx`/`A09260`/`PE314016` population the re-adjudication is about. Two demonstrations, both
+    of which left the module fully green: asserting TRUE for `ON596331` alone while eight
+    byte-identical twins stayed silent, and applying the planned flip to 7 of the 8 TRUE members of
+    the `DD214216` group. The second is this repository's own landing sequence executed with one
+    member missed — the D2 defect, in the D2 shape, invisible to the check named after it.
+
+    The rule here needs no baseline subtraction: within one byte-identical group, curation must
+    either speak for the whole group or agree with what the rest already ships. Two ways to break
+    that, both caught:
+
+    - **contradictory** — the ledger asserts more than one distinct value inside the group;
+    - **partial** — the ledger asserts one value and a member it is silent about ships a different
+      one, so applying the ledger would leave the group inconsistent.
+    """
+    by_digest: dict[str, list[str]] = collections.defaultdict(list)
+    for accession in engineered:
+        by_digest[sha256[accession]].append(accession)
+
+    incoherent: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {}
+    for digest, members in by_digest.items():
+        asserted = {a: ledger[a] for a in members if a in ledger}
+        if not asserted:
             continue
-        unexplained = tuple(
-            sorted(
-                accession
-                for accession, value in members
-                if value == "TRUE" and accession not in SAME_SEQUENCE_EXEMPTIONS
+        values = set(asserted.values())
+        silent = [a for a in members if a not in ledger]
+        contradictory = len(values) > 1
+        partial = len(values) == 1 and any(engineered[a] != next(iter(values)) for a in silent)
+        if contradictory or partial:
+            disagreeing = tuple(
+                sorted(a for a in silent if contradictory or engineered[a] not in values)
             )
-        )
-        if unexplained:
-            offenders.add(unexplained)
-    return frozenset(offenders)
+            incoherent[digest] = (tuple(sorted(asserted)), disagreeing)
+    return incoherent
 
 
 def flip_one_member_per_group(
@@ -560,14 +621,17 @@ def test_same_sequence_splits_match_the_known_defect_set(
     """
     groups = group_by_sequence(engineered_by_accession, sha256_by_accession, division_by_accession)
     offenders = unexplained_true_members(groups)
+    expected = KNOWN_SAME_SEQUENCE_SPLITS | frozenset(LEGITIMATE_SAME_SEQUENCE_SPLITS)
 
-    appeared = sorted(offenders - KNOWN_SAME_SEQUENCE_SPLITS)
-    resolved = sorted(KNOWN_SAME_SEQUENCE_SPLITS - offenders)
-    assert offenders == KNOWN_SAME_SEQUENCE_SPLITS, (
+    appeared = sorted(offenders - expected)
+    resolved = sorted(expected - offenders)
+    assert offenders == expected, (
         f"the same-sequence split set moved. NEW (a TRUE now sits beside a byte-identical FALSE "
-        f"with no SAME_SEQUENCE_EXEMPTIONS entry): {appeared}. RESOLVED (pinned but no longer "
-        f"splitting): {resolved}. A new group is a defect; a resolved group means the pin, "
-        f"SAME_SEQUENCE_EXEMPTIONS and the re-adjudication doc need updating together."
+        f"and is in neither pinned bucket): {appeared}. RESOLVED (pinned but no longer splitting): "
+        f"{resolved}. A new group is a defect; a resolved group means the pin, "
+        f"LEGITIMATE_SAME_SEQUENCE_SPLITS and the re-adjudication doc need updating together. "
+        f"Moving a group from the known-defect pin to the legitimate one is how a reviewed "
+        f"exemption lands — it must never simply disappear from both."
     )
 
 
@@ -620,7 +684,6 @@ def test_invariant_b_detects_a_new_split_in_every_agreeing_group(
 def test_the_ledger_does_not_split_a_byte_identical_group(
     engineered_by_accession: dict[str, str],
     sha256_by_accession: dict[str, str],
-    division_by_accession: dict[str, str],
     active_engineered_ledger_values: dict[str, str],
 ) -> None:
     """Curation must not assert a value for part of a byte-identical group.
@@ -629,75 +692,65 @@ def test_the_ledger_does_not_split_a_byte_identical_group(
     `registry/decisions.tsv`, which this repository writes, rather than `final/canonical/`, which
     it does not — `git log -- final/canonical` has exactly one commit, the initial release.
 
-    Differential by construction: apply the ledger's active assertions on top of canonical and keep
-    only the disagreements the ledger *created*. Pre-existing canonical splits are Invariant B's
-    business, and mixing them in here would bury a three-group signal under a twelve-group
-    background.
+    Compares group *content*, not a before/after digest diff. See `ledger_incoherent_groups` for why
+    the differential version was blind across 280 records, including the population this whole
+    re-adjudication concerns.
     """
-    baseline = set(
-        disagreeing_groups(
-            group_by_sequence(engineered_by_accession, sha256_by_accession, division_by_accession)
-        )
+    incoherent = ledger_incoherent_groups(
+        engineered_by_accession, sha256_by_accession, active_engineered_ledger_values
     )
+    found = frozenset(asserted for asserted, _ in incoherent.values())
 
-    applied = dict(engineered_by_accession)
-    for accession, value in active_engineered_ledger_values.items():
-        if accession in applied:
-            applied[accession] = value
-    after = disagreeing_groups(
-        group_by_sequence(applied, sha256_by_accession, division_by_accession)
-    )
-
-    created = frozenset(
-        tuple(sorted(a for a, _ in members))
-        for digest, members in after.items()
-        if digest not in baseline
-    )
-
-    appeared = sorted(created - KNOWN_LEDGER_CREATED_SPLITS)
-    resolved = sorted(KNOWN_LEDGER_CREATED_SPLITS - created)
-    assert created == KNOWN_LEDGER_CREATED_SPLITS, (
-        f"the set of same-sequence groups the ledger splits moved. NEW: {appeared}. RESOLVED: "
-        f"{resolved}. A new entry means a decision was recorded for some members of a "
-        f"byte-identical group and not the rest — the D2 defect, repeated. Adjudicate the group."
+    appeared = sorted(found - KNOWN_LEDGER_INCOHERENT_GROUPS)
+    resolved = sorted(KNOWN_LEDGER_INCOHERENT_GROUPS - found)
+    detail = {
+        ",".join(asserted): list(silent)
+        for asserted, silent in incoherent.values()
+        if asserted in set(appeared)
+    }
+    assert found == KNOWN_LEDGER_INCOHERENT_GROUPS, (
+        f"the set of byte-identical groups the ledger speaks for only partially moved. NEW: "
+        f"{appeared} (silent-but-disagreeing siblings: {detail}). RESOLVED: {resolved}. A new "
+        f"entry means a decision was recorded for some members of a byte-identical group and not "
+        f"the rest — the D2 defect, repeated. Adjudicate the group, not one member of it."
     )
 
 
-def test_the_ledger_split_check_detects_a_new_assertion(
+def test_the_ledger_split_check_detects_a_partial_assertion_in_every_group(
     engineered_by_accession: dict[str, str],
     sha256_by_accession: dict[str, str],
-    division_by_accession: dict[str, str],
     active_engineered_ledger_values: dict[str, str],
 ) -> None:
-    """Falsification control for the ledger check, over every group it could protect.
+    """Falsification control for the ledger check, over **every** multi-member group.
 
-    The group is chosen by measurement rather than named, so the control cannot be satisfied by a
-    special case and cannot break when an accession leaves canonical.
+    Deliberately not restricted to currently-agreeing groups. The previous version was, and that is
+    how the differential formulation's blind spot survived review: a control whose population is
+    drawn from the region where the guard already works cannot falsify the guard's coverage. The
+    groups canonical already splits are exactly where the old check saw nothing, so they are exactly
+    what this must cover.
     """
-    groups = group_by_sequence(engineered_by_accession, sha256_by_accession, division_by_accession)
-    agreeing = {
-        digest: sorted(members)
-        for digest, members in groups.items()
-        if len(members) > 1 and len({value for _, value in members}) == 1
-    }
-    assert agreeing, "no agreeing multi-member group to plant a ledger split in"
+    by_digest: dict[str, list[str]] = collections.defaultdict(list)
+    for accession in engineered_by_accession:
+        by_digest[sha256_by_accession[accession]].append(accession)
+    multi = {d: sorted(m) for d, m in by_digest.items() if len(m) > 1}
+    assert len(multi) == EXPECTED_MULTI_MEMBER_GROUPS
 
-    baseline = set(disagreeing_groups(groups))
-
-    for digest, members in agreeing.items():
-        accession, value = members[0]
+    missed: list[str] = []
+    for digest, members in multi.items():
+        # Assert, for one member only, the opposite of what a sibling ships. Whatever else is true
+        # of the group, the ledger now speaks for part of it and disagrees with the rest.
+        target = members[0]
         planted = dict(active_engineered_ledger_values)
-        planted[accession] = "FALSE" if value == "TRUE" else "TRUE"
+        planted[target] = "FALSE" if engineered_by_accession[members[1]] == "TRUE" else "TRUE"
+        for other in members[1:]:
+            planted.pop(other, None)
 
-        applied = dict(engineered_by_accession)
-        for target, new_value in planted.items():
-            if target in applied:
-                applied[target] = new_value
-        after = disagreeing_groups(
-            group_by_sequence(applied, sha256_by_accession, division_by_accession)
-        )
-        created = {d for d in after if d not in baseline}
-        assert digest in created, (
-            f"a planted ledger assertion splitting {accession} from its byte-identical twins "
-            f"{[a for a, _ in members[1:]]} was not detected"
-        )
+        if digest not in ledger_incoherent_groups(
+            engineered_by_accession, sha256_by_accession, planted
+        ):
+            missed.append(f"{target} (group {digest[:12]}, n={len(members)})")
+
+    assert missed == [], (
+        f"the ledger check missed a planted partial assertion in {len(missed)} of {len(multi)} "
+        f"byte-identical groups: {missed[:10]}. Those groups are unguarded against the D2 defect."
+    )
