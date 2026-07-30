@@ -2,74 +2,147 @@
 
 Two byte-identical sequences are the same genotype. `engineered` is a claim *about a genotype* —
 whether someone deliberately produced it for a purpose — so two records carrying the identical
-`sequence_sha256` cannot generally disagree about it. The exception is real but narrow, and it is
-the reason there are two invariants here rather than one:
+`sequence_sha256` cannot generally disagree about it.
 
-- **Invariant A** constrains same-sequence *patent and synthetic* deposits. Two `PAT`/`SYN`
-  deposits of the same bytes cannot differ on whether that genotype was deliberately produced.
-  There is no legitimate exemption, so this needs no allowlist and can be enforced absolutely.
+What each check here does and does not protect, stated honestly, because an earlier version of this
+file overclaimed and an adversarial review caught it:
 
-- **Invariant B** (`test_no_same_sequence_split_without_an_allowlist_entry`) constrains the
-  general case, where a legitimate exemption *does* exist: the curator's CDC-convention rule means
-  a primary `VRL` deposit of a vaccine seed strain is `engineered=TRUE` while a field isolate whose
-  genome is byte-identical to it stays FALSE. That is a real distinction between a manufactured
-  product and a virus sampled out of the world, so Invariant B is escaped by an explicit reviewed
-  allowlist rather than by a rule.
+- **Invariant A** (`test_same_sequence_patent_and_synthetic_deposits_agree`) constrains
+  same-sequence `PAT`/`SYN` deposits. It is green today, and **it currently has no independent
+  detection power**: every one of the 513 canonical PAT/SYN records ships TRUE, so
+  `test_the_blanket_patent_flag_is_recorded_as_a_known_defect` and the SYN pins together *entail*
+  that no PAT/SYN group can disagree. A exists for the state *after* the rule rewrite, when the
+  population stops being uniform and the invariant starts doing work. Until then it is a
+  placeholder with an exhaustive falsification control, not a live guard.
 
-Why these exist at all: the D2 adjudication set `CS406482` to FALSE while leaving `PU749297` —
-byte-identical, the same patent sequence re-deposited in a 2024 continuation — at TRUE. Nothing in
-the suite noticed, because no check compared same-sequence records. Invariant A is that check, and
-`test_invariant_a_would_have_caught_the_d2_defect` pins it to the specific defect it exists to
-prevent, so the guard cannot be quietly weakened into one that passes for the wrong reason.
+- **Invariant B** (`test_same_sequence_splits_match_the_known_defect_set`) is the live guard. It
+  constrains every division, pinning the **exact set** of groups that carry a TRUE alongside a
+  byte-identical FALSE. All 12 of today's violations are PAT-vs-VRL, which Invariant A's division
+  restriction excludes by construction — so B, not A, is what covers the real defects.
+
+- **The ledger check** (`test_the_ledger_does_not_split_a_byte_identical_group`) is the only check
+  in this file that reads a layer this repository actually *writes*. `final/canonical/` has one
+  commit in its entire history and nothing here rebuilds it, so a canonical-only check cannot see a
+  curation mistake made today. The historical D2 defect was exactly that shape — a ledger assertion
+  applied to one member of a byte-identical pair — and it is **still live**: the ledger sets
+  `CS406482` FALSE and says nothing about `PU749297`. This check makes that visible and pins it.
+
+Why the invariants exist at all: the D2 adjudication set `CS406482` to FALSE while leaving
+`PU749297` — byte-identical, the same patent sequence re-deposited in a 2024 continuation — at TRUE.
+Nothing in the suite noticed, because no check compared same-sequence records.
 
 See `docs/engineered-full-population-readjudication.md` §7 for the measurement behind the scoping
 choice, including why a sequence-length floor was rejected in favour of an explicit allowlist.
+
+Regenerating the pins
+---------------------
+
+Every `EXPECTED_*` value and both pinned split sets are measured from the shipped release. When a
+rebuild deliberately moves them, recompute rather than hand-editing:
+
+    .venv/bin/python -m pytest tests/test_engineered_invariants.py -q
+
+then read the actual values out of the failure messages — each assertion prints what it measured
+alongside what it expected, so a diff of pin-versus-reality is legible without a separate script.
+`EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256` is the one exception, since a digest mismatch cannot show
+its own contents; `test_invariant_a_scope_membership_is_pinned` prints the recomputed digest.
 
 Mutation evidence
 -----------------
 
 Recorded because this repository's rule is that a check is not finished until a mutation proves it
-fires (`docs/review-backlog.md`, root cause R3), and because an in-memory control alone cannot show
-that the *real* test path — reading the shipped `.tsv.gz` — detects a real change. Both mutations
-below were applied to `final/canonical/sequence_metadata.tsv.gz` itself and reverted, with the
-sha256 confirmed identical afterwards (`369b6c0b…`).
+fires (`docs/review-backlog.md`, root cause R3). The previous version of this section named the
+wrong test for one mutation, which is the same "unverified validation claim" failure the rule
+exists to prevent — so every line below is a transcribed `-rf` summary, not a recollection.
 
-1. `CS406436` TRUE→FALSE, one record, leaving its byte-identical twin `PU749305` at TRUE. Three
-   tests went red, including `test_same_sequence_patent_and_synthetic_deposits_agree`, which named
-   the pair. This is the D2 defect reproduced in the shipped bytes rather than in a dict, so
-   Invariant A is confirmed load-bearing on the path that actually runs in CI.
-2. `CS406436` **and** `PU749305` both TRUE→FALSE, so the group agrees. Invariant A stayed **green**
-   and only the population pins went red — confirming Invariant A discriminates *disagreement*
-   specifically, and does not merely react to any change in the column.
+Six mutations, 2026-07-30. Data mutations were applied to the shipped artifacts themselves and
+reverted, with sha256 re-verified afterwards (`369b6c0b…` canonical, `e9f0dac6…` source records,
+`335588b1…` ledger). Test IDs are given in full; all are in this module.
+
+1. **`CS406436` TRUE→FALSE on disk** — the D2 defect reproduced in the shipped bytes, leaving its
+   byte-identical twin `PU749305` at TRUE. **7 failed:**
+   `test_the_engineered_population_matches_its_pins`,
+   `test_the_blanket_patent_flag_is_recorded_as_a_known_defect`,
+   `test_same_sequence_patent_and_synthetic_deposits_agree`,
+   `test_invariant_a_detects_a_split_in_every_constrained_group`,
+   `test_same_sequence_splits_match_the_known_defect_set`,
+   `test_invariant_b_detects_a_new_split_in_every_agreeing_group`,
+   `test_the_ledger_does_not_split_a_byte_identical_group`.
+
+2. **`AB053603` FALSE→TRUE and `M14761` TRUE→FALSE on disk** — count-neutral: the TRUE total stays
+   543, the ≥3000 nt count stays 58, PAT/SYN untouched, while `AB053603` now splits from its
+   byte-identical twin `AB053959`. This is the mutation that left the *previous* design fully green
+   (`7 passed, 1 xfailed`), because a `strict=True` xfail cannot distinguish 12 violations from 13.
+   **2 failed:** `test_same_sequence_splits_match_the_known_defect_set`,
+   `test_invariant_b_detects_a_new_split_in_every_agreeing_group`. Verified separately that
+   `test_the_engineered_population_matches_its_pins` still **passes** — detection comes from the set
+   comparison, not from any count.
+
+3. **Code sabotage: `SYN` deleted from `DELIBERATE_DEPOSIT_DIVISIONS`.** All 7 canonical SYN records
+   are sha256 singletons, so a PAT-only restriction yields *identically* 178 groups / 374 records
+   and both group pins stay green. **1 failed:** `test_invariant_a_scope_membership_is_pinned`
+   (513 → 506). This is the only thing standing between the invariant and a silently halved scope.
+
+4. **Code sabotage: a two-accession skip added to `disagreeing_groups`** for the real byte-identical
+   PAT pair `{A37539, A37564}` — the weakening that the earlier single-pair control passed under.
+   **2 failed:** `test_invariant_a_detects_a_split_in_every_constrained_group`,
+   `test_the_ledger_split_check_detects_a_new_assertion`.
+
+5. **Ledger mutations, both directions.** (a) An active `engineered_or_construct=TRUE` row added for
+   `AB053603` while its twin `AB053959` has none → **1 failed:**
+   `test_the_ledger_does_not_split_a_byte_identical_group`. (b) The existing `CS406482` D2 row
+   flipped `active`→`retired`, so a *pinned* split disappears → **same 1 failed.** The check is
+   sensitive to a new curation mistake and to the quiet removal of a known one.
+
+6. **Compensating scope swap on disk:** `A37539` PAT→VRL plus `AB053603`/`AB053959` VRL→PAT.
+   Measured directly: this preserves the constrained counts at **exactly 178 groups / 374 records**,
+   which is why counts alone were insufficient. **3 failed:**
+   `test_the_engineered_population_matches_its_pins`,
+   `test_the_blanket_patent_flag_is_recorded_as_a_known_defect`,
+   `test_invariant_a_scope_membership_is_pinned` — the last via the membership digest, the thing the
+   counts could not see.
+
+What no mutation reddens on its own: `test_same_sequence_patent_and_synthetic_deposits_agree`
+(Invariant A) never fails without a neighbouring check failing too, which is the concrete form of
+the "no independent detection power" caveat above. Treat A's green as uninformative until the rule
+rewrite lands.
 """
 
 from __future__ import annotations
 
 import collections
+import csv
+import hashlib
 from pathlib import Path
 
 import pytest
 
-from enterovirus_genbank_curated.contracts import read_tsv_gz
+from enterovirus_genbank_curated.contracts import ACTIVE_STATUS, read_tsv_gz
+
+csv.field_size_limit(10**9)
 
 CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 SOURCE_RECORDS = "final/source/normalized_tsv/records.tsv.gz"
+LEDGER = "registry/decisions.tsv"
 
 ENGINEERED_COLUMN = "engineered_or_construct"
 
-# Divisions whose members can never legitimately disagree with each other (Invariant A).
+# Divisions whose members are deliberate deposits rather than sampled virus (Invariant A's scope).
 DELIBERATE_DEPOSIT_DIVISIONS = frozenset({"PAT", "SYN"})
 
-# Invariant B escape hatch. Every entry is a record that legitimately carries TRUE while a
-# byte-identical record carries FALSE, with the reason it is allowed to. Empty is the goal state:
-# it means no same-sequence group disagrees anywhere in the release.
-SAME_SEQUENCE_EXEMPTIONS: dict[str, str] = {}
+LONG_SEQUENCE_NT = 3000
 
-# Measured on the shipped release. Pinned so that a future change which *stops* constraining
-# records — by moving them out of PAT/SYN, or by dropping them from canonical — fails loudly
-# instead of turning the invariant into a check over an empty set.
-EXPECTED_CONSTRAINED_GROUPS = 178
-EXPECTED_CONSTRAINED_RECORDS = 374
+# Invariant B escape hatch: a record that legitimately carries TRUE while a byte-identical record
+# carries FALSE, with the reason it is allowed to.
+#
+# Empty today, and **empty is not the end state.** The curator's CDC-convention rule (Q6) means a
+# primary named vaccine-seed deposit is TRUE while a field isolate byte-identical to it stays FALSE
+# — a real distinction between a manufactured product and a virus sampled out of the world. §7 of
+# the re-adjudication measures that once the Q5/Q6 vaccine-source set flips, **about 10 entries are
+# required**, and 6 of those are the same groups listed in `KNOWN_SAME_SEQUENCE_SPLITS` below,
+# re-disagreeing in the opposite direction. So entries migrate from that pin into this allowlist;
+# they do not simply disappear.
+SAME_SEQUENCE_EXEMPTIONS: dict[str, str] = {}
 
 # Population pins for the column itself. Nothing anywhere pinned these before, which is precisely
 # how the values drifted far enough to need a full re-adjudication: 543 records shipped TRUE and no
@@ -86,21 +159,100 @@ EXPECTED_PAT_TRUE = 506
 EXPECTED_SYN_IN_CANONICAL = 7
 EXPECTED_SYN_TRUE = 7
 
-LONG_SEQUENCE_NT = 3000
+# Invariant A's scope, pinned as a record count rather than only as constrained-group counts.
+# Without this, deleting `SYN` from `DELIBERATE_DEPOSIT_DIVISIONS` is undetectable: all 7 canonical
+# SYN records are sha256 singletons, so they contribute nothing to the group/record pins below and
+# a PAT-only restriction yields *identically* 178/374.
+EXPECTED_SCOPED_RECORDS = 513
+
+# Pinned so a future change that *stops* constraining records — by moving them out of PAT/SYN, or
+# by dropping them from canonical — fails loudly instead of turning the invariant into a check over
+# an empty set.
+EXPECTED_CONSTRAINED_GROUPS = 178
+EXPECTED_CONSTRAINED_RECORDS = 374
+
+# Counts alone constrain cardinality, not membership: a compensating swap (one group leaving the
+# scope, another joining) preserves 178/374 exactly. This digest pins *which* groups and which
+# accessions, so such a swap is visible.
+EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256 = (
+    "a1e8c284da03e2309f28f00de24e3942b4374e2d943da31220abe399706ed439"
+)
+
+# The population the general falsification controls run over.
+EXPECTED_MULTI_MEMBER_GROUPS = 1644
+EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1632
+
+# Invariant B's outstanding violations, pinned as the exact set of TRUE members per group.
+#
+# A count would pass with the wrong rows, and a `strict=True` xfail — what this file used before —
+# has only two states and so cannot distinguish 12 violations from 13. A *new* same-sequence split,
+# which is the defect class this file exists to prevent, was therefore invisible. Set equality
+# catches a new violation and a silent resolution alike.
+#
+# Every entry resolves when the re-adjudication's flips reach `final/canonical/`. That needs the
+# private pipeline to rebuild and re-ship; nothing in this repository writes that file. When the
+# rebuild lands, this pin goes to `{}` minus whatever moves into `SAME_SEQUENCE_EXEMPTIONS` above.
+KNOWN_SAME_SEQUENCE_SPLITS: frozenset[tuple[str, ...]] = frozenset(
+    {
+        ("A09260",),
+        (
+            "DD214216",
+            "DI499146",
+            "FV537074",
+            "HC025129",
+            "HV932178",
+            "JC013103",
+            "LY501106",
+            "LZ216101",
+        ),
+        ("DD214217",),
+        ("DD214218",),
+        ("DD214219", "DI499147", "HV202313", "JC013104"),
+        ("DD214220",),
+        ("DD214221",),
+        ("DD214222",),
+        ("DD214223",),
+        ("DD214224",),
+        ("HW349523", "LP131905", "MA783942", "MP510547"),
+        ("PE314016", "PH149759"),
+    }
+)
+
+# Same-sequence groups the *ledger* splits: it asserts a value for some members and is silent about
+# the byte-identical rest. These three are the live D2 defect, and they are why this check exists —
+# `CS406483`/`PU749298` additionally carry the wrong value, since the re-adjudication found that
+# pair to be genuinely engineered (a unique AgeI site) rather than a parental re-deposit.
+KNOWN_LEDGER_CREATED_SPLITS: frozenset[tuple[str, ...]] = frozenset(
+    {
+        ("CS406436", "PU749305"),
+        ("CS406482", "PU749297"),
+        ("CS406483", "PU749298"),
+    }
+)
 
 
 @pytest.fixture(scope="module")
-def engineered_by_accession(repository_root: Path) -> dict[str, str]:
+def canonical(repository_root: Path) -> dict[str, dict[str, str]]:
+    """One read of the shipped canonical table, keyed by accession."""
     header, rows = read_tsv_gz(repository_root / CANONICAL_METADATA)
     index = {name: position for position, name in enumerate(header)}
-    return {row[index["accession"]]: row[index[ENGINEERED_COLUMN]] for row in rows}
+    wanted = ("accession", ENGINEERED_COLUMN, "sequence_sha256", "sequence_length_nt")
+    return {row[index["accession"]]: {name: row[index[name]] for name in wanted} for row in rows}
 
 
 @pytest.fixture(scope="module")
-def sha256_by_accession(repository_root: Path) -> dict[str, str]:
-    header, rows = read_tsv_gz(repository_root / CANONICAL_METADATA)
-    index = {name: position for position, name in enumerate(header)}
-    return {row[index["accession"]]: row[index["sequence_sha256"]] for row in rows}
+def engineered_by_accession(canonical: dict[str, dict[str, str]]) -> dict[str, str]:
+    return {accession: row[ENGINEERED_COLUMN] for accession, row in canonical.items()}
+
+
+@pytest.fixture(scope="module")
+def sha256_by_accession(canonical: dict[str, dict[str, str]]) -> dict[str, str]:
+    return {accession: row["sequence_sha256"] for accession, row in canonical.items()}
+
+
+@pytest.fixture(scope="module")
+def length_by_accession(canonical: dict[str, dict[str, str]]) -> dict[str, int]:
+    return {accession: int(row["sequence_length_nt"]) for accession, row in canonical.items()}
 
 
 @pytest.fixture(scope="module")
@@ -111,10 +263,15 @@ def division_by_accession(repository_root: Path) -> dict[str, str]:
 
 
 @pytest.fixture(scope="module")
-def length_by_accession(repository_root: Path) -> dict[str, int]:
-    header, rows = read_tsv_gz(repository_root / CANONICAL_METADATA)
-    index = {name: position for position, name in enumerate(header)}
-    return {row[index["accession"]]: int(row[index["sequence_length_nt"]]) for row in rows}
+def active_engineered_ledger_values(repository_root: Path) -> dict[str, str]:
+    """Active ledger assertions about `engineered_or_construct`, keyed by accession."""
+    with (repository_root / LEDGER).open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL))
+    return {
+        row["accession"]: row["new_value"].strip().upper()
+        for row in rows
+        if row["field_name"] == ENGINEERED_COLUMN and row["status"] == ACTIVE_STATUS
+    }
 
 
 def group_by_sequence(
@@ -127,7 +284,7 @@ def group_by_sequence(
     """Bucket accessions by `sequence_sha256`, carrying each one's engineered value.
 
     `restrict_to_divisions` narrows the population to records whose *source* division is in the
-    given set, which is what makes Invariant A exemption-free.
+    given set, which is what scopes Invariant A.
     """
     groups: dict[str, list[tuple[str, str]]] = collections.defaultdict(list)
     for accession, value in engineered.items():
@@ -148,6 +305,49 @@ def disagreeing_groups(
     }
 
 
+def unexplained_true_members(
+    groups: dict[str, list[tuple[str, str]]],
+) -> frozenset[tuple[str, ...]]:
+    """The TRUE members of every group that splits TRUE/FALSE without an allowlist entry.
+
+    Keyed by accession tuple rather than digest: an accession belongs to exactly one sha256 group,
+    so the tuples are disjoint, and a diff of two of these sets names records rather than hashes.
+    """
+    offenders: set[tuple[str, ...]] = set()
+    for members in groups.values():
+        if {value for _, value in members} != {"TRUE", "FALSE"}:
+            continue
+        unexplained = tuple(
+            sorted(
+                accession
+                for accession, value in members
+                if value == "TRUE" and accession not in SAME_SEQUENCE_EXEMPTIONS
+            )
+        )
+        if unexplained:
+            offenders.add(unexplained)
+    return frozenset(offenders)
+
+
+def flip_one_member_per_group(
+    engineered: dict[str, str],
+    groups: dict[str, list[tuple[str, str]]],
+) -> tuple[dict[str, str], dict[str, str]]:
+    """Mutate one member of every supplied group at once, and report which.
+
+    sha256 groups partition the records, so flipping one member of each cannot interfere across
+    groups — which is what lets a single call to the real check cover every group at once instead
+    of hand-picking one pair to represent them all.
+    """
+    mutated = dict(engineered)
+    flipped: dict[str, str] = {}
+    for digest, members in groups.items():
+        accession, value = sorted(members)[0]
+        mutated[accession] = "FALSE" if value == "TRUE" else "TRUE"
+        flipped[digest] = accession
+    return mutated, flipped
+
+
 def test_the_engineered_column_is_a_clean_boolean(engineered_by_accession: dict[str, str]) -> None:
     """A disagreement check is meaningless if the column carries blanks or free text."""
     values = set(engineered_by_accession.values())
@@ -160,11 +360,10 @@ def test_every_canonical_record_resolves_to_a_source_division(
 ) -> None:
     """Invariant A's scoping depends on this join being total.
 
-    `group_by_sequence` uses `division.get(accession)`, which yields `None` for a missing
-    accession and silently drops it from the PAT/SYN population. If canonical ever carried a
-    record absent from the source records table, Invariant A would stop constraining it without
-    any test noticing — the coverage pins would move, but only if the record was already counted.
-    Assert the join is total so that failure mode cannot arise quietly.
+    `group_by_sequence` uses `division.get(accession)`, which yields `None` for a missing accession
+    and silently drops it from the PAT/SYN population. If canonical ever carried a record absent
+    from the source records table, Invariant A would stop constraining it without any test
+    noticing. Assert the join is total so that failure mode cannot arise quietly.
     """
     unresolved = sorted(a for a in engineered_by_accession if a not in division_by_accession)
     assert unresolved == [], (
@@ -232,12 +431,61 @@ def test_the_blanket_patent_flag_is_recorded_as_a_known_defect(
     )
 
 
+def test_invariant_a_scope_membership_is_pinned(
+    engineered_by_accession: dict[str, str],
+    sha256_by_accession: dict[str, str],
+    division_by_accession: dict[str, str],
+) -> None:
+    """Pin *which* records Invariant A constrains, not merely how many.
+
+    The scoped record count is pinned separately from the constrained-group counts because the two
+    fail to different mutations: dropping `SYN` from the division set moves 513 and leaves 178/374
+    untouched, while a compensating scope swap moves the digest and leaves all three counts intact.
+    """
+    scoped = [
+        a
+        for a in engineered_by_accession
+        if division_by_accession.get(a) in DELIBERATE_DEPOSIT_DIVISIONS
+    ]
+    assert len(scoped) == EXPECTED_SCOPED_RECORDS, (
+        f"Invariant A's scope holds {len(scoped)} records, pinned at {EXPECTED_SCOPED_RECORDS}. "
+        f"A drop here means a division left {sorted(DELIBERATE_DEPOSIT_DIVISIONS)} without the "
+        f"group counts noticing."
+    )
+
+    groups = group_by_sequence(
+        engineered_by_accession,
+        sha256_by_accession,
+        division_by_accession,
+        restrict_to_divisions=DELIBERATE_DEPOSIT_DIVISIONS,
+    )
+    constrained = {
+        digest: sorted(a for a, _ in members)
+        for digest, members in groups.items()
+        if len(members) > 1
+    }
+    payload = "\n".join(
+        f"{digest}\t{','.join(members)}" for digest, members in sorted(constrained.items())
+    )
+    digest = hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    assert digest == EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256, (
+        f"Invariant A's constrained membership digest is {digest}, pinned at "
+        f"{EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256}. {len(constrained)} groups / "
+        f"{sum(len(m) for m in constrained.values())} records. If the change is intended, replace "
+        f"the pin with the value printed here."
+    )
+
+
 def test_same_sequence_patent_and_synthetic_deposits_agree(
     engineered_by_accession: dict[str, str],
     sha256_by_accession: dict[str, str],
     division_by_accession: dict[str, str],
 ) -> None:
-    """Invariant A. Unconditional: no allowlist, no length floor."""
+    """Invariant A. Unconditional: no allowlist, no length floor.
+
+    Green today for a reason that is not a curation outcome: all 513 scoped records ship TRUE, so
+    uniformity — not consistent adjudication — is what makes this pass. See the module docstring.
+    """
     groups = group_by_sequence(
         engineered_by_accession,
         sha256_by_accession,
@@ -261,82 +509,195 @@ def test_same_sequence_patent_and_synthetic_deposits_agree(
     )
 
 
-def test_invariant_a_would_have_caught_the_d2_defect(
+def test_invariant_a_detects_a_split_in_every_constrained_group(
     engineered_by_accession: dict[str, str],
     sha256_by_accession: dict[str, str],
     division_by_accession: dict[str, str],
 ) -> None:
-    """Falsification control: the guard must fail on the defect that motivated it.
+    """Falsification control for Invariant A, exhaustive rather than by example.
 
-    D2 asserted `engineered_or_construct=FALSE` for `CS406482` and said nothing about `PU749297`,
-    which carries the identical sequence. Reproduce that split and require a red.
+    An earlier version planted the defect in one hand-picked pair. That let the guard be weakened
+    for any *other* group — a two-accession skip inside `disagreeing_groups` — while the control
+    still passed. Flipping one member of all 178 groups at once and requiring all 178 to be named
+    closes that: a skip targeting any group fails here, and there is no hardcoded accession left to
+    raise `KeyError` if a record leaves canonical.
     """
-    assert sha256_by_accession["CS406482"] == sha256_by_accession["PU749297"], (
-        "this control depends on CS406482 and PU749297 being byte-identical; if the sequences "
-        "changed, re-derive the control rather than deleting it"
-    )
-
-    mutated = dict(engineered_by_accession)
-    mutated["CS406482"] = "FALSE"
-    mutated["PU749297"] = "TRUE"
-
     groups = group_by_sequence(
-        mutated,
+        engineered_by_accession,
         sha256_by_accession,
         division_by_accession,
         restrict_to_divisions=DELIBERATE_DEPOSIT_DIVISIONS,
     )
-    failures = disagreeing_groups(groups)
+    constrained = {digest: members for digest, members in groups.items() if len(members) > 1}
+    mutated, flipped = flip_one_member_per_group(engineered_by_accession, constrained)
 
-    assert failures, (
-        "Invariant A passed a CS406482/PU749297 split — it cannot detect its own defect"
+    detected = disagreeing_groups(
+        group_by_sequence(
+            mutated,
+            sha256_by_accession,
+            division_by_accession,
+            restrict_to_divisions=DELIBERATE_DEPOSIT_DIVISIONS,
+        )
     )
-    flagged = {accession for members in failures.values() for accession, _ in members}
-    assert {"CS406482", "PU749297"} <= flagged
+    missed = sorted(flipped[digest] for digest in constrained if digest not in detected)
+    assert missed == [], (
+        f"Invariant A failed to detect a planted split in {len(missed)} of {len(constrained)} "
+        f"constrained groups: {missed[:10]}. The guard does not cover the scope it claims to."
+    )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Invariant B fails on 12 known sha256 groups until the 44 re-deposit flips and A09260 "
-        "reach final/canonical (docs/engineered-full-population-readjudication.md §4, §7, "
-        "Appendix B). Note what will NOT clear this: adding the ledger rows. This test reads "
-        "final/canonical/sequence_metadata.tsv.gz, and nothing in this repository writes that "
-        "file — `git log -- final/canonical` has exactly one commit, the initial release. The "
-        "values only move when the private pipeline rebuilds and re-ships the canonical layer, so "
-        "this stays xfail across the whole ledger stage by design. Marked strict so the suite "
-        "turns RED the moment the rebuild lands and makes it pass — that is the signal to delete "
-        "this marker, not to leave a passing xfail lying around."
-    ),
-)
-def test_no_same_sequence_split_without_an_allowlist_entry(
+def test_same_sequence_splits_match_the_known_defect_set(
     engineered_by_accession: dict[str, str],
     sha256_by_accession: dict[str, str],
     division_by_accession: dict[str, str],
 ) -> None:
-    """Invariant B. Any TRUE sharing a sequence with a FALSE needs a reviewed exemption.
+    """Invariant B. The outstanding split set must be exactly what is pinned.
 
-    Expected-failing today, deliberately: the outstanding set is recorded in the assertion message
-    rather than hidden behind a skip, so `pytest -rx` prints exactly which groups are still
-    unadjudicated. Goes green with `SAME_SEQUENCE_EXEMPTIONS` empty once stage 2 lands.
+    Both directions are failures worth a red. A group appearing means a *new* same-sequence split —
+    the defect class this file exists to prevent. A group disappearing means the rebuild landed, or
+    something silently changed a value, and the pin plus the disposition tables need updating
+    together.
     """
     groups = group_by_sequence(engineered_by_accession, sha256_by_accession, division_by_accession)
-    offenders: dict[str, list[str]] = {}
-    for digest, members in groups.items():
-        values = {value for _, value in members}
-        if values != {"TRUE", "FALSE"}:
-            continue
-        unexplained = sorted(
-            accession
-            for accession, value in members
-            if value == "TRUE" and accession not in SAME_SEQUENCE_EXEMPTIONS
-        )
-        if unexplained:
-            offenders[digest] = unexplained
+    offenders = unexplained_true_members(groups)
 
-    assert offenders == {}, (
-        f"{len(offenders)} sha256 groups carry a TRUE alongside a byte-identical FALSE with no "
-        f"entry in SAME_SEQUENCE_EXEMPTIONS: "
-        f"{ {d[:12]: a for d, a in sorted(offenders.items())} }. Either flip them, or record why "
-        f"the split is legitimate."
+    appeared = sorted(offenders - KNOWN_SAME_SEQUENCE_SPLITS)
+    resolved = sorted(KNOWN_SAME_SEQUENCE_SPLITS - offenders)
+    assert offenders == KNOWN_SAME_SEQUENCE_SPLITS, (
+        f"the same-sequence split set moved. NEW (a TRUE now sits beside a byte-identical FALSE "
+        f"with no SAME_SEQUENCE_EXEMPTIONS entry): {appeared}. RESOLVED (pinned but no longer "
+        f"splitting): {resolved}. A new group is a defect; a resolved group means the pin, "
+        f"SAME_SEQUENCE_EXEMPTIONS and the re-adjudication doc need updating together."
     )
+
+
+def test_invariant_b_detects_a_new_split_in_every_agreeing_group(
+    engineered_by_accession: dict[str, str],
+    sha256_by_accession: dict[str, str],
+    division_by_accession: dict[str, str],
+) -> None:
+    """Falsification control for Invariant B, over every group it could possibly protect.
+
+    This is the check the previous `strict=True` xfail could not perform. An xfail is binary: it
+    fails while any violation exists, so a thirteenth one is indistinguishable from the twelve
+    already there. Demonstrated at the time with a count-neutral mutation that left the suite fully
+    green. Here every currently-agreeing multi-member group is split at once and each must surface.
+    """
+    groups = group_by_sequence(engineered_by_accession, sha256_by_accession, division_by_accession)
+    multi = {digest: members for digest, members in groups.items() if len(members) > 1}
+    assert len(multi) == EXPECTED_MULTI_MEMBER_GROUPS, (
+        f"{len(multi)} multi-member sha256 groups, pinned at {EXPECTED_MULTI_MEMBER_GROUPS}"
+    )
+
+    agreeing = {
+        digest: members
+        for digest, members in multi.items()
+        if len({value for _, value in members}) == 1
+    }
+    assert len(agreeing) == EXPECTED_AGREEING_MULTI_MEMBER_GROUPS, (
+        f"{len(agreeing)} multi-member groups currently agree, pinned at "
+        f"{EXPECTED_AGREEING_MULTI_MEMBER_GROUPS}"
+    )
+
+    mutated, flipped = flip_one_member_per_group(engineered_by_accession, agreeing)
+    offenders = unexplained_true_members(
+        group_by_sequence(mutated, sha256_by_accession, division_by_accession)
+    )
+    flagged = {accession for group in offenders for accession in group}
+
+    missed = sorted(
+        digest
+        for digest, members in agreeing.items()
+        if not any(accession in flagged for accession, _ in members)
+    )
+    assert missed == [], (
+        f"Invariant B failed to detect a planted split in {len(missed)} of {len(agreeing)} "
+        f"agreeing groups: {[flipped[d] for d in missed[:10]]}. A new same-sequence split would "
+        f"ship unnoticed."
+    )
+
+
+def test_the_ledger_does_not_split_a_byte_identical_group(
+    engineered_by_accession: dict[str, str],
+    sha256_by_accession: dict[str, str],
+    division_by_accession: dict[str, str],
+    active_engineered_ledger_values: dict[str, str],
+) -> None:
+    """Curation must not assert a value for part of a byte-identical group.
+
+    This is the only check here with real detection power over work done *today*. It reads
+    `registry/decisions.tsv`, which this repository writes, rather than `final/canonical/`, which
+    it does not — `git log -- final/canonical` has exactly one commit, the initial release.
+
+    Differential by construction: apply the ledger's active assertions on top of canonical and keep
+    only the disagreements the ledger *created*. Pre-existing canonical splits are Invariant B's
+    business, and mixing them in here would bury a three-group signal under a twelve-group
+    background.
+    """
+    baseline = set(
+        disagreeing_groups(
+            group_by_sequence(engineered_by_accession, sha256_by_accession, division_by_accession)
+        )
+    )
+
+    applied = dict(engineered_by_accession)
+    for accession, value in active_engineered_ledger_values.items():
+        if accession in applied:
+            applied[accession] = value
+    after = disagreeing_groups(
+        group_by_sequence(applied, sha256_by_accession, division_by_accession)
+    )
+
+    created = frozenset(
+        tuple(sorted(a for a, _ in members))
+        for digest, members in after.items()
+        if digest not in baseline
+    )
+
+    appeared = sorted(created - KNOWN_LEDGER_CREATED_SPLITS)
+    resolved = sorted(KNOWN_LEDGER_CREATED_SPLITS - created)
+    assert created == KNOWN_LEDGER_CREATED_SPLITS, (
+        f"the set of same-sequence groups the ledger splits moved. NEW: {appeared}. RESOLVED: "
+        f"{resolved}. A new entry means a decision was recorded for some members of a "
+        f"byte-identical group and not the rest — the D2 defect, repeated. Adjudicate the group."
+    )
+
+
+def test_the_ledger_split_check_detects_a_new_assertion(
+    engineered_by_accession: dict[str, str],
+    sha256_by_accession: dict[str, str],
+    division_by_accession: dict[str, str],
+    active_engineered_ledger_values: dict[str, str],
+) -> None:
+    """Falsification control for the ledger check, over every group it could protect.
+
+    The group is chosen by measurement rather than named, so the control cannot be satisfied by a
+    special case and cannot break when an accession leaves canonical.
+    """
+    groups = group_by_sequence(engineered_by_accession, sha256_by_accession, division_by_accession)
+    agreeing = {
+        digest: sorted(members)
+        for digest, members in groups.items()
+        if len(members) > 1 and len({value for _, value in members}) == 1
+    }
+    assert agreeing, "no agreeing multi-member group to plant a ledger split in"
+
+    baseline = set(disagreeing_groups(groups))
+
+    for digest, members in agreeing.items():
+        accession, value = members[0]
+        planted = dict(active_engineered_ledger_values)
+        planted[accession] = "FALSE" if value == "TRUE" else "TRUE"
+
+        applied = dict(engineered_by_accession)
+        for target, new_value in planted.items():
+            if target in applied:
+                applied[target] = new_value
+        after = disagreeing_groups(
+            group_by_sequence(applied, sha256_by_accession, division_by_accession)
+        )
+        created = {d for d in after if d not in baseline}
+        assert digest in created, (
+            f"a planted ledger assertion splitting {accession} from its byte-identical twins "
+            f"{[a for a, _ in members[1:]]} was not detected"
+        )
