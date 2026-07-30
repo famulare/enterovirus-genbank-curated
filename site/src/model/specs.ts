@@ -30,8 +30,16 @@ const divergenceDetail = new WeakMap<
     indelEvents: number;
     reference: string;
     referenceKind: string;
+    coverage: number;
   }
 >();
+
+/** The panel-scoped numeric a colour scale can paint by. Without this,
+ *  `region_coverage_nt` sat in the colour menu returning null for every record and
+ *  painted the whole panel one grey. */
+export function coverageOf(mark: Mark): number | null {
+  return divergenceDetail.get(mark)?.coverage ?? distanceDetail.get(mark)?.coverage ?? null;
+}
 
 export const DIVERGENCE: ChapterSpec = {
   id: "divergence",
@@ -68,6 +76,7 @@ export const DIVERGENCE: ChapterSpec = {
         indelEvents: raw.indel_events[i]!,
         reference: reference?.label ?? "reference",
         referenceKind: reference?.kind ?? "—",
+        coverage: raw.coverage[i]!,
       });
       return mark;
     });
@@ -130,6 +139,7 @@ export const DIVERGENCE: ChapterSpec = {
     const d = divergenceDetail.get(mark);
     if (!d) return [];
     return [
+      ["Region coverage", `${n(d.coverage)} nt`],
       ["Codons compared", n(d.assessable)],
       ["— both unambiguous", n(d.comparable)],
       ["— touched by an indel", n(d.indelCodons)],
@@ -152,7 +162,7 @@ export const DIVERGENCE: ChapterSpec = {
 
 const distanceDetail = new WeakMap<
   Mark,
-  { resolved: number; landmarks: number; transform: string }
+  { resolved: number; landmarks: number; transform: string; coverage: number }
 >();
 
 export const DISTANCE: ChapterSpec = {
@@ -185,6 +195,7 @@ export const DISTANCE: ChapterSpec = {
         resolved: raw.resolved[i]!,
         landmarks: raw.landmarks,
         transform: scale,
+        coverage: raw.coverage[i]!,
       });
       return mark;
     });
@@ -240,6 +251,7 @@ export const DISTANCE: ChapterSpec = {
     const d = distanceDetail.get(mark);
     if (!d) return [];
     return [
+      ["Region coverage", `${n(d.coverage)} nt`],
       ["Scaling axis 1", mark.x.toFixed(4)],
       ["Scaling axis 2", mark.y.toFixed(4)],
       ["Dissimilarity scaled", d.transform === "sqrt" ? "square root of distance" : "distance"],

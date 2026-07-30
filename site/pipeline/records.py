@@ -58,6 +58,9 @@ def build(records: list[dict]) -> dict:
     return {
         "schema": SCHEMA,
         "n": len(records),
+        # Which columns this site computed rather than read, so the inspector can say
+        # so instead of listing them among the release's own fields.
+        "derived": sorted(DERIVED_LABELS),
         "accession": [record["accession"] for record in records],
         "manual_decision": [
             index for index, record in enumerate(records) if record["has_manual_decision"]
@@ -67,14 +70,28 @@ def build(records: list[dict]) -> dict:
     }
 
 
+# Fields whose value this site computed rather than read, and the label each takes in
+# the record inspector.
+#
+# `collection_year` needs a label of its own. Its *trait* label is "Collection date",
+# because that is what a reader wants to colour by — but the raw `collection_date`
+# column also renders as "Collection date", so the inspector showed two rows under one
+# name with different values: `Sep-2010` beside `2010.71`, `2020/2021` beside its
+# midpoint. Same underlying fact, two representations, and no way to tell which was
+# which.
+DERIVED_LABELS = {
+    "species": "Species",
+    "collection_year": "Collection date, as a decimal year",
+}
+
+
 def _field_labels() -> dict[str, str]:
     """Human-readable names for the pinned detail view, in canonical order."""
     overrides = {trait["id"]: trait["label"] for trait in contract.TRAITS}
     labels = {}
     for field in contract.CANONICAL_COLUMNS:
         labels[field] = overrides.get(field) or field.replace("_", " ").capitalize()
-    labels["species"] = overrides["species"]
-    labels["collection_year"] = overrides["collection_year"]
+    labels.update(DERIVED_LABELS)
     return labels
 
 

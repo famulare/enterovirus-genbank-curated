@@ -38,7 +38,12 @@ import {
   renderRawDate,
   renderReleaseBand,
 } from "./ui/report.js";
-import { renderPinned, renderReadout } from "./ui/detail.js";
+import {
+  renderPinned,
+  renderReadout,
+  type DerivedField,
+  type PinnedPanel,
+} from "./ui/detail.js";
 import { byId } from "./ui/dom.js";
 
 interface Manifest {
@@ -111,8 +116,7 @@ async function rebuild(spec: (typeof SPECS)[number]): Promise<void> {
 function redraw(id: string): void {
   const entry = slot(id);
   if (!entry.state) return;
-  entry.state.view = chapterView(id);
-  entry.state.region = chapter.resolveRegion(entry.state.regions, view.region);
+  chapter.applyView(entry.state, chapterView(id));
   chapter.render(entry.state);
   paintInspection(id);
 }
@@ -123,14 +127,60 @@ function paintInspection(id: string): void {
   const spec = entry.state.spec;
   const set = chapter.currentSet(entry.state);
   renderReadout(spec, records, set, entry.state.held ?? entry.state.inspected, !!entry.state.held);
-  renderPinned(spec, records, set, entry.state.held);
+  paintPinned();
   wireRenderedControls(id);
+}
+
+/** One inspector for the page, assembled from every chapter that holds the record.
+ *
+ *  Also the only place `type_concordance` and the panel-scoped coverage can be read:
+ *  the colour control can paint by both, but neither is a recorded field, so without
+ *  this the reader could see a colour they could not look up. */
+function paintPinned(): void {
+  const row = [...chapters.values()].find((entry) => entry.heldRecord !== null)?.heldRecord ?? null;
+  if (row === null) {
+    renderPinned(records, null, [], []);
+    return;
+  }
+
+  const panels: PinnedPanel[] = [];
+  for (const spec of SPECS) {
+    const state = slot(spec.id).state;
+    if (!state) continue;
+    const set = chapter.currentSet(state);
+    const mark = state.held ?? set.marks.find((m) => m.record === row);
+    if (!mark) continue;
+    panels.push({
+      figure: spec.id === "divergence" ? "Divergence" : "Distance",
+      region: summary.regions.find((r) => r.id === state.region)?.label ?? state.region,
+      rows: spec.measured(set, mark),
+    });
+  }
+
+  const derived: DerivedField[] = [];
+  const anyState = slot(SPECS[0]!.id).state;
+  if (anyState) {
+    const concordance = chapter.concordanceValue(summary, records, {
+      ...view,
+      trait: "type_concordance",
+    });
+    const value = concordance?.(row);
+    if (value) {
+      derived.push({
+        label: summary.traits.find((t) => t.id === "type_concordance")?.label ?? "Type concordance",
+        value,
+        why: "Curated virus_type judged against the alignment this record was placed in, so it depends on the serotype selected.",
+      });
+    }
+  }
+
+  renderPinned(records, row, panels, derived);
 }
 
 /** Buttons that live inside re-rendered markup need rebinding, not one listener at
  *  mount. */
 function wireRenderedControls(id: string): void {
-  byId(`${id}-detail`)
+  byId("record-detail")
     .querySelector<HTMLButtonElement>("[data-unpin]")
     ?.addEventListener("click", () => setHeld(id, null));
   byId(`${id}-note`)

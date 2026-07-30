@@ -23,6 +23,8 @@ export interface PanelFile {
 
 export interface DivergenceRegion {
   record: number[];
+  /** Unambiguous nucleotides the record carries in this region. */
+  coverage: number[];
   comparable: number[];
   assessable: number[];
   synonymous: number[];
@@ -48,6 +50,8 @@ export interface DistanceFit {
 
 export interface DistanceRegion {
   record: number[];
+  /** Unambiguous nucleotides the record carries in this region. */
+  coverage: number[];
   resolved: number[];
   /** Indices into `record` whose placement rests on too little overlap. */
   thin: number[];

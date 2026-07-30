@@ -1,10 +1,12 @@
-/** Two tiers of record inspection, shared by both figure chapters.
+/** Two tiers of record inspection.
  *
- *  Hover (or arrow-key focus) shows a compact readout: enough to know what a mark is
- *  without a wall of text. Click pins the record and opens every canonical field below
- *  the figure. Twenty-four fields in a hover tooltip would be unreadable, and a
- *  hover-only value is unreachable by keyboard, so the exact numbers live in the
- *  persistent view and the tooltip is a summary.
+ *  Hover (or arrow-key focus) shows a compact readout **per figure**: it is feedback on
+ *  the mark under the pointer, so it belongs to the figure being pointed at.
+ *
+ *  Pinning opens **one** inspector for the whole page, after the first figure. Pinning
+ *  is cross-chapter — the same record highlights in every figure — so a per-chapter
+ *  block rendered the same record twice. The single block reports what each figure
+ *  measured about the record, then every field the release records for it.
  */
 
 import type { Mark, MarkSet } from "../model/mark.js";
@@ -46,26 +48,73 @@ export function renderReadout(
   target.innerHTML = lines.join("");
 }
 
+/** What one figure measured about the pinned record. */
+export interface PinnedPanel {
+  figure: string;
+  region: string;
+  rows: [string, string][];
+}
+
+/** A value that is not a recorded field — derived here, or specific to the current
+ *  selection — but which the colour control can paint by, so the inspector has to
+ *  account for it or the reader cannot see what they are looking at. */
+export interface DerivedField {
+  label: string;
+  value: string;
+  why: string;
+}
+
 export function renderPinned(
-  spec: ChapterSpec,
   records: Records,
-  set: MarkSet,
-  mark: Mark | null,
+  row: number | null,
+  panels: PinnedPanel[],
+  derived: DerivedField[],
 ): void {
-  const target = byId(`${spec.id}-detail`);
-  if (!mark) {
+  const target = byId("record-detail");
+  if (row === null) {
     target.innerHTML = "";
     target.removeAttribute("data-open");
     return;
   }
   target.dataset.open = "true";
 
-  const accession = records.accession(mark.record);
-  const measured = spec.measured(set, mark);
-  const rows = records
-    .detail(mark.record)
+  const accession = records.accession(row);
+
+  const measured = panels
+    .map(
+      (panel) => `
+      <div class="detail-panel">
+        <p class="detail-subhead">${esc(panel.figure)} · ${esc(panel.region)}</p>
+        <dl class="detail-measured">
+          ${panel.rows
+            .map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`)
+            .join("")}
+        </dl>
+      </div>`,
+    )
+    .join("");
+
+  const derivedRows = derived
+    .map(
+      (entry) =>
+        `<tr><th scope="row">${esc(entry.label)}
+           <em class="prov-tag" data-kind="derived" title="${esc(entry.why)}">Derived</em></th>
+         <td>${esc(entry.value)}</td></tr>`,
+    )
+    .join("");
+
+  const recordedRows = records
+    .detail(row)
     .filter((entry) => entry.value !== "")
-    .map((entry) => `<tr><th scope="row">${esc(entry.label)}</th><td>${esc(entry.value)}</td></tr>`)
+    .map(
+      (entry) =>
+        `<tr><th scope="row">${esc(entry.label)}${
+          entry.derived
+            ? ' <em class="prov-tag" data-kind="derived" title="Computed by this site from the' +
+              ' fields beside it, not recorded in the release.">Derived</em>'
+            : ""
+        }</th><td>${esc(entry.value)}</td></tr>`,
+    )
     .join("");
 
   target.innerHTML = `
@@ -78,17 +127,13 @@ export function renderPinned(
     </div>
     <div class="detail-grid">
       <div>
-        <p class="detail-subhead">Measured in this panel</p>
-        <dl class="detail-measured">
-          ${measured
-            .map(([key, value]) => `<div><dt>${esc(key)}</dt><dd>${esc(value)}</dd></div>`)
-            .join("")}
-        </dl>
+        <p class="detail-subhead detail-group">Measured in these figures</p>
+        ${measured}
         <p class="detail-links">
           <a href="${GENBANK}${encodeURIComponent(accession)}" rel="noopener">This record on
             GenBank</a>
           ${
-            records.hasManualDecision(mark.record)
+            records.hasManualDecision(row)
               ? ' · <span class="prov-tag" data-kind="derived">Human curation decision recorded</span>'
               : ' · <span class="prov-tag" data-kind="assumption">No human decision recorded</span>'
           }
@@ -96,7 +141,7 @@ export function renderPinned(
       </div>
       <div class="table-wrap record-table detail-fields">
         <p class="detail-subhead">Every recorded field</p>
-        <table><tbody>${rows}</tbody></table>
+        <table><tbody>${derivedRows}${recordedRows}</tbody></table>
       </div>
     </div>
   `;

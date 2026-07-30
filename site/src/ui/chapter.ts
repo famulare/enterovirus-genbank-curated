@@ -17,6 +17,7 @@ import * as scatter from "./scatter.js";
 import type { Axis, PanelFile } from "../model/panel.js";
 import { axis, zoomed } from "../model/panel.js";
 import { type Mark, type MarkSet, markExtent } from "../model/mark.js";
+import { coverageOf } from "../model/specs.js";
 import type { Records } from "../model/records.js";
 import type { Summary, Trait } from "../model/types.js";
 import type { AxisScale, View, Zoom } from "../model/view.js";
@@ -105,21 +106,7 @@ export function buildState(
   );
   const region = resolveRegion(regions, view.region);
 
-  const trait = summary.traits.find((entry) => entry.id === view.trait);
-  if (!trait) throw new Error(`unknown trait ${view.trait}`);
-
-  // Built over the whole selection, not the current region and not the filtered
-  // subset, so a colour means the same thing in every panel of every chapter and does
-  // not move when a filter changes.
-  const allRows = new Set<number>();
-  for (const set of sets.values()) for (const mark of set.marks) allRows.add(mark.record);
-  const scale = categories.buildScale(
-    summary,
-    records,
-    trait,
-    [...allRows],
-    concordanceValue(summary, records, view),
-  );
+  const scale = buildColorScale(summary, records, view, sets);
 
   const state: ChapterState = {
     spec,
@@ -141,6 +128,58 @@ export function buildState(
     state.held = visible(state, currentSet(state)).find((m) => m.record === previousHeld) ?? null;
   }
   return state;
+}
+
+/** The colour scale for a view.
+ *
+ *  Built over the whole selection — not the current region, and not the filtered
+ *  subset — so a colour means the same thing in every panel of every chapter and does
+ *  not move when a filter changes.
+ */
+function buildColorScale(
+  summary: Summary,
+  records: Records,
+  view: View,
+  sets: Map<string, MarkSet>,
+): categories.Scale {
+  const trait = summary.traits.find((entry) => entry.id === view.trait);
+  if (!trait) throw new Error(`unknown trait ${view.trait}`);
+  const allRows = new Set<number>();
+  const byRow = new Map<number, Mark>();
+  for (const set of sets.values()) {
+    for (const mark of set.marks) {
+      allRows.add(mark.record);
+      if (!byRow.has(mark.record)) byRow.set(mark.record, mark);
+    }
+  }
+  return categories.buildScale(
+    summary,
+    records,
+    trait,
+    [...allRows],
+    concordanceValue(summary, records, view),
+    trait.scope === "panel"
+      ? (row) => {
+          const mark = byRow.get(row);
+          return mark ? coverageOf(mark) : null;
+        }
+      : undefined,
+  );
+}
+
+/** Push a new view onto an existing chapter without refetching or re-decoding marks.
+ *
+ *  The colour scale has to be rebuilt here. Leaving it to `buildState` alone meant a
+ *  colour change updated the control and the URL while the marks kept their old
+ *  palette — the control looked live and did nothing. */
+export function applyView(state: ChapterState, view: View): void {
+  const traitChanged = state.view.trait !== view.trait;
+  const selectionChanged = state.view.selection !== view.selection;
+  state.view = view;
+  state.region = resolveRegion(state.regions, view.region);
+  if (traitChanged || selectionChanged) {
+    state.scale = buildColorScale(state.summary, state.records, view, state.sets);
+  }
 }
 
 /** The shared region if this chapter has it, else its own most-populated fallback —
@@ -186,10 +225,14 @@ function effectiveScale(state: ChapterState): AxisScale {
 
 function styleOf(state: ChapterState) {
   const raw = concordanceValue(state.summary, state.records, state.view);
-  return (mark: Mark): scatter.MarkStyle => ({
-    color: categories.colorOf(state.scale, state.records, mark.record, raw?.(mark.record)),
-    glyph: categories.glyphOf(state.scale, state.records, mark.record, raw?.(mark.record)),
-  });
+  const panelScoped = state.scale.trait.scope === "panel";
+  return (mark: Mark): scatter.MarkStyle => {
+    const numeric = panelScoped ? coverageOf(mark) : undefined;
+    return {
+      color: categories.colorOf(state.scale, state.records, mark.record, raw?.(mark.record), numeric),
+      glyph: categories.glyphOf(state.scale, state.records, mark.record, raw?.(mark.record), numeric),
+    };
+  };
 }
 
 export function render(state: ChapterState): void {
