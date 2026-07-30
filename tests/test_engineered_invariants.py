@@ -51,27 +51,35 @@ Mutation evidence
 -----------------
 
 Recorded because this repository's rule is that a check is not finished until a mutation proves it
-fires (`docs/review-backlog.md`, root cause R3). The previous version of this section named the
-wrong test for one mutation, which is the same "unverified validation claim" failure the rule
-exists to prevent — so every line below is a transcribed `-rf` summary, not a recollection.
+fires (`docs/review-backlog.md`, root cause R3).
 
-Six mutations, 2026-07-30. Data mutations were applied to the shipped artifacts themselves and
-reverted, with sha256 re-verified afterwards (`369b6c0b…` canonical, `e9f0dac6…` source records,
-`335588b1…` ledger). Test IDs are given in full; all are in this module.
+**Two rounds of this record have now been wrong, and the second failure is instructive.** Round one
+named the wrong test for a mutation. Round two fixed that by transcribing `-rf` summaries verbatim —
+and still misattributed mutation 6, because `-rf` names the failing *test* and never the failing
+*assertion*. The swap used then (`A37539` PAT→VRL plus `AB053603`/`AB053959` VRL→PAT) was not
+scope-neutral: it moved 513 → 514, so the record-count assert fired and the digest was never
+reached. The method could not support the claim being made with it. Mutation 6 below is replaced
+with one verified scope-neutral *and* count-neutral first, so the digest is genuinely isolated.
+
+Nine mutations, 2026-07-30, against the design at this commit. Data mutations were applied to the
+shipped artifacts themselves and reverted, with sha256 re-verified afterwards (`369b6c0b…`
+canonical, `e9f0dac6…` source records, `335588b1…` ledger). Test IDs are in full; all are in this
+module.
 
 1. **`CS406436` TRUE→FALSE on disk** — the D2 defect reproduced in the shipped bytes, leaving its
-   byte-identical twin `PU749305` at TRUE. **7 failed:**
+   byte-identical twin `PU749305` at TRUE. **6 failed:**
    `test_the_engineered_population_matches_its_pins`,
    `test_the_blanket_patent_flag_is_recorded_as_a_known_defect`,
    `test_same_sequence_patent_and_synthetic_deposits_agree`,
    `test_invariant_a_detects_a_split_in_every_constrained_group`,
    `test_same_sequence_splits_match_the_known_defect_set`,
-   `test_invariant_b_detects_a_new_split_in_every_agreeing_group`,
-   `test_the_ledger_does_not_split_a_byte_identical_group`.
+   `test_invariant_b_detects_a_new_split_in_every_agreeing_group`.
+   The ledger check correctly does **not** fire: it measures the ledger's coherence, and this
+   mutation moves canonical only. That separation is deliberate.
 
 2. **`AB053603` FALSE→TRUE and `M14761` TRUE→FALSE on disk** — count-neutral: the TRUE total stays
    543, the ≥3000 nt count stays 58, PAT/SYN untouched, while `AB053603` now splits from its
-   byte-identical twin `AB053959`. This is the mutation that left the *previous* design fully green
+   byte-identical twin `AB053959`. This is the mutation that left the *original* design fully green
    (`7 passed, 1 xfailed`), because a `strict=True` xfail cannot distinguish 12 violations from 13.
    **2 failed:** `test_same_sequence_splits_match_the_known_defect_set`,
    `test_invariant_b_detects_a_new_split_in_every_agreeing_group`. Verified separately that
@@ -84,28 +92,42 @@ reverted, with sha256 re-verified afterwards (`369b6c0b…` canonical, `e9f0dac6
    (513 → 506). This is the only thing standing between the invariant and a silently halved scope.
 
 4. **Code sabotage: a two-accession skip added to `disagreeing_groups`** for the real byte-identical
-   PAT pair `{A37539, A37564}` — the weakening that the earlier single-pair control passed under.
-   **2 failed:** `test_invariant_a_detects_a_split_in_every_constrained_group`,
-   `test_the_ledger_split_check_detects_a_new_assertion`.
+   PAT pair `{A37539, A37564}` — the weakening the original single-pair control passed under.
+   **1 failed:** `test_invariant_a_detects_a_split_in_every_constrained_group`.
 
 5. **Ledger mutations, both directions.** (a) An active `engineered_or_construct=TRUE` row added for
    `AB053603` while its twin `AB053959` has none → **1 failed:**
    `test_the_ledger_does_not_split_a_byte_identical_group`. (b) The existing `CS406482` D2 row
-   flipped `active`→`retired`, so a *pinned* split disappears → **same 1 failed.** The check is
-   sensitive to a new curation mistake and to the quiet removal of a known one.
+   flipped `active`→`retired`, so a *pinned* incoherence disappears → **same 1 failed.** Sensitive
+   to a new curation mistake and to the quiet removal of a known one.
 
-6. **Compensating scope swap on disk:** `A37539` PAT→VRL plus `AB053603`/`AB053959` VRL→PAT.
-   Measured directly: this preserves the constrained counts at **exactly 178 groups / 374 records**,
-   which is why counts alone were insufficient. **3 failed:**
-   `test_the_engineered_population_matches_its_pins`,
+6. **Scope-neutral compensating swap on disk:** `A37539`/`A37564` PAT→VRL plus `M30211`/`M30212`
+   VRL→PAT — both members of the leaving group, both of the joining group, all four TRUE. Verified
+   before running that **every** count pin is preserved: 513 scoped, 178 groups, 374 records, 506
+   PAT total, 506 PAT TRUE. **1 failed:** `test_invariant_a_scope_membership_is_pinned`, and via the
+   digest this time (`a1e8c284…` → `a6ae8d40…`), which is the assertion the pin exists for.
+
+7. **Ledger asserts TRUE for `ON596331` alone**, leaving eight byte-identical twins silent.
+   **Green before this design; now 1 failed:**
+   `test_the_ledger_does_not_split_a_byte_identical_group`.
+
+8. **Ledger applies the planned flip to 7 of the 8 TRUE members of the `DD214216` group**, missing
+   `LZ216101` — this repository's own landing sequence executed with one member overlooked, which is
+   the D2 defect exactly. **Green before this design; now 1 failed:**
+   `test_the_ledger_does_not_split_a_byte_identical_group`.
+
+9. **`DD214217` added to `LEGITIMATE_SAME_SEQUENCE_SPLITS`, then flipped TRUE→FALSE on disk** — a
+   silent resolution inside an exempt group, which the per-accession suppressor made invisible in
+   both directions. **4 failed:** `test_the_engineered_population_matches_its_pins`,
    `test_the_blanket_patent_flag_is_recorded_as_a_known_defect`,
-   `test_invariant_a_scope_membership_is_pinned` — the last via the membership digest, the thing the
-   counts could not see.
+   `test_same_sequence_splits_match_the_known_defect_set`,
+   `test_invariant_b_detects_a_new_split_in_every_agreeing_group`.
 
 What no mutation reddens on its own: `test_same_sequence_patent_and_synthetic_deposits_agree`
-(Invariant A) never fails without a neighbouring check failing too, which is the concrete form of
-the "no independent detection power" caveat above. Treat A's green as uninformative until the rule
-rewrite lands.
+(Invariant A) never fails without a neighbouring check failing too — the concrete form of the "no
+independent detection power" caveat above. Three checks entail its green, not two: the
+blanket-patent test, the SYN pins, and the membership digest. Treat A's green as uninformative
+until the rule rewrite lands.
 """
 
 from __future__ import annotations
