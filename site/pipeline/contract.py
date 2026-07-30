@@ -89,14 +89,20 @@ CANONICAL_COLUMNS = (
     "specimen_type",
     "collection_date",
     "collection_date_precision",
+    "collection_year_earliest",
+    "collection_year_latest",
     "country",
     "admin1",
     "locality",
     "engineered_or_construct",
     "biosample_accession",
 )
-# UPCOMING: an added date-range field will appear here. Add it to CANONICAL_COLUMNS
-# and, if it should be colorable, to TRAITS.
+# The date-range field arrived (2026-07-29, MAD-VDPV schema 2.2.0/2.3.0):
+# collection_year_earliest/latest, populated IFF collection_date_precision == 'range'
+# (121 records upstream), collection_date holding the midpoint on those rows. Declared
+# here only, per this module's own contract -- not added to TRAITS. Whether the bounds
+# should be a colorable trait (as opposed to record-inspector-only detail) is a UI
+# design call outside the scope of catching the site up to a data refresh.
 #
 # Whether `collection_date` gets normalized to ISO is undecided — it may stay as GenBank
 # recorded it, `Oct-2010` and `2020/2021` included. Nothing here rests on that. The

@@ -9,10 +9,11 @@ sequence_scope	capsid	P1/capsid region.
 sequence_scope	vp1_complete	Complete VP1.
 sequence_scope	vp1_partial	Partial VP1.
 sequence_scope	other_fragment	Non-VP1 or other fragment.
-sequence_scope	unknown	Region not determinable from pipeline record_type.
+sequence_scope	unknown	No scope determination: every non_polio_enterovirus row (record_type is a poliovirus-only, Sabin-VP1-coordinate derivation), or an unmapped poliovirus record_type. Distinct from other_fragment, which is a positive finding that the record IS a fragment.
 collection_date_precision	day	Full YYYY-MM-DD.
 collection_date_precision	month	YYYY-MM.
 collection_date_precision	year	YYYY.
+collection_date_precision	range	The deposit gave an ISO 8601 interval /collection_date (e.g. 2014/2015, 1945/1955). collection_date carries the R-DATE-RANGE-1 midpoint -- floor of the mean of the endpoint years, so it is derived rather than measured -- and collection_year_earliest/latest carry the exact bounds. Added 2.2.0; these rows were previously 'unknown' with an unparseable interval string in collection_date.
 collection_date_precision	unknown	Precision not determinable, or collection date absent (P3: was observed but undeclared in 2.1.0).
 boolean	TRUE	Boolean true.
 boolean	FALSE	Boolean false.
@@ -32,6 +33,7 @@ poliovirus_classification	VDPV	GPLN reconciled poliovirus classification tier (o
 poliovirus_classification	VDPV-n	GPLN reconciled poliovirus classification tier (observed value).
 poliovirus_classification	cVDPV	GPLN reconciled poliovirus classification tier (observed value).
 poliovirus_classification	cVDPV-n	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	chimera	GPLN reconciled poliovirus classification tier (observed value).
 poliovirus_classification	defective-interfering particle	GPLN reconciled poliovirus classification tier (observed value).
 poliovirus_classification	engineered/lab	GPLN reconciled poliovirus classification tier (observed value).
 poliovirus_classification	iVDPV	GPLN reconciled poliovirus classification tier (observed value).
