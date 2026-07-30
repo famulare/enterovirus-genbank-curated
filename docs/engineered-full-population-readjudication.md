@@ -185,7 +185,7 @@ reasoning extends to their series-mates. It does, and more cleanly than expected
 tenth (`DD214215`) is family C below. One correction to the prior report's §2c table: `X00595` is
 **Sabin 2** ("strain Sabin 2 (P712, Ch, 2ab)"), not Sabin 1.
 
-### 3B. Verbatim-containment re-deposits — 6 records, assumption-free FALSE
+### 3B. Verbatim-containment re-deposits — 8 records, assumption-free FALSE
 
 The sha256 test misses these because the patent deposit carries vector/flanking sequence around an
 otherwise verbatim genome. Exact `str.find()` containment, both directions, settles them:
@@ -195,8 +195,13 @@ otherwise verbatim genome. Exact `str.find()` containment, both directions, sett
 | `LY501104` `LZ216099` | 7444 | **exact substring of `KP793687` (Brunenders) at offset 0**, 0 mm / 7444 | very high |
 | `LY501109` `LZ216104` | 7462 | **contain `AY184219` (Sabin 1, 7441 nt) verbatim at offset 0**, 0 mm | very high |
 | `LY501110` `LZ216105` | 7468 | **contain `AY184220` (Sabin 2, 7439 nt) verbatim at offset 0**, 0 mm — and also 8 natural ON596331-338 field-isolate genomes | very high |
+| `LY501108` `LZ216103` | 7452 | **contain natural `KJ170591` (NIE1018488, Nigeria 2010) verbatim at offset 29**, 0 mm / 7379 — detailed below | very high |
 
-These reproduce the curator's own C1 ledger reasons exactly ("0nt/7441 vs Sabin 1", "0nt/7439 vs
+**8 records, four pairs.** The heading and the §2 family table both said 6 for several revisions,
+counting only the three pairs originally tabulated here while the `LY501108`/`LZ216103` pair was
+established in the prose below and marked VH FALSE in §4. All four pairs are in the table now.
+
+The first three reproduce the curator's own C1 ledger reasons exactly ("0nt/7441 vs Sabin 1", "0nt/7439 vs
 Sabin 2") and add the previously-unstated Brunenders identification for `LY501104`/`LZ216099`
 (currently classified `wild`; `KP793687` also ships `wild`/`human`/`vaccine/reference`, so the
 inherited labels are already correct — only `engineered` is wrong).
@@ -754,8 +759,11 @@ designed to catch.
 **42**, plus `A09260`; see [Appendix B](#appendix-b-curator-answers-2026-07-29--decided). The
 per-record content below is unaffected — only the count is.*
 
-Of the 25 byte-identical records, 18 disagree with their parent on at least one of
-`poliovirus_classification` / `sample_origin` / `surveillance_stream`:
+Of the 25 byte-identical records, **16** disagree with their parent on at least one of
+`poliovirus_classification` / `sample_origin` / `surveillance_stream`; the other 9 already match.
+(This sentence said 18 through three revisions. The count below it — 16 across the first nine rows,
+9 in the last — has been right the whole time; two earlier corrections fixed the figure where it was
+*cited* and left the figure at its *source*.)
 
 | record | parent | fields that would move under "take the reference's label" |
 |---|---|---|
@@ -890,10 +898,21 @@ no floor, explicit allowlist.**
 
 Nothing anywhere currently pins the number of `engineered=TRUE` records (the prior report's R4
 finding). Add pinned expectations for: total `engineered=TRUE` (543 today), `engineered=TRUE` at
-≥3000 nt (58 today → **13 proposed**: the 14 that stay TRUE minus the 3 carve-excluded, plus the 2
-still open, which currently ship TRUE — 11 if the open pair resolves FALSE), and `PAT`-division
-records shipping TRUE (506 today). Those three numbers moving silently is what made a
-full-population re-adjudication necessary.
+≥3000 nt (58 today → **11 proposed**), and `PAT`-division records shipping TRUE (506 today). Those
+three numbers moving silently is what made a full-population re-adjudication necessary.
+
+**The 11 is worth deriving, because two earlier attempts at it made the same mistake in both
+directions.** The value is the count of records that *survive the rewritten predicate*, not the count
+the report calls TRUE. Of the 14 decided TRUE: 3 (`FV537075`–`FV537077`) are carve-excluded and carry
+no value, leaving 11 — the 7 reachable by `division == "SYN"` plus `CS406483`/`PU749298` (needing a
+corrected and an added row) plus `LY501107`/`LZ216102` (already held). The 2 open records
+`LY501105`/`LZ216100` do **not** add to it: they are PAT-division, are not `synthetic construct`, and
+have **no ledger row of any status**, so under the rewritten rule they flip FALSE mechanically
+regardless of shipping TRUE today. An earlier draft said 14, then 13 on the grounds that the open pair
+"currently ships TRUE" — which is precisely the confusion between *shipping* a value and *surviving*
+the rule that this report retracted about `LY501107`/`LZ216102` two sections ago. If the curator rules
+the open pair TRUE, the pin becomes 13 **and** two new curation rows are required; nobody has planned
+those. The pin also assumes `DD214215`/`DD214221`'s contradicting TRUE rows are retired (§8.6).
 
 **Done, and it went further than this section asked.** Implemented in
 [`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py), which pins those
@@ -1057,7 +1076,15 @@ rest by curation rows that already exist. The rule and the hand adjudication agr
 agreement now rests on four rows that need *changing* (three FALSE→retired-or-TRUE, one added), not
 on rows that need writing from scratch.
 
-**Blast-radius honesty — 473 of the 516 flips are unadjudicated by me.** This is the single most
+**Blast-radius honesty — 468 of the 516 flips are unadjudicated by me.** Counted as
+`516 − 48`, where 48 is the intersection of the flip set with the records this report actually
+judged per-record (the 58, plus `A09260`). Two earlier figures here were mixed-basis and both were
+wrong: `478` was `524 − 46`, pairing a revised flip count with a superseded adjudication count, and
+`473` was `516 − 43`, subtracting the §4 *landing* set even though two of its members
+(`DD214215`, `DD214221`) are not in the flip set at all — they hold active curated TRUE rows and so
+sit in the 27 that stay. Subtract only sets that are actually nested.
+
+This is the single most
 important caveat in the report and it is deliberately not in the headline summary, so read it here:
 **this report adjudicated 58 of the 543 records shipping TRUE.** The remaining 485 are not covered
 by any per-record judgement, and the rule rewrite flips almost all of them mechanically. That is the
@@ -1094,19 +1121,22 @@ Of these 30, Appendix B decides 24 (`DQ205099` FALSE; `AJ512791`/`AJ512792` FALS
 adjudicated by anyone** — `M14761` and `S61236`/`S65446`/`S65447`/`S65449`/`S65450`. That is a small,
 closable gap and it should be closed before the rule rewrite flips them, not after.
 
-**Recommended landing sequence**, because 524 flips in one commit is not gate-diffable by eye. Step 1
+**Recommended landing sequence**, because 516 flips in one commit is not gate-diffable by eye. Step 1
 is done; steps 2–4 restated against Appendix B's numbers:
 
 1. ~~Land **Invariant A** (§7)~~ — **done**, and the design changed under adversarial review. A turned
-   out to have no independent detection power (all 513 PAT/SYN records ship TRUE, so two neighbouring
-   checks entail its green), and the live D2 defect is a *ledger*-vs-canonical split that no
-   canonical-only check can see. What landed is Invariant B as a pinned violator set plus a
-   differential ledger check. See
+   out to have no independent detection power (all 513 PAT/SYN records ship TRUE, so three
+   neighbouring checks entail its green), and the live D2 defect is a *ledger*-vs-canonical split that
+   no canonical-only check can see. What landed is Invariant B as a pinned violator set plus a
+   **ledger-coherence check** — the earlier *differential* formulation was removed for being blind
+   across the 280 records inside the 12 groups canonical already splits. See
    [`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py).
 2. Land the **42 + `A09260` = 43** flips **in the private `manual_review_overrides.csv`**, not as
    public ledger rows — the D2 episode's lesson is that a ledger assertion with no counterpart in the
-   applied source of truth never takes effect. Hold `LY501107`/`LZ216102` TRUE explicitly in the same
-   pass, or the rewritten rule flips them.
+   applied source of truth never takes effect. Note what this step is *not*: `LY501107`/`LZ216102`
+   already hold TRUE and need nothing. What it needs instead is **retiring** four active TRUE rows
+   that contradict §4 (`AJ512791`, `AJ512792`, `DD214215`, `DD214221`), **correcting** `CS406483`
+   from FALSE to TRUE, and **adding** one row for `PU749298`.
 3. Land the rule change as a **separate, gate-diffed commit**, staged by length band
    (`≥3000` first — it should be a no-op against step 2 — then `900–2999`, then `<900`), with the
    diff asserted to touch exactly the predicted accession set at each stage.
