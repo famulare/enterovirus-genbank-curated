@@ -108,14 +108,54 @@ from enterovirus_genbank_curated.contracts import (
 # reason/evidence/confirmed_by fields, so wording can be corrected without changing an id.
 ID_COLUMNS = ("decision_type", "subject_key", "field_name", "new_value")
 
-# This migration is pinned to the curation state release 2.1.5 shipped, not to whatever the private
-# repository currently holds — that repository is a live working tree where curation continues. The
-# count is asserted so a source that has moved fails loudly here, at the point of divergence,
-# instead of silently producing a ledger with rows the shipped release never contained. Observed
-# 2026-07-29: a concurrent private edit added two `date_override` rows and this script wrote them
-# without comment; the ledger tests caught it, but four stages too late to be legible.
-PINNED_RELEASE = "2.1.5"
-EXPECTED_BASELINE_DECISIONS = 2753
+# This migration is pinned to the curation state of a *named shipped release*, not to whatever the
+# private repository currently holds — that repository is a live working tree where curation
+# continues. The count is asserted so a source that has moved fails loudly here, at the point of
+# divergence, instead of silently producing a ledger with rows the shipped release never contained.
+# Observed 2026-07-29: a concurrent private edit added two `date_override` rows and this script
+# wrote them without comment; the ledger tests caught it, four stages too late to be legible.
+#
+# Re-pinned to 2.3.0 on 2026-07-30, when the public release was refreshed. The source directory
+# must be the private registries **as of the release's own build commit** (2.3.0 was built from
+# private `c44a434`), not the private tip. Verified at the time: the tip held 2,003
+# `manual_review_overrides` rows against 1,985 at the build commit, so migrating from the tip would
+# have synced the ledger to curation *newer* than the shipped release, re-creating the divergence
+# in the other direction.
+PINNED_RELEASE = "2.3.0"
+EXPECTED_BASELINE_DECISIONS = 2800
+
+# Assertions a previous ledger recorded that the current registries no longer yield, because the
+# curator changed the value. `assign_ids` hashes `new_value`, so a changed value mints a new id and
+# the old row has no source row to be re-emitted from — a regeneration would delete it silently.
+# `registry/README.md` already records that pre-migration supersession is unrecoverable; this keeps
+# post-migration supersession recoverable instead of adding to that loss.
+#
+# Not a general mechanism. It is an explicit, greppable list of known reversals, and it is asserted
+# to match exactly so a stale entry fails rather than being ignored.
+SUPERSEDED_CARRY_FORWARD = tuple(
+    {
+        "decision_type": "manual_override",
+        "subject_key": accession,
+        "accession": accession,
+        "field_name": "classification",
+        "new_value": "iVDPV",
+        "reason": (
+            "superseded by the same registry's later cVDPV call; retained because the migration "
+            "regenerates from source and would otherwise drop the earlier assertion entirely"
+        ),
+        "evidence_reference": "PMID:12404204",
+        "confirmed_by": "Mike",
+        "source_artifact": "manual_review_overrides.csv",
+        "status": "superseded",
+        "effective_from": "",
+        "effective_through": "",
+        "notes": (
+            "superseded 2026-07-30 by classification=cVDPV (PMID:15564462) in the same registry; "
+            "carried forward by SUPERSEDED_CARRY_FORWARD so the reversal stays legible"
+        ),
+    }
+    for accession in ("AB180070", "AB180071", "AB180072", "AB180073")
+)
 
 # The D2 adjudication is not a migration from any registry — it is a curator decision made during
 # this migration. Attributing it to manual_review_overrides.csv would claim that file records an
@@ -202,67 +242,106 @@ class SourceSpec:
 
 SOURCES: tuple[SourceSpec, ...] = (
     SourceSpec(
-        "manual_review_overrides.csv", "manual_override", "accession",
+        "manual_review_overrides.csv",
+        "manual_override",
+        "accession",
         tuple(
             FieldSpec(c, c)
             for c in (
-                "origin_class", "sampling_frame", "classification", "engineered_or_construct",
-                "reference_label", "canonical_reference", "epi_context", "specimen_type",
+                "origin_class",
+                "sampling_frame",
+                "classification",
+                "engineered_or_construct",
+                "reference_label",
+                "canonical_reference",
+                "epi_context",
+                "specimen_type",
                 "serotype",
             )
         ),
-        reason_column="note", evidence_columns=("source",),
+        reason_column="note",
+        evidence_columns=("source",),
     ),
     SourceSpec(
-        "carve_exclusions_confirmed.csv", "carve_exclusion", "accession",
+        "carve_exclusions_confirmed.csv",
+        "carve_exclusion",
+        "accession",
         (FieldSpec("", "carve_excluded", "TRUE"),),
-        reason_column="reason", note_columns=("note",),
+        reason_column="reason",
+        note_columns=("note",),
     ),
     SourceSpec(
-        "membership_exclusions_confirmed.csv", "membership_exclusion", "accession",
+        "membership_exclusions_confirmed.csv",
+        "membership_exclusion",
+        "accession",
         (FieldSpec("", "membership_excluded", "TRUE"),),
-        reason_column="reason", note_columns=("note",),
+        reason_column="reason",
+        note_columns=("note",),
     ),
     SourceSpec(
-        "isolate_linkage_manual_verified.csv", "isolate_linkage_approval", "accession",
-        (FieldSpec("verified_classification", "verified_classification"),
-         FieldSpec("serotype", "serotype")),
-        evidence_columns=("verification_evidence",), attribute_columns=("linked_sibling",),
+        "isolate_linkage_manual_verified.csv",
+        "isolate_linkage_approval",
+        "accession",
+        (
+            FieldSpec("verified_classification", "verified_classification"),
+            FieldSpec("serotype", "serotype"),
+        ),
+        evidence_columns=("verification_evidence",),
+        attribute_columns=("linked_sibling",),
     ),
     SourceSpec(
-        "canonical_reference_confirmed.csv", "canonical_reference_confirmation",
+        "canonical_reference_confirmed.csv",
+        "canonical_reference_confirmation",
         "canonical_accession",
-        (FieldSpec("", "canonical_reference", "TRUE", emit_when="accession_present"),
-         FieldSpec("", "canonical_reference_available", "FALSE", emit_when="accession_absent")),
-        reason_column="note", attribute_columns=("reference_label", "serotype"),
+        (
+            FieldSpec("", "canonical_reference", "TRUE", emit_when="accession_present"),
+            FieldSpec("", "canonical_reference_available", "FALSE", emit_when="accession_absent"),
+        ),
+        reason_column="note",
+        attribute_columns=("reference_label", "serotype"),
         subject_label_column="reference_label",
     ),
     SourceSpec(
-        "legacy_accession_classification_overrides.csv", "legacy_classification_override",
+        "legacy_accession_classification_overrides.csv",
+        "legacy_classification_override",
         "accession",
         (FieldSpec("classification", "classification"),),
         reason_column="notes",
     ),
     SourceSpec(
-        "date_review_overrides.csv", "date_override", "accession",
-        (FieldSpec("collection_date_curated", "collection_date_curated"),
-         FieldSpec("collection_year_curated", "collection_year_curated")),
-        reason_column="note", evidence_columns=("source",),
+        "date_review_overrides.csv",
+        "date_override",
+        "accession",
+        (
+            FieldSpec("collection_date_curated", "collection_date_curated"),
+            FieldSpec("collection_year_curated", "collection_year_curated"),
+        ),
+        reason_column="note",
+        evidence_columns=("source",),
     ),
     SourceSpec(
-        "membership_poliovirus_confirmed.csv", "membership_confirmation_polio", "accession",
+        "membership_poliovirus_confirmed.csv",
+        "membership_confirmation_polio",
+        "accession",
         (FieldSpec("", "is_poliovirus", "TRUE"),),
-        reason_column="note", evidence_columns=("evidence",),
+        reason_column="note",
+        evidence_columns=("evidence",),
     ),
     SourceSpec(
-        "membership_not_poliovirus_confirmed.csv", "membership_confirmation_not_polio", "accession",
+        "membership_not_poliovirus_confirmed.csv",
+        "membership_confirmation_not_polio",
+        "accession",
         (FieldSpec("", "is_poliovirus", "FALSE"), FieldSpec("corrected_type", "corrected_type")),
-        reason_column="note", evidence_columns=("evidence",),
+        reason_column="note",
+        evidence_columns=("evidence",),
     ),
     SourceSpec(
-        "polio_recovery_confirmed.csv", "polio_recovery_confirmation", "accession",
+        "polio_recovery_confirmed.csv",
+        "polio_recovery_confirmation",
+        "accession",
         (FieldSpec("confirmed_serotype", "confirmed_serotype"),),
-        reason_column="note", repair_trailing_comma=True,
+        reason_column="note",
+        repair_trailing_comma=True,
     ),
 )
 
@@ -270,13 +349,16 @@ SOURCES: tuple[SourceSpec, ...] = (
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--source-dir", required=True, type=Path,
+        "--source-dir",
+        required=True,
+        type=Path,
         help="the private curation working directory (MAD-VDPV/data/genbank/working)",
     )
     parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, default=Path("registry/decisions.tsv"))
     parser.add_argument(
-        "--allow-baseline-drift", action="store_true",
+        "--allow-baseline-drift",
+        action="store_true",
         help=(
             "write even though the private source no longer yields the release-era decision count. "
             "Use only after diffing the result and approving the additions."
@@ -526,7 +608,8 @@ def apply_d2(decisions: list[dict[str, str]]) -> list[dict[str, str]]:
     for accession in D2_ACCESSIONS:
         # Confirm the subject exists and is unambiguous, but inherit nothing from it.
         anchors = [
-            r for r in decisions
+            r
+            for r in decisions
             if r["subject_key"] == accession and r["decision_type"] == "manual_override"
         ]
         if not anchors:
@@ -541,7 +624,7 @@ def apply_d2(decisions: list[dict[str, str]]) -> list[dict[str, str]]:
                 "field_name": "engineered_or_construct",
                 "new_value": "FALSE",
                 "reason": "parental MEF1 deposit within patent WO2006042156; not an engineered "
-                          "construct",
+                "construct",
                 "evidence_reference": D2_EVIDENCE,
                 "confirmed_by": "Mike",
                 "source_artifact": D2_SOURCE,
@@ -567,7 +650,8 @@ def apply_dq205099_annotation(decisions: list[dict[str, str]]) -> list[dict[str,
     row that already carries it would look like corroboration rather than duplication.
     """
     matches = [
-        row for row in decisions
+        row
+        for row in decisions
         if row["decision_type"] == "legacy_classification_override"
         and row["subject_key"] == DQ205099_ACCESSION
         and row["field_name"] == "classification"
@@ -605,6 +689,34 @@ SOURCE_PRECEDENCE = (
     "manual_review_overrides.csv",
     "legacy_accession_classification_overrides.csv",
 )
+
+
+def carry_forward_superseded(decisions: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Re-add assertions a previous ledger held that the registries no longer yield.
+
+    Asserted both ways so the list cannot rot. Each entry must be genuinely absent — if a registry
+    starts emitting the old value again the entry is redundant and this raises rather than writing a
+    duplicate. And the superseding assertion must be present, so an entry cannot survive as an
+    orphan asserting a value nothing overturned.
+    """
+    emitted = {
+        (r["decision_type"], r["subject_key"], r["field_name"], r["new_value"]) for r in decisions
+    }
+    subjects = {(r["subject_key"], r["field_name"]) for r in decisions if r["status"] == "active"}
+    for row in SUPERSEDED_CARRY_FORWARD:
+        identity = (row["decision_type"], row["subject_key"], row["field_name"], row["new_value"])
+        if identity in emitted:
+            raise ContractError(
+                f"carry-forward row {identity} is emitted by a registry again; drop it from "
+                f"SUPERSEDED_CARRY_FORWARD instead of duplicating it"
+            )
+        if (row["subject_key"], row["field_name"]) not in subjects:
+            raise ContractError(
+                f"carry-forward row {identity} has no active assertion superseding it; it would be "
+                f"an orphan claiming a value nothing overturned"
+            )
+        decisions.append(dict(row))
+    return decisions
 
 
 def resolve_duplicate_assertions(decisions: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -646,11 +758,13 @@ def resolve_duplicate_assertions(decisions: list[dict[str, str]]) -> list[dict[s
         for row in rows[1:]:
             row["status"] = "retired"
             row["notes"] = "; ".join(
-                x for x in (
+                x
+                for x in (
                     row["notes"],
                     f"retired: same assertion is governed by {governing['source_artifact']}, "
                     f"which records the identical value {governing['new_value']!r}",
-                ) if x
+                )
+                if x
             )
             retired += 1
     if retired:
@@ -662,14 +776,17 @@ def assign_ids(decisions: list[dict[str, str]]) -> list[dict[str, str]]:
     """Content-stable ids. Occurrence suffixes break ties between identical identity tuples."""
     decisions.sort(
         key=lambda r: (
-            *(r[c] for c in ID_COLUMNS), r["reason"], r["evidence_reference"], r["confirmed_by"]
+            *(r[c] for c in ID_COLUMNS),
+            r["reason"],
+            r["evidence_reference"],
+            r["confirmed_by"],
         )
     )
     seen: dict[str, int] = {}
     for row in decisions:
-        digest = hashlib.sha256(
-            "|".join(row[c] for c in ID_COLUMNS).encode("utf-8")
-        ).hexdigest()[:12]
+        digest = hashlib.sha256("|".join(row[c] for c in ID_COLUMNS).encode("utf-8")).hexdigest()[
+            :12
+        ]
         seen[digest] = seen.get(digest, 0) + 1
         row["decision_id"] = f"D-{digest}" if seen[digest] == 1 else f"D-{digest}-{seen[digest]}"
     return decisions
@@ -716,6 +833,9 @@ def main() -> int:
     assert_release_baseline(decisions, allow_drift=args.allow_baseline_drift)
     decisions = apply_d2(decisions)
     decisions = apply_dq205099_annotation(decisions)
+    # After the baseline assertion, so the pinned count stays a count of what the registries yield,
+    # and before dedup, so a carried-forward row is subject to the same duplicate resolution.
+    decisions = carry_forward_superseded(decisions)
     decisions = resolve_duplicate_assertions(decisions)
 
     # Normalize BEFORE hashing. Ids are derived from subject_key/field_name/new_value, so

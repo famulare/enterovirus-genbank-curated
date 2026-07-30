@@ -380,11 +380,13 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     """
     with (repository_root / "registry/decisions.tsv").open(encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
-    expected = mig.EXPECTED_BASELINE_DECISIONS + len(mig.D2_ACCESSIONS)
+    carried = len(mig.SUPERSEDED_CARRY_FORWARD)
+    expected = mig.EXPECTED_BASELINE_DECISIONS + len(mig.D2_ACCESSIONS) + carried
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the migration is pinned to "
-        f"{mig.EXPECTED_BASELINE_DECISIONS} baseline + {len(mig.D2_ACCESSIONS)} D2 additions = "
-        f"{expected}. Bumping one without the other is the drift the pin exists to catch."
+        f"{mig.EXPECTED_BASELINE_DECISIONS} baseline + {len(mig.D2_ACCESSIONS)} D2 additions + "
+        f"{carried} carried-forward supersessions = {expected}. Bumping one without the others is "
+        f"the drift the pin exists to catch."
     )
 
 

@@ -24,14 +24,29 @@ csv.field_size_limit(10**9)
 LEDGER = "registry/decisions.tsv"
 SHIPPED = "final/audit/manual_decisions.tsv.gz"
 
-# Every difference from the 2,753 shipped decisions, enumerated. A test that merely counted rows
-# would pass with the wrong rows.
+# Every difference from the 2,800 shipped decisions of release 2.3.0, enumerated. A test that
+# merely counted rows would pass with the wrong rows.
+#
+# Re-pinned from the 2,753 of release 2.1.5 on 2026-07-30, when the ledger was resynced. The
+# resync is exact in the direction that matters: zero shipped assertions are absent from the
+# ledger. The ledger-only rows are these two enumerated sets and nothing else.
 D2_ADDITIONS = {
     ("CS406436", "engineered_or_construct", "FALSE"),
     ("CS406482", "engineered_or_construct", "FALSE"),
     ("CS406483", "engineered_or_construct", "FALSE"),
 }
-EXPECTED_STATUS = {"active": 2736, "retired": 17, "superseded": 3}
+
+# Assertions the resync would otherwise have deleted: the curator revised AB180070-73 from iVDPV to
+# cVDPV in the same registry, and because `decision_id` hashes `new_value`, a regeneration mints new
+# ids and leaves the old rows with no source to be re-emitted from. `SUPERSEDED_CARRY_FORWARD` in
+# the migration re-adds them as `superseded` so the reversal stays legible instead of vanishing.
+SUPERSEDED_CARRY_FORWARD_ADDITIONS = {
+    (accession, "classification", "iVDPV")
+    for accession in ("AB180070", "AB180071", "AB180072", "AB180073")
+}
+LEDGER_ONLY_ADDITIONS = D2_ADDITIONS | SUPERSEDED_CARRY_FORWARD_ADDITIONS
+
+EXPECTED_STATUS = {"active": 2783, "retired": 17, "superseded": 7}
 
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
 # so a registry rename does not rehash every id.
@@ -63,7 +78,7 @@ def test_ledger_satisfies_its_own_contract(
     repository_root: Path, decision_contract: DecisionContract
 ) -> None:
     summary = validate_decision_ledger(repository_root / LEDGER, decision_contract)
-    assert summary.rows == 2756
+    assert summary.rows == 2807
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
 
@@ -79,7 +94,9 @@ def test_every_addition_is_an_approved_one(
     ledger: list[dict[str, str]], shipped: list[dict[str, str]]
 ) -> None:
     added = Counter(map(assertion_key, ledger)) - Counter(map(assertion_key, shipped))
-    assert set(added) == D2_ADDITIONS, f"unapproved additions: {set(added) - D2_ADDITIONS}"
+    assert set(added) == LEDGER_ONLY_ADDITIONS, (
+        f"unapproved additions: {set(added) - LEDGER_ONLY_ADDITIONS}"
+    )
 
 
 def test_decision_type_counts_match_except_the_approved_additions(
@@ -87,7 +104,7 @@ def test_decision_type_counts_match_except_the_approved_additions(
 ) -> None:
     got = Counter(r["decision_type"] for r in ledger)
     want = Counter(r["decision_type"] for r in shipped)
-    want["manual_override"] += len(D2_ADDITIONS)
+    want["manual_override"] += len(LEDGER_ONLY_ADDITIONS)
     assert got == want
 
 
@@ -137,11 +154,36 @@ def test_retired_rows_agree_with_the_decision_that_governs_them(
 
 
 def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str, str]]) -> None:
+    """Two distinct causes of supersession, asserted separately so neither can absorb the other.
+
+    D2 overturned a legacy `classification=engineered` call on evidence. The AB180070-73 rows are a
+    curator revision preserved through a resync that would otherwise have deleted them. Both must
+    record *why*, but they say different things and are not interchangeable.
+    """
     superseded = [r for r in ledger if r["status"] == "superseded"]
-    assert {r["subject_key"] for r in superseded} == {"CS406436", "CS406482", "CS406483"}
-    for row in superseded:
-        assert row["new_value"] == "engineered"
+    d2 = [
+        r
+        for r in superseded
+        if r["field_name"] == "classification" and r["new_value"] == "engineered"
+    ]
+    carried = [r for r in superseded if r["new_value"] == "iVDPV"]
+    assert len(d2) + len(carried) == len(superseded), "an unexplained supersession class appeared"
+
+    assert {r["subject_key"] for r in d2} == {"CS406436", "CS406482", "CS406483"}
+    for row in d2:
         assert "rules out" in row["notes"], "a supersession must record why it was overturned"
+
+    assert {r["subject_key"] for r in carried} == {
+        "AB180070",
+        "AB180071",
+        "AB180072",
+        "AB180073",
+    }
+    for row in carried:
+        assert row["field_name"] == "classification"
+        assert "superseded 2026-07-30 by classification=cVDPV" in row["notes"], (
+            "a carried-forward supersession must name what replaced it"
+        )
 
 
 def test_repaired_reasons_are_no_longer_truncated(ledger: list[dict[str, str]]) -> None:
@@ -216,8 +258,18 @@ def resynthesize(row: dict[str, str]) -> tuple[str, str]:
     migration what it believes and then checks the migration against that belief proves nothing.
     """
     attributes = ledger_attributes(row["notes"])
-    reason = row["reason"].replace("“", '"').replace("”", '"')
-    evidence = row["evidence_reference"]
+
+    # The plain-TSV normalization converts ASCII double quotes to typographic pairs in *every* text
+    # column, so the inverse has to be applied to every text column too. This read `reason` only
+    # until the 2.3.0 resync, which was the first time a quoted phrase appeared in
+    # `evidence_reference` (`JX181922`/`OR538735` quote a GenBank title). The gap was invisible for
+    # as long as no such row existed, which is the whole problem with a check that has never had the
+    # chance to fail.
+    def unnormalize(text: str) -> str:
+        return text.replace("“", '"').replace("”", '"')
+
+    reason = unnormalize(row["reason"])
+    evidence = unnormalize(row["evidence_reference"])
     kind = row["decision_type"]
     if kind in {"manual_override", "date_override"}:
         return labelled(("note", reason)), labelled(("source", evidence))
@@ -257,6 +309,7 @@ def test_ledger_reproduces_every_shipped_column_not_just_the_key(
     shipped row is rebuilt from the ledger and compared on all of it, with the only permitted
     difference enumerated below.
     """
+
     def identity(row: dict[str, str]) -> tuple[str, ...]:
         return tuple(row[column] for column in ID_COLUMNS)
 
@@ -277,7 +330,7 @@ def test_ledger_reproduces_every_shipped_column_not_just_the_key(
         for column in ("confirmed_by", "accession", "source_artifact"):
             assert row[column] == want[column], f"{key}: {column} diverged"
 
-    assert {u[1] for u in unmatched} == {a for a, _, _ in D2_ADDITIONS}, (
+    assert {u[1] for u in unmatched} == {a for a, _, _ in LEDGER_ONLY_ADDITIONS}, (
         f"rows absent from the release that are not the approved additions: {unmatched}"
     )
 
@@ -299,12 +352,17 @@ def test_every_decision_id_matches_its_own_content(ledger: list[dict[str, str]])
     """
     occurrences: Counter[str] = Counter()
     for row in sorted(
-        ledger, key=lambda r: (*(r[c] for c in ID_COLUMNS), r["reason"], r["evidence_reference"],
-                               r["confirmed_by"])
+        ledger,
+        key=lambda r: (
+            *(r[c] for c in ID_COLUMNS),
+            r["reason"],
+            r["evidence_reference"],
+            r["confirmed_by"],
+        ),
     ):
-        digest = hashlib.sha256(
-            "|".join(row[c] for c in ID_COLUMNS).encode("utf-8")
-        ).hexdigest()[:12]
+        digest = hashlib.sha256("|".join(row[c] for c in ID_COLUMNS).encode("utf-8")).hexdigest()[
+            :12
+        ]
         occurrences[digest] += 1
         n = occurrences[digest]
         expected = f"D-{digest}" if n == 1 else f"D-{digest}-{n}"
@@ -335,10 +393,23 @@ def test_naive_tab_splitting_agrees_with_the_csv_reader(
 
 
 def test_ledger_text_uses_typographic_quotes(ledger: list[dict[str, str]]) -> None:
-    quoted = [r for r in ledger if "“" in r["reason"] or "”" in r["reason"]]
-    assert len(quoted) == 35
-    for row in quoted:
-        assert row["reason"].count("“") == row["reason"].count("”"), row["decision_id"]
+    """Checked across every free-text column, not just `reason`.
+
+    The normalization applies to all of them, and scoping the check to `reason` hid a real gap in
+    `resynthesize` for as long as no `evidence_reference` happened to contain a quote. Counting each
+    column separately so a future imbalance names the column it is in.
+    """
+    columns = ("reason", "evidence_reference", "notes")
+    expected = {"reason": 42, "evidence_reference": 2, "notes": 0}
+    for column in columns:
+        quoted = [r for r in ledger if "“" in r[column] or "”" in r[column]]
+        assert len(quoted) == expected[column], (
+            f"{len(quoted)} rows carry typographic quotes in {column}, expected {expected[column]}"
+        )
+        for row in quoted:
+            assert row[column].count("“") == row[column].count("”"), (
+                f"{row['decision_id']}: unbalanced typographic quotes in {column}"
+            )
 
 
 def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]]) -> None:
