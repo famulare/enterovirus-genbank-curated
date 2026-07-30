@@ -92,11 +92,24 @@ against the hashes `final/audit/release_file_manifest.tsv` declares. All match b
 `evgc build-source --output DIR` writes a build somewhere of your choosing; it refuses to write
 into `final/` or `raw/`, which are immutable.
 
-**What is not yet true:** the *derived* layers — `final/canonical/`, `final/audit/`,
-`final/dictionaries/`, `final/alignments/` — still come from a curated master produced outside this
-repository. None of that affects the correctness of what's shipped; it affects whether you can
-regenerate all of it yourself today. See [`docs/reproducibility.md`](docs/reproducibility.md),
-which also documents an inherited GenBank parse loss affecting five records.
+**The transportable half of canonical metadata regenerates too:**
+
+```bash
+evgc parity-metadata    # 24,284 rows x 13 canonical columns, cell for cell
+```
+
+From `raw/` and `registry/decisions.tsv` alone, this carves the canonical row set and fills the
+thirteen columns whose value is a GenBank value moved into a canonical column — identity, sequence
+hash and length, taxid, organism, isolate/strain/host, parsed country/admin1/locality, BioSample.
+Every one of those cells equals the shipped cell, in the same row order. The row set reproduces
+24,284 of 24,301 rows; the 18-record difference is pinned in code and fails if it moves.
+
+**What is not yet true:** the other thirteen canonical columns, and the rest of the *derived* layers
+— `final/audit/`, `final/dictionaries/`, `final/alignments/` — still come from a curated master
+produced outside this repository, or need a sequence-comparison stage that does not exist here yet.
+None of that affects the correctness of what's shipped; it affects whether you can regenerate all of
+it yourself today. See [`docs/reproducibility.md`](docs/reproducibility.md), which states the
+per-column boundary and also documents an inherited GenBank parse loss affecting five records.
 
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the

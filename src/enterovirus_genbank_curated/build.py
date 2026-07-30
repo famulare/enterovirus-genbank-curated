@@ -1,8 +1,19 @@
 """Pipeline stages that regenerate release artifacts from `raw/`.
 
-Only the source layer exists so far. It is genuinely reproducible: `raw/sequence.gb.zip` in,
-twelve normalized relations out, byte-identical to the shipped v2.1.5 release, with no registry,
-no curated master, no network, and no path outside the clone.
+Two stages exist so far, and they are reproducible to different depths.
+
+The **source layer** is complete: `raw/sequence.gb.zip` in, twelve normalized relations out,
+byte-identical to the shipped release, with no registry, no curated master, no network, and no path
+outside the clone.
+
+The **canonical metadata transport** is partial by construction and says so. It carves the canonical
+row set and fills the thirteen columns whose value is a source value; the other thirteen need the
+curated master or a sequence-comparison stage that does not exist here yet. See
+`derive/metadata.py`.
+
+Nothing here reads `final/`. The comparisons against the shipped release live in
+`oracle/parity.py`, and `sandbox.install_input_guard` refuses a `final/` read outright, so that
+separation is a property of the runtime rather than of this docstring.
 """
 
 from __future__ import annotations
@@ -15,21 +26,26 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from enterovirus_genbank_curated.contracts import (
+    DECISIONS_LEDGER_PATH,
+    DECISIONS_SCHEMA_PATH,
     PARITY_SPEC_PATH,
-    RELEASE_FILE_MANIFEST_PATH,
     ContractError,
-    load_release_file_manifest,
-    sha256_file,
+    load_decision_contract,
+    validate_decision_ledger,
     validate_parity_spec,
     verify_raw_input,
 )
+from enterovirus_genbank_curated.derive.metadata import (
+    load_excluded_accessions,
+    transport_metadata,
+)
+from enterovirus_genbank_curated.export.metadata import write_metadata_transport
 from enterovirus_genbank_curated.export.source import (
     write_source_relational,
     write_source_tsv,
 )
-from enterovirus_genbank_curated.genbank.parse import TABLE_COLUMNS, parse_source_tables
+from enterovirus_genbank_curated.genbank.parse import parse_source_tables
 
-SHIPPED_SOURCE_DIR = "final/source"
 IMMUTABLE_DIRS = ("final", "raw")
 
 
@@ -98,103 +114,69 @@ def extracted_flat_file(repository_root: Path) -> Iterator[Path]:
         yield target
 
 
-def build_source_layer(
-    repository_root: Path, output_dir: Path, *, relational: bool = True
-) -> SourceBuildResult:
-    """Regenerate `source/` from the frozen archive alone."""
-    reject_immutable_output(repository_root, output_dir)
+def parse_authenticated_source(repository_root: Path) -> dict[str, list[dict[str, str]]]:
+    """Parse the frozen archive and refuse a corpus that is not the size the contract declares.
+
+    The archive is hash-authenticated, so its record count is a known quantity. Not checking it
+    meant a non-GenBank or empty input produced twelve header-only tables and exited 0.
+    """
     spec = validate_parity_spec(repository_root / PARITY_SPEC_PATH)
     expected_records = spec["raw_input"]["record_count"]
 
     with extracted_flat_file(repository_root) as flat_file:
         tables = parse_source_tables(flat_file)
 
-    # The archive is hash-authenticated, so its record count is a known quantity. Not checking it
-    # meant a non-GenBank or empty input produced twelve header-only tables and exited 0.
     actual_records = len(tables["records"])
     if actual_records != expected_records:
         raise ContractError(
             f"parsed {actual_records} records but the authenticated archive declares "
             f"{expected_records}"
         )
+    return tables
 
+
+def build_source_layer(
+    repository_root: Path, output_dir: Path, *, relational: bool = True
+) -> SourceBuildResult:
+    """Regenerate `source/` from the frozen archive alone."""
+    reject_immutable_output(repository_root, output_dir)
+    tables = parse_authenticated_source(repository_root)
     counts = write_source_tsv(output_dir, tables)
     if relational:
         write_source_relational(output_dir)
     return SourceBuildResult(row_counts=counts, output_dir=output_dir)
 
-
-def _release_declared_hashes(repository_root: Path) -> dict[str, str]:
-    """`file_bytes` hashes the release itself declares, for every `source/` artifact."""
-    manifest = load_release_file_manifest(repository_root / RELEASE_FILE_MANIFEST_PATH)
-    return {
-        path: sha256
-        for path, (scope, sha256) in manifest.items()
-        if path.startswith("source/") and scope == "file_bytes"
-    }
+@dataclass(frozen=True)
+class MetadataBuildResult:
+    rows: list[dict[str, str]]
+    row_counts: dict[str, int]
+    output_dir: Path
 
 
-def compare_source_to_release(repository_root: Path, built_dir: Path) -> dict[str, str]:
-    """Compare every regenerated artifact against the hash the RELEASE MANIFEST declares.
+def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBuildResult:
+    """Carve the canonical row set and transport every transportable column into it.
 
-    Comparing against the on-disk copy in `final/source/` would be self-certifying: a build that
-    had overwritten the release would then be compared against itself and pass. The authority is
-    `final/audit/release_file_manifest.tsv`, which is covered by `evgc validate-contracts`. The
-    on-disk copy is checked too, so a tampered release is reported separately from a bad build.
-
-    Covers the twelve TSVs and the twelve Parquet files — every `source/` artifact the manifest
-    declares at `file_bytes` scope. Only `genbank_source.duckdb` is excluded, because DuckDB file
-    bytes are genuinely not reproducible; the manifest records a `logical_content` hash for it.
+    The ledger is validated before it is used, not after. `load_excluded_accessions` reads three
+    columns and would happily accept a ledger with a duplicate active assertion or an out-of-range
+    status, which is exactly the input that should stop a build rather than shape one.
     """
-    declared = _release_declared_hashes(repository_root)
-    if not declared:
-        raise ContractError(
-            f"{RELEASE_FILE_MANIFEST_PATH} declares no byte-hashed source/ artifacts; there is "
-            f"nothing to compare against"
-        )
+    reject_immutable_output(repository_root, output_dir)
+    contract = load_decision_contract(repository_root / DECISIONS_SCHEMA_PATH)
+    ledger_path = repository_root / DECISIONS_LEDGER_PATH
+    validate_decision_ledger(ledger_path, contract)
+    excluded = load_excluded_accessions(ledger_path)
 
-    results: dict[str, str] = {}
-    for relative, expected in sorted(declared.items()):
-        built = built_dir / Path(relative).relative_to("source")
-        shipped = repository_root / SHIPPED_SOURCE_DIR / Path(relative).relative_to("source")
-        if not built.is_file():
-            results[relative] = f"not produced by the build: {built}"
-            continue
-        built_hash = sha256_file(built)
-        if built_hash != expected:
-            results[relative] = f"rebuilt sha256 {built_hash} != manifest {expected}"
-            continue
-        if not shipped.is_file():
-            results[relative] = f"shipped artifact missing: {shipped}"
-            continue
-        shipped_hash = sha256_file(shipped)
-        if shipped_hash != expected:
-            results[relative] = (
-                f"shipped artifact does not match its own manifest ({shipped_hash} != {expected}) "
-                f"— the release on disk has been altered"
-            )
-            continue
-        results[relative] = "match"
-    return results
+    tables = parse_authenticated_source(repository_root)
+    transport = transport_metadata(tables, excluded)
+    row_counts = {
+        "source_records": len(tables["records"]),
+        "transported": len(transport.rows),
+        "excluded_by_ledger": transport.excluded_by_ledger,
+        "excluded_as_non_enterovirus": transport.excluded_as_non_enterovirus,
+    }
+    write_metadata_transport(output_dir, transport.rows, row_counts)
+    return MetadataBuildResult(
+        rows=transport.rows, row_counts=row_counts, output_dir=output_dir
+    )
 
 
-def verify_source_parity(repository_root: Path) -> dict[str, str]:
-    """Rebuild the source layer into a temp dir and check it against the release's own manifest."""
-    declared = _release_declared_hashes(repository_root)
-    expected_tables = {f"source/normalized_tsv/{name}.tsv.gz" for name in TABLE_COLUMNS}
-    missing = sorted(expected_tables - set(declared))
-    if missing:
-        raise ContractError(
-            f"{RELEASE_FILE_MANIFEST_PATH} does not declare byte hashes for {missing}; parity "
-            f"would silently skip them"
-        )
-
-    with tempfile.TemporaryDirectory(prefix="evgc-parity-") as scratch:
-        build_source_layer(repository_root, Path(scratch), relational=True)
-        results = compare_source_to_release(repository_root, Path(scratch))
-
-    mismatches = {k: v for k, v in results.items() if v != "match"}
-    if mismatches:
-        detail = "; ".join(f"{k}: {v}" for k, v in sorted(mismatches.items()))
-        raise ContractError(f"source layer does not reproduce the shipped release — {detail}")
-    return results

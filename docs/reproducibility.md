@@ -4,9 +4,10 @@
 
 The current baseline release (2.4.1; see `src/enterovirus_genbank_curated/contracts.py`'s
 `BASELINE_RELEASE`) is a verified, internally consistent data release. **Its source layer is now
-regenerable from `raw/` alone**; the derived layers are not yet. This was true of 2.1.5 too and
-remains true across the 2.3.0 and 2.4.1 refreshes: none of them touched the source layer, only
-canonical metadata text on already-shipped records.
+regenerable from `raw/` alone**, and the transportable half of canonical metadata with it; the
+derived layers are not yet. The source-layer claim was true of 2.1.5 too and remains true across the
+2.3.0 and 2.4.1 refreshes: none of them touched the source layer, only canonical metadata text on
+already-shipped records.
 
 **Reproducible today — `final/source/`.** `evgc parity-source` re-authenticates
 `raw/sequence.gb.zip`, reparses all 25,727 records, and compares every one of the twelve
@@ -15,9 +16,51 @@ declared in `final/audit/release_file_manifest.tsv`. All twenty-four match byte-
 repeated builds are byte-stable. Only `genbank_source.duckdb` is excluded, because DuckDB file
 bytes are not reproducible; the manifest records a logical-content hash for it.
 
-**Not yet reproducible — `final/canonical/`, `final/audit/`, `final/dictionaries/`,
-`final/alignments/`.** These still derive from a curated master produced outside this repository.
-Closing that is the remaining work.
+**Partly reproducible — `final/canonical/sequence_metadata.tsv.gz`.** `evgc parity-metadata`
+rebuilds the canonical carve from `raw/sequence.gb.zip` and `registry/decisions.tsv` alone and
+compares it to the shipped table cell by cell:
+
+```bash
+evgc parity-metadata    # 24,284 rows x 13 transported columns, cell for cell
+```
+
+This is a *transport* claim, not a claim on the table. Thirteen of the twenty-six canonical columns
+hold a GenBank value moved into a canonical column — `accession`, `version`, `sequence_sha256`,
+`sequence_length_nt`, `ncbi_taxid`, `organism_name`, `isolate_name`, `strain_name`, `host_name`,
+`country`, `admin1`, `locality`, `biosample_accession`. Every one of those cells matches the
+release exactly, in the same row order, and repeated builds are byte-stable. The split is not a
+judgement call: `final/audit/canonical_projection_provenance.tsv.gz` carries a projection row for
+exactly the other fourteen columns, minus `locality`, whose rule (R-GEO-LOCALITY-1) is closed-form
+over one GenBank string.
+
+The other thirteen columns are not written at all, and the build ships a
+`metadata_transport_coverage.json` next to the table naming each one and the input it needs —
+`sample_origin`, `surveillance_stream`, `specimen_type` and the `collection_date` family project
+curated-master fields; `sequence_scope`, `virus_type`, `poliovirus_classification`, `virus_group`
+and `curation_status` need sequence comparison against a reference panel. A partial table is not a
+release table, which is why it is written as `canonical/sequence_metadata_transport.tsv.gz` with a
+coverage declaration rather than under the shipped name.
+
+**The row set has a known 18-record gap, and it is pinned rather than absorbed.** The transport
+carves on two closed predicates — the GenBank lineage names the `Enterovirus` genus, and the ledger
+does not actively exclude the accession — which reproduces 24,284 of the 24,301 shipped rows.
+
+- Seventeen shipped records it cannot reach: patent-division deposits whose organism is
+  `unidentified`, `Homo sapiens` or `synthetic construct`, recovered upstream by capsid amino-acid
+  distance to a poliovirus reference (R-MEMBERSHIP-AA-1). Eight name polio in their `DEFINITION`;
+  nine do not, so no text rule recovers the set — it needs the sequence stage.
+- One record it carves that the release excludes: `AF326751.2` (Simian agent 5 strain B165) carries
+  `Enterovirus` in its lineage but ships as `non_ev_other` with no exclusion reason and no row in
+  `registry/decisions.tsv`. The call is real; its basis is not in any declared input.
+
+Both sets are declared in `derive/metadata.py` and compared for equality by the parity check, so a
+record drifting in or out of the carve fails rather than being reported as a slightly larger gap.
+The build never reads them — a transport that patched itself against a declared diff would pass
+parity while proving nothing.
+
+**Not yet reproducible — the rest of `final/canonical/`, and `final/audit/`,
+`final/dictionaries/`, `final/alignments/`.** These still derive from a curated master produced
+outside this repository. Closing that is the remaining work.
 
 ### Inherited parse loss
 
@@ -44,10 +87,20 @@ absolute path for two of its stages, and nobody noticed until those files had be
 rule would not have caught it; a failing build would have.
 
 **What it proves.** Within the guarded process, the build performed no read outside the clone, the
-scratch directory, and the interpreter's own installation; no read of the frozen
-[`registry/legacy/`](../registry/legacy/) tree; no write or filesystem mutation touching `final/` or
-`raw/`; no write outside the clone and scratch; no network call; and no child process by any of
-`subprocess`, `os.system`, `os.spawn*`, `os.exec*`, `os.posix_spawn` or a bare `os.fork`. It raises
+scratch directory, and the interpreter's own installation; **no read of `final/` at all**; no read of
+the frozen [`registry/legacy/`](../registry/legacy/) tree; no write or filesystem mutation touching
+`final/` or `raw/`; no write outside the clone and scratch; no network call; and no child process by
+any of `subprocess`, `os.system`, `os.spawn*`, `os.exec*`, `os.posix_spawn` or a bare `os.fork`.
+
+The `final/` read refusal is new, and it changed how the `parity-*` verbs run. Refusing only *writes*
+left the failure that matters wide open: a derive stage that reads the shipped canonical table can
+reproduce it perfectly and prove nothing, and reaching for that read is exactly what happens while
+someone calibrates a rule against the oracle. The comparison itself must read `final/`, so
+`--guard-inputs` on `evgc parity-source` and `evgc parity-metadata` now runs the **build in a guarded
+child process** and compares in the unguarded parent, and it fails unless that child reported the
+guard's own PASS line. Before this, the guard was installed in the same process that then read the
+release, which made it structurally unable to distinguish a build reading the comparison target from
+the comparison itself. It raises
 *and* records every violation, and `assert_no_violations()` re-checks the record after the build, so
 a caller that swallowed the exception in a bare `except` still fails. Paths are resolved before the
 allowlist decision, so a symlink sitting inside an allowed root cannot alias something outside one.

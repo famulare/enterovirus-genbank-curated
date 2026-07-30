@@ -112,6 +112,14 @@ IMMUTABLE_DIRS = ("final", "raw")
 # grepping the source makes it independent of how a future caller spells the path.
 FROZEN_DIRS = ("registry/legacy",)
 
+# Trees a build may not READ at all. `FROZEN_DIRS` for the reason above, plus `final/`, which is the
+# comparison target (`docs/pipeline.md` boundary 1). Refusing to *write* `final/` was never enough:
+# a build that reads the shipped canonical table can reproduce it perfectly and prove nothing, and
+# that read is exactly the mistake a derive stage makes while someone calibrates a rule against the
+# oracle. The parity comparison legitimately reads `final/`, which is why the comparison runs in the
+# unguarded parent and the build runs in a guarded child — see `oracle/parity.py`.
+READ_REFUSED_DIRS = (*FROZEN_DIRS, "final")
+
 _WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC
 
 
@@ -270,6 +278,7 @@ def install_input_guard(
     write_roots = _roots(root, scratch)
     immutable = _roots(*[root / name for name in IMMUTABLE_DIRS])
     frozen = _roots(*[root / name for name in FROZEN_DIRS])
+    read_refused = _roots(*[root / name for name in READ_REFUSED_DIRS])
 
     guard = InputGuard(
         repository_root=root,
@@ -349,6 +358,11 @@ def install_input_guard(
                 problem = (
                     f"the frozen legacy registries are carried for provenance and read by nothing; "
                     f"the build may not open them: {_describe(path)}"
+                )
+            elif not writing and _within(path, read_refused):
+                problem = (
+                    f"the shipped release is a comparison target, never a pipeline input; the "
+                    f"build may not read it: {_describe(path)}"
                 )
             elif os.path.isdir(path) and (_within(path, immutable) or _within(path, frozen)):
                 # A directory descriptor is the one thing that gets a caller *past* every check in

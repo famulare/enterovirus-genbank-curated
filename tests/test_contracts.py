@@ -9,9 +9,9 @@ from enterovirus_genbank_curated.contracts import (
     ContractError,
     DecisionContract,
     load_decision_contract,
-    validate_contracts,
     validate_decision_ledger,
 )
+from enterovirus_genbank_curated.oracle.release import validate_contracts
 
 
 def rewrite_fixture(tmp_path: Path, source: Path, *replacements: tuple[str, str]) -> Path:

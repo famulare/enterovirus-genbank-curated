@@ -30,7 +30,7 @@ import pytest
 from Bio import SeqIO
 from Bio.Align import PairwiseAligner
 
-from enterovirus_genbank_curated.contracts import read_tsv_gz
+from enterovirus_genbank_curated.oracle.release import read_tsv_gz
 
 LEGACY_DIR = "registry/legacy"
 LEDGER = "registry/decisions.tsv"

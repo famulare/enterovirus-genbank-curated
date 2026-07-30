@@ -23,7 +23,6 @@ from enterovirus_genbank_curated import build as build_module
 from enterovirus_genbank_curated.build import (
     build_source_layer,
     reject_immutable_output,
-    verify_source_parity,
 )
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.export.source import write_source_tsv, write_tsv
@@ -37,6 +36,7 @@ from enterovirus_genbank_curated.genbank.parse import (
     split_authors,
     verbatim,
 )
+from enterovirus_genbank_curated.oracle.parity import verify_source_parity
 
 SYNTHETIC_GENBANK = """\
 LOCUS       TEST0001                  12 bp    RNA     linear   VRL 01-JAN-2020

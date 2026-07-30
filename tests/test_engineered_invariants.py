@@ -148,7 +148,8 @@ from pathlib import Path
 
 import pytest
 
-from enterovirus_genbank_curated.contracts import ACTIVE_STATUS, read_tsv_gz
+from enterovirus_genbank_curated.contracts import ACTIVE_STATUS
+from enterovirus_genbank_curated.oracle.release import read_tsv_gz
 
 CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 SOURCE_RECORDS = "final/source/normalized_tsv/records.tsv.gz"

@@ -1,15 +1,20 @@
-"""Repository contract validation used before the build pipeline exists.
+"""Repository contract *shape* validation, and the curation ledger's contract.
 
-Two things are validated here, and the distinction matters:
+Two things are validated across two modules, and the split is load-bearing:
 
-* *Contract shape* — the JSON Schemas and the active parity specification are well-formed,
-  internally consistent, and declare nothing undeclared.
-* *Baseline verification* — the parity specification actually describes the release that ships
-  in this repository. Hashes are recomputed, rows are counted, and the frozen raw archive is
-  authenticated against the release's own build manifest.
+* *Contract shape* — here. The JSON Schemas and the active parity specification are well-formed,
+  internally consistent, and declare nothing undeclared. **Nothing in this module reads `final/`.**
+* *Baseline verification* — `oracle/release.py`. The parity specification actually describes the
+  release that ships in this repository: hashes are recomputed, rows are counted, and the frozen raw
+  archive is authenticated against the release's own build manifest.
 
 Without the second half the parity contract would be self-certifying: a wrong hash or a wrong
-row count would sit in the parity spec and never be contradicted by anything.
+row count would sit in the parity spec and never be contradicted by anything. It lives in `oracle/`
+rather than here because `build.py` imports this module, so a release read on this side of the line
+would be reachable from every build — which is the property `docs/pipeline.md` boundary 1 forbids.
+
+The composed verb behind `evgc validate-contracts` is `oracle.release.validate_contracts`, which
+calls `validate_contract_shape` below and then verifies the baseline.
 
 The active baseline is **2.4.1**. `releases/2.1.5/parity.json` and `releases/2.3.0/parity.json`
 are retained as the historical record of superseded public releases and are **no longer verified
@@ -18,8 +23,8 @@ earlier release cannot be satisfied by it. Each retired release remains immutabl
 (2.1.5 at `82f2966`; 2.3.0 at `edbacc6`..`134f899`, the four-commit refresh that retargeted it).
 
 `HISTORICAL_PARITY_SPEC_PATHS` below is exactly that: a record of which specs are retired, not a
-check. Nothing in this module reads it — it is not wired into `validate_contracts` or anything
-else, and finding it referenced somewhere would be a bug, not a feature waiting to be turned on.
+check. Nothing reads it — it is not wired into contract validation or anything else, and finding it
+referenced somewhere would be a bug, not a feature waiting to be turned on.
 
 `BASELINE_RELEASE` below is a hardcoded literal on purpose, and `validate_parity_spec` compares
 the spec against it rather than trusting the spec's own `baseline_release` field. Reading the
@@ -31,7 +36,6 @@ require changing this constant deliberately.
 from __future__ import annotations
 
 import csv
-import gzip
 import hashlib
 import json
 import re
@@ -41,13 +45,12 @@ from pathlib import Path
 from typing import Any
 
 DECISIONS_SCHEMA_PATH = "registry/schemas/decisions.schema.json"
+DECISIONS_LEDGER_PATH = "registry/decisions.tsv"
 RULES_SCHEMA_PATH = "registry/schemas/rules.schema.json"
 BASELINE_RELEASE = "2.4.1"
 PARITY_SPEC_PATH = f"releases/{BASELINE_RELEASE}/parity.json"
 # Retained, unverified. See the module docstring.
 HISTORICAL_PARITY_SPEC_PATHS = ("releases/2.1.5/parity.json", "releases/2.3.0/parity.json")
-BUILD_MANIFEST_PATH = "final/audit/build_manifest.json"
-RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
 
 DECISION_COLUMNS = (
     "decision_id",
@@ -92,19 +95,6 @@ EXPECTED_BASELINE_COUNTS = {
     "rules": 28,
 }
 
-# Where each expected_counts key is measured in the shipped release. provisional_rows is not a
-# table row count; it is derived from curation_status and handled separately.
-COUNT_SOURCES = {
-    "source_records": "final/audit/record_disposition.tsv.gz",
-    "canonical_rows": "final/canonical/sequence_metadata.tsv.gz",
-    "vouched_rows": "final/canonical/sequence_metadata_vouched.tsv.gz",
-    "manual_decisions": "final/audit/manual_decisions.tsv.gz",
-    "rules": "final/audit/rules.tsv.gz",
-}
-CURATION_STATUS_COLUMN = "curation_status"
-VOUCHED_STATUS = "vouched"
-PROVISIONAL_STATUS = "provisional"
-
 PARITY_TOP_LEVEL_KEYS = frozenset(
     {
         "contract_version",
@@ -138,6 +128,11 @@ PARITY_POLICY_KEYS = frozenset(
     }
 )
 HASH_SCOPES = frozenset({"file_bytes", "logical_content"})
+
+# The prefix every parity artifact path must carry. This is the one place a build-side module names
+# the release tree, and it names it as a string to validate rather than a path to open — see the
+# exemption in `tests/test_module_boundaries.py`.
+RELEASE_PATH_PREFIX = "final/"
 
 
 class ContractError(ValueError):
@@ -187,28 +182,6 @@ def sha256_file(path: Path) -> str:
     except OSError as exc:
         raise ContractError(f"cannot hash {path}: {exc}") from exc
     return digest.hexdigest()
-
-
-def read_tsv_gz(path: Path) -> tuple[list[str], list[list[str]]]:
-    """Read a shipped TSV.gz with the same quoting the release writer used.
-
-    The release tables are written by `csv.DictWriter` at its default QUOTE_MINIMAL, so free-text
-    columns containing tabs or newlines are quoted. They must be read the same way: reading them
-    as plain tab-delimited text counts continuation lines as rows. `comments.tsv.gz` is the live
-    example — 18,476 real rows across 27,038 physical lines.
-
-    `registry/decisions.tsv` uses the same standard quoting, but additionally guarantees that
-    nothing ever *needs* quoting — see `validate_decision_ledger`.
-    """
-    try:
-        with gzip.open(path, "rt", encoding="utf-8", newline="") as handle:
-            reader = csv.reader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
-            rows = list(reader)
-    except OSError as exc:
-        raise ContractError(f"cannot read {path}: {exc}") from exc
-    if not rows:
-        raise ContractError(f"{path} is empty")
-    return rows[0], rows[1:]
 
 
 def validate_schema_document(path: Path, *, required_title: str) -> dict[str, Any]:
@@ -401,7 +374,7 @@ def validate_parity_spec(path: Path) -> dict[str, Any]:
             raise ContractError("each parity artifact must be an object")
         require_exact_keys(artifact, PARITY_ARTIFACT_KEYS, f"{path} expected_artifacts entry")
         artifact_path = artifact["path"]
-        if not isinstance(artifact_path, str) or not artifact_path.startswith("final/"):
+        if not isinstance(artifact_path, str) or not artifact_path.startswith(RELEASE_PATH_PREFIX):
             raise ContractError(f"invalid parity artifact path: {artifact_path!r}")
         if artifact_path in seen_paths:
             raise ContractError(f"duplicate parity artifact path: {artifact_path}")
@@ -420,30 +393,6 @@ def validate_parity_spec(path: Path) -> dict[str, Any]:
     if policy["baseline_release_mutable"] is not False:
         raise ContractError(f"the {BASELINE_RELEASE} baseline must be immutable")
     return spec
-
-
-def load_release_file_manifest(path: Path) -> dict[str, tuple[str, str]]:
-    """Read the release's own file manifest as {path relative to final/: (hash_scope, sha256)}.
-
-    Written by the same release writer as the tables, so QUOTE_MINIMAL — see `read_tsv_gz`.
-    """
-    try:
-        handle = path.open("r", encoding="utf-8", newline="")
-    except OSError as exc:
-        raise ContractError(f"cannot read release file manifest {path}: {exc}") from exc
-    with handle:
-        reader = csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
-        required = {"path", "hash_scope", "sha256"}
-        if not required <= set(reader.fieldnames or ()):
-            raise ContractError(f"{path} must declare columns {sorted(required)}")
-        entries: dict[str, tuple[str, str]] = {}
-        for row in reader:
-            if row["path"] in entries:
-                raise ContractError(f"{path}: duplicate entry for {row['path']}")
-            entries[row["path"]] = (row["hash_scope"], row["sha256"])
-    if not entries:
-        raise ContractError(f"{path} declares no files")
-    return entries
 
 
 def verify_raw_input(repository_root: Path, raw: dict[str, Any]) -> None:
@@ -484,102 +433,11 @@ def verify_raw_input(repository_root: Path, raw: dict[str, Any]) -> None:
         )
 
 
-def verify_expected_artifacts(repository_root: Path, artifacts: list[dict[str, Any]]) -> None:
-    manifest = load_release_file_manifest(repository_root / RELEASE_FILE_MANIFEST_PATH)
-    for artifact in artifacts:
-        artifact_path = artifact["path"]
-        manifest_key = artifact_path.removeprefix("final/")
-        declared = manifest.get(manifest_key)
-        if declared is None:
-            raise ContractError(f"{artifact_path} is not declared in {RELEASE_FILE_MANIFEST_PATH}")
-        manifest_scope, manifest_sha = declared
-        if manifest_scope != artifact["hash_scope"]:
-            raise ContractError(
-                f"{artifact_path} hash_scope {artifact['hash_scope']!r} disagrees with the "
-                f"release manifest ({manifest_scope!r})"
-            )
-        if manifest_sha != artifact["sha256"]:
-            raise ContractError(
-                f"{artifact_path} sha256 disagrees with the release manifest: parity "
-                f"{artifact['sha256']}, manifest {manifest_sha}"
-            )
-
-        target = repository_root / artifact_path
-        if not target.is_file():
-            raise ContractError(f"declared parity artifact is missing: {artifact_path}")
-        if artifact["hash_scope"] == "file_bytes":
-            actual = sha256_file(target)
-            if actual != artifact["sha256"]:
-                raise ContractError(
-                    f"{artifact_path} sha256 {actual} does not match the parity contract "
-                    f"{artifact['sha256']}"
-                )
-
-
-def verify_expected_counts(repository_root: Path, counts: dict[str, int]) -> None:
-    for key, relative in COUNT_SOURCES.items():
-        path = repository_root / relative
-        if not path.is_file():
-            raise ContractError(f"cannot count {key}: missing {relative}")
-        _, rows = read_tsv_gz(path)
-        if len(rows) != counts[key]:
-            raise ContractError(
-                f"{key}: {relative} has {len(rows)} rows, parity contract declares {counts[key]}"
-            )
-
-    canonical = repository_root / COUNT_SOURCES["canonical_rows"]
-    header, rows = read_tsv_gz(canonical)
-    if CURATION_STATUS_COLUMN not in header:
-        raise ContractError(f"{canonical} has no {CURATION_STATUS_COLUMN} column")
-    index = header.index(CURATION_STATUS_COLUMN)
-    tally: dict[str, int] = {}
-    for row in rows:
-        if len(row) != len(header):
-            raise ContractError(f"{canonical} has a row with {len(row)} of {len(header)} fields")
-        tally[row[index]] = tally.get(row[index], 0) + 1
-    unknown = sorted(set(tally) - {VOUCHED_STATUS, PROVISIONAL_STATUS})
-    if unknown:
-        raise ContractError(f"{canonical} has undeclared {CURATION_STATUS_COLUMN}: {unknown}")
-    for status, key in ((VOUCHED_STATUS, "vouched_rows"), (PROVISIONAL_STATUS, "provisional_rows")):
-        if tally.get(status, 0) != counts[key]:
-            raise ContractError(
-                f"{key}: canonical metadata has {tally.get(status, 0)} {status} rows, parity "
-                f"contract declares {counts[key]}"
-            )
-
-
-def verify_build_manifest(repository_root: Path, spec: dict[str, Any]) -> None:
-    manifest = load_json(repository_root / BUILD_MANIFEST_PATH)
-    checks = (
-        ("git_sha", spec["source_release_commit"], "source_release_commit"),
-        ("schema_version", spec["source_schema_version"], "source_schema_version"),
-        ("source_genbank_sha256", spec["raw_input"]["uncompressed_sha256"], "raw uncompressed"),
-    )
-    for field, expected, label in checks:
-        actual = manifest.get(field)
-        if actual != expected:
-            raise ContractError(
-                f"{BUILD_MANIFEST_PATH} {field}={actual!r} does not match parity {label} "
-                f"{expected!r}"
-            )
-    if manifest.get("git_tree_clean") is not True:
-        raise ContractError(f"{BUILD_MANIFEST_PATH} was not built from a clean tree")
-
-
-def verify_release_baseline(repository_root: Path, spec: dict[str, Any]) -> None:
-    """Check that the parity contract describes the release actually shipped in this repository."""
-    verify_build_manifest(repository_root, spec)
-    verify_raw_input(repository_root, spec["raw_input"])
-    verify_expected_artifacts(repository_root, spec["expected_artifacts"])
-    verify_expected_counts(repository_root, spec["expected_counts"])
-
-
-def validate_contracts(repository_root: Path, *, verify_baseline: bool = True) -> None:
+def validate_contract_shape(repository_root: Path) -> None:
+    """Validate the schemas and the parity spec. Reads nothing under `final/`."""
     load_decision_contract(repository_root / DECISIONS_SCHEMA_PATH)
     validate_schema_document(
         repository_root / RULES_SCHEMA_PATH,
         required_title="Deterministic curation rule",
     )
-    spec = validate_parity_spec(repository_root / PARITY_SPEC_PATH)
-    if verify_baseline:
-        verify_release_baseline(repository_root, spec)
+    validate_parity_spec(repository_root / PARITY_SPEC_PATH)

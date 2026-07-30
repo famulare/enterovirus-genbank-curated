@@ -404,10 +404,32 @@ def test_reading_inside_the_clone_is_allowed(repository_root: Path) -> None:
     assert "OK" in result.stdout
 
 
-def test_reading_the_immutable_release_is_allowed(repository_root: Path) -> None:
-    """Parity has to read `final/`; only writing to it is forbidden."""
+def test_reading_the_shipped_release_is_refused(repository_root: Path) -> None:
+    """`final/` is a comparison target, so a guarded build may not read it either.
+
+    This inverts what the guard used to allow. Refusing only *writes* left the failure that matters
+    wide open: a derive stage that reads the shipped canonical table can reproduce it perfectly and
+    prove nothing, and calibrating a rule against the oracle is exactly when someone reaches for
+    that read. Parity still needs it, which is why `oracle/parity.py` compares in the unguarded
+    parent and builds in a guarded child rather than doing both in one process.
+    """
     body = textwrap.dedent("""
         open(str(ROOT / 'final' / 'audit' / 'build_manifest.json')).read()
+        print('NOT REACHED')
+    """)
+    result = run_guarded(repository_root, body)
+    assert result.returncode != 0
+    assert "comparison target, never a pipeline input" in result.stderr
+
+
+def test_reading_the_frozen_raw_archive_is_still_allowed(repository_root: Path) -> None:
+    """The negative control for the rule above: `raw/` is immutable but it is a declared input.
+
+    Without this, a guard that refused both immutable trees would pass the refusal test while making
+    every build impossible.
+    """
+    body = textwrap.dedent("""
+        open(str(ROOT / 'raw' / 'raw_manifest.json')).read()
         assert_no_violations(guard)
         print('OK')
     """)

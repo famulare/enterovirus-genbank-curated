@@ -16,14 +16,16 @@ import pytest
 from enterovirus_genbank_curated.contracts import (
     EXPECTED_BASELINE_COUNTS,
     PARITY_SPEC_PATH,
-    RELEASE_FILE_MANIFEST_PATH,
     ContractError,
-    read_tsv_gz,
     validate_parity_spec,
+    verify_raw_input,
+)
+from enterovirus_genbank_curated.oracle.release import (
+    RELEASE_FILE_MANIFEST_PATH,
+    read_tsv_gz,
     verify_build_manifest,
     verify_expected_artifacts,
     verify_expected_counts,
-    verify_raw_input,
     verify_release_baseline,
 )
 

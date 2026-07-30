@@ -37,9 +37,13 @@ jobs:
       - name: Validate repository contracts
         run: evgc validate-contracts
       # The corpus tier: reparse all 25,727 records from raw/ and compare every source artifact
-      # against the hashes the release manifest declares. ~40s, so it belongs on every push. When
-      # the pipeline grows a multi-hour alignment stage this must split into its own scheduled
-      # workflow.
+      # against the hashes the release manifest declares, plus the canonical metadata transport
+      # cell-compared against the shipped table. ~50s, so it belongs on every push. When the
+      # pipeline grows a multi-hour alignment stage this must split into its own scheduled workflow.
+      #
+      # `evgc parity-metadata` is likewise not a separate step: this tier already runs it through
+      # test_metadata_transport_matches_the_shipped_canonical, and a step would only buy a second
+      # corpus parse.
       #
       # Neither `evgc parity-source` nor `evgc parity-source --guard-inputs` is a separate step, on
       # purpose. This tier already invokes both: `test_the_real_source_build_runs_clean_under_the

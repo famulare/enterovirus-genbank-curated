@@ -44,19 +44,45 @@ The intended package is `src/enterovirus_genbank_curated/` with these responsibi
 - `export`: write canonical, audit, dictionary, alignment, and manifest artifacts;
 - `validation`: enforce referential closure, parity, and determinism.
 
-PR 1 supplies only contract validation and the command-line shell needed to guard later work.
+`genbank`, `export` and the transport half of `derive` exist. `derive/metadata.py` covers only the
+canonical columns whose value is a source value; the typing, classification and sequence-evidence
+half of that responsibility is still unwritten, and its module docstring states which columns are
+out of reach and why.
 
-## Planned public commands
+One package is not in that list because it is not part of the build: `oracle` is the only place
+permitted to read `final/` or `releases/`. Boundary 1 used to be enforced by care alone, with release
+reads sitting in the same modules as build code, so `build.py` transitively imported code that reads
+the comparison target. Now the comparators live in `oracle/parity.py`, the release verifiers in
+`oracle/release.py`, and three mechanisms keep it that way: `tests/test_module_boundaries.py` refuses
+a release path literal or an `oracle` import under `derive/`, `curate/`, `export/`, `registry/`,
+`genbank/` or in `build.py`/`contracts.py`; `sandbox.READ_REFUSED_DIRS` refuses the read at runtime;
+and the `parity-*` verbs build in a guarded child and compare in the unguarded parent.
+
+## Public commands
 
 ```bash
 evgc validate-contracts
 evgc validate-ledger registry/decisions.tsv
+evgc build-source   --output DIR
+evgc parity-source
+evgc build-metadata --output DIR
+evgc parity-metadata
+```
+
+Still planned, and not yet in any form:
+
+```bash
 evgc build --release candidate
 evgc verify
 evgc parity --against releases/2.4.1
 ```
 
-Only the first two commands are in scope for PR 1.
+`parity-metadata` is a cell-level check rather than a file hash, because the transport fills
+thirteen of the twenty-six canonical columns and its bytes are therefore legitimately not the
+release's bytes. What it claims is narrower and checkable: every cell it produces equals the shipped
+cell, for every record both agree belongs in the carve, in the same order. The 18-record row-set gap
+is declared in code, compared for equality, and invisible to the build — see
+[`reproducibility.md`](reproducibility.md).
 
 ## Staged delivery
 
@@ -65,7 +91,9 @@ Only the first two commands are in scope for PR 1.
 3. Raw verification and normalized GenBank source generation.
 4. Retirement — not replacement — of the two frozen legacy upstream stages. Investigating them
    showed there is nothing to rebuild: see below.
-5. Deterministic derivation and versioned rules.
+5. Deterministic derivation and versioned rules. **Partly delivered:** the canonical metadata
+   transport (`evgc parity-metadata`) covers the thirteen columns that are source values. The
+   sequence-derived and curated-master columns remain.
 6. Decision application, disposition, and complete provenance.
 7. Dictionaries, references, and reproducible alignments.
 8. Full fresh-clone parity and deterministic rebuild gate.
