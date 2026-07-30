@@ -2,8 +2,11 @@
 
 ## Current state
 
-Release 2.1.5 is a verified, internally consistent data release. **Its source layer is now
-regenerable from `raw/` alone**; the derived layers are not yet.
+The current baseline release (2.4.1; see `src/enterovirus_genbank_curated/contracts.py`'s
+`BASELINE_RELEASE`) is a verified, internally consistent data release. **Its source layer is now
+regenerable from `raw/` alone**; the derived layers are not yet. This was true of 2.1.5 too and
+remains true across the 2.3.0 and 2.4.1 refreshes: none of them touched the source layer, only
+canonical metadata text on already-shipped records.
 
 **Reproducible today — `final/source/`.** `evgc parity-source` re-authenticates
 `raw/sequence.gb.zip`, reparses all 25,727 records, and compares every one of the twelve
@@ -104,9 +107,10 @@ under `subprocess` for that reason.
 
 ## Frozen baseline
 
-`releases/2.1.5/parity.json` records the public release commit, source build commit, raw archive
+`releases/2.4.1/parity.json` records the public release commit, source build commit, raw archive
 identity, row counts, and authoritative release hashes used by the rewrite. The baseline is a test
-oracle only.
+oracle only. (`releases/2.1.5/parity.json` and `releases/2.3.0/parity.json` are retained as
+historical records of retired baselines, no longer verified against the tree.)
 
 The oracle is itself checked. `evgc validate-contracts` re-derives every claim in the contract from
 the shipped release on each CI run: file-byte hashes are recomputed, `logical_content` hashes are
@@ -127,10 +131,11 @@ Passing parity means at minimum:
 - identical source and canonical record identity;
 - identical vouched/provisional partitions;
 - identical FASTA identifiers and nucleotide sequences;
-- migration of all 2,753 human decisions the release shipped, and 25 deterministic rules. The ledger
-  holds 2,756: the three extra are the `engineered_or_construct=FALSE` assertions added by the D2
-  adjudication, which is an approved curation change rather than a parity failure. See
-  [`registry/README.md`](../registry/README.md);
+- migration of all 2,912 human decisions the release shipped, and 28 deterministic rules. The ledger
+  holds 2,921: the nine extra are carried-forward `superseded` assertions (the three
+  `engineered_or_construct=FALSE` D2 rows, plus curator revisions to `AB180070-73` and `JC013129`
+  that a from-scratch regeneration would otherwise have dropped silently), which are approved
+  curation history rather than a parity failure. See [`registry/README.md`](../registry/README.md);
 - equivalent normalized source and canonical scientific values;
 - complete, referentially closed provenance;
 - deterministic repeated builds from declared inputs.
@@ -142,4 +147,5 @@ contract. The DuckDB convenience database is compared by logical content, not fi
 
 The README reproducibility claim changes only after a fresh clone builds and validates the complete
 release without undeclared files, network access, private repositories, or existing `final/`
-artifacts. That transition requires a new release version; release 2.1.5 remains unchanged.
+artifacts. That transition requires a new release version; the current baseline release remains
+unchanged in the meantime, exactly as 2.1.5 and 2.3.0 did before it.

@@ -52,7 +52,10 @@ site/                 Source for the browser data explorer linked above, plus th
                       precomputed artifacts it serves and the gate that keeps them
                       in step with final/.
 src/                  Pipeline foundation and executable contract validation.
-releases/2.1.5/       Immutable parity contract for the historical release.
+releases/2.4.1/       Immutable parity contract for the current release (releases/2.1.5/
+                      and releases/2.3.0/ are retained as historical records, no longer
+                      verified against the tree — see src/enterovirus_genbank_curated/
+                      contracts.py's module docstring).
 docs/                 Pipeline architecture and the reproducibility boundary.
 ```
 
@@ -110,19 +113,18 @@ python -m pytest
 ```
 
 `validate-contracts` does two separable things. It checks that the schemas and
-`releases/2.1.5/parity.json` are well-formed and declare nothing undeclared, and it then checks
+`releases/2.4.1/parity.json` are well-formed and declare nothing undeclared, and it then checks
 that the parity contract actually describes the release in this repository: every declared hash is
 recomputed from the shipped bytes, every declared row count is recounted, the frozen GenBank
 archive is authenticated member-by-member, and the release's own `build_manifest.json` is required
 to agree with all of it. Pass `--skip-baseline-verification` for the shape-only check. A parity
 contract that nothing can contradict is not a contract, so CI runs the full form.
 
-The human-readable curation ledger will be `registry/decisions.tsv`. Its contract and review rules
-are documented in [`registry/README.md`](registry/README.md); the migrated ledger is not part of the
-initial pipeline-foundation change.
+The human-readable curation ledger is `registry/decisions.tsv`. Its contract and review rules are
+documented in [`registry/README.md`](registry/README.md).
 
 Note that two version numbers coexist and are deliberately independent: the **data release** is
-2.1.5 (see `CITATION.cff` and `final/audit/build_manifest.json`), while the Python package version
+2.4.1 (see `CITATION.cff` and `final/audit/build_manifest.json`), while the Python package version
 tracks the pipeline rewrite and stays at 0.0.0 until it can build a release end to end.
 
 ## Licensing and citation

@@ -12,8 +12,10 @@ raw/sequence.gb.zip + registry/ + versioned rules
     -> canonical, audit, dictionaries, alignments, and manifests
 ```
 
-This document is an architectural contract, not a claim that the pipeline is complete. Release
-2.1.5 remains the immutable parity oracle while the rewrite is developed.
+This document is an architectural contract, not a claim that the pipeline is complete. The shipped
+release remains the immutable parity oracle while the rewrite is developed — currently 2.4.1 (see
+`src/enterovirus_genbank_curated/contracts.py`'s `BASELINE_RELEASE`); 2.1.5 and 2.3.0 are retired,
+immutable prior baselines, no longer verified against the tree.
 
 ## Non-negotiable boundaries
 
@@ -24,7 +26,8 @@ This document is an architectural contract, not a claim that the pipeline is com
    curation ledger.
 4. Duplicate, conflicting, missing, or ambiguous inputs fail closed.
 5. Every canonical value must have machine-readable projection provenance.
-6. Release 2.1.5 is never regenerated in place or overwritten.
+6. The current baseline release is never regenerated in place or overwritten; a new schema version
+   gets a new `releases/<version>/` and the prior baseline is retired, not rewritten.
 7. The parity oracle is re-derived from the shipped release on every CI run. Its hashes, counts,
    and raw-archive identity are recomputed, not taken on trust, so the oracle cannot be edited to
    accommodate a build that disagrees with it.
@@ -50,7 +53,7 @@ evgc validate-contracts
 evgc validate-ledger registry/decisions.tsv
 evgc build --release candidate
 evgc verify
-evgc parity --against releases/2.1.5
+evgc parity --against releases/2.4.1
 ```
 
 Only the first two commands are in scope for PR 1.

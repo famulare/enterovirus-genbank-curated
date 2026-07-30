@@ -8,6 +8,7 @@ from pathlib import Path
 
 from enterovirus_genbank_curated.build import build_source_layer, verify_source_parity
 from enterovirus_genbank_curated.contracts import (
+    BASELINE_RELEASE,
     DECISIONS_SCHEMA_PATH,
     ContractError,
     load_decision_contract,
@@ -23,7 +24,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     contracts = subparsers.add_parser(
         "validate-contracts",
-        help="validate schemas and the immutable v2.1.5 parity contract",
+        help=f"validate schemas and the immutable v{BASELINE_RELEASE} parity contract",
     )
     contracts.add_argument("--repository-root", type=Path, default=Path.cwd())
     contracts.add_argument(
