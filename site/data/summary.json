@@ -1,4 +1,10 @@
 {
+  "consensus_inflation": {
+    "indel_share": 0.8051112395032806,
+    "n_assessed": 13161,
+    "n_exceeding": 487,
+    "rate": 0.5
+  },
   "data_quality": [
     {
       "detail": "Every non-polio record carries 'unknown', so the field is polio-only in practice and the facet does no work on the non-polio views.",

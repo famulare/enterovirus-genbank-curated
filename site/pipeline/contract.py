@@ -177,6 +177,13 @@ MIN_REGION_NT_BY_REGION = {REGION_3NCR: 30}
 MIN_CONSENSUS_ROWS = 5
 MIN_CONSENSUS_NT = 30
 
+# Non-synonymous-per-assessable-codon rate above which a record is counted as
+# carrying the consensus-coverage artifact that reference.py's `_consensus`
+# discloses. Not a quality threshold and nothing is filtered on it — it exists only
+# to size the disclosure, so the page states a measured number rather than "a few
+# hundred". See summary.consensus_inflation.
+CONSENSUS_INFLATION_RATE = 0.5
+
 
 def min_nt(region: str) -> int:
     return MIN_REGION_NT_BY_REGION.get(region, MIN_REGION_NT)

@@ -13,4 +13,10 @@ node_modules/
 # a dangling link. The page style kit it references is documented in site/README.md.
 .claude/
 # site/data/ is deliberately NOT ignored: those artifacts are committed and
-# hash-gated by `site/pipeline/cli.py check`. site/dist/ is covered by `dist/`.
+# hash-gated by the rebuild-and-diff step in ci.yml. site/dist/ is covered by `dist/`.
+# Probe leftovers. sandbox.py deliberately does not guard os.mkfifo/os.mknod (see
+# docs/review-backlog.md B12), so exercising that gap plants a node inside final/.
+# git skips non-regular files, so one never shows up as untracked no matter what
+# flags you pass — it just sits in the release tree looking like data. Naming it
+# here does not make git see it, but it does tell a reader the name is expected.
+evgc-probe-fifo

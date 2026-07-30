@@ -51,13 +51,16 @@ def command_build(_args) -> int:
     print(f"read {len(all_records):,} canonical records")
 
     artifacts = [
-        write_json("summary.json", summary.build(all_records, by_accession)),
         write_json("records.json", records_module.build(all_records), compact=True),
     ]
 
     record_index = records_module.index_by_accession(all_records)
     coords = frame.read_region_coordinates()
     cache: dict[str, frame.Alignment] = {}
+    # summary.json is written after the loop, not before it: the consensus-coverage
+    # disclosure it carries is measured off the non-polio polyprotein panel, and
+    # measuring it is the only way that number cannot drift from the figure.
+    inflation: dict | None = None
 
     for selection in contract.SELECTIONS:
         name = selection["alignment"]
@@ -72,6 +75,10 @@ def command_build(_args) -> int:
         artifacts.append(
             write_json(f"panels/{selection['id']}.json", payload, compact=True)
         )
+        if selection["restrict"] == contract.GROUP_NPEV:
+            inflation = summary.consensus_inflation(
+                payload["divergence"][contract.REGION_POLYPROTEIN]
+            )
         counts = {
             region: len(panel["record"]) for region, panel in payload["divergence"].items()
         }
@@ -83,6 +90,15 @@ def command_build(_args) -> int:
             region: len(tree["tip_record"]) for region, tree in forest["nucleotide"].items()
         }
         print(f"  {selection['id']:5s} tips {tips}")
+
+    if inflation is None:
+        raise RuntimeError(
+            "no selection restricted to non-polio records, so the consensus-coverage "
+            "disclosure could not be measured. Check contract.SELECTIONS."
+        )
+    artifacts.append(
+        write_json("summary.json", summary.build(all_records, by_accession, inflation))
+    )
 
     written = manifest.write(manifest.artifact_hashes(artifacts))
     total = 0

@@ -125,6 +125,18 @@ export function renderDataQuality(summary: Summary): void {
     .join("");
 }
 
+/** The consensus-coverage caveat in the method disclosure. Its numbers come from
+ *  summary.json rather than the markup for the same reason every other number on the
+ *  page does: this one was hand-written in two files and disagreed with the panel for
+ *  four releases before anyone recomputed it. */
+export function renderConsensusInflation(summary: Summary): void {
+  const { rate, n_assessed, n_exceeding, indel_share } = summary.consensus_inflation;
+  byId("consensus-inflation").innerHTML =
+    `${num(n_exceeding)} of ${num(n_assessed)} non-polio polyprotein records exceed ` +
+    `${rate} non-synonymous per codon, and indel codons are ` +
+    `${(indel_share * 100).toFixed(1)}% of that group's numerator`;
+}
+
 export function renderIntegrityNotes(summary: Summary): void {
   const target = byId("integrity-notes");
   const discordant = summary.selections

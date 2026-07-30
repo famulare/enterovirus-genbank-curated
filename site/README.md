@@ -262,10 +262,13 @@ rather than a typical genome, so a partial record reads as deleted at every colu
 does not span but some same-type record does. Its indel-codon count — and therefore
 its non-synonymous rate — inflates in proportion to how fragmentary its type is.
 
-Measured on release 2.1.5 and re-verified unchanged at 2.4.1: 487 of 13,161 non-polio
-polyprotein records exceed 0.5 non-synonymous per codon, and **80.5%** of that group's
-numerator is indel codons. They concentrate in the largest types (CVA24 238, CVA13 81),
-exactly as the mechanism predicts.
+How large it is, this file no longer says. `summary.consensus_inflation` counts it off
+the shipped non-polio polyprotein panel on every build, writes it to
+`site/data/summary.json`, and the page renders that. The figure lived here and in
+`reference.py` as a hand-copied pair, and was wrong in both from 2.1.5 through 2.4.0 —
+the denominator was 13,160 when the panel held 13,161 — because nothing recomputed it.
+One measured source beats two prose copies. The records that carry it concentrate in the
+largest, most fragmentary types, exactly as the mechanism predicts.
 
 This is not patched here. The consensus is a stand-in for per-type reference sequences
 the release does not yet carry for non-polio; a quorum rule bolted onto a stand-in

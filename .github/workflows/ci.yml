@@ -57,8 +57,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Check site data against final/
-        run: uv run --no-project site/pipeline/cli.py check
+      # Rebuild rather than `check`. `check` only asks whether manifest.json is
+      # self-consistent with what is on disk, and that is satisfiable two ways:
+      # rebuild the artifacts, or hand-edit the stamp. It cannot tell them apart, so
+      # editing a pipeline module's logic and re-stamping publishes stale figures
+      # behind a green tick. Rebuilding and diffing asks the question that matters —
+      # are the committed artifacts what these sources over this data actually
+      # produce — and strictly subsumes `check`, which is why there is no check step.
+      #
+      # Costs ~4.5 min against ~3 min for the other job, which runs in parallel, so it
+      # sets the wall time for the workflow. If it grows enough to hurt, gate it on
+      # changes to site/pipeline/**, site/data/**, final/** and raw/** rather than
+      # weakening it — a rebuild that does not run proves nothing.
+      - name: Rebuild site/data/ from final/
+        run: uv run --no-project site/pipeline/cli.py build
+      # -I skips a manifest hunk whose every changed line is the recorded Python
+      # patch version. That field is provenance, not gated content: build_identity is
+      # derived from input and source hashes only, and check() ignores it too. uv
+      # resolves any 3.12-3.13 interpreter under the PEP 723 header, so gating on it
+      # would fail CI for the runner's Python rather than for the data. Verified that
+      # a real change alongside a version drift is still caught.
+      - name: Assert the committed artifacts are exactly what the build produces
+        run: git diff --exit-code -I'"python": ' -- site/data/
       # Metric and tree correctness: synthetic cases with hand-computed answers, plus
       # assertions against the shipped artifacts. Without this step the selftest would
       # only ever run when someone remembered to run it.
