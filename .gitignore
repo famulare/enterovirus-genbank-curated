@@ -12,5 +12,17 @@ node_modules/
 # absolute path outside this repository — committing it would give every other clone
 # a dangling link. The page style kit it references is documented in site/README.md.
 .claude/
-# site/data/ is deliberately NOT ignored: those artifacts are committed and
-# hash-gated by `site/pipeline/cli.py check`. site/dist/ is covered by `dist/`.
+# site/data/ is built, never committed. It used to be committed and hash-gated, which
+# needed the gate to answer "are these bytes what the pipeline produces?" — and that
+# question has no stable answer, because the build is byte-reproducible on one machine
+# but not across platforms (panels/NPEV.json and panels/all.json differ between macOS
+# and the Linux runner; everything else reproduces). Building it in CI instead leaves
+# one builder, so there is nothing to fall out of sync and nothing to re-stamp.
+# site/dist/ is covered by `dist/`.
+site/data/
+# Probe leftovers. sandbox.py deliberately does not guard os.mkfifo/os.mknod (see
+# docs/review-backlog.md B12), so exercising that gap plants a node inside final/.
+# git skips non-regular files, so one never shows up as untracked no matter what
+# flags you pass — it just sits in the release tree looking like data. Naming it
+# here does not make git see it, but it does tell a reader the name is expected.
+evgc-probe-fifo

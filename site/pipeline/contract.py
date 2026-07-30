@@ -177,6 +177,13 @@ MIN_REGION_NT_BY_REGION = {REGION_3NCR: 30}
 MIN_CONSENSUS_ROWS = 5
 MIN_CONSENSUS_NT = 30
 
+# Non-synonymous-per-assessable-codon rate above which a record is counted as
+# carrying the consensus-coverage artifact that reference.py's `_consensus`
+# discloses. Not a quality threshold and nothing is filtered on it — it exists only
+# to size the disclosure, so the page states a measured number rather than "a few
+# hundred". See summary.consensus_inflation.
+CONSENSUS_INFLATION_RATE = 0.5
+
 
 def min_nt(region: str) -> int:
     return MIN_REGION_NT_BY_REGION.get(region, MIN_REGION_NT)
@@ -431,11 +438,12 @@ SPECIES_ORGANISM_FALLBACK = {
 
 
 def gated_inputs() -> tuple[Path, ...]:
-    """Files whose bytes the committed site artifacts depend on.
+    """Files whose bytes the generated site artifacts depend on.
 
-    `uv run site/pipeline/cli.py check` recomputes these hashes and fails if any
-    differs from what `site/data/manifest.json` recorded, so a data change cannot
-    silently ship a stale figure.
+    Their hashes are recorded in `site/data/manifest.json` and published with the
+    figures, so a page can be traced to the exact inputs behind it. They no longer
+    gate anything: the artifacts are rebuilt per deploy rather than committed, so a
+    data change reaches the page by rebuilding rather than by passing a check.
     """
     paths = [
         CANONICAL_METADATA,

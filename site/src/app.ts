@@ -36,6 +36,7 @@ import {
 } from "./ui/controls.js";
 import {
   renderBuildLine,
+  renderConsensusInflation,
   renderDataQuality,
   renderFacts,
   renderIntegrityNotes,
@@ -439,6 +440,7 @@ async function main(): Promise<void> {
   renderFacts(summary);
   renderPopulationTable(summary);
   renderDataQuality(summary);
+  renderConsensusInflation(summary);
   renderIntegrityNotes(summary);
   renderBuildLine(summary, manifest.build_identity);
 

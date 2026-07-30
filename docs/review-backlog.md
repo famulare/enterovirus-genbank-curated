@@ -320,16 +320,19 @@ asserts the broken form. Latent only because the 2,756 committed ids happen to b
 **Fix:** (c) either widen the pattern or make collisions a hard `ContractError` and change the test to
 assert the raise. The second suits the repo's fail-closed posture but is a contract decision.
 
-### B21. `scripts/migrate_decisions.py` still uses the abandoned pre-D3 id scheme
-`scripts/migrate_decisions.py:32-38`, `:63`
+### B21. `scripts/migrate_decisions.py` still uses the abandoned pre-D3 id scheme — **RESOLVED BY DELETION 2026-07-30**
+`scripts/migrate_decisions.py:32-38`, `:63` (both now gone)
 
-It hashes `source_artifact` into the identity and emits 20-hex digests, so the documented tool for
-future imports reproduces exactly the failure mode D3 was introduced to eliminate — renaming a source
+It hashed `source_artifact` into the identity and emitted 20-hex digests, so the documented tool for
+future imports reproduced exactly the failure mode D3 was introduced to eliminate — renaming a source
 file rehashes every id — and would mix 20-hex ids into a ledger of 12-hex ids. Both forms satisfy the
 schema pattern, so **no check anywhere would catch this**.
 
-**Fix:** (a) share `ID_COLUMNS` and the digest length between both scripts; add a test asserting a
-`source_artifact` rename leaves ids unchanged.
+**Resolved:** the script and `tests/test_migration.py` were deleted rather than repaired. It had
+produced no committed artifact, had never run against real data, and was reachable only through a
+`registry/README.md` section recommending it — so the cheapest correct fix was to stop shipping a
+broken tool and write the normalizer when an import actually needs one. `registry/README.md` now says
+so, and item 5 in "Claims nothing would catch if they drifted" is withdrawn.
 
 ---
 
@@ -382,7 +385,8 @@ places where the repository asserts something it does not check.
 2. The DuckDB `logical_content` hash, never computed, with "logical content" undefined anywhere. (B6.)
 3. Seven manifest-declared `file_bytes` hashes recomputed by nothing. (B7.)
 4. `raw_manifest.json` agreement with `parity.json` on their five shared fields. (B36.)
-5. `migrate_decisions.py`'s id scheme — both schemes satisfy the schema pattern. (B21.)
+5. ~~`migrate_decisions.py`'s id scheme — both schemes satisfy the schema pattern. (B21.)~~
+   **Withdrawn 2026-07-30:** the script was deleted, so there is no second scheme to drift.
 6. `rules.schema.json` in its entirety — no data has ever been validated against it. (B18.)
 7. `README.md:64-67`'s three headline audit guarantees — referential closure of provenance, declared
    controlled vocabularies, and `final/audit/` "**proves — not just asserts**" its record-disposition

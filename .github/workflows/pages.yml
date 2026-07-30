@@ -5,12 +5,24 @@ on:
     branches: [main]
     paths:
       - "site/**"
+      # final/ and raw/ are inputs to the published artifacts now that this job
+      # builds them, so a data refresh has to republish. While site/data/ was
+      # committed, a refresh reached the page only via the rebuilt artifacts under
+      # site/**, and forgetting to rebuild meant the page silently kept the old
+      # numbers. It cannot now: the release is republished from whatever final/
+      # holds at the commit that changed it.
+      - "final/**"
+      - "raw/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
-# Only the bundle is built here. The data artifacts under site/data/ are committed
-# and hash-gated; ci.yml fails if they no longer match final/. That keeps this job
-# free of any bioinformatics toolchain.
+# Both the data and the bundle are built here. site/data/ used to be committed and
+# hash-gated, on the reasoning that this job should stay free of any bioinformatics
+# toolchain — but there is no such toolchain: the pipeline's only dependency is
+# numpy, declared inline in cli.py, and it reads nothing outside final/ and raw/.
+# Building it here makes this runner the single producer of the published artifacts,
+# which is what makes them trustworthy now that we know the build is not
+# byte-reproducible across platforms.
 permissions:
   contents: read
   pages: write
@@ -26,6 +38,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      # Must precede every npm step: build.mjs refuses to bundle without the data,
+      # and site/test reads the real artifacts rather than fixtures on purpose, so a
+      # pipeline change that desynchronizes payload and renderer fails the tests.
+      - name: Build site/data/ from final/
+        run: uv run --no-project site/pipeline/cli.py build
       # 24, not 22: `npm test` runs the TypeScript sources directly and relies on
       # Node stripping their types without a flag, which is only unconditional from
       # 23.6 on. Also declared in site/package.json engines.

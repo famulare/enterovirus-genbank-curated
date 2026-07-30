@@ -1,14 +1,18 @@
-"""The staleness gate.
+"""Provenance for the artifacts this build produces.
 
-The site's data artifacts are committed rather than rebuilt on every deploy, so
-the one failure mode worth engineering against is a figure computed from data that
-has since changed. `site/data/manifest.json` records the SHA-256 of every `final/`
-file the build read, plus the hash of the pipeline sources themselves. `cli.py
-check` recomputes both and exits non-zero on any difference.
+`site/data/manifest.json` records the SHA-256 of every `final/` file the build read
+and of the pipeline sources themselves, and ships alongside the figures — so a
+published page can be traced back to the exact inputs and code that made it.
+
+This was a staleness gate when site/data/ was committed: `check` recomputed the
+hashes and failed if the artifacts predated their inputs. The artifacts are built
+per deploy now, so nothing can be stale and the gate is gone. What it recorded is
+still worth publishing, which is why `write` remains.
 
 Build identity is derived from input hashes and source hashes, deliberately not
 from the git SHA: two runs of the same sources over the same data must produce the
-same identity.
+same identity. Note that this holds per platform, not across them — the genus-wide
+consensus panels differ between macOS and Linux.
 """
 
 from __future__ import annotations
@@ -16,7 +20,6 @@ from __future__ import annotations
 import hashlib
 import json
 import platform
-import sys
 from pathlib import Path
 
 import contract
@@ -86,54 +89,5 @@ def write(artifacts: dict[str, str], notes: dict | None = None) -> dict:
     return manifest
 
 
-def check() -> list[str]:
-    """Return a list of human-readable problems; empty means the artifacts are current."""
-    if not MANIFEST_PATH.exists():
-        return [f"{contract.repo_relative(MANIFEST_PATH)} does not exist — nothing has been built."]
-
-    recorded = json.loads(MANIFEST_PATH.read_text())
-    problems: list[str] = []
-
-    if recorded.get("schema") != SCHEMA:
-        problems.append(
-            f"manifest schema is {recorded.get('schema')}, this pipeline writes {SCHEMA}"
-        )
-
-    for label, actual in (("input", input_hashes()), ("source", source_hashes())):
-        was = recorded.get(f"{label}s", {})
-        for name in sorted(set(was) | set(actual)):
-            if name not in was:
-                problems.append(f"new {label} {name} is not covered by the manifest")
-            elif name not in actual:
-                problems.append(f"{label} {name} is in the manifest but no longer exists")
-            elif was[name] != actual[name]:
-                problems.append(f"{label} {name} changed since the artifacts were built")
-
-    for name, digest in sorted(recorded.get("artifacts", {}).items()):
-        path = contract.DATA_OUT / name
-        if not path.exists():
-            problems.append(f"artifact site/data/{name} is missing")
-        elif hash_file(path) != digest:
-            problems.append(f"artifact site/data/{name} does not match its recorded hash")
-
-    return problems
-
-
 def artifact_hashes(names: list[str]) -> dict[str, str]:
     return {name: hash_file(contract.DATA_OUT / name) for name in sorted(names)}
-
-
-def report(problems: list[str]) -> int:
-    if not problems:
-        recorded = json.loads(MANIFEST_PATH.read_text())
-        print(f"site data is current · build {recorded['build_identity']}")
-        return 0
-    print("site data is STALE:", file=sys.stderr)
-    for problem in problems:
-        print(f"  - {problem}", file=sys.stderr)
-    print(
-        "\nRebuild with:  uv run site/pipeline/cli.py build\n"
-        "Then commit the regenerated site/data/.",
-        file=sys.stderr,
-    )
-    return 1

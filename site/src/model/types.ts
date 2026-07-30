@@ -77,6 +77,14 @@ export interface Finding {
   detail: string;
 }
 
+/** Size of the consensus-coverage artifact, measured per build rather than asserted. */
+export interface ConsensusInflation {
+  rate: number;
+  n_assessed: number;
+  n_exceeding: number;
+  indel_share: number;
+}
+
 export interface Summary {
   schema: number;
   release: Release;
@@ -85,6 +93,7 @@ export interface Summary {
   regions: Region[];
   traits: Trait[];
   data_quality: Finding[];
+  consensus_inflation: ConsensusInflation;
   integrity_notes: string[];
   thresholds: {
     min_region_nt: number;

@@ -79,11 +79,12 @@ def _consensus(block: np.ndarray, contributors: np.ndarray) -> np.ndarray:
     same-type record does, which inflates its indel-codon count — and therefore its
     non-synonymous rate — in proportion to how fragmentary its type is.
 
-    Measured on release 2.1.5 and re-verified unchanged at 2.4.1 (this artifact's inputs — the
-    NPEV_unified alignment and the underlying sequences — have not moved across any refresh so
-    far): 487 of 13,161 non-polio polyprotein records exceed 0.5 non-synonymous per codon, and
-    indel codons are 80.5% of that group's numerator. They concentrate in the largest, most
-    fragmentary types — CVA24 238, CVA13 81.
+    How large the artifact is is measured, not asserted here: `summary.consensus_inflation`
+    counts it off the shipped non-polio polyprotein panel on every build and ships the result
+    in site/data/summary.json, which is what the page renders. It was hand-written prose in
+    two places until 2.4.1 and disagreed with the data for four releases, so it is deliberately
+    stated in neither. The records that carry it concentrate in the largest, most fragmentary
+    types — CVA24 and CVA13 lead.
 
     Not fixed here. The consensus is a stand-in for reference sequences the release
     does not yet carry for non-polio types; the fix is an upstream per-type reference,

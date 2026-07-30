@@ -291,22 +291,15 @@ def test_the_annotation_refuses_a_row_that_was_overturned(mig: ModuleType) -> No
         mig.apply_dq205099_annotation([dq_row(mig, status="superseded")])
 
 
-def test_the_annotation_records_the_evidence_it_claims_to(mig: ModuleType) -> None:
-    """The note is the only place the falsification survives, so its content is contractual.
-
-    A future editor trimming it for length would otherwise silently remove the reason DQ205099 is
-    not a D2 twin.
-    """
-    for phrase in (
-        "3 nt/7439",          # the measurement that falsifies codon deoptimization
-        "AY184220",           # what it was measured against
-        "A2616G",             # where the differences are, so the claim is checkable
-        "VRL",                # not a patent deposit — the fact D2's analogy broke on
-        "S2R9",               # which clone it is
-        "16537593",           # the paper it is the parental control for
-        "engineered_or_construct=TRUE stands",  # the conclusion, stated as no-change
-    ):
-        assert phrase in mig.DQ205099_NOTE, f"the annotation no longer records {phrase!r}"
+# A `test_the_annotation_records_the_evidence_it_claims_to` checked seven phrases against
+# `mig.DQ205099_NOTE`, this module's own constant. Removed 2026-07-30: asserting a string against
+# itself pins a figure to its own spelling, which is the anti-pattern recorded at
+# `tests/test_legacy_registry.py`'s divergence test. The same seven phrases are checked against the
+# *shipped ledger* in `test_the_fourth_engineered_call_is_annotated_and_still_active`, and the
+# `3 nt/7439` figure is recomputed from `final/canonical/sequences.fasta.gz` in
+# `test_the_stated_divergences_are_recomputable_from_the_shipped_sequences`, which additionally
+# requires a ledger row to state the measured value. Two checks with contact to data outrank a third
+# with none.
 
 
 # --- assign_ids -------------------------------------------------------------------------------
@@ -358,15 +351,11 @@ def test_the_baseline_pin_refuses_a_source_that_gained_decisions(mig: ModuleType
     assert "--allow-baseline-drift" in message, "the message must say how to proceed deliberately"
 
 
-def test_the_baseline_pin_refuses_a_source_that_lost_decisions(mig: ModuleType) -> None:
-    rows = [decision(subject_key=f"AB{n:06d}") for n in range(mig.EXPECTED_BASELINE_DECISIONS - 1)]
-    with pytest.raises(ContractError):
-        mig.assert_release_baseline(rows)
-
-
-def test_the_baseline_pin_can_be_overridden_explicitly(mig: ModuleType) -> None:
-    rows = [decision(subject_key=f"AB{n:06d}") for n in range(mig.EXPECTED_BASELINE_DECISIONS + 2)]
-    assert mig.assert_release_baseline(rows, allow_drift=True) is rows
+# Two thinner variants were removed on 2026-07-30 — `-1` rows, and `allow_drift=True` accepting a
+# drifted count. The two above already bracket the guard from both sides, the second against the
+# real observed drift rather than a synthetic one; the `-1` case exercised the same inequality as
+# `+2`, and the override case asserted only that a flag documented as "deliberately awkward" does
+# what its name says.
 
 
 def test_the_pinned_baseline_matches_the_committed_ledger(

@@ -34,8 +34,20 @@ jobs:
       # the guard's mechanism, not the real build.
       - name: Test
         run: python -m pytest
-      - name: Validate repository contracts
-        run: evgc validate-contracts
+      #
+      # There is deliberately no separate `evgc validate-contracts` step. The tier above already runs
+      # `validate_contracts` against the real tree with full baseline verification, via
+      # tests/test_contracts.py::test_repository_contracts_validate — a step here would re-hash the
+      # shipped release a second time to reach the same assertions. Removed 2026-07-30.
+      #
+      # Known consequence: `validate-contracts` joins `validate-ledger` and `build-source` as cli.py
+      # branches no CI job executes. Only `parity-source` is, by the guarded corpus test below — the
+      # sole test that shells out to the CLI at all. So this step was covering one of three otherwise
+      # unexercised branches, which is worth more than the assertions it duplicated. If that coverage
+      # is wanted back, the proportionate fix is a fast test per branch calling `cli.main([...])`
+      # directly — `validate-contracts --skip-baseline-verification` costs milliseconds — rather than
+      # a step that re-hashes all of final/ to reach conclusions pytest already reached.
+      #
       # The corpus tier: reparse all 25,727 records from raw/ and compare every source artifact
       # against the hashes the release manifest declares, plus the canonical metadata transport
       # cell-compared against the shipped table. ~50s, so it belongs on every push. When the
@@ -53,18 +65,38 @@ jobs:
       - name: Test against the full corpus
         run: python -m pytest -m slow
 
-  # The site publishes committed, precomputed artifacts rather than recomputing on
-  # deploy, so the failure mode worth engineering against is a figure built from
-  # data that has since changed. This job makes that impossible to land quietly.
-  site-data-is-current:
+  # site/data/ is built by pages.yml at deploy time and is not committed, so "are the
+  # committed artifacts stale?" is no longer a question anyone can get wrong — there
+  # are none. What is worth catching before a merge is the pipeline failing outright,
+  # or producing artifacts the figures cannot read, since either would now break the
+  # deploy rather than a hash check. This job runs the same build Pages runs.
+  site-pipeline-builds:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - name: Check site data against final/
-        run: uv run --no-project site/pipeline/cli.py check
+      - name: Build site/data/ from final/
+        run: uv run --no-project site/pipeline/cli.py build
       # Metric and tree correctness: synthetic cases with hand-computed answers, plus
       # assertions against the shipped artifacts. Without this step the selftest would
       # only ever run when someone remembered to run it.
       - name: Selftest the site pipeline
         run: uv run --no-project site/pipeline/cli.py selftest
+      # pages.yml runs only on push to main, so without these the typecheck and the
+      # site tests never see a pull request. That was survivable while site/data/ was
+      # committed and hash-gated here; now the deploy would be the first place a
+      # broken bundle showed up, and it would show up already published.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: site
+      - name: Typecheck
+        run: npm run check
+        working-directory: site
+      - name: Test
+        run: npm test
+        working-directory: site

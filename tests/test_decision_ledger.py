@@ -402,8 +402,10 @@ def test_naive_tab_splitting_agrees_with_the_csv_reader(
     row. That only holds if no field is ever escaped, which is why curator double quotes were
     converted to typographic pairs.
     """
+    # No `'"' not in text` assertion here: that is `validate_decision_ledger`'s own refusal, run
+    # against this same file by `test_ledger_satisfies_its_own_contract`. What is unique to this
+    # test is the consequence — that a naive split sees the same 14 fields the csv reader does.
     text = (repository_root / LEDGER).read_text(encoding="utf-8")
-    assert '"' not in text, "an escaped field would break naive tab-splitting"
     lines = text.splitlines()
     assert {len(line.split("\t")) for line in lines} == {14}
     assert len(lines) == len(ledger) + 1
@@ -418,17 +420,25 @@ def test_ledger_text_uses_typographic_quotes(ledger: list[dict[str, str]]) -> No
     """Checked across every free-text column, not just `reason`.
 
     The normalization applies to all of them, and scoping the check to `reason` hid a real gap in
-    `resynthesize` for as long as no `evidence_reference` happened to contain a quote. Counting each
-    column separately so a future imbalance names the column it is in.
+    `resynthesize` for as long as no `evidence_reference` happened to contain a quote.
+
+    Balance is the property the normalization guarantees, and it is now asserted over every row
+    rather than over rows preselected as already containing a quote. A companion pin of the exact
+    quoted-row counts (42 / 2 / 0) was removed on 2026-07-30: it was satisfied by *any* 42/2/0
+    partition, and it broke on any legitimate new quoted row — a maintenance cost with no
+    corresponding failure it alone could catch. What the three counts stood in for is covered:
+
+    * a regression to ASCII quotes is refused by `validate_decision_ledger` itself, asserted here by
+      `test_ledger_satisfies_its_own_contract` and again by
+      `test_naive_tab_splitting_agrees_with_the_csv_reader`;
+    * quoted text going missing entirely would fail the full-column resynthesis in
+      `test_ledger_reproduces_every_shipped_column_not_just_the_key`;
+    * the `notes: 0` case is covered by that same resynthesis, which passes `notes` to `labelled`
+      *without* `unnormalize` for `carve_exclusion`/`membership_exclusion`, so a typographic quote
+      appearing there diverges from the shipped text.
     """
-    columns = ("reason", "evidence_reference", "notes")
-    expected = {"reason": 42, "evidence_reference": 2, "notes": 0}
-    for column in columns:
-        quoted = [r for r in ledger if "“" in r[column] or "”" in r[column]]
-        assert len(quoted) == expected[column], (
-            f"{len(quoted)} rows carry typographic quotes in {column}, expected {expected[column]}"
-        )
-        for row in quoted:
+    for column in ("reason", "evidence_reference", "notes"):
+        for row in ledger:
             assert row[column].count("“") == row[column].count("”"), (
                 f"{row['decision_id']}: unbalanced typographic quotes in {column}"
             )

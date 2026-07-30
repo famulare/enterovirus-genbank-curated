@@ -124,32 +124,45 @@ I keep this to two toolchains. An earlier plan built `decenttree` from
 source for the trees; the implementation in [`pipeline/trees.py`](pipeline/trees.py)
 replaced it. Neighbor joining is forty lines of deterministic arithmetic rather than a
 heuristic search, and I chose it for two reasons. A fresh clone needs no bioinformatics
-toolchain at all. And the artifacts are committed behind a hash gate, so a
-rebuild has to reproduce the same tree bit for bit, which a multithreaded tool's
-tie-breaking will not promise. `selftest` asserts both the exactness (an additive
-matrix is recovered to 2e-16) and the determinism (identical trees across runs,
-including on an all-ties matrix).
+toolchain at all. And the trees have to come out the same on every run, which a
+multithreaded tool's tie-breaking will not promise. `selftest` asserts both the
+exactness (an additive matrix is recovered to 2e-16) and the determinism (identical
+trees across runs, including on an all-ties matrix) — and the trees do in fact
+reproduce byte for byte across platforms, which the consensus panels do not.
 
 The cost is speed: 2,500 tips take about ten seconds, and forty trees are built per
 release, so the tree stage adds a few minutes to a build that is already minutes long.
-That is the right trade for a step that runs on one machine and ships its output.
+That is the trade for a step that now runs on every deploy.
 
-## Why the data is committed rather than built on deploy
+## Why the data is built on deploy rather than committed
 
-Distances are cheap (~30 s for the full 24,038² masked-Hamming matrix), but forty
-neighbor joins are not, and neither has any business running in a Pages workflow on
-every deploy. So the derived artifacts under `site/data/` are committed, and
-`.github/workflows/ci.yml` runs
+It used to be committed. Distances are cheap (~30 s for the full 24,038²
+masked-Hamming matrix) but forty neighbor joins are not, so the derived artifacts
+under `site/data/` were checked in and `ci.yml` ran a hash check that failed if
+`final/` had moved since the last build.
 
-```bash
-uv run --no-project site/pipeline/cli.py check
-```
+That check could not tell a rebuild from a re-stamp. It compared the manifest to
+what sat on disk, and refreshing the manifest satisfied it just as well as
+regenerating the figures — so editing a pipeline module and re-stamping would
+publish stale numbers behind a green tick. The obvious repair, rebuilding in CI and
+diffing against what was committed, does not work either: the build is
+byte-reproducible on one machine but **not across platforms**. On a Linux runner,
+`records.json`, `summary.json`, every tree and the three per-serotype panels
+reproduce exactly, while `panels/NPEV.json` and `panels/all.json` do not — the two
+panels measured against a consensus computed over the genus-wide alignment, which
+points at platform linear algebra rather than logic.
 
-on every push. That recomputes the SHA-256 of every `final/` file the build read,
-plus the hashes of the pipeline sources themselves, and fails if any differs from
-what the manifest recorded. A data change cannot silently ship a stale figure.
-Build identity is derived from those hashes rather than from the git SHA, so two
-runs over the same inputs produce the same identity.
+Two builders cannot agree on bytes, so there is one. `pages.yml` builds
+`site/data/` from `final/` and publishes what it built; nothing is committed, so
+nothing can be stale and there is no `check` subcommand. `ci.yml` runs the same
+build on every pull request, then the selftest and the site tests, so a pipeline
+break fails before merge rather than at deploy. The workflow also triggers on
+`final/**` and `raw/**`, so a data refresh republishes on its own.
+
+The manifest is still written and still ships: it records the SHA-256 of every
+`final/` file the build read and of the pipeline sources, so a published page can
+be traced to the inputs and code behind it. It documents provenance now instead of
+gating staleness.
 
 ## Layout
 
@@ -262,10 +275,13 @@ rather than a typical genome, so a partial record reads as deleted at every colu
 does not span but some same-type record does. Its indel-codon count — and therefore
 its non-synonymous rate — inflates in proportion to how fragmentary its type is.
 
-Measured on release 2.1.5 and re-verified unchanged at 2.4.1: 487 of 13,161 non-polio
-polyprotein records exceed 0.5 non-synonymous per codon, and **80.5%** of that group's
-numerator is indel codons. They concentrate in the largest types (CVA24 238, CVA13 81),
-exactly as the mechanism predicts.
+How large it is, this file no longer says. `summary.consensus_inflation` counts it off
+the shipped non-polio polyprotein panel on every build, writes it to
+`site/data/summary.json`, and the page renders that. The figure lived here and in
+`reference.py` as a hand-copied pair, and was wrong in both from 2.1.5 through 2.4.0 —
+the denominator was 13,160 when the panel held 13,161 — because nothing recomputed it.
+One measured source beats two prose copies. The records that carry it concentrate in the
+largest, most fragmentary types, exactly as the mechanism predicts.
 
 This is not patched here. The consensus is a stand-in for per-type reference sequences
 the release does not yet carry for non-polio; a quorum rule bolted onto a stand-in

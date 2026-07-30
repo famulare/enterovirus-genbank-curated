@@ -4,6 +4,12 @@ These four CSVs are the only surviving output of two pipeline stages that read e
 which no longer exist. They cannot be regenerated, so they are pinned by hash: an accidental edit,
 a re-export, or a line-ending change fails here rather than silently redefining history.
 
+The hash pin is the whole freeze. A companion `EXPECTED_ROWS` pin was removed on 2026-07-30: a row
+count is a pure function of the bytes the hash already fixes, so it could not fail alone. Verified
+both ways — deleting a row reddened the hash test and the row-count test together, while editing one
+character inside a field reddened only the hash. The four counts remain tabulated in
+[`registry/legacy/README.md`](../registry/legacy/README.md), where the hash pin keeps them true.
+
 The load-bearing claims in `registry/legacy/README.md` are enforced here rather than asserted in
 prose:
 
@@ -50,13 +56,6 @@ FROZEN = {
         "0d5f4bce32134b46d17aa49f01a746fac9605456e130320cb53be6925daea38a",
 }
 
-EXPECTED_ROWS = {
-    "legacy_2026_bridge.csv": 314,
-    "legacy_accession_classification_overrides.csv": 30,
-    "legacy_date_location_extract.csv": 1657,
-    "legacy_title_key_table.csv": 314,
-}
-
 LOAD_BEARING = "legacy_accession_classification_overrides.csv"
 
 # Patterns that must never reach a public repository. The private pipeline embedded absolute
@@ -97,13 +96,6 @@ def test_each_frozen_file_matches_its_pinned_hash(legacy_dir: Path, name: str) -
         f"re-derive them from; if the change is deliberate, update FROZEN and say why in "
         f"registry/legacy/README.md."
     )
-
-
-@pytest.mark.parametrize("name", sorted(EXPECTED_ROWS))
-def test_each_frozen_file_has_the_documented_row_count(legacy_dir: Path, name: str) -> None:
-    with (legacy_dir / name).open(newline="", encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
-    assert len(rows) == EXPECTED_ROWS[name]
 
 
 @pytest.mark.parametrize("name", sorted(FROZEN))

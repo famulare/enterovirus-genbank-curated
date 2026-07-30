@@ -3,10 +3,14 @@
 # requires-python = ">=3.12,<3.14"
 # dependencies = ["numpy==2.5.1"]
 # ///
-"""Build the site's data artifacts from `final/`, or check that they are current.
+"""Build the site's data artifacts from `final/`.
 
     uv run site/pipeline/cli.py build     # regenerate site/data/ and the manifest
-    uv run site/pipeline/cli.py check     # fail if final/ changed since the last build
+    uv run site/pipeline/cli.py selftest  # check the divergence metric and the frames
+
+`site/data/` is generated, not committed: ci.yml builds it on every pull request and
+pages.yml builds what it publishes. Nothing here is checked into the repository, so
+there is no `check` subcommand and no stale-artifact failure mode to guard against.
 
 Dependencies are declared inline (PEP 723) rather than in the project's
 `pyproject.toml`, so this runs from a fresh clone without installing the package
@@ -51,13 +55,16 @@ def command_build(_args) -> int:
     print(f"read {len(all_records):,} canonical records")
 
     artifacts = [
-        write_json("summary.json", summary.build(all_records, by_accession)),
         write_json("records.json", records_module.build(all_records), compact=True),
     ]
 
     record_index = records_module.index_by_accession(all_records)
     coords = frame.read_region_coordinates()
     cache: dict[str, frame.Alignment] = {}
+    # summary.json is written after the loop, not before it: the consensus-coverage
+    # disclosure it carries is measured off the non-polio polyprotein panel, and
+    # measuring it is the only way that number cannot drift from the figure.
+    inflation: dict | None = None
 
     for selection in contract.SELECTIONS:
         name = selection["alignment"]
@@ -72,6 +79,10 @@ def command_build(_args) -> int:
         artifacts.append(
             write_json(f"panels/{selection['id']}.json", payload, compact=True)
         )
+        if selection["restrict"] == contract.GROUP_NPEV:
+            inflation = summary.consensus_inflation(
+                payload["divergence"][contract.REGION_POLYPROTEIN]
+            )
         counts = {
             region: len(panel["record"]) for region, panel in payload["divergence"].items()
         }
@@ -84,6 +95,15 @@ def command_build(_args) -> int:
         }
         print(f"  {selection['id']:5s} tips {tips}")
 
+    if inflation is None:
+        raise RuntimeError(
+            "no selection restricted to non-polio records, so the consensus-coverage "
+            "disclosure could not be measured. Check contract.SELECTIONS."
+        )
+    artifacts.append(
+        write_json("summary.json", summary.build(all_records, by_accession, inflation))
+    )
+
     written = manifest.write(manifest.artifact_hashes(artifacts))
     total = 0
     for name in artifacts:
@@ -92,10 +112,6 @@ def command_build(_args) -> int:
         print(f"wrote site/data/{name} ({size / 1024:.1f} KiB)")
     print(f"total {total / 1024 / 1024:.2f} MiB · build {written['build_identity']}")
     return 0
-
-
-def command_check(_args) -> int:
-    return manifest.report(manifest.check())
 
 
 def command_selftest(_args) -> int:
@@ -110,7 +126,6 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("build", help="regenerate site/data/ from final/").set_defaults(
         run=command_build
     )
-    sub.add_parser("check", help="verify site/data/ is current").set_defaults(run=command_check)
     sub.add_parser(
         "selftest", help="check the divergence metric and the coordinate frames"
     ).set_defaults(run=command_selftest)

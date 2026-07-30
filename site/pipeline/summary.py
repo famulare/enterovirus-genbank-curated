@@ -259,7 +259,43 @@ def data_quality(records: list[dict]) -> list[dict]:
     return findings
 
 
-def build(records: list[dict], by_accession: dict) -> dict:
+def consensus_inflation(divergence: dict) -> dict:
+    """Size the consensus-coverage artifact described in reference.py's `_consensus`.
+
+    Counted live from the shipped panel for the same reason the `data_quality`
+    findings are: this number was carried as hand-written prose from 2.1.5 to 2.4.1
+    and was wrong for that whole stretch (the denominator was 13,160, not 13,161)
+    because nothing recomputed it. Derived here so it cannot say something the
+    artifact does not.
+
+    `assessable` is the denominator of both axes (comparable + indel codons — see
+    divergence.py), so the rate is non-synonymous over assessable.
+    """
+    nonsynonymous = divergence["nonsynonymous"]
+    assessable = divergence["assessable"]
+    indel_codons = divergence["indel_codons"]
+
+    exceeding = [
+        index
+        for index, (count, denominator) in enumerate(
+            zip(nonsynonymous, assessable, strict=True)
+        )
+        if denominator and count / denominator > contract.CONSENSUS_INFLATION_RATE
+    ]
+    numerator = sum(nonsynonymous[index] for index in exceeding)
+    indels = sum(indel_codons[index] for index in exceeding)
+    return {
+        "rate": contract.CONSENSUS_INFLATION_RATE,
+        "n_assessed": len(nonsynonymous),
+        "n_exceeding": len(exceeding),
+        # Share of the exceeding group's non-synonymous numerator contributed by indel
+        # codons rather than substitutions — the evidence that the artifact, not
+        # divergence, is what puts those records high on the axis.
+        "indel_share": indels / numerator if numerator else 0.0,
+    }
+
+
+def build(records: list[dict], by_accession: dict, inflation: dict) -> dict:
     selections, notes = build_selections(records, by_accession)
     release = json.loads(contract.BUILD_MANIFEST.read_text())
     raw = json.loads(contract.RAW_MANIFEST.read_text())
@@ -294,6 +330,7 @@ def build(records: list[dict], by_accession: dict) -> dict:
         "regions": _region_catalog(),
         "traits": _trait_catalog(records),
         "data_quality": data_quality(records),
+        "consensus_inflation": inflation,
         "integrity_notes": notes,
         "thresholds": {
             "min_region_nt": contract.MIN_REGION_NT,

@@ -22,9 +22,9 @@ against the tree** — there is only one `final/`, and once it holds 2.4.1 bytes
 earlier release cannot be satisfied by it. Each retired release remains immutable in git history
 (2.1.5 at `82f2966`; 2.3.0 at `edbacc6`..`134f899`, the four-commit refresh that retargeted it).
 
-`HISTORICAL_PARITY_SPEC_PATHS` below is exactly that: a record of which specs are retired, not a
-check. Nothing reads it — it is not wired into contract validation or anything else, and finding it
-referenced somewhere would be a bug, not a feature waiting to be turned on.
+Which specs are retired is recorded in the paragraph above and nowhere in code. A
+`HISTORICAL_PARITY_SPEC_PATHS` tuple used to carry the same list, read by nothing and documented as
+read by nothing; it was removed on 2026-07-30. A constant that exists only to be prose is prose.
 
 `BASELINE_RELEASE` below is a hardcoded literal on purpose, and `validate_parity_spec` compares
 the spec against it rather than trusting the spec's own `baseline_release` field. Reading the
@@ -49,8 +49,6 @@ DECISIONS_LEDGER_PATH = "registry/decisions.tsv"
 RULES_SCHEMA_PATH = "registry/schemas/rules.schema.json"
 BASELINE_RELEASE = "2.4.1"
 PARITY_SPEC_PATH = f"releases/{BASELINE_RELEASE}/parity.json"
-# Retained, unverified. See the module docstring.
-HISTORICAL_PARITY_SPEC_PATHS = ("releases/2.1.5/parity.json", "releases/2.3.0/parity.json")
 
 DECISION_COLUMNS = (
     "decision_id",
