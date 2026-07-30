@@ -48,6 +48,9 @@ export interface Region {
   coding: boolean;
   in_divergence: boolean;
   in_distance: boolean;
+  in_nucleotide_tree: boolean;
+  in_protein_distance: boolean;
+  in_protein_tree: boolean;
   min_nt: number;
 }
 

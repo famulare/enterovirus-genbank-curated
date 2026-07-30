@@ -59,3 +59,8 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - name: Check site data against final/
         run: uv run --no-project site/pipeline/cli.py check
+      # Metric and tree correctness: synthetic cases with hand-computed answers, plus
+      # assertions against the shipped artifacts. Without this step the selftest would
+      # only ever run when someone remembered to run it.
+      - name: Selftest the site pipeline
+        run: uv run --no-project site/pipeline/cli.py selftest

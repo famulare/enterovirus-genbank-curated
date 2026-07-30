@@ -1,6 +1,6 @@
 """Classical multidimensional scaling, with out-of-sample placement.
 
-Landmarks are embedded exactly by classical MDS — double-centre the squared distance
+Landmarks are embedded exactly by classical MDS — double-center the squared distance
 matrix, eigendecompose, keep two dimensions. Every other sequence is then placed by
 the Nyström extension: given its squared distances to the landmarks, it lands where a
 landmark with that distance profile would.
@@ -23,7 +23,7 @@ import numpy as np
 DIMENSIONS = 2
 
 
-def _double_centre(squared: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
+def _double_center(squared: np.ndarray) -> tuple[np.ndarray, np.ndarray, float]:
     """Gower's transform. Returns the Gram matrix, the row means, and the grand mean,
     because the out-of-sample projection needs the latter two."""
     row_means = squared.mean(axis=1)
@@ -63,7 +63,7 @@ class Embedding:
             if transform == "linear"
             else distance.astype(np.float64).copy()
         )
-        gram, self._row_means, self._grand_mean = _double_centre(squared)
+        gram, self._row_means, self._grand_mean = _double_center(squared)
 
         # Symmetric by construction, so eigh — faster than eig and returns real
         # eigenvalues in ascending order.
@@ -106,14 +106,14 @@ class Embedding:
             if self.transform == "linear"
             else filled.astype(np.float64)
         )
-        centred = -0.5 * (
+        centered = -0.5 * (
             squared
             - squared.mean(axis=1)[:, None]
             - self._row_means[None, :]
             + self._grand_mean
         )
         scale = np.where(self.values > 0, np.sqrt(self.values), 1.0)
-        return (centred @ self.vectors) / scale
+        return (centered @ self.vectors) / scale
 
 
 def pin_orientation(
@@ -122,7 +122,7 @@ def pin_orientation(
     """Make the sign of each axis reproducible across rebuilds.
 
     Eigenvector signs are arbitrary. With an anchor — the Sabin reference, say — flip
-    so it sits in the lower-left quadrant. Without one, flip so the weighted centre of
+    so it sits in the lower-left quadrant. Without one, flip so the weighted center of
     mass does, which is stable as long as the population is.
     """
     flipped = coordinates.copy()

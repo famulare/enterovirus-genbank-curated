@@ -143,6 +143,18 @@ REGION_LABELS = {
 DIVERGENCE_REGIONS = CODING_REGIONS
 DISTANCE_REGIONS = (REGION_5NCR, REGION_P1, REGION_P2, REGION_P3, REGION_3NCR)
 
+# Figure set 3 is the same nucleotide distances set 2 scales, so it covers the same
+# regions. Set 4 translates first, so it is coding-only — and excludes the whole
+# polyprotein, which at 2,210 codons would say nothing that its three parts do not say
+# separately while costing three times the build.
+NUCLEOTIDE_TREE_REGIONS = DISTANCE_REGIONS
+
+# Sets 4 and 5 translate first, so they are coding-only — and exclude the whole
+# polyprotein, which at 2,210 codons would say nothing that its three parts do not say
+# separately while costing three times the build.
+PROTEIN_DISTANCE_REGIONS = (REGION_P1, REGION_P2, REGION_P3)
+PROTEIN_TREE_REGIONS = PROTEIN_DISTANCE_REGIONS
+
 # --- Thresholds ------------------------------------------------------------
 
 # Coverage below this many nucleotides of comparable material excludes a record
@@ -329,7 +341,7 @@ DEFAULT_REGION = REGION_POLYPROTEIN
 
 # Number of discrete categories given their own hue before the rest collapse into a
 # single `Other` bucket. Seven is not a preference: it is the largest number of hues
-# that clears all-pairs colour-vision separation on a scatter plot. See the
+# that clears all-pairs color-vision separation on a scatter plot. See the
 # measurements in site/src/model/palette.ts.
 MAX_DISCRETE_CATEGORIES = 7
 OTHER_CATEGORY = "Other"
@@ -388,6 +400,22 @@ SPECIES_BINOMIAL = {
 }
 GENUS_TAXA = ("Enterovirus", "Rhinovirus")
 SPECIES_UNRESOLVED = "unresolved"
+
+# Fallback when the taxonomy lineage stops AT genus with no species-rank child at all
+# (269 records, 2026-07-29) -- `derive_species` then has nothing to look up, but for some
+# of those the `organism_name` field already states the species and the lineage gap is
+# simply an NCBI taxonomy-record completeness gap, not real ambiguity. Two disjoint cases:
+#   - 82 records: organism_name IS ALREADY an exact SPECIES_BINOMIAL key ("Enterovirus
+#     coxsackiepol" etc). No new data needed, just falling back to the same table.
+#   - 11 records: organism_name is "Human poliovirus sp." -- not an ICTV binomial (hence
+#     not a SPECIES_BINOMIAL key), but poliovirus has no non-EV-C serotype, so this is
+#     unambiguous and does not need sequence evidence to resolve.
+# The remaining ~176 genus-terminal records are genuinely ambiguous (vague pre-binomial
+# forms like "Human enterovirus", "Enterovirus 6/19/24", or non-human "Simian enterovirus
+# SV46") and correctly stay `unresolved` -- this map must never grow to cover them.
+SPECIES_ORGANISM_FALLBACK = {
+    "Human poliovirus sp.": "EV-C",
+}
 
 # Alignment character semantics live in frame.py, which owns the normalized
 # encoding: rows mix case, the NCR blocks use U where the CDS block uses T, and

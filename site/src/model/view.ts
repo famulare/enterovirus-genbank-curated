@@ -90,14 +90,14 @@ export function defaultTraitNote(summary: Summary, selectionId: string): string 
   return trait ? `Defaults to ${trait.label} here: classification is empty for these records.` : null;
 }
 
-/** Which trait to colour by after a selection change.
+/** Which trait to color by after a selection change.
  *
  *  An explicitly chosen trait sticks: someone comparing countries across serotypes
  *  should not have to re-pick country each time. The selection's own default is
  *  applied only when the reader never overrode it — detected by the outgoing trait
  *  still being the outgoing selection's default — which is what keeps a move onto
  *  non-polio from landing on `poliovirus_classification`, a column that is empty for
- *  every non-polio record and would paint the whole panel one grey.
+ *  every non-polio record and would paint the whole panel one gray.
  */
 export function traitAfterSelectionChange(
   summary: Summary,

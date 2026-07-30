@@ -344,6 +344,40 @@ def as_codons(block: np.ndarray) -> np.ndarray:
     return block.reshape(*block.shape[:-1], block.shape[-1] // 3, 3)
 
 
+# --- Residues --------------------------------------------------------------
+
+# The twenty amino acids plus stop, as compact codes rather than ASCII bytes, so a
+# residue block indexes the same way a nucleotide block does. Code 0 means "this codon
+# is not readable", which lets a residue distance mask on `is_residue` exactly as a
+# nucleotide distance masks on `is_base`.
+RESIDUE_SYMBOLS = "ACDEFGHIKLMNPQRSTVWY*"
+NOT_TRANSLATED = 0
+
+_RESIDUE_CODE = np.zeros(256, dtype=np.uint8)
+for _index, _symbol in enumerate(RESIDUE_SYMBOLS):
+    _RESIDUE_CODE[ord(_symbol)] = _index + 1
+
+
+def residue_block(block: np.ndarray) -> np.ndarray:
+    """(n, 3k) nucleotide codes -> (n, k) residue codes, NOT_TRANSLATED where unreadable.
+
+    A codon translates only when all three of its positions carry an unambiguous base
+    in that row. Anything else — a gap, an `N`, a codon straddling a fragment's edge —
+    is left untranslated, because the residue there is not knowable and inventing one
+    would put a fabricated difference into every distance the row takes part in.
+    """
+    codons = as_codons(block)
+    readable = is_base(codons).all(axis=-1)
+    return np.where(readable, _RESIDUE_CODE[translate(codons)], NOT_TRANSLATED).astype(
+        np.uint8
+    )
+
+
+def is_residue(block: np.ndarray) -> np.ndarray:
+    """True where a codon translated. The residue comparability test."""
+    return block != NOT_TRANSLATED
+
+
 # --- Run-length analysis over a boolean mask -------------------------------
 
 

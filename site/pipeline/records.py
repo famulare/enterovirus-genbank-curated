@@ -74,7 +74,7 @@ def build(records: list[dict]) -> dict:
 # the record inspector.
 #
 # `collection_year` needs a label of its own. Its *trait* label is "Collection date",
-# because that is what a reader wants to colour by — but the raw `collection_date`
+# because that is what a reader wants to color by — but the raw `collection_date`
 # column also renders as "Collection date", so the inspector showed two rows under one
 # name with different values: `Sep-2010` beside `2010.71`, `2020/2021` beside its
 # midpoint. Same underlying fact, two representations, and no way to tell which was

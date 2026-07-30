@@ -1,7 +1,7 @@
 /** Mount. Loads the built artifacts, renders the chrome and both figure chapters, and
  *  keeps the URL hash and the control DOM in step with each other.
  *
- *  One selection state drives every chapter, so a colour, a filter or a region chosen
+ *  One selection state drives every chapter, so a color, a filter or a region chosen
  *  once applies everywhere and a record noticed in one figure is findable in the next.
  *  Brushing is the exception: a zoom belongs to the figure it was drawn on, so it is
  *  tracked per chapter rather than in the shared view. */
@@ -17,9 +17,14 @@ import {
   type Zoom,
 } from "./model/view.js";
 import { Records, type RecordTable } from "./model/records.js";
-import { assertPanelSchema } from "./model/panel.js";
 import type { Mark } from "./model/mark.js";
-import { DISTANCE, DIVERGENCE } from "./model/specs.js";
+import {
+  DISTANCE,
+  DIVERGENCE,
+  NUCLEOTIDE_TREE,
+  PROTEIN_DISTANCE,
+  PROTEIN_TREE,
+} from "./model/specs.js";
 import * as chapter from "./ui/chapter.js";
 import {
   onControlEdit,
@@ -50,7 +55,8 @@ interface Manifest {
   build_identity: string;
 }
 
-const SPECS = [DIVERGENCE, DISTANCE];
+// Page order. Each id matches an element id prefix in index.html.
+const SPECS = [DIVERGENCE, DISTANCE, NUCLEOTIDE_TREE, PROTEIN_DISTANCE, PROTEIN_TREE];
 
 let summary: Summary;
 let records: Records;
@@ -93,13 +99,17 @@ async function rebuild(spec: (typeof SPECS)[number]): Promise<void> {
   const container = byId(`${spec.id}-strip`).closest(".figure");
   container?.setAttribute("aria-busy", "true");
   try {
-    const file = assertPanelSchema(await chapter.loadPanels(view.selection));
+    const sets = await spec.sets(
+      view.selection,
+      chapter.regionsFor(summary, spec),
+      view.scale,
+    );
     entry.state = chapter.buildState(
       spec,
       summary,
       records,
       chapterView(spec.id),
-      file,
+      sets,
       entry.heldRecord,
     );
     chapter.render(entry.state);
@@ -112,7 +122,7 @@ async function rebuild(spec: (typeof SPECS)[number]): Promise<void> {
   }
 }
 
-/** Redraw without refetching — for a filter, colour or brush change. */
+/** Redraw without refetching — for a filter, color or brush change. */
 function redraw(id: string): void {
   const entry = slot(id);
   if (!entry.state) return;
@@ -134,8 +144,8 @@ function paintInspection(id: string): void {
 /** One inspector for the page, assembled from every chapter that holds the record.
  *
  *  Also the only place `type_concordance` and the panel-scoped coverage can be read:
- *  the colour control can paint by both, but neither is a recorded field, so without
- *  this the reader could see a colour they could not look up. */
+ *  the color control can paint by both, but neither is a recorded field, so without
+ *  this the reader could see a color they could not look up. */
 function paintPinned(): void {
   const row = [...chapters.values()].find((entry) => entry.heldRecord !== null)?.heldRecord ?? null;
   if (row === null) {
@@ -151,7 +161,7 @@ function paintPinned(): void {
     const mark = state.held ?? set.marks.find((m) => m.record === row);
     if (!mark) continue;
     panels.push({
-      figure: spec.id === "divergence" ? "Divergence" : "Distance",
+      figure: spec.title,
       region: summary.regions.find((r) => r.id === state.region)?.label ?? state.region,
       rows: spec.measured(set, mark),
     });
@@ -210,7 +220,7 @@ function handleEdit(): void {
   }
   // A new selection, region or scale means new marks — the scale selects which
   // embedding the distance chapter shows, not just how its axis is drawn. A filter or
-  // colour change is only a redraw, and the colour assignment is deliberately not
+  // color change is only a redraw, and the color assignment is deliberately not
   // rebuilt. Rebuilding is cheap after the first load: the panel file is cached, so
   // this re-decodes rather than refetches.
   const reload =

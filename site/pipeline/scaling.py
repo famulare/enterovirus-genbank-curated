@@ -1,9 +1,15 @@
-"""Figure set 2: one region's sequences placed by distance to each other.
+"""Figure sets 2 and 4: one region's sequences placed by distance to each other.
 
 Assembles what the browser needs per region — a coordinate per sequence, whether its
 placement is confident, and enough diagnostics for the figure to state its own
 limitations honestly (how much variance two dimensions captured, how non-Euclidean
 the distances were, how many sequences could not be placed at all).
+
+Nucleotide and residue space are the same procedure over the same metric, so this module
+is parameterized over the alphabet rather than written twice. What differs between the
+two figures is only what a difference means: in residue space a synonymous change is
+invisible by construction, so two sequences can coincide without being the same
+sequence.
 """
 
 from __future__ import annotations
@@ -22,12 +28,17 @@ def build_region(
     columns: np.ndarray,
     region: str,
     accessions: list[str],
+    alphabet: distances.Alphabet = distances.NUCLEOTIDE,
 ) -> dict:
     """Place every sequence in one region. `rows` indexes the alignment."""
-    threshold = contract.min_nt(region)
-    block = alignment.matrix[np.ix_(rows, columns)]
+    block, threshold, width = distances.in_alphabet(
+        alignment.matrix[np.ix_(rows, columns)],
+        contract.min_nt(region),
+        int(len(columns)),
+        alphabet,
+    )
 
-    placeable = distances.eligible(block, threshold)
+    placeable = distances.eligible(block, threshold, alphabet)
     if len(placeable) < 3:
         return {
             "row": np.zeros(0, dtype=np.int64),
@@ -45,17 +56,13 @@ def build_region(
             "landmarks": 0,
             "excluded": {"below_coverage": int(len(rows) - len(placeable))},
             "min_nt": threshold,
-            "columns": int(len(columns)),
+            "columns": width,
+            "unit": alphabet.unit,
         }
-
-    landmarks = distances.choose_landmarks(block, placeable, threshold)
-    landmark_distance = distances.landmark_matrix(block, landmarks, threshold)
-    to_landmarks, shared = distances.to_landmarks(block, placeable, landmarks, threshold)
-    resolved, confident = distances.confidence(to_landmarks, shared, len(columns))
 
     # Pin on Sabin where the alignment carries it, so poliovirus panels always open
     # with the vaccine reference in the same corner. Otherwise pin on the
-    # confidently-placed centre of mass, which is stable for a stable population.
+    # confidently-placed center of mass, which is stable for a stable population.
     anchor = None
     for accession in contract.SABIN_REFERENCE.values():
         if accession in alignment.index:
@@ -64,6 +71,22 @@ def build_region(
             if len(hits):
                 anchor = int(hits[0])
                 break
+
+    landmarks = distances.comparable_set(
+        block,
+        placeable,
+        threshold,
+        cap=distances.LANDMARK_CAP,
+        # Requiring the orientation anchor makes the pinning exact rather than
+        # conditional on the anchor happening to survive the greedy.
+        required=None if anchor is None else int(placeable[anchor]),
+        alphabet=alphabet,
+    )
+    landmark_distance = distances.complete_matrix(block, landmarks, threshold, alphabet)
+    to_landmarks, shared = distances.to_landmarks(
+        block, placeable, landmarks, threshold, alphabet
+    )
+    resolved, confident = distances.confidence(to_landmarks, shared, width)
 
     # Both transforms, from one landmark matrix and one set of projections. The
     # expensive work is the distance computation, which they share; fitting is a
@@ -89,5 +112,6 @@ def build_region(
         "landmarks": int(len(landmarks)),
         "excluded": {"below_coverage": int(len(rows) - len(placeable))},
         "min_nt": threshold,
-        "columns": int(len(columns)),
+        "columns": width,
+        "unit": alphabet.unit,
     }

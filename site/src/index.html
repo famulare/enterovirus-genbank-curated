@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Enterovirus GenBank Curated — data explorer</title>
-<meta name="description" content="An exploration surface for the enterovirus-genbank-curated data release: synonymous versus non-synonymous divergence, nucleotide distance, and phylogeny for 24,546 curated GenBank enterovirus sequences.">
+<meta name="description" content="An exploration surface for the enterovirus-genbank-curated data release: synonymous versus non-synonymous divergence, nucleotide and protein distance, and nucleotide and protein phylogeny over every curated GenBank enterovirus sequence.">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="app.css">
 </head>
@@ -18,7 +18,8 @@
     <a href="#divergence">Divergence</a>
     <a href="#distance">Distance</a>
     <a href="#phylogeny-nt">Phylogeny</a>
-    <a href="#phylogeny-aa">Protein</a>
+    <a href="#distance-aa">Protein distance</a>
+    <a href="#phylogeny-aa">Protein tree</a>
     <a href="#release">Release</a>
   </nav>
   <details class="section-nav">
@@ -27,7 +28,8 @@
       <a href="#divergence">Divergence</a>
       <a href="#distance">Distance</a>
       <a href="#phylogeny-nt">Phylogeny</a>
-      <a href="#phylogeny-aa">Protein</a>
+      <a href="#distance-aa">Protein distance</a>
+      <a href="#phylogeny-aa">Protein tree</a>
       <a href="#release">Release</a>
     </nav>
   </details>
@@ -41,7 +43,7 @@
     <h1 class="visually-hidden">Enterovirus GenBank Curated — data explorer</h1>
     <p class="lede">Curated GenBank enterovirus sequence data with all fields normalized and
       missing epidemiological data pulled in from the many related papers. Descriptive data
-      visualizations, with one selection and one color driving all four views. Raw GenBank source
+      visualizations, with one selection and one color driving all five views. Raw GenBank source
       complete as of <span id="raw-date">…</span>.</p>
     <p class="maintainer">Maintained by <a href="https://github.com/famulare">Mike Famulare</a> at
       the <a href="https://www.idmod.org/">Institute for Disease Modeling</a>, part of the
@@ -137,32 +139,100 @@
   <section id="phylogeny-nt" class="chapter" aria-labelledby="phylogeny-nt-heading">
     <div class="chapter-heading">
       <h2 class="chapter-number" id="phylogeny-nt-heading">03 / Nucleotide phylogeny</h2>
-      <p class="lede">Neighbour joining on the same distance matrices as the view above, so the
+      <p class="lede">Neighbor joining on the same distance matrices as the view above, so the
         tree and the embedding cannot disagree about how partial overlap was handled. Rooted on
         Sabin for poliovirus, midpoint for non-polio.</p>
     </div>
-    <div class="wide-breakout figure-pending" data-figure="phylogeny-nt">
-      <p class="eyebrow">Figure pending</p>
-      <p>Stage 3 renders a zoomable rectangular tree per region, with a full-Auspice view
-        available alongside it.</p>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="phylogeny-nt-strip" role="group"
+           aria-label="Genome region — choose which one the large panel shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="phylogeny-nt-note">
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="phylogeny-nt-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks" id="phylogeny-nt-canvas" tabindex="0"
+                    aria-describedby="phylogeny-nt-readout"
+                    aria-label="Nucleotide phylogeny. Use arrow keys to walk down the tree, Enter to pin a sequence, Escape to clear."></canvas>
+            <svg class="scientific-chart plot-overlay" id="phylogeny-nt-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="phylogeny-nt-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="phylogeny-nt-legend"></div>
+      </div>
+      <div class="readout" id="phylogeny-nt-readout" role="status"></div>
     </div>
+    <p class="warning">Branch lengths are observed differences per position compared. They are
+      not substitutions per site, not corrected for multiple hits, and not time, so a branch
+      twice as long means twice the observed difference and nothing further. Vertical position is
+      a place in the ladder, not a measured quantity, which is why that axis carries no scale.</p>
+  </section>
+
+  <section id="distance-aa" class="chapter" aria-labelledby="distance-aa-heading">
+    <div class="chapter-heading">
+      <h2 class="chapter-number" id="distance-aa-heading">04 / Protein distance</h2>
+      <p class="lede">The same scaling as view 02, over translated amino acid distance, each pair
+        normalized by the number of codons where both sequences carry three unambiguous bases.
+        Read it against 02: structure that survives translation is structure in the protein, and
+        structure that disappears was synonymous all along.</p>
+    </div>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="distance-aa-strip" role="group"
+           aria-label="Coding region — choose which one the large panel shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="distance-aa-note">
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="distance-aa-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks" id="distance-aa-canvas" tabindex="0"
+                    aria-describedby="distance-aa-readout"
+                    aria-label="Protein distance scaling scatter. Use arrow keys to move between sequences, Enter to pin one, Escape to clear."></canvas>
+            <svg class="scientific-chart plot-overlay" id="distance-aa-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="distance-aa-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="distance-aa-legend"></div>
+      </div>
+      <div class="readout" id="distance-aa-readout" role="status"></div>
+    </div>
+    <p class="warning">Proximity here is protein similarity over the codons two records share. It
+      is not sequence identity, and it is not evidence of common ancestry: unrelated lineages under
+      similar constraint can arrive at the same residues.</p>
   </section>
 
   <section id="phylogeny-aa" class="chapter" aria-labelledby="phylogeny-aa-heading">
     <div class="chapter-heading">
-      <h2 class="chapter-number" id="phylogeny-aa-heading">04 / Protein phylogeny</h2>
+      <h2 class="chapter-number" id="phylogeny-aa-heading">05 / Protein phylogeny</h2>
       <p class="lede">The same three coding regions, built from translated amino acid distance.
-        Emphasizes convergent or divergent evolution over ancestry.</p>
+        A synonymous change moves nothing here, so sequences that reached the same residues by
+        different codons sit at zero distance and the tree joins them, whether or not they
+        share recent ancestry.</p>
     </div>
-    <div class="wide-breakout figure-pending" data-figure="phylogeny-aa">
-      <p class="eyebrow">Figure pending</p>
-      <p>Stage 4 renders P1, P2 and P3 protein trees here.</p>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="phylogeny-aa-strip" role="group"
+           aria-label="Coding region — choose which one the large panel shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="phylogeny-aa-note">
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="phylogeny-aa-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks" id="phylogeny-aa-canvas" tabindex="0"
+                    aria-describedby="phylogeny-aa-readout"
+                    aria-label="Protein phylogeny. Use arrow keys to walk down the tree, Enter to pin a sequence, Escape to clear."></canvas>
+            <svg class="scientific-chart plot-overlay" id="phylogeny-aa-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="phylogeny-aa-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="phylogeny-aa-legend"></div>
+      </div>
+      <div class="readout" id="phylogeny-aa-readout" role="status"></div>
     </div>
+    <p class="warning">This tree groups by residue identity, which is not the same thing as
+      descent: it will join lineages that arrived at the same residues independently, and one amino
+      acid change separates two sequences that dozens of synonymous changes would not. Read it as a
+      statement about the protein, and read 03 for ancestry.</p>
   </section>
 
   <section id="release" class="chapter closing" aria-labelledby="release-heading">
     <div class="chapter-heading">
-      <h2 class="chapter-number" id="release-heading">05 / The release, and what is wrong with
+      <h2 class="chapter-number" id="release-heading">06 / The release, and what is wrong with
         it</h2>
       <p class="lede">Every number on this page is recomputed from the shipped release at build
         time, so it cannot drift from the data. That includes the problems: this page reports
@@ -181,8 +251,8 @@
     <div class="table-wrap record-table wide-breakout" id="population-table"></div>
 
     <h3 class="section-subhead">Known data-quality issues</h3>
-    <p class="figure-lede">Counted live from the release. Each entry disappears on its own once
-      the generation pipeline fixes it upstream.</p>
+    <p class="figure-lede">Counted live from the release. Each entry disappears on its own once I
+      fix it in the generation pipeline.</p>
     <div id="data-quality"></div>
 
     <div id="integrity-notes"></div>
@@ -202,7 +272,7 @@
           are homologous across the genus, and the projected region widths reproduce the
           per-serotype widths exactly.</p>
         <p>Non-polio enterovirus has no vaccine reference, so divergence is measured against a
-          consensus of the record's own virus type. There is deliberately no broader fallback: an
+          consensus of the record's own virus type. I give it no broader fallback than that: an
           enterovirus species holds dozens of serotypes that differ by a quarter of their capsid,
           so a consensus across one is a chimera, and distance from it would fold "how unusual is
           this type" into "how far has this sequence drifted" on a single axis. A record whose
@@ -219,8 +289,8 @@
           non-synonymous rate. This affects a few hundred non-polio records, concentrated in the
           largest types, and is why some of them sit far right and high with almost all of that
           distance coming from indels rather than substitutions. The consensus stands in for
-          per-type reference sequences the release does not yet carry; the fix belongs
-          upstream.</p>
+          per-type reference sequences the release does not yet carry, and I would rather fix that
+          by curating them than by patching the metric here.</p>
         <p class="qualification">A record is compared to its reference only where both carry an
           unambiguous base, so missing left and right tails cost coverage rather than counting as
           difference, and an ambiguity code lowers the denominator instead of inventing a

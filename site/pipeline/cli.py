@@ -29,6 +29,7 @@ import panels  # noqa: E402
 import records as records_module  # noqa: E402
 import summary  # noqa: E402
 import traits  # noqa: E402
+import trees  # noqa: E402
 
 
 def write_json(name: str, payload: dict, *, compact: bool = False) -> str:
@@ -64,9 +65,10 @@ def command_build(_args) -> int:
             cache[name] = frame.load_alignment(name)
         alignment = cache[name]
         columns = frame.region_columns(alignment, selection, coords)
-        payload = panels.build_selection(
-            selection, alignment, columns, all_records, by_accession, record_index
+        population = panels.resolve_population(
+            selection, alignment, all_records, by_accession, record_index
         )
+        payload = panels.build_selection(selection, alignment, columns, population)
         artifacts.append(
             write_json(f"panels/{selection['id']}.json", payload, compact=True)
         )
@@ -74,6 +76,13 @@ def command_build(_args) -> int:
             region: len(panel["record"]) for region, panel in payload["divergence"].items()
         }
         print(f"  {selection['id']:5s} {counts}")
+
+        forest = trees.build_selection(selection, alignment, columns, population)
+        artifacts.append(write_json(f"trees/{selection['id']}.json", forest, compact=True))
+        tips = {
+            region: len(tree["tip_record"]) for region, tree in forest["nucleotide"].items()
+        }
+        print(f"  {selection['id']:5s} tips {tips}")
 
     written = manifest.write(manifest.artifact_hashes(artifacts))
     total = 0

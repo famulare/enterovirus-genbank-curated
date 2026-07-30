@@ -2,7 +2,6 @@
  *  what is currently wrong with the data. All of it recomputed at build time. */
 
 import type { Summary } from "../model/types.js";
-import { pickSelection, type View } from "../model/view.js";
 import { byId, esc, num } from "./dom.js";
 
 /** The retrieval date is read from raw/raw_manifest.json at build time rather than
@@ -160,28 +159,6 @@ export function renderIntegrityNotes(summary: Summary): void {
     ? `<h3 class="section-subhead">Classification and coverage notes</h3>` +
       notes.map((note) => `<p class="uncertainty-note">${note}</p>`).join("")
     : "";
-}
-
-/** Per-region population for the selection currently chosen. Deliberately not a
- *  sum across selections — `all` already contains the others, so a sum would
- *  double-count and put a meaningless number on the page. */
-export function renderPendingCounts(summary: Summary, view: View): void {
-  const selection = pickSelection(summary, view.selection);
-  for (const holder of document.querySelectorAll<HTMLElement>("[data-counts]")) {
-    const key = holder.dataset.counts === "divergence" ? "in_divergence" : "in_distance";
-    holder.innerHTML =
-      `<span>${esc(selection.label)}</span>` +
-      summary.regions
-        .filter((region) => region[key])
-        .map((region) => {
-          const n = selection.regions[region.id]?.n ?? 0;
-          const current = region.id === view.region;
-          return `<span${n === 0 ? ' class="is-empty"' : ""}${
-            current ? ' data-current="true"' : ""
-          }>${esc(region.label)} <b>${num(n)}</b>${current ? " (shown)" : ""}</span>`;
-        })
-        .join("");
-  }
 }
 
 export function renderBuildLine(summary: Summary, buildIdentity: string): void {
