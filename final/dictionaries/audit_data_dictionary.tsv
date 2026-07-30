@@ -1,15 +1,15 @@
 table_name	column_name	definition	logical_type	physical_type	nullable	key_role	row_count
-manual_decisions	decision_id	Content-stable decision id (D-<hash>); one per field-level assertion, stable across registry row reordering (P2/F10).	string	string	FALSE	primary key	2800
-manual_decisions	decision_type	Kind of human decision (FK -> controlled_vocabularies decision_type).	string	string	FALSE	FK -> controlled_vocabularies decision_type	2800
-manual_decisions	accession	Unversioned GenBank accession the row concerns.	string	string	TRUE	join key (nullable; blank for accession-less decisions)	2800
-manual_decisions	subject_key	Non-null subject the decision concerns: the accession when present, else the reference/family label for an accession-less decision (Blocking-1). Anchors decision_id.	string	string	FALSE	subject identity (non-null; accession or reference-family label)	2800
-manual_decisions	field_name	The field the decision asserts: the verbatim registry column where the source has one (e.g. classification, specimen_type), or a normalized synthetic assertion for constant-flag registries (e.g. carve_excluded, membership_excluded, is_poliovirus, canonical_reference_available). See DECISION_FIELD_TO_CANONICAL for the canonical effect.	string	string	FALSE		2800
-manual_decisions	old_value	Prior value (not tracked upstream; emitted blank).	string	string	TRUE		2800
-manual_decisions	new_value	Value the decision asserts.	string	string	FALSE		2800
-manual_decisions	reason	Human-entered rationale from the registry file.	string	string	TRUE		2800
-manual_decisions	evidence_reference	Supporting reference (PMID/link/linked sibling) from the registry file.	string	string	TRUE		2800
-manual_decisions	confirmed_by	Who ratified the decision.	string	string	TRUE		2800
-manual_decisions	source_artifact	Registry CSV the decision was read from.	string	string	FALSE		2800
+manual_decisions	decision_id	Content-stable decision id (D-<hash>); one per field-level assertion, stable across registry row reordering (P2/F10).	string	string	FALSE	primary key	2912
+manual_decisions	decision_type	Kind of human decision (FK -> controlled_vocabularies decision_type).	string	string	FALSE	FK -> controlled_vocabularies decision_type	2912
+manual_decisions	accession	Unversioned GenBank accession the row concerns.	string	string	TRUE	join key (nullable; blank for accession-less decisions)	2912
+manual_decisions	subject_key	Non-null subject the decision concerns: the accession when present, else the reference/family label for an accession-less decision (Blocking-1). Anchors decision_id.	string	string	FALSE	subject identity (non-null; accession or reference-family label)	2912
+manual_decisions	field_name	The field the decision asserts: the verbatim registry column where the source has one (e.g. classification, specimen_type), or a normalized synthetic assertion for constant-flag registries (e.g. carve_excluded, membership_excluded, is_poliovirus, canonical_reference_available). See DECISION_FIELD_TO_CANONICAL for the canonical effect.	string	string	FALSE		2912
+manual_decisions	old_value	Prior value (not tracked upstream; emitted blank).	string	string	TRUE		2912
+manual_decisions	new_value	Value the decision asserts.	string	string	FALSE		2912
+manual_decisions	reason	Human-entered rationale from the registry file.	string	string	TRUE		2912
+manual_decisions	evidence_reference	Supporting reference (PMID/link/linked sibling) from the registry file.	string	string	TRUE		2912
+manual_decisions	confirmed_by	Who ratified the decision.	string	string	TRUE		2912
+manual_decisions	source_artifact	Registry CSV the decision was read from.	string	string	FALSE		2912
 record_disposition	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	25727
 record_disposition	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per candidate record)	25727
 record_disposition	candidate_query_member	TRUE if the record was in the source GenBank query result set.	string	string	FALSE		25727

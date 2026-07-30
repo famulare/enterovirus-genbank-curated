@@ -1,7 +1,7 @@
 {
-  "schema_version": "2.3.0",
-  "built": "2026-07-29",
-  "git_sha": "c44a434a402ee4df4606acb068897af308b706bb",
+  "schema_version": "2.4.1",
+  "built": "2026-07-30",
+  "git_sha": "67554e25a2acead0b635469e46b1ff14a3e96851",
   "git_tree_clean": true,
   "source_genbank": "data/genbank/raw/sequence.gb",
   "source_genbank_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
