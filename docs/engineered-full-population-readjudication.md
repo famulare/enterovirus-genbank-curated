@@ -995,14 +995,54 @@ alternative to §8.2.
 
 ```python
 # proposed — replaces line 898
+# Stage 1: per-record structured signal.
+structural = (
+    row.get("division") == "SYN"                              # structured field test, not text
+    or clean(row.get("organism")) == "synthetic construct"    # exact match, not regex over a blob
+)
+# Stage 2: promote across byte-identical groups BEFORE curation is applied. `engineered` is a
+# claim about a genotype, so it cannot depend on which depositor's metadata happened to be read.
+structural_by_group = {
+    digest: any(structural(r) for r in records)
+    for digest, records in group_by(all_records, key="sequence_sha256").items()
+}
 engineered = (
-    curated_true(accession)                     # ledger / manual_review_overrides = TRUE
-    or row.get("division") == "SYN"             # structured field test, not text
-    or clean(row.get("organism")) == "synthetic construct"   # exact match, not regex over a blob
+    curated_true(accession)
+    or structural_by_group[row["sequence_sha256"]]
 ) and not curated_false(accession)
 ```
 
-Three deliberate design choices:
+**Stage 2 is not optional, and the reason is a measured defect in the stage-1 rule.**
+`organism_name` is depositor metadata, not a genotype property, and it is **not consistent across
+byte-identical records**. Measured on the shipped release:
+
+| accession | `organism_name` | len | same `sequence_sha256`? |
+|---|---|---|---|
+| `JA792237` | `synthetic construct` | 70 | yes — with `FB743426` |
+| `FB743426` | `Enterovirus C` | 70 | yes |
+| `JA792249` | `synthetic construct` | 70 | yes — with `FB743423` |
+| `FB743423` | `Poliovirus 3` | 70 | yes |
+
+The same 70 nt, deposited in two different patents, carries two different organism names. So the
+stage-1 rule alone assigns **different `engineered` values to identical genotypes** — violating the
+very invariant §7 designs, and reproducing the *category* of the `\bPAT\b` bug it replaces:
+a decision driven by who deposited the record rather than by what the sequence is.
+
+Measured impact of the two forms (read-only against the shipped release and the active ledger):
+
+| | TRUE after | new same-sequence splits |
+|---|---|---|
+| stage 1 only, as originally drafted | 27 | **7** |
+| stage 1 + group promotion | 32 | **2** |
+| stage 1 + promotion + the §8.6 curation remediation | **29** | **0** |
+
+The two residual splits under promotion alone are `DD214221`/`X00595` and `JC013129`/`DI499172` —
+both curation-row problems, not rule problems, and both already on §8.6's remediation list. With the
+four contradicting TRUE rows retired, `CS406483` corrected and `PU749298` added, the rewritten rule
+lands with **zero** byte-identical groups disagreeing. That is the check §7 exists to make, and it
+now passes by construction rather than by luck.
+
+Three further deliberate design choices in stage 1:
 
 1. **`division == "SYN"` is a structured test, and it does not currently exist anywhere in the
    repo.** I checked exhaustively: the only three `division` tests in the entire private repo are
@@ -1016,6 +1056,13 @@ Three deliberate design choices:
    is therefore lossless here and cannot drift onto e.g. a paper title. (Note: the `taxonomy` column
    exists in `genbank_metadata.csv` but is **not** in `blob()` and is never read; 0 records have
    "synthetic" anywhere in their taxonomy lineage, so a taxonomy-based test would add nothing.)
+
+   **This choice was originally justified too narrowly, and the gap is the reason stage 2 exists.**
+   "Cannot drift onto a paper title" is true and was the only failure mode considered. It misses that
+   the field is not a property of the sequence at all: a depositor chooses it, and two depositors of
+   the same bytes chose differently. Exactness protects against matching the wrong *text*; it does
+   nothing about matching the wrong *kind of thing*. Group promotion is what makes the signal a
+   genotype claim.
 3. **Drop `real_human_capture()` from this predicate.** Its `:563` branch fires on *any parseable
    `/collection_date`*, which makes `engineered` a function of metadata completeness — a genuinely
    synthetic construct carrying a collection date (an nOPV shedding study, say) would be silently
@@ -1120,6 +1167,18 @@ Of these 30, Appendix B decides 24 (`DQ205099` FALSE; `AJ512791`/`AJ512792` FALS
 `JN105289`–`JN105295` TRUE per Q1; the 14 DI RNAs FALSE + reclassified per Q4). **Six were never
 adjudicated by anyone** — `M14761` and `S61236`/`S65446`/`S65447`/`S65449`/`S65450`. That is a small,
 closable gap and it should be closed before the rule rewrite flips them, not after.
+
+**Three more unadjudicated records carry active TRUE curation rows, and one of them is load-bearing.**
+`JC013129` (179 nt), `MA400487` (672 nt) and `DD214215` (7,456 nt — in the 58, adjudicated FALSE in
+§4, but its row says TRUE) all sit outside anything Appendix B decided, or contradict it.
+
+`JC013129` deserves naming because its situation is subtle: the ledger asserts TRUE for it, its
+byte-identical twin `DI499172` has **no row**, and `DI499172` ships TRUE only because of the blanket
+`\bPAT\b` bug. So the group is coherent *by accident of the defect this report exists to remove* —
+the ledger-coherence check finds nothing wrong today, and the moment the rule rewrite lands the group
+splits. It is the one case where "or agree with what the rest already ships" licenses something that
+will not survive the change it is being checked against. Adjudicate it in the same pass as the six
+above, not after the rewrite.
 
 **Recommended landing sequence**, because 516 flips in one commit is not gate-diffable by eye. Step 1
 is done; steps 2–4 restated against Appendix B's numbers:
