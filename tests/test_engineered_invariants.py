@@ -207,8 +207,13 @@ EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256 = (
 )
 
 # The population the general falsification controls run over.
-EXPECTED_MULTI_MEMBER_GROUPS = 1644
-EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1632
+#
+# Moved at the 2.1.5 → 2.3.0 release refresh: 1644 → 1625 and 1632 → 1613. That release drops 245
+# canonical records (unaligned non-polio), which collapses 19 identical-sequence groups below two
+# members. Both counts fall by exactly 19 because all 19 were agreeing groups. Purely a
+# population-size effect — re-measured, not derived.
+EXPECTED_MULTI_MEMBER_GROUPS = 1625
+EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1613
 
 # Invariant B's outstanding violations, pinned as the exact set of TRUE members per group.
 #

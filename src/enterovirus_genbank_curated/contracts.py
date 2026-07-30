@@ -2,14 +2,25 @@
 
 Two things are validated here, and the distinction matters:
 
-* *Contract shape* — the JSON Schemas and the v2.1.5 parity specification are well-formed,
+* *Contract shape* — the JSON Schemas and the active parity specification are well-formed,
   internally consistent, and declare nothing undeclared.
 * *Baseline verification* — the parity specification actually describes the release that ships
   in this repository. Hashes are recomputed, rows are counted, and the frozen raw archive is
   authenticated against the release's own build manifest.
 
 Without the second half the parity contract would be self-certifying: a wrong hash or a wrong
-row count would sit in `releases/2.1.5/parity.json` and never be contradicted by anything.
+row count would sit in the parity spec and never be contradicted by anything.
+
+The active baseline is **2.3.0**. `releases/2.1.5/parity.json` is retained as the historical
+record of the first public release and is **no longer verified against the tree** — there is only
+one `final/`, and once it holds 2.3.0 bytes a spec describing 2.1.5 cannot be satisfied by it. The
+2.1.5 release itself remains immutable in git history at `82f2966`.
+
+`BASELINE_RELEASE` below is a hardcoded literal on purpose, and `validate_parity_spec` compares
+the spec against it rather than trusting the spec's own `baseline_release` field. Reading the
+version out of the spec would make retargeting the oracle a data edit instead of a code edit,
+which is the self-certification failure this module exists to prevent. Moving the baseline should
+require changing this constant deliberately.
 """
 
 from __future__ import annotations
@@ -26,7 +37,10 @@ from typing import Any
 
 DECISIONS_SCHEMA_PATH = "registry/schemas/decisions.schema.json"
 RULES_SCHEMA_PATH = "registry/schemas/rules.schema.json"
-PARITY_SPEC_PATH = "releases/2.1.5/parity.json"
+BASELINE_RELEASE = "2.3.0"
+PARITY_SPEC_PATH = f"releases/{BASELINE_RELEASE}/parity.json"
+# Retained, unverified. See the module docstring.
+HISTORICAL_PARITY_SPEC_PATHS = ("releases/2.1.5/parity.json",)
 BUILD_MANIFEST_PATH = "final/audit/build_manifest.json"
 RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
 
@@ -53,13 +67,17 @@ ACTIVE_STATUS = "active"
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 
+# Measured from the shipped 2.3.0 release, not derived from the 2.1.5 figures. The 2.1.5 values,
+# for the record, were 25727 / 24546 / 10086 / 14460 / 2753 / 25. `source_records` is unchanged
+# because 2.3.0 is a strict subset of 2.1.5 by accession over the same frozen raw archive: 245
+# canonical records were removed and none added, so the source snapshot did not move.
 EXPECTED_BASELINE_COUNTS = {
     "source_records": 25727,
-    "canonical_rows": 24546,
-    "vouched_rows": 10086,
-    "provisional_rows": 14460,
-    "manual_decisions": 2753,
-    "rules": 25,
+    "canonical_rows": 24301,
+    "vouched_rows": 10084,
+    "provisional_rows": 14217,
+    "manual_decisions": 2800,
+    "rules": 28,
 }
 
 # Where each expected_counts key is measured in the shipped release. provisional_rows is not a
@@ -341,8 +359,8 @@ def validate_parity_spec(path: Path) -> dict[str, Any]:
     require_exact_keys(spec, PARITY_TOP_LEVEL_KEYS, f"{path}")
     if spec["contract_version"] != 1:
         raise ContractError("parity contract_version must be 1")
-    if spec["baseline_release"] != "2.1.5":
-        raise ContractError("parity baseline_release must be 2.1.5")
+    if spec["baseline_release"] != BASELINE_RELEASE:
+        raise ContractError(f"parity baseline_release must be {BASELINE_RELEASE}")
     for key in ("public_release_commit", "source_release_commit"):
         if not COMMIT_RE.fullmatch(str(spec[key])):
             raise ContractError(f"parity {key} must be a full 40-character commit SHA")
@@ -388,7 +406,7 @@ def validate_parity_spec(path: Path) -> dict[str, Any]:
     if policy["existing_final_is_pipeline_input"] is not False:
         raise ContractError("existing final/ must never be a pipeline input")
     if policy["baseline_release_mutable"] is not False:
-        raise ContractError("the 2.1.5 baseline must be immutable")
+        raise ContractError(f"the {BASELINE_RELEASE} baseline must be immutable")
     return spec
 
 

@@ -68,7 +68,7 @@ trimmed aligned overlap; internal gaps are reported separately and are not in th
 
 Plus, for every record whose disposition turned on a small number of nucleotides: a
 **natural-occurrence test** (exact 13-mer context centred on each differing position, searched
-across all 24,546 canonical records, partitioned into non-PAT/SYN vs PAT/SYN) and a
+across all 24,546 canonical records of release 2.1.5, partitioned into non-PAT/SYN vs PAT/SYN) and a
 **canonical-restriction-site delta scan** (49 common cloning enzymes, whole-sequence counts plus
 per-position ±9 nt attribution) — i.e. exactly the two tests that split CS406483 from CS406482 in
 the prior report.
@@ -100,8 +100,18 @@ it rather than bury it (§5).
 
 ## 1. Population re-derivation — confirmed
 
-`final/canonical/sequence_metadata.tsv.gz`: 24,546 rows; `engineered_or_construct` is `TRUE` on 543
-and `FALSE` on 24,003 (no other values, no blanks). Filtering to `sequence_length_nt >= 3000` gives
+> **Re-measured against release 2.3.0, 2026-07-30.** This report was originally written against
+> 2.1.5. The 2.3.0 refresh removes 245 canonical records (all unaligned non-polio, none added), so
+> the *denominators* here move — but **the engineered population does not**: 543 TRUE, 58 at
+> ≥3000 nt, 50 PAT / 7 SYN / 1 VRL, and the same 58 accessions, all unchanged. The 12 same-sequence
+> disagreement groups are identical in membership, not merely in count, and the PAT/SYN
+> constrained-membership digest is byte-identical. Every conclusion in this report is therefore
+> unaffected; only population-size figures were updated. Figures that record a *search performed
+> against 2.1.5* are labelled as such rather than restated, because rewriting them would falsify
+> what was actually measured.
+
+`final/canonical/sequence_metadata.tsv.gz`: 24,301 rows; `engineered_or_construct` is `TRUE` on 543
+and `FALSE` on 23,758 (no other values, no blanks). Filtering to `sequence_length_nt >= 3000` gives
 **exactly 58**, matching the supplied list accession-for-accession.
 
 By source `division`: **50 PAT, 7 SYN, 1 VRL.** And the complementary fact, which is the whole
@@ -244,7 +254,7 @@ MEF-1 lab-stock → FALSE. Nothing new needed.
    confirmed arithmetically. It is the full-length parental plasmid deposited alongside the DI
    constructs in the same patent ("Defective interfering particles, defective polioviral mutant
    RNAs, and plasmids").
-2. **All 7 differences are attested in nature.** 13-mer context search across all 24,546 records:
+2. **All 7 differences are attested in nature.** 13-mer context search across all 24,546 records of release 2.1.5:
 
    | pos | non-PAT/SYN records carrying the same context | notable |
    |---|---|---|
@@ -677,7 +687,7 @@ The nearest-natural-neighbour search is a k-mer screen over 4,273 natural record
 below 3000 nt were excluded from the *parent panel*, so a fragmentary natural record that happened
 to be a better parent would be missed. This matters nowhere in practice — every one of the 58
 resolved to a full-length parent or to a demonstrably designed construct — but the two "not attested
-in nature" positions (`LY501105`@3784, `LY501107`@801) were searched against **all** 24,546 records
+in nature" positions (`LY501105`@3784, `LY501107`@801) were searched against **all** 24,546 records of release 2.1.5
 including fragments, so those two claims are not subject to this limit.
 
 ---
@@ -800,7 +810,7 @@ because they would survive an `engineered`-only ledger patch.
 The 3000-nt / blank-metadata heuristic in the brief was a good first pass but it is not needed, and
 the metadata-blankness half of it does not work. Measured facts:
 
-- 24,546 canonical rows → **20,495 distinct `sequence_sha256`**.
+- 24,301 canonical rows → **20,291 distinct `sequence_sha256`**.
 - **12 sha256 groups currently disagree on `engineered_or_construct`** (all lengths). 11 are ≥3000 nt
   covering 45 records; the twelfth is the 900-nt `A09260` group (235 records).
 - **`blank_strict` (no `strain_name`, no `host_name`, no `collection_date`) does not separate
@@ -1078,7 +1088,7 @@ Computed read-only against `final/source/normalized_tsv/` (public), which is the
 records; union (3 overlap) → **113 records**. Current rule: **954**. So the rule change moves
 **≈841 source records TRUE→FALSE**, plus however many are held TRUE by new ledger rows.
 
-**Canonical layer** (the shipped 24,546):
+**Canonical layer** (the shipped 24,301):
 
 **Re-measured 2026-07-30 against the shipped release and the active ledger.** Two earlier versions
 of this table were derived rather than measured, and both were wrong — see the correction note below.

@@ -146,7 +146,7 @@ The affected patent-family population is therefore **8 records, not 3**.
 
 ### 2c. Repo-wide: identical sequences already disagree
 
-24,546 canonical rows collapse to 20,495 distinct sequences. **12 identical-sequence groups already
+24,546 canonical rows collapse to 20,495 distinct sequences (release 2.1.5; 24,301 → 20,291 at 2.3.0). **12 identical-sequence groups already
 disagree on `engineered_or_construct`**, and in every case the PAT member says TRUE while the
 non-PAT member says FALSE. These include verbatim copies of the vaccine and wild references:
 
@@ -292,7 +292,7 @@ CS406483 = CS406482 + two extra changes, `G1773A` and `A1776G`. These are:
 - converting MEF-1 `GGTT**G**CC**A**GT` → `GGTT**A**CC**G**GT`, which creates **AgeI (`ACCGGT`)**,
 - **unique in the genome**: `ACCGGT` occurs 0× in MEF-1 and 0× in CS406482, exactly **1×** in
   CS406483,
-- and the 13-nt context `GGTTACCGGTCTT` occurs in **exactly 2 of 24,546 records** — CS406483 and
+- and the 13-nt context `GGTTACCGGTCTT` occurs in **exactly 2 of 24,546 records of release 2.1.5** — CS406483 and
   PU749298, i.e. the same patent sequence deposited twice. It is absent from every other MEF-1
   deposit including the independent CAVA ones.
 
@@ -331,7 +331,7 @@ cloning sites, which initially looked decisive for "engineered":
 - `A3303T` creates **XhoI (`CTCGAG`)**, 0× in Sabin 2 → 1× in DQ205099
 - `T5640A` creates only `AccX` (degenerate) — no canonical site
 
-**But the natural-occurrence test refutes the engineered reading.** Searching all 24,546 records for
+**But the natural-occurrence test refutes the engineered reading.** Searching all 24,546 records of release 2.1.5 for
 the exact 13-nt context around each change:
 
 | change | site | exact 13-mer context found in | verdict |
@@ -446,7 +446,7 @@ split):
 |---|---|---|---|
 | CS406436, CS406482 | `engineered` | FALSE | parental MEF-1 lab-stock deposit; the 4-nt signature `T2580C/C2781T/T3685C/T6805C` vs AY238473 is shared by the independent CAVA patent deposits LY501105/LZ216100, so it is lab-stock lineage, not engineering |
 | PU749305, PU749297 | `engineered` | FALSE | byte-identical (sha256) to CS406436/CS406482 respectively; US 12090197 B2 re-deposit of the same patent sequences |
-| CS406483, PU749298 | `engineered` | TRUE | engineered AgeI (`ACCGGT`) cloning site created by two synonymous third-position changes `G1773A/A1776G` at the VP2/VP3 junction; unique in the genome, absent from MEF-1, from CS406482 and from all other MEF-1 deposits; 13-mer context `GGTTACCGGTCTT` occurs in only these 2 of 24,546 records |
+| CS406483, PU749298 | `engineered` | TRUE | engineered AgeI (`ACCGGT`) cloning site created by two synonymous third-position changes `G1773A/A1776G` at the VP2/VP3 junction; unique in the genome, absent from MEF-1, from CS406482 and from all other MEF-1 deposits; 13-mer context `GGTTACCGGTCTT` occurs in only these 2 of 24,546 records of release 2.1.5 |
 | CS406433, PU749280 | `engineered` | FALSE | verbatim excerpt of Sabin 2 AY184220 1-based 640–3384 (0 mismatches / 2745 nt) = parental capsid cassette |
 | CS406433, PU749280 | `classification` | `Sabin` | takes Sabin 2's label |
 | CS406433, PU749280 | `origin_class` | `vaccine` | takes Sabin 2's label |
@@ -565,7 +565,7 @@ explicitly in the dictionary.
 
 **Q2. Do you accept the AgeI evidence splitting CS406483 from CS406482 — reversing part of D2?**
 CS406483/PU749298 gain a unique AgeI site from two synonymous third-position changes at the VP2/VP3
-junction, found in only those 2 of 24,546 records. I read that as a designed cloning site → TRUE.
+junction, found in only those 2 of 24,546 records of release 2.1.5. I read that as a designed cloning site → TRUE.
 It is 2 nucleotides and an inference; the patent text would settle it and I did not read it.
 *If you accept:* D2 becomes "two parental, one engineered", and CS406483 keeps TRUE with new
 reasoning. *If you'd rather not split on 2 nt:* all six MEF-1-family records go FALSE uniformly,
