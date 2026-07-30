@@ -31,23 +31,26 @@ def build_region(
     if len(placeable) < 3:
         return {
             "row": np.zeros(0, dtype=np.int64),
-            "x": np.zeros(0, dtype=np.float32),
-            "y": np.zeros(0, dtype=np.float32),
+            "transforms": {
+                transform: {
+                    "x": np.zeros(0, dtype=np.float32),
+                    "y": np.zeros(0, dtype=np.float32),
+                    "explained": 0.0,
+                    "negative_share": 0.0,
+                }
+                for transform in embed.TRANSFORMS
+            },
             "resolved": np.zeros(0, dtype=np.int32),
             "confident": np.zeros(0, dtype=bool),
             "landmarks": 0,
-            "explained": 0.0,
-            "negative_share": 0.0,
             "excluded": {"below_coverage": int(len(rows) - len(placeable))},
             "min_nt": threshold,
             "columns": int(len(columns)),
         }
 
     landmarks = distances.choose_landmarks(block, placeable, threshold)
-    fitted = embed.Embedding(distances.landmark_matrix(block, landmarks, threshold))
-
+    landmark_distance = distances.landmark_matrix(block, landmarks, threshold)
     to_landmarks, shared = distances.to_landmarks(block, placeable, landmarks, threshold)
-    coordinates = fitted.place(to_landmarks)
     resolved, confident = distances.confidence(to_landmarks, shared, len(columns))
 
     # Pin on Sabin where the alignment carries it, so poliovirus panels always open
@@ -61,19 +64,29 @@ def build_region(
             if len(hits):
                 anchor = int(hits[0])
                 break
-    coordinates = embed.pin_orientation(
-        coordinates, anchor, weights=confident.astype(np.float64)
-    )
+
+    # Both transforms, from one landmark matrix and one set of projections. The
+    # expensive work is the distance computation, which they share; fitting is a
+    # decomposition of a few hundred squared values.
+    transforms = {}
+    for transform in embed.TRANSFORMS:
+        fitted = embed.Embedding(landmark_distance, transform)
+        coordinates = embed.pin_orientation(
+            fitted.place(to_landmarks), anchor, weights=confident.astype(np.float64)
+        )
+        transforms[transform] = {
+            "x": coordinates[:, 0].astype(np.float32),
+            "y": coordinates[:, 1].astype(np.float32),
+            "explained": fitted.explained,
+            "negative_share": fitted.negative_share,
+        }
 
     return {
         "row": placeable,
-        "x": coordinates[:, 0].astype(np.float32),
-        "y": coordinates[:, 1].astype(np.float32),
+        "transforms": transforms,
         "resolved": resolved,
         "confident": confident,
         "landmarks": int(len(landmarks)),
-        "explained": fitted.explained,
-        "negative_share": fitted.negative_share,
         "excluded": {"below_coverage": int(len(rows) - len(placeable))},
         "min_nt": threshold,
         "columns": int(len(columns)),

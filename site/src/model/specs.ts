@@ -4,6 +4,7 @@
 import type { ChapterSpec } from "../ui/chapter.js";
 import type { Mark, MarkSet } from "./mark.js";
 import type { PanelFile } from "./panel.js";
+import type { AxisScale } from "./view.js";
 import type { Records } from "./records.js";
 
 function rate(numerator: number, denominator: number): string {
@@ -39,7 +40,7 @@ export const DIVERGENCE: ChapterSpec = {
   yLabel: "Non-synonymous per codon compared",
   honoursScale: true,
 
-  marks(file: PanelFile, region: string): MarkSet {
+  marks(file: PanelFile, region: string, _scale: AxisScale): MarkSet {
     const raw = file.divergence[region];
     if (!raw) throw new Error(`${file.selection} has no divergence region ${region}`);
     const shifted = new Set(raw.frameshift);
@@ -149,44 +150,60 @@ export const DIVERGENCE: ChapterSpec = {
 
 // --- Figure set 2: nucleotide distance --------------------------------------
 
-const distanceDetail = new WeakMap<Mark, { resolved: number; landmarks: number }>();
+const distanceDetail = new WeakMap<
+  Mark,
+  { resolved: number; landmarks: number; transform: string }
+>();
 
 export const DISTANCE: ChapterSpec = {
   id: "distance",
   regionFlag: "in_distance",
   xLabel: "Scaling axis 1 (arbitrary units)",
   yLabel: "Scaling axis 2",
-  // Coordinates are signed and have no meaningful zero end, so a square root has
-  // nothing to spread and no real value below zero. Always linear.
+  // The scale control selects which embedding to show — the one fitted to the
+  // distances, or the one fitted to their square roots — rather than transforming the
+  // drawn axis. The coordinates are signed, so the axis itself is always linear;
+  // `honoursScale` governs the axis, and is false for exactly that reason.
   honoursScale: false,
 
-  marks(file: PanelFile, region: string): MarkSet {
+  marks(file: PanelFile, region: string, scale: AxisScale): MarkSet {
     const raw = file.distance[region];
     if (!raw) throw new Error(`${file.selection} has no distance region ${region}`);
+    const fit = raw.transforms[scale] ?? raw.transforms.linear!;
     const thin = new Set(raw.thin);
     const marks: Mark[] = raw.record.map((record, i) => {
       const mark: Mark = {
         record,
-        x: raw.x[i]!,
-        y: raw.y[i]!,
+        x: fit.x[i]!,
+        y: fit.y[i]!,
         // Thin placements are drawn smaller rather than unfilled, because fill is
         // already carrying the categorical glyph's identity.
         weight: thin.has(i) ? 0.62 : 1,
         flagged: false,
       };
-      distanceDetail.set(mark, { resolved: raw.resolved[i]!, landmarks: raw.landmarks });
+      distanceDetail.set(mark, {
+        resolved: raw.resolved[i]!,
+        landmarks: raw.landmarks,
+        transform: scale,
+      });
       return mark;
     });
 
     const notes = [
-      `Placed against ${n(raw.landmarks)} landmark sequences whose distances are all
-       defined; two dimensions carry ${(raw.explained * 100).toFixed(0)}% of the variance.`,
+      `Scaling the ${
+        scale === "sqrt" ? "square roots of the" : ""
+      } distances, against ${n(raw.landmarks)} landmark sequences whose distances are all
+       defined; two dimensions carry ${(fit.explained * 100).toFixed(0)}% of the variance.`,
     ];
-    if (raw.negative_share > 0.05) {
+    if (fit.negative_share > 0.005) {
       notes.push(
-        `${(raw.negative_share * 100).toFixed(0)}% of the geometry is non-Euclidean, so
-         distances in this plane understate some real separations.`,
+        `${(fit.negative_share * 100).toFixed(1)}% of the geometry is non-Euclidean, so
+         distances in this plane understate some real separations${
+           scale === "sqrt" ? "" : " — the square-root scale usually reduces this"
+         }.`,
       );
+    } else {
+      notes.push("The geometry is Euclidean, so a plane can hold it without distortion.");
     }
     if (thin.size) {
       notes.push(
@@ -225,6 +242,7 @@ export const DISTANCE: ChapterSpec = {
     return [
       ["Scaling axis 1", mark.x.toFixed(4)],
       ["Scaling axis 2", mark.y.toFixed(4)],
+      ["Dissimilarity scaled", d.transform === "sqrt" ? "square root of distance" : "distance"],
       ["Landmark distances defined", `${n(d.resolved)} of ${n(d.landmarks)}`],
       ["Placement", mark.weight < 1 ? "thin — treat position as approximate" : "confident"],
       ["Region width", `${n(set.facts.columns)} alignment columns`],

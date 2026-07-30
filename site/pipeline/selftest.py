@@ -337,6 +337,33 @@ def distance_and_embedding_cases() -> None:
     offset = float(np.linalg.norm(placed[0] - fitted.landmark_coordinates[3]))
     check(offset < 1e-6, f"an out-of-sample point lands on its own landmark ({offset:.2e})")
 
+    # The square-root transform must make a non-Euclidean dissimilarity embeddable.
+    # The four-cycle shortest-path metric is the textbook case: adjacent vertices are
+    # 1 apart and opposite ones 2, but a planar square with side 1 has diagonal
+    # sqrt(2), so no plane holds it. Its square roots are exactly that square.
+    cycle = np.array(
+        [
+            [0.0, 1.0, 2.0, 1.0],
+            [1.0, 0.0, 1.0, 2.0],
+            [2.0, 1.0, 0.0, 1.0],
+            [1.0, 2.0, 1.0, 0.0],
+        ]
+    )
+    plain = embed.Embedding(cycle, "linear")
+    rooted = embed.Embedding(cycle, "sqrt")
+    check(
+        plain.negative_share > 0.01,
+        f"the four-cycle metric really is non-Euclidean ({plain.negative_share:.4f})",
+    )
+    check(
+        rooted.negative_share < 1e-9,
+        f"and its square roots are exactly Euclidean ({rooted.negative_share:.2e})",
+    )
+    check(
+        embed.Embedding(exact, "linear").negative_share < 1e-12,
+        "a genuinely planar configuration needs no help",
+    )
+
     # Orientation must be reproducible, and must not distort the geometry.
     pinned = embed.pin_orientation(fitted.landmark_coordinates, anchor=0)
     again = embed.pin_orientation(fitted.landmark_coordinates, anchor=0)
@@ -375,6 +402,38 @@ def embedding_confidence_is_informative() -> None:
             )
 
 
+def square_root_never_worsens_the_geometry() -> None:
+    """On the release, scaling square roots must be at least as Euclidean everywhere.
+
+    This is the reason the transform is offered at all, so it is asserted on the real
+    artifacts rather than only on a synthetic case.
+    """
+    print("\nsquare-root transform against the built panels")
+    import json
+
+    worse = []
+    improved = 0
+    exact_count = 0
+    for path in sorted((contract.DATA_OUT / "panels").glob("*.json")):
+        payload = json.loads(path.read_text())
+        for region, panel in payload.get("distance", {}).items():
+            fits = panel.get("transforms", {})
+            if "linear" not in fits or "sqrt" not in fits:
+                continue
+            a = fits["linear"]["negative_share"]
+            b = fits["sqrt"]["negative_share"]
+            if b > a + 1e-9:
+                worse.append(f"{payload['selection']} {region}: {a:.4f} -> {b:.4f}")
+            if b < a - 1e-9:
+                improved += 1
+            if b <= 1e-9:
+                exact_count += 1
+    check_equal(len(worse), 0, f"no panel is made less Euclidean{': ' + '; '.join(worse[:3])
+        if worse else ''}")
+    check(improved > 0, f"{improved} panels are measurably more Euclidean")
+    check(exact_count > 0, f"{exact_count} become exactly Euclidean")
+
+
 def run() -> int:
     synthetic_cases()
     distance_and_embedding_cases()
@@ -384,6 +443,7 @@ def run() -> int:
     if (contract.DATA_OUT / "panels").is_dir():
         axes_are_bounded()
         embedding_confidence_is_informative()
+        square_root_never_worsens_the_geometry()
 
     print()
     if FAILURES:
