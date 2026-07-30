@@ -113,18 +113,47 @@ this section is a summary of it, not a stronger claim.
 Its scientific conclusions survive as registry rows migrated in stage 2. Porting it would mean
 rebuilding a stage that produced nothing anyone consumed.
 
-## Known pending delta: `engineered_or_construct` on the D2 trio
+## Known pending delta: `engineered_or_construct`
 
-Phase A does not rebuild `final/canonical/`, so the ledger and the shipped canonical table currently
-disagree on exactly one field for exactly three records. `CS406436`, `CS406482` and `CS406483` ship
-`engineered_or_construct=TRUE`; the ledger asserts `FALSE` under the D2 adjudication. Applying
-decisions in Phase B flips them.
+Phase A does not rebuild `final/canonical/`, so the ledger and the shipped canonical table disagree.
+This is recorded rather than left to be discovered as a parity failure.
 
-This is recorded rather than left to be discovered as a parity failure. It is the only intended
-scientific-output change carried by the stage-2 migration, and the reasoning is in
-[`registry/README.md`](../registry/README.md). `DQ205099` — the fourth legacy `engineered` call — is
-*not* part of this delta: it was annotated rather than adjudicated, precisely because its shipped
-values are already correct.
+**The delta is much larger than the D2 trio, and the earlier statement of it here was wrong in three
+ways.** Corrected 2026-07-29 after a full-population re-adjudication
+([`engineered-readjudication.md`](engineered-readjudication.md),
+[`engineered-full-population-readjudication.md`](engineered-full-population-readjudication.md)):
+
+1. **Not three records — 45.** Of the 58 canonical records shipping `engineered_or_construct=TRUE`
+   at ≥3000 nt, 44 are re-deposits or replicates of an existing reference and should be FALSE, plus
+   `A09260` below that length. 25 of them are *byte-identical* to a natural reference that already
+   ships FALSE. Four are not poliovirus (Coxsackievirus A11, in oncolytic-virus patents) and three
+   are not viruses at all. The predicate is a text match on `\bPAT\b` inside a concatenated blob, so
+   all 506 patent-division records ship TRUE regardless of sequence.
+2. **Not one field.** Taking the reference's label also moves `poliovirus_classification`,
+   `sample_origin` and `surveillance_stream` on 18 of the 25 byte-identical records. Separately,
+   `classification` already disagrees on six records nobody documented (`AJ416942`, `DQ205099`,
+   `FJ517648`, `KR259356`, `KR259357`, `KX162685`) — that field feeds reconciliation, so a mismatch
+   there is not automatically an error, but it was never true that the disagreement was one field.
+3. **"Applying decisions in Phase B flips them" does not hold as written.** The D2 assertion exists
+   *only* in `registry/decisions.tsv`. `engineered_or_construct` is **blank** for all three records
+   in the private `manual_review_overrides.csv`, which is what the pipeline actually reads, so the
+   value is recomputed as TRUE on every rebuild and the ledger row has no effect on it. A ledger
+   assertion with no counterpart in the source of truth is not a pending delta — it is a permanent
+   one. **Curation has to land where it is applied, not only where it is recorded.** This is the
+   single most important lesson of the D2 episode and the reason the re-adjudication's flips are
+   being routed through the private overrides rather than added here as more ledger-only rows.
+
+`DQ205099` **is** now part of the delta, reversing the earlier disposition: the annotate-rather-than-
+adjudicate call rested on "an infectious clone is a construct", which is exactly the reasoning the
+simplified definition removes. Its three differences from Sabin 2 are each independently attested in
+natural field isolates.
+
+Fourteen records stay TRUE and are genuinely engineered: the `CS406483`/`PU749298` pair (a unique
+AgeI cloning site created by two synonymous changes at the VP2/VP3 junction), `MN654096` (nOPV2-CD,
+recoded capsid), the six S19 capsid-swap chimeras `PP068131`–`PP068136`, `FV537075`–`FV537077`, and
+`LY501107`/`LZ216102` (directed cold-adaptation selection). Current counts are pinned in
+[`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py) so that none of these
+numbers can move silently again, which is how the delta grew unnoticed in the first place.
 
 ## Review stop conditions
 

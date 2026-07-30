@@ -126,6 +126,34 @@ migration error. Nothing in Phase A rebuilds `final/canonical/`, so the flip lan
 applies decisions — until then the ledger and the shipped canonical table disagree on this field by
 design, and [`docs/pipeline.md`](../docs/pipeline.md) records it as a known pending delta.
 
+### Superseded 2026-07-29 — read this before relying on anything above
+
+A full-population re-adjudication has overtaken D2. Two corrections matter enough to state here
+rather than only in [`docs/pipeline.md`](../docs/pipeline.md):
+
+**The mechanism refutation above is sound, but the inference from it is not.** "Too few substitutions
+for codon deoptimization" is correct — the paper recoded 97% of the capsid — but ruling out *that*
+mechanism does not establish that a record is not construct-derived, which is what the column meant.
+The conclusion happens to be right for `CS406436` and `CS406482` for a different and better reason:
+their 4-nt signature vs AY238473 is shared by patent families with no relationship to this one, so it
+is lab-stock lineage. **`CS406483` is not parental and D2 was wrong about it** — it carries two
+further synonymous third-position changes at the VP2/VP3 junction that create an `AgeI` site found in
+exactly 2 of 24,546 records, itself and its own byte-identical twin. The trio is two parental records
+and one engineered derivative.
+
+**The row above claiming the flip "lands when Phase B applies decisions" is not true as written, and
+this is the more important defect.** `engineered_or_construct` is **blank** for all three records in
+the private `manual_review_overrides.csv`, which is the file the pipeline actually reads. The
+assertion exists only in this ledger, so every rebuild recomputes the value as TRUE from the text
+predicate and the ledger row changes nothing. A ledger assertion with no counterpart in the source of
+truth is not a pending delta but a permanent one. **Curation has to land where it is applied, not
+only where it is recorded** — and the corollary is that the re-adjudication's ~45 flips must go
+through the private overrides, not be added here as more ledger-only rows.
+
+Full evidence, per-record dispositions and the curator's revised definition:
+[`docs/engineered-readjudication.md`](../docs/engineered-readjudication.md) and
+[`docs/engineered-full-population-readjudication.md`](../docs/engineered-full-population-readjudication.md).
+
 ## Status vocabulary
 
 The three values are used with distinct meanings, not interchangeably:
