@@ -46,8 +46,9 @@ raw/
                       archived member's name/size/hash) — a fresh clone can verify the
                       raw input is exactly what it claims to be without contacting NCBI.
 
-registry/             Contracts for the future human-readable curation ledger and
-                      deterministic rule catalog.
+registry/             The human-readable curation ledger (decisions.tsv), the deterministic
+                      rule catalog (rules.json), and the JSON Schemas both are validated
+                      against. rules.json regenerates final/audit/rules.tsv.gz byte-for-byte.
 site/                 Source for the browser data explorer linked above, plus the
                       precomputed artifacts it serves and the gate that keeps them
                       in step with final/.

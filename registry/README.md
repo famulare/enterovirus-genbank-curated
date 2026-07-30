@@ -266,8 +266,17 @@ source of truth: the validator derives the column set and order, the non-blank f
 Python. Tightening or loosening the published schema therefore changes what CI enforces, and the
 two cannot drift apart.
 
-Deterministic rules are a separate concern governed by `registry/schemas/rules.schema.json`; human
-assertions must not be encoded as executable special cases.
+Deterministic rules are a separate concern, governed by `registry/schemas/rules.schema.json` and
+instantiated in [`rules.json`](rules.json); human assertions must not be encoded as executable special
+cases. That boundary is now operational rather than aspirational: a call about one record belongs in
+this ledger, and a mapping that generalizes belongs in a rule's `parameters` with a `rule_version`
+bump.
+
+The catalog is JSON because `parameters` is an object, and a TSV cell holding one would need the
+quote-escaping this ledger exists to avoid. It carries all 28 rules in the shipped order — the order
+is data, because `export/audit.py` regenerates `final/audit/rules.tsv.gz` from it byte-for-byte.
+Thresholds are decimal strings compared with `Fraction`, and every declared value must appear verbatim
+in its own `description`, so the published prose and the executable value cannot drift.
 
 ## Migration
 

@@ -286,6 +286,12 @@ frozen legacy stages, this gap appears in no not-yet-regenerable list.
 **Fix:** (c) migrate them to `registry/rules.tsv` as was done for `decisions.tsv`, or add them to the
 frozen-inputs-of-record list.
 
+**Closed 2026-07-30.** All 28 are now declared in `registry/rules.json` — JSON rather than TSV
+because `parameters` is an object and a TSV cell holding one would need quote-escaping, which the
+ledger's plain-tab guarantee forbids. `export/audit.py: write_rules_view` regenerates
+`final/audit/rules.tsv.gz` from the catalog **byte-for-byte**, which is what establishes that the
+instance describes the release rather than merely resembling it.
+
 ### B18. `rules.schema.json` has never validated any data, and requires fields the shipped table lacks
 `registry/schemas/rules.schema.json:8-16`
 
@@ -297,6 +303,16 @@ unexercised.
 
 **Fix:** (c) decide whether those fields are required for the migrated 2.1.5 rules or optional until a
 later stage populates them.
+
+**Closed 2026-07-30**, by keeping all seven required and populating them. Every threshold is lifted
+out of the prose into `parameters` as a decimal **string** (`"0.15"`), compared with `Fraction` rather
+than float division, and a coherence check requires every declared value to appear verbatim in its
+own `description` — so the two representations cannot drift, which is the failure this item is really
+about. `implementation` is a stable key resolved through a dict, never an import path, and
+`bind_rules` fails on an orphan rule *and* on an orphan implementation: code computing a value no
+published rule declares is how a rule table and its code drift apart. 28 of 28 implementations are
+declared pending with a per-rule reason. `tests/test_rule_catalog.py` supplies the falsification
+battery, including a threshold perturbation that must turn a real gate red.
 
 ### B19. Controlled values do not fail closed
 `registry/README.md:196-197`, `registry/schemas/decisions.schema.json`
@@ -387,7 +403,9 @@ places where the repository asserts something it does not check.
 4. `raw_manifest.json` agreement with `parity.json` on their five shared fields. (B36.)
 5. ~~`migrate_decisions.py`'s id scheme — both schemes satisfy the schema pattern. (B21.)~~
    **Withdrawn 2026-07-30:** the script was deleted, so there is no second scheme to drift.
-6. `rules.schema.json` in its entirety — no data has ever been validated against it. (B18.)
+6. ~~`rules.schema.json` in its entirety — no data has ever been validated against it. (B18.)~~
+   **Withdrawn 2026-07-30:** `registry/rules.json` is now validated against it on every run, and
+   `tests/test_rule_catalog.py` mutates a copy per constraint to prove each one rejects.
 7. `README.md:64-67`'s three headline audit guarantees — referential closure of provenance, declared
    controlled vocabularies, and `final/audit/` "**proves — not just asserts**" its record-disposition
    coverage. All three are **true** (checked: zero missing `winning_rule_id`, zero undeclared

@@ -25,6 +25,7 @@ from enterovirus_genbank_curated.contracts import (
     validate_parity_spec,
     verify_raw_input,
 )
+from enterovirus_genbank_curated.registry.rules import validate_rule_catalog
 
 BUILD_MANIFEST_PATH = "final/audit/build_manifest.json"
 RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
@@ -184,8 +185,13 @@ def validate_contracts(repository_root: Path, *, verify_baseline: bool = True) -
 
     The composed verb lives here rather than in `contracts.py` because its second half reads
     `final/`. `contracts.validate_contract_shape` is the half that does not.
+
+    The rule catalog is validated here rather than inside `validate_contract_shape` only to avoid an
+    import cycle: `registry.rules` needs `contracts`. It is shape validation and runs even under
+    `--skip-baseline-verification`.
     """
     validate_contract_shape(repository_root)
+    validate_rule_catalog(repository_root)
     if verify_baseline:
         spec = validate_parity_spec(repository_root / PARITY_SPEC_PATH)
         verify_release_baseline(repository_root, spec)

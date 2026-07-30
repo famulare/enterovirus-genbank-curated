@@ -20,7 +20,11 @@ PACKAGE = "src/enterovirus_genbank_curated"
 # Subpackages and modules that participate in a build. None of them may name `final/` or import the
 # oracle. `contracts.py` is included: `build.py` imports it, so a release read there would be
 # reachable from every build.
-BUILD_TREES = ("derive", "curate", "export", "registry", "genbank", "validation")
+#
+# Every entry must exist — `rglob` over a missing directory returns nothing, so listing a tree that
+# has not been created yet (or misspelling one) would silently cover zero files while looking like
+# coverage. Add `curate` and `validation` here when those packages land.
+BUILD_TREES = ("derive", "export", "genbank", "registry")
 BUILD_MODULES = ("build.py", "contracts.py", "sandbox.py")
 
 ORACLE_PACKAGE = "enterovirus_genbank_curated.oracle"
@@ -33,6 +37,10 @@ RELEASE_PREFIX_EXEMPTION = 'RELEASE_PATH_PREFIX = "final/"'
 
 def _build_sources(repository_root: Path) -> list[Path]:
     root = repository_root / PACKAGE
+    absent_trees = [tree for tree in BUILD_TREES if not (root / tree).is_dir()]
+    assert not absent_trees, (
+        f"BUILD_TREES names packages that do not exist, so they cover nothing: {absent_trees}"
+    )
     found = [
         path
         for tree in BUILD_TREES
@@ -42,8 +50,6 @@ def _build_sources(repository_root: Path) -> list[Path]:
     found += [root / name for name in BUILD_MODULES]
     missing = [p for p in found if not p.is_file()]
     assert not missing, f"declared build modules are absent: {missing}"
-    # A tree that has been renamed away would make this whole file vacuous.
-    assert len(found) > len(BUILD_MODULES), "no build sources found; BUILD_TREES is probably stale"
     return found
 
 

@@ -1,0 +1,334 @@
+[
+  {
+    "rule_id": "R-SCOPE-1",
+    "rule_version": "2.4.1",
+    "field_name": "sequence_scope",
+    "description": "Map the pipeline record_type to a normalized genomic scope (complete_genome/capsid/vp1_complete/vp1_partial/other_fragment/unknown). POLIOVIRUS ONLY: record_type is derived against Sabin VP1 coordinates and is literally 'other' for every non-polio EV record, so a non-polio row projects 'unknown' (no determination was made) rather than asserting 'other_fragment' (a determination that it is a fragment) -- 1,764 of those rows are >=6,000 nt.",
+    "implementation": "derive.scope.sequence_scope",
+    "parameters": {
+      "scopes": [
+        "complete_genome",
+        "capsid",
+        "vp1_complete",
+        "vp1_partial",
+        "other_fragment",
+        "unknown"
+      ],
+      "non_poliovirus_scope": "unknown"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-PARTITION-1",
+    "rule_version": "2.4.1",
+    "field_name": "virus_group",
+    "description": "Use dataset_partition as the mutually exclusive canonical virus group (poliovirus vs non_polio_enterovirus).",
+    "implementation": "derive.partition.virus_group",
+    "parameters": {
+      "groups": [
+        "poliovirus",
+        "non_polio_enterovirus"
+      ]
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-TYPE-1",
+    "rule_version": "2.4.1",
+    "field_name": "virus_type",
+    "description": "Poliovirus uses the canonical coverage-guarded serotype: the sequence serotype iff serotype_sequence_confident AND sequence_capsid_aa_compared >= 100 codons AND not an intra-capsid recombinant (VP1 == capsid serotype), else the curated text serotype -- build_final_carve.canonical_serotype, ONE shared definition with the v1 carve. Non-polio EV uses the name-derived enterovirus_type first; if the name type is absent, a confident enterovirus_type_sequence may supply the canonical value; a sequence call never overwrites an existing name-derived type.",
+    "implementation": "derive.typing.virus_type",
+    "parameters": {
+      "min_capsid_codons": "100"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-CLASS-1",
+    "rule_version": "2.4.1",
+    "field_name": "poliovirus_classification",
+    "description": "Use classification_reconciled for poliovirus; blank outside poliovirus.",
+    "implementation": "derive.classification.poliovirus_classification",
+    "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-STATUS-1",
+    "rule_version": "2.4.1",
+    "field_name": "curation_status",
+    "description": "Poliovirus shipped carve is vouched; non-polio EV is provisional; carve-excluded records are excluded (audit only).",
+    "implementation": "derive.partition.curation_status",
+    "parameters": {
+      "poliovirus_status": "vouched",
+      "non_poliovirus_status": "provisional",
+      "carve_excluded_status": "excluded"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-ORIGIN-1",
+    "rule_version": "2.4.1",
+    "field_name": "sample_origin",
+    "description": "Project the curated origin_class.",
+    "implementation": "derive.epi.sample_origin",
+    "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-SURVEILLANCE-1",
+    "rule_version": "2.4.1",
+    "field_name": "surveillance_stream",
+    "description": "Project the curated sampling_frame.",
+    "implementation": "derive.epi.surveillance_stream",
+    "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-SPECIMEN-1",
+    "rule_version": "2.4.1",
+    "field_name": "specimen_type",
+    "description": "Project the curated specimen_type.",
+    "implementation": "derive.epi.specimen_type",
+    "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-DATE-1",
+    "rule_version": "2.4.1",
+    "field_name": "collection_date",
+    "description": "Precision-driven and curated-first, so a superseded source value can never resurrect: day -> collection_date_curated (ISO YYYY-MM-DD); month -> the source /collection_date normalized to YYYY-MM (the curated layer has no month field, so this is a normalization of the source, not a fallback to it, and the normalized year is cross-checked against collection_year_curated); year -> collection_year_curated (YYYY); range -> collection_year_curated, which holds the R-DATE-RANGE-1 midpoint, never the raw interval string; unknown -> blank. Every emitted value matches ^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$.",
+    "implementation": "derive.dates.collection_date",
+    "parameters": {
+      "output_pattern": "^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$",
+      "precisions": [
+        "day",
+        "month",
+        "year",
+        "range",
+        "unknown"
+      ]
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-DATE-PRECISION-1",
+    "rule_version": "2.4.1",
+    "field_name": "collection_date_precision",
+    "description": "Project the curated collection_date_precision (day/month/year/range/unknown).",
+    "implementation": "derive.dates.collection_date_precision",
+    "parameters": {
+      "precisions": [
+        "day",
+        "month",
+        "year",
+        "range",
+        "unknown"
+      ]
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-DATE-RANGE-1",
+    "rule_version": "2.4.1",
+    "field_name": "collection_year_earliest",
+    "description": "For an interval /collection_date, the exact endpoint years, populated IFF collection_date_precision == 'range' and blank on every other row. collection_date carries the midpoint (floor of the mean of the endpoints), so the point estimate is usable without string parsing while the true bounds stay recoverable. Upstream producer: build_curated_genbank_metadata.parse_date_range / range_midpoint_year.",
+    "implementation": "derive.dates.collection_year_bounds",
+    "parameters": {
+      "populated_when_precision_is": "range"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-CONSTRUCT-1",
+    "rule_version": "2.4.1",
+    "field_name": "engineered_or_construct",
+    "description": "Project the reviewed engineered/construct boolean.",
+    "implementation": "derive.engineered.engineered_or_construct",
+    "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-GEO-LOCALITY-1",
+    "rule_version": "2.4.1",
+    "field_name": "locality",
+    "description": "Sub-admin1 detail only. parse_geo derives country/admin1/locality from one GenBank geo_loc_name string, so locality was byte-identical to admin1 whenever no finer detail was deposited (4,285 of 5,319 rows; containment is exact -- locality always startswith admin1). Blank it when it equals admin1 so a non-blank locality means genuine sub-admin1 information.",
+    "implementation": "derive.geo.locality",
+    "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-EXCLUDE-1",
+    "rule_version": "2.4.1",
+    "field_name": "canonical inclusion",
+    "description": "Records with a carve exclusion are absent from canonical but remain in source and audit.",
+    "implementation": "derive.carve.canonical_inclusion",
+    "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-TIER-WILD-1",
+    "rule_version": "2.4.1",
+    "field_name": "sequence_classification_tier_wild_threshold",
+    "description": "Divergence-from-Sabin threshold above which a record's raw sequence tier is 'wild' (classify_sequence_tier.WILD_THRESHOLD = 0.15; the identical value is reused, not reinvented, by resolve_recombinant_segments.py and resolve_capsid_free_sabin_like_serotype.py).",
+    "implementation": "derive.evidence.sequence_tier_wild",
+    "parameters": {
+      "wild_threshold": "0.15"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-TIER-SABINLIKE-1",
+    "rule_version": "2.4.1",
+    "field_name": "sequence_classification_tier_sabinlike_threshold",
+    "description": "Per-serotype divergence-from-Sabin threshold below which a record's raw sequence tier is 'Sabin-like' (classify_sequence_tier.SABIN_LIKE_THRESHOLD = {'1': 0.01, '2': 0.006, '3': 0.01}).",
+    "implementation": "derive.evidence.sequence_tier_sabin_like",
+    "parameters": {
+      "sabin_like_threshold": {
+        "1": "0.01",
+        "2": "0.006",
+        "3": "0.01"
+      }
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-MEMBERSHIP-AA-1",
+    "rule_version": "2.4.1",
+    "field_name": "poliovirus_membership_aa_band",
+    "description": "Capsid AA p-distance band adjudicating the ambiguous generic-organism poliovirus-membership bucket: below 8.0% with >=50 codons compared rescues to poliovirus; 15.0% or above confirms not-poliovirus (resolve_poliovirus_membership.py).",
+    "implementation": "derive.evidence.poliovirus_membership",
+    "parameters": {
+      "rescue_below_pct": "8.0",
+      "not_poliovirus_at_or_above_pct": "15.0",
+      "min_codons_compared": "50"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-RECONCILE-1",
+    "rule_version": "2.4.1",
+    "field_name": "sequence_classification_reconciliation_aa_band",
+    "description": "Capsid AA p-distance band used to reconcile text-derived vs sequence-derived classification (reconcile_sequence_classification.AA_BAND = 0.08; minimum 50 codons compared to make a call).",
+    "implementation": "derive.classification.reconcile_aa_band",
+    "parameters": {
+      "aa_band": "0.08",
+      "min_codons_compared": "50"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-EVTYPE-1",
+    "rule_version": "2.4.1",
+    "field_name": "enterovirus_type_sequence_identity_threshold",
+    "description": "Minimum within-type VP1 nucleotide identity for a confident sequence-derived EV type call (resolve_ev_sequence_typing.NT_THRESHOLD = 0.75).",
+    "implementation": "derive.ev_typing.nt_identity",
+    "parameters": {
+      "nt_identity_threshold": "0.75"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-EVTYPE-2",
+    "rule_version": "2.4.1",
+    "field_name": "enterovirus_type_sequence_overlap_floor",
+    "description": "Minimum co-aligned overlap in nt for a confident sequence-derived EV type call (resolve_ev_sequence_typing.MIN_OVERLAP_NT = 250).",
+    "implementation": "derive.ev_typing.overlap_floor",
+    "parameters": {
+      "min_overlap_nt": "250"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-EVTYPE-3",
+    "rule_version": "2.4.1",
+    "field_name": "enterovirus_type_polio_suspect_overlap_floor",
+    "description": "Minimum overlap in nt for the mislabeled-polio review surface, below the confident-call floor (resolve_ev_sequence_typing.POLIO_SUSPECT_MIN_OVERLAP_NT = 50).",
+    "implementation": "derive.ev_typing.polio_suspect_overlap_floor",
+    "parameters": {
+      "polio_suspect_min_overlap_nt": "50"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-EVTYPE-4",
+    "rule_version": "2.4.1",
+    "field_name": "enterovirus_type_kmer_prefilter",
+    "description": "Minimum shared 12-mer containment for a reference to be aligned during escalated EV typing (resolve_ev_sequence_typing.KMER_PREFILTER = 0.3).",
+    "implementation": "derive.ev_typing.kmer_prefilter",
+    "parameters": {
+      "kmer_containment": "0.3",
+      "kmer_length": "12"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-EVTYPE-5",
+    "rule_version": "2.4.1",
+    "field_name": "enterovirus_type_topk_same_type",
+    "description": "Number of same-type references aligned when reconfirming a query's own name-derived type (resolve_ev_sequence_typing.TOPK_SAME_TYPE = 1).",
+    "implementation": "derive.ev_typing.topk_same_type",
+    "parameters": {
+      "topk_same_type": "1"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-EVTYPE-6",
+    "rule_version": "2.4.1",
+    "field_name": "enterovirus_type_topk_all",
+    "description": "Number of top-ranked references (by 12-mer containment) aligned during all-vs-panel EV typing escalation (resolve_ev_sequence_typing.TOPK_ALL = 8).",
+    "implementation": "derive.ev_typing.topk_all",
+    "parameters": {
+      "topk_all": "8"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-RECOMB-1",
+    "rule_version": "2.4.1",
+    "field_name": "recombinant_segment_scoring_windows",
+    "description": "Window-scoring parameters for detecting a Sabin/wild recombination breakpoint: 60nt divergence windows, >=3 low-divergence windows to call a Sabin segment, >=2 high-divergence windows to call a chimera, >=150nt minimum Sabin-segment length (resolve_recombinant_segments.py). Detection does NOT re-tier: as of 2026-07-29 the segment-divergence tier override is removed (it could source a tier from outside the classification region), and the only tier this step writes is 'chimera'.",
+    "implementation": "derive.recombination.scoring_windows",
+    "parameters": {
+      "window_nt": "60",
+      "min_low_divergence_windows": "3",
+      "min_high_divergence_windows": "2",
+      "min_sabin_segment_nt": "150"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-RECOMB-2",
+    "rule_version": "2.4.1",
+    "field_name": "chimera_tier_rule",
+    "description": "A detected junction is relabelled tier 'chimera' -- the threshold rule has no defined input -- when VP1 diverges >=2.0x its own whole-capsid p-distance (above the serotype Sabin-like threshold), or the capsid-AA membership band fails so a Sabin segment sits in a non-poliovirus capsid (resolve_recombinant_segments.CHIMERA_VP1_CAPSID_RATIO).",
+    "implementation": "derive.recombination.chimera_tier",
+    "parameters": {
+      "vp1_capsid_ratio": "2.0"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-SABINLIKEPROMO-1",
+    "rule_version": "2.4.1",
+    "field_name": "sabin_like_capsid_free_promotion_ceiling",
+    "description": "Ceiling divergence for promoting a capsid-free record to a Sabin-like serotype (resolve_capsid_free_sabin_like_serotype.EGREGIOUS_CEILING = 0.25; minimum segment length 150nt).",
+    "implementation": "derive.recombination.capsid_free_promotion",
+    "parameters": {
+      "egregious_ceiling": "0.25",
+      "min_segment_nt": "150"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-SEROTYPE-COVERAGE-1",
+    "rule_version": "2.4.1",
+    "field_name": "serotype_coverage_guard",
+    "description": "Minimum capsid codons compared for the sequence-derived serotype to be trusted as the shipped canonical serotype (build_final_carve.MIN_SEROTYPE_CODONS = 100).",
+    "implementation": "derive.evidence.serotype_coverage_guard",
+    "parameters": {
+      "min_serotype_codons": "100"
+    },
+    "status": "active"
+  }
+]
