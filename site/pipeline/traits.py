@@ -46,18 +46,29 @@ def read_canonical() -> list[dict[str, str]]:
     return rows
 
 
-def derive_species() -> dict[str, str]:
+def derive_species(rows: list[dict[str, str]]) -> dict[str, str]:
     """version -> species label (EV-A .. RV-C), or `unresolved`.
 
     The lineage uses post-2023 ICTV binomials (`Enterovirus coxsackiepol`), which
     is not how this field is reported anywhere else, hence the explicit mapping.
     The species-rank taxon is the one immediately below the genus.
+
+    269 records (2026-07-29) have a lineage that stops AT the genus rank with no
+    species-rank child recorded at all -- an NCBI taxonomy-record completeness gap,
+    not a resolution failure on our end. `SPECIES_ORGANISM_FALLBACK` recovers the 93
+    of those where `organism_name` already states the species unambiguously (either
+    literally matching a `SPECIES_BINOMIAL` key, or one of the small set of
+    non-binomial strings in the fallback table); the rest stay genuinely
+    `unresolved` -- `rows` is needed for this fallback, hence the signature change
+    from the zero-argument version.
     """
     lineage: dict[str, dict[int, str]] = {}
     with gzip.open(contract.RECORD_TAXONOMY, "rt", newline="") as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
             ranks = lineage.setdefault(row["record_id"], {})
             ranks[int(row["lineage_ordinal"])] = row["taxon_name"]
+
+    organism_by_version = {row["version"]: row.get("organism_name", "") for row in rows}
 
     out: dict[str, str] = {}
     for version, ranks in lineage.items():
@@ -68,6 +79,11 @@ def derive_species() -> dict[str, str]:
                 child = ranks[ordinals[position + 1]]
                 label = contract.SPECIES_BINOMIAL.get(child, contract.SPECIES_UNRESOLVED)
                 break
+        if label == contract.SPECIES_UNRESOLVED:
+            organism = organism_by_version.get(version, "")
+            label = (contract.SPECIES_BINOMIAL.get(organism)
+                     or contract.SPECIES_ORGANISM_FALLBACK.get(organism)
+                     or contract.SPECIES_UNRESOLVED)
         out[version] = label
     return out
 
@@ -134,7 +150,7 @@ def concordance(record: dict[str, str], selection_id: str, aligned: bool) -> str
 def build_records() -> tuple[list[dict], dict[str, dict]]:
     """Canonical rows with derived traits attached, plus an accession index."""
     rows = read_canonical()
-    species = derive_species()
+    species = derive_species(rows)
     decided = manual_decision_accessions()
 
     records = []

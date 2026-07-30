@@ -389,6 +389,22 @@ SPECIES_BINOMIAL = {
 GENUS_TAXA = ("Enterovirus", "Rhinovirus")
 SPECIES_UNRESOLVED = "unresolved"
 
+# Fallback when the taxonomy lineage stops AT genus with no species-rank child at all
+# (269 records, 2026-07-29) -- `derive_species` then has nothing to look up, but for some
+# of those the `organism_name` field already states the species and the lineage gap is
+# simply an NCBI taxonomy-record completeness gap, not real ambiguity. Two disjoint cases:
+#   - 82 records: organism_name IS ALREADY an exact SPECIES_BINOMIAL key ("Enterovirus
+#     coxsackiepol" etc). No new data needed, just falling back to the same table.
+#   - 11 records: organism_name is "Human poliovirus sp." -- not an ICTV binomial (hence
+#     not a SPECIES_BINOMIAL key), but poliovirus has no non-EV-C serotype, so this is
+#     unambiguous and does not need sequence evidence to resolve.
+# The remaining ~176 genus-terminal records are genuinely ambiguous (vague pre-binomial
+# forms like "Human enterovirus", "Enterovirus 6/19/24", or non-human "Simian enterovirus
+# SV46") and correctly stay `unresolved` -- this map must never grow to cover them.
+SPECIES_ORGANISM_FALLBACK = {
+    "Human poliovirus sp.": "EV-C",
+}
+
 # Alignment character semantics live in frame.py, which owns the normalized
 # encoding: rows mix case, the NCR blocks use U where the CDS block uses T, and
 # everything outside ACGT counts as not-covered rather than as a mismatch.
