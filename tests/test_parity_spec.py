@@ -115,10 +115,21 @@ def test_quoted_multiline_fields_are_counted_as_one_row(tmp_path: Path) -> None:
     assert rows[0][1] == "one\ntext\nspanning\nlines"
 
 
-def test_shipped_comments_table_row_count_matches_its_dictionary(repository_root: Path) -> None:
-    """The live instance of the bug above: 18,476 rows across 27,038 physical lines."""
-    _, rows = read_tsv_gz(repository_root / "final/source/normalized_tsv/comments.tsv.gz")
-    assert len(rows) == 18476
+# The live instance of that bug is `final/source/normalized_tsv/comments.tsv.gz` — 18,476 real rows
+# across 27,038 physical lines. A `test_shipped_comments_table_row_count_matches_its_dictionary`
+# asserted the 18,476 against the shipped file; removed 2026-07-30. Those bytes are hash-gated by
+# `evgc parity-source`, which compares all 24 source artifacts against
+# `final/audit/release_file_manifest.tsv` and reports an altered release apart from a bad build.
+#
+# The mutation is worth recording because it came out lopsided rather than merely equivalent.
+# Appending one byte to the shipped file left `read_tsv_gz` reporting 18,476 rows — gzip tolerates
+# the trailing byte, so the removed assertion stayed green on a tampered release — while the corpus
+# tier failed with `comments.tsv.gz: shipped artifact does not match its own manifest`. The count
+# was the weaker of the two checks, not a second copy of the stronger one. And a change that *would*
+# move the count necessarily moves the bytes, so parity sees that too.
+#
+# The behaviour that made the bug possible is covered above, against a fixture rather than against a
+# number nothing in this repository can move.
 
 
 def test_drifted_artifact_bytes_are_caught(
