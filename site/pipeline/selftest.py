@@ -19,6 +19,7 @@ import divergence
 import embed
 import frame
 import reference
+import trees
 
 FAILURES: list[str] = []
 
@@ -312,10 +313,46 @@ def distance_and_embedding_cases() -> None:
         }
     )
     all_rows = np.arange(5)
-    chosen = distances.choose_landmarks(ragged.matrix, all_rows, min_shared=6, cap=5)
-    matrix = distances.landmark_matrix(ragged.matrix, chosen, min_shared=6)
-    check(not np.isnan(matrix).any(), "the landmark matrix has no undefined pair")
-    check(len(chosen) >= 3, f"the three full rows are all landmarks (got {len(chosen)})")
+    chosen = distances.comparable_set(ragged.matrix, all_rows, min_shared=6, cap=5)
+    matrix = distances.complete_matrix(ragged.matrix, chosen, min_shared=6)
+    check(not np.isnan(matrix).any(), "the comparable set has no undefined pair")
+    check(len(chosen) >= 3, f"the three full rows are all comparable (got {len(chosen)})")
+
+    # Degree ordering must beat coverage ordering on the shape that motivated it: two
+    # disjoint halves plus one row spanning both. Ordered by coverage the spanning row
+    # goes first and then one half locks the other out; ordered by degree the larger
+    # half is found first. Six head rows against three tail rows, so the answer differs.
+    lopsided = _alignment(
+        {
+            **{f"head{i}": "ACGTAC" + "-" * 6 for i in range(6)},
+            **{f"tail{i}": "-" * 6 + "ACGTAC" for i in range(3)},
+            "both": "ACGTACACGTAC",
+        }
+    )
+    picked = distances.comparable_set(
+        lopsided.matrix, np.arange(10), min_shared=6, cap=10
+    )
+    check_equal(
+        len(picked),
+        7,
+        "degree ordering keeps the larger mutually-comparable half plus the spanning row",
+    )
+
+    # A required row must be present whatever its degree, or a tree cannot be rooted on
+    # a reference that the greedy happened not to pick.
+    forced = distances.comparable_set(
+        lopsided.matrix, np.arange(10), min_shared=6, cap=10, required=6
+    )
+    check(6 in set(forced.tolist()), "a required row is always in the comparable set")
+
+    # A smaller cap must yield a prefix of a larger one, which is what lets the tree and
+    # the embedding claim they select by one rule.
+    wide = distances.comparable_set(ragged.matrix, all_rows, min_shared=6, cap=5)
+    narrow = distances.comparable_set(ragged.matrix, all_rows, min_shared=6, cap=3)
+    check(
+        wide[: len(narrow)].tolist() == narrow.tolist(),
+        "a smaller cap selects a prefix of what a larger cap selects",
+    )
 
     # Classical MDS must recover a geometry it is given exactly.
     truth = np.array([[0.0, 0.0], [3.0, 0.0], [0.0, 4.0], [3.0, 4.0], [1.5, 2.0]])
@@ -434,9 +471,235 @@ def square_root_never_worsens_the_geometry() -> None:
     check(exact_count > 0, f"{exact_count} become exactly Euclidean")
 
 
+def _additive_matrix() -> tuple[np.ndarray, list[str]]:
+    """Pairwise path lengths through a tree written out by hand.
+
+    Neighbour joining is provably exact on an additive matrix, so this is the check
+    that distinguishes a correct implementation from one that merely returns a tree.
+    """
+    edges = {
+        ("A", "I"): 0.10,
+        ("B", "I"): 0.20,
+        ("I", "J"): 0.30,
+        ("C", "J"): 0.15,
+        ("J", "K"): 0.25,
+        ("D", "K"): 0.40,
+        ("K", "L"): 0.12,
+        ("E", "L"): 0.05,
+        ("F", "L"): 0.33,
+    }
+    adjacency: dict[str, list[tuple[str, float]]] = {}
+    for (a, b), length in edges.items():
+        adjacency.setdefault(a, []).append((b, length))
+        adjacency.setdefault(b, []).append((a, length))
+
+    def path(start: str, end: str) -> float:
+        stack = [(start, 0.0, {start})]
+        while stack:
+            node, total, seen = stack.pop()
+            if node == end:
+                return total
+            for neighbour, length in adjacency[node]:
+                if neighbour not in seen:
+                    stack.append((neighbour, total + length, seen | {neighbour}))
+        raise AssertionError("disconnected")
+
+    tips = ["A", "B", "C", "D", "E", "F"]
+    return np.array([[path(a, b) for b in tips] for a in tips]), tips
+
+
+def _paths_through(tree: trees.Unrooted) -> np.ndarray:
+    adjacency: dict[int, list[tuple[int, float]]] = {}
+    for a, b, length in tree.edges:
+        adjacency.setdefault(a, []).append((b, length))
+        adjacency.setdefault(b, []).append((a, length))
+
+    def path(start: int, end: int) -> float:
+        stack = [(start, 0.0, {start})]
+        while stack:
+            node, total, seen = stack.pop()
+            if node == end:
+                return total
+            for neighbour, length in adjacency[node]:
+                if neighbour not in seen:
+                    stack.append((neighbour, total + length, seen | {neighbour}))
+        raise AssertionError("disconnected")
+
+    n = tree.n_tips
+    return np.array([[0.0 if i == j else path(i, j) for j in range(n)] for i in range(n)])
+
+
+def tree_cases() -> None:
+    print("\ntree cases")
+
+    truth, tips = _additive_matrix()
+    tree = trees.neighbour_join(truth)
+    error = float(np.abs(_paths_through(tree) - truth).max())
+    check(error < 1e-9, f"neighbour joining recovers an additive tree exactly ({error:.1e})")
+    check_equal(tree.n_tips, len(tips), "every tip survives the join")
+    check_equal(
+        len(tree.edges), 2 * len(tips) - 3, "an unrooted binary tree has 2n-3 edges"
+    )
+
+    _, negative, _ = trees.clamp_negative(tree)
+    check_equal(negative, 0, "an additive tree needs no clamping")
+
+    # Determinism, because the trees are committed behind a hash gate: a rebuild that
+    # reordered two equidistant neighbours would look like a data change.
+    check(
+        trees.neighbour_join(truth).edges == tree.edges,
+        "the same matrix yields the same tree twice",
+    )
+    star = np.ones((8, 8)) - np.eye(8)
+    check(
+        trees.neighbour_join(star).edges == trees.neighbour_join(star).edges,
+        "tie-breaking is deterministic when every distance is equal",
+    )
+
+    for label, rooted in (
+        ("outgroup", trees.root_at_tip(tree, 0)),
+        ("midpoint", trees.midpoint_root(tree)),
+    ):
+        placed = trees.layout(rooted)
+        check_equal(
+            sorted(placed["tip_order"]),
+            list(range(len(tips))),
+            f"{label} rooting keeps every tip exactly once",
+        )
+        check_equal(
+            len(placed["node_x"]),
+            len(tips) - 1,
+            f"{label} rooting gives a strictly binary tree n-1 internal nodes",
+        )
+        check_equal(
+            placed["node_parent"].count(-1), 1, f"{label} rooting yields exactly one root"
+        )
+        backwards = [
+            index
+            for index, tip in enumerate(placed["tip_order"])
+            if placed["node_x"][placed["tip_parent"][index]] > placed["tip_x"][index] + 1e-12
+        ]
+        check_equal(
+            len(backwards), 0, f"{label}: no tip is drawn to the left of its own parent"
+        )
+
+    # Midpoint rooting has one defining property: the two most divergent tips end up
+    # equally deep. Without it the root is merely somewhere in the middle.
+    midpoint = trees.layout(trees.midpoint_root(tree))
+    deepest = sorted(midpoint["tip_x"])[-2:]
+    check(
+        abs(deepest[0] - deepest[1]) < 1e-9,
+        f"midpoint rooting is equidistant from the two deepest tips ({deepest[0]:.5f})",
+    )
+
+    # Outgroup rooting must put the nominated tip on one side of the root by itself.
+    outgroup = trees.root_at_tip(tree, 0)
+    check_equal(
+        [len(outgroup.children[child]) == 0 for child in outgroup.children[outgroup.root]].count(
+            True
+        ),
+        1,
+        "outgroup rooting leaves the nominated tip alone on one side of the root",
+    )
+
+    # Residue translation must refuse a codon it cannot read, rather than guessing.
+    coding = _alignment(
+        {
+            "clean": "ATGGCCTTT",
+            "synonym": "ATGGCTTTT",  # GCC -> GCT, still alanine
+            "changed": "ATGGACTTT",  # GCC -> GAC, alanine to aspartate
+            "ambiguous": "ATGGNCTTT",
+            "gapped": "ATGG--TTT",
+        }
+    )
+    residues = frame.residue_block(coding.matrix)
+    check_equal(residues.shape, (5, 3), "a nine-column block translates to three codons")
+    check(
+        residues[0, 1] == residues[1, 1],
+        "a synonymous change translates to the same residue",
+    )
+    check(
+        residues[0, 1] != residues[2, 1],
+        "a non-synonymous change translates to a different residue",
+    )
+    check_equal(
+        int(residues[3, 1]), frame.NOT_TRANSLATED, "a codon holding an N does not translate"
+    )
+    check_equal(
+        int(residues[4, 1]), frame.NOT_TRANSLATED, "a codon holding a gap does not translate"
+    )
+
+    rows = np.arange(5)
+    shared, matches = distances.counts_against(
+        residues, rows, rows, distances.RESIDUE
+    )
+    check_equal(
+        float(shared[0, 3]),
+        2.0,
+        "an unreadable codon lowers the shared residue count",
+    )
+    residue_distance = distances.distance_from_counts(shared, matches, min_shared=1)
+    check_equal(
+        float(residue_distance[0, 1]), 0.0, "a synonymous change is zero residue distance"
+    )
+    check_equal(
+        round(float(residue_distance[0, 2]), 6),
+        round(1 / 3, 6),
+        "a non-synonymous change is one residue difference over three",
+    )
+
+
+def trees_are_populated() -> None:
+    """The shipped trees must actually carry the population they claim.
+
+    The failure this guards against is a tree that silently collapses to a handful of
+    tips because a selection rule regressed — which would still render, and would still
+    look like a tree.
+    """
+    import json
+
+    print("\nshipped tree checks")
+    thin = []
+    unrooted = []
+    counted = 0
+    for path in sorted((contract.DATA_OUT / "trees").glob("*.json")):
+        payload = json.loads(path.read_text())
+        for block in ("nucleotide", "protein"):
+            for region, tree in payload.get(block, {}).items():
+                tips = len(tree["tip_record"])
+                if tips == 0:
+                    continue
+                counted += 1
+                # Every tip needs a parent, every internal node but the root needs one,
+                # and the vertical spans have to bracket their own children.
+                if len(tree["node_x"]) != tips - 1:
+                    unrooted.append(f"{payload['selection']} {block} {region}")
+                if tree["node_parent"].count(-1) != 1:
+                    unrooted.append(f"{payload['selection']} {block} {region} (roots)")
+                eligible = tree["n_eligible"]
+                if eligible >= 100 and tips < min(eligible, payload["tip_cap"]) * 0.5:
+                    thin.append(
+                        f"{payload['selection']} {block} {region}: {tips} of {eligible}"
+                    )
+    check(counted > 0, f"{counted} trees are shipped")
+    check_equal(
+        len(unrooted),
+        0,
+        "every tree is rooted and binary"
+        + (f": {'; '.join(unrooted[:3])}" if unrooted else ""),
+    )
+    check_equal(
+        len(thin),
+        0,
+        "no tree drops more than half of what it could carry"
+        + (f": {'; '.join(thin[:3])}" if thin else ""),
+    )
+
+
 def run() -> int:
     synthetic_cases()
     distance_and_embedding_cases()
+    tree_cases()
     jitter_is_stable()
     region_widths_agree()
     sabin_against_itself()
@@ -444,6 +707,8 @@ def run() -> int:
         axes_are_bounded()
         embedding_confidence_is_informative()
         square_root_never_worsens_the_geometry()
+    if (contract.DATA_OUT / "trees").is_dir():
+        trees_are_populated()
 
     print()
     if FAILURES:

@@ -8,18 +8,29 @@ divergence, multidimensional scaling of nucleotide distance, nucleotide phylogen
 and amino-acid phylogeny. Its purpose is to make the structure in the release
 legible at a glance and to make misclassification noticeable.
 
-**Figure sets 1 and 2 ship.** Both are the same instrument, from the same component
-in `src/ui/chapter.ts`: a strip of live region thumbnails above one focus panel, with
-drag-to-brush zoom, per-panel auto-scaling, seven colored categories plus Other with
-glyph co-encoding, hover and full keyboard traversal, and click-to-pin showing every
-canonical field. Pinning a record in one chapter highlights it in the other. All state
-lives in the URL hash, so any view is a shareable link.
+All four are the same instrument, from the same component in `src/ui/chapter.ts`: a
+strip of live region thumbnails above one focus panel, with drag-to-brush zoom,
+per-panel auto-scaling, seven colored categories plus Other with glyph co-encoding,
+hover and full keyboard traversal, and click-to-pin showing every canonical field.
+Pinning a record in one chapter highlights it in all of them. All state lives in the URL
+hash, so any view is a shareable link.
 
 - **Set 1, divergence** — synonymous against non-synonymous codon differences from a
   reference, over four coding regions. Square-root or linear axes.
 - **Set 2, distance** — classical multidimensional scaling of pairwise nucleotide
   distance, over five regions including both non-coding ones, which it can reach
   because it needs no reading frame.
+- **Set 3, nucleotide phylogeny** — neighbour joining on those same distances, over the
+  same five regions.
+- **Set 4, protein phylogeny** — the same over translated residue distance, for the
+  three coding regions.
+
+A tree is a scatter with a link layer: x is distance from the root, y is position in the
+ladder, and one mark per tip. That is why the trees reuse the component rather than
+getting one of their own — the colour scale, legend, hover, brush, pin and keyboard
+traversal are all the same code, and a reader does not relearn the controls between
+chapters. What a tree adds is an ordinal vertical axis, which carries no ticks because a
+place in a ladder is not a quantity, and a taller panel.
 
 The square-root toggle does something different in each, which is why one control
 serves both. In set 1 it transforms the drawn **axis**. In set 2 it selects which
@@ -40,7 +51,34 @@ that is not a real loss. Under the linear fit part of that 0.61 rested on a geom
 plane could not honestly represent; under the square root the geometry is sound and
 the variance is spread across dimensions that genuinely exist.
 
-Sets 3 and 4, the two phylogenies, carry placeholders naming what lands there.
+### Sets 3 and 4: not every sequence can be on a tree
+
+Neighbour joining needs a distance for every pair, and pairwise deletion does not
+supply one — two fragments covering disjoint parts of a region share no columns, so
+their distance does not exist. The tips are therefore
+`distances.comparable_set`: the largest mutually-comparable set a greedy finds,
+capped at 2,500 for cost. Every panel states how many sequences that left off, and
+those sequences are still in sets 1 and 2, which need no complete matrix.
+
+That set is ordered by **overlap degree**, not by coverage, and the difference is
+large. Ordering by coverage admits the longest sequence first, and one early fragment
+covering only VP4 then rejects every VP1-only record behind it. On PV1's P1 that kept
+672 of 3,442 attainable sequences; degree ordering starts from the part of the region
+everything covers — VP1, which is the typing gene and therefore why a record is in the
+alignment at all — and reaches the cap. Figure 2 gained from the same change: PV1 P1
+now embeds 1,500 landmarks exactly where it embedded 652, and PV3 P1 1,360 where it
+embedded 409.
+
+Branch lengths are observed differences per position compared, in the same
+uncorrected currency as the rest of the site. No substitution model is applied, so a
+long branch is a statement about observed difference and nothing more. Negative
+branches — which neighbour joining produces routinely, because real distances are not
+exactly additive — are clamped to zero and the count is reported on the figure.
+
+Rooting is on Sabin for the poliovirus selections and for `all`, at the midpoint of
+that tip's own branch; the reference is forced into the tip set so a panel can never
+silently fall back. Non-polio is midpoint-rooted, because it has no member ancestral
+to the rest and nominating an outgroup would assert something untrue.
 
 ## Reproducing from a fresh clone
 
@@ -63,30 +101,26 @@ To review locally:
 npm --prefix site run serve
 ```
 
-### Later stages will add a tree builder
+There is deliberately no third toolchain. An earlier plan built `decenttree` from
+source for the trees; the implementation in [`pipeline/trees.py`](pipeline/trees.py)
+replaced it. Neighbour joining is forty lines of deterministic arithmetic rather than a
+heuristic search, and two things decided it. A fresh clone needs no bioinformatics
+toolchain at all — which matters most on the machine where Homebrew has a non-standard
+prefix and builds from source. And the artifacts are committed behind a hash gate, so a
+rebuild has to reproduce the same tree bit for bit, which a multithreaded tool's
+tie-breaking will not promise. `selftest` asserts both the exactness (an additive
+matrix is recovered to 2e-16) and the determinism (identical trees across runs,
+including on an all-ties matrix).
 
-Stages 3 and 4 build neighbour-joining trees from the same masked distance
-matrices the MDS uses, so the tree and the embedding cannot disagree about how
-partial sequence overlap was handled. That requires a distance-matrix tree tool,
-which is not in Homebrew:
-
-```bash
-git clone https://github.com/iqtree/decenttree ~/.local/src/decenttree
-cmake -S ~/.local/src/decenttree -B ~/.local/src/decenttree/build -DCMAKE_BUILD_TYPE=Release
-cmake --build ~/.local/src/decenttree/build -j
-ln -s ~/.local/src/decenttree/build/decenttree ~/.local/bin/decenttree
-```
-
-`rapidNJ` (<https://github.com/somme89/rapidNJ>) is the fallback if that build
-fails; it implements the same algorithm family and takes the same PHYLIP input.
-`site/data/manifest.json` records whichever version actually produced the
-committed trees.
+The cost is speed: 2,500 tips take about ten seconds, and forty trees are built per
+release, so the tree stage adds a few minutes to a build that is already minutes long.
+That is the right trade for a step that runs on one machine and ships its output.
 
 ## Why the data is committed rather than built on deploy
 
-Distances are cheap (~30 s for the full 24,038² masked-Hamming matrix), but the
-trees are not, and the tree builder needs a source build that has no business in a
-Pages workflow. So the derived artifacts under `site/data/` are committed, and
+Distances are cheap (~30 s for the full 24,038² masked-Hamming matrix), but forty
+neighbour joins are not, and neither has any business running in a Pages workflow on
+every deploy. So the derived artifacts under `site/data/` are committed, and
 `.github/workflows/ci.yml` runs
 
 ```bash

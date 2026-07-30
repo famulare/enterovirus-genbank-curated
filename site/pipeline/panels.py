@@ -7,6 +7,8 @@ strings and the browser can look up a full record without a second fetch.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
 
 import contract
@@ -37,14 +39,28 @@ def selection_rows(
     )
 
 
-def build_selection(
+@dataclass
+class Population:
+    """The rows one selection actually draws, resolved once.
+
+    Every figure set reads this rather than re-deriving it, so the scatter, the map and
+    the two trees cannot end up describing different populations of the same selection.
+    """
+
+    rows: np.ndarray
+    accessions: list[str]
+    record_rows: list[int]
+    records: list[dict]
+    orphaned: int
+
+
+def resolve_population(
     selection: dict,
     alignment: frame.Alignment,
-    columns: dict[str, np.ndarray],
     records: list[dict],
     by_accession: dict,
     record_index: dict[str, int],
-) -> dict:
+) -> Population:
     rows = selection_rows(selection, alignment, by_accession)
     accessions = [alignment.ids[index] for index in rows]
 
@@ -57,9 +73,27 @@ def build_selection(
     orphaned = len(accessions) - len(placed)
     rows = rows[placed]
     accessions = [accessions[index] for index in placed]
-
     record_rows = [record_index[accession] for accession in accessions]
-    records_by_row = [records[index] for index in record_rows]
+    return Population(
+        rows=rows,
+        accessions=accessions,
+        record_rows=record_rows,
+        records=[records[index] for index in record_rows],
+        orphaned=orphaned,
+    )
+
+
+def build_selection(
+    selection: dict,
+    alignment: frame.Alignment,
+    columns: dict[str, np.ndarray],
+    population: Population,
+) -> dict:
+    rows = population.rows
+    accessions = population.accessions
+    record_rows = population.record_rows
+    records_by_row = population.records
+    orphaned = population.orphaned
 
     panels = {}
     for region in contract.DIVERGENCE_REGIONS:

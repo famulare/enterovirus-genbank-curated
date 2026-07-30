@@ -141,11 +141,28 @@
         tree and the embedding cannot disagree about how partial overlap was handled. Rooted on
         Sabin for poliovirus, midpoint for non-polio.</p>
     </div>
-    <div class="wide-breakout figure-pending" data-figure="phylogeny-nt">
-      <p class="eyebrow">Figure pending</p>
-      <p>Stage 3 renders a zoomable rectangular tree per region, with a full-Auspice view
-        available alongside it.</p>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="phylogeny-nt-strip" role="group"
+           aria-label="Genome region — choose which one the large panel shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="phylogeny-nt-note">
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="phylogeny-nt-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks" id="phylogeny-nt-canvas" tabindex="0"
+                    aria-describedby="phylogeny-nt-readout"
+                    aria-label="Nucleotide phylogeny. Use arrow keys to walk down the tree, Enter to pin a sequence, Escape to clear."></canvas>
+            <svg class="scientific-chart plot-overlay" id="phylogeny-nt-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="phylogeny-nt-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="phylogeny-nt-legend"></div>
+      </div>
+      <div class="readout" id="phylogeny-nt-readout" role="status"></div>
     </div>
+    <p class="warning">Branch lengths are observed differences per position compared. They are
+      not substitutions per site, not corrected for multiple hits, and not time, so a branch
+      twice as long means twice the observed difference and nothing further. Vertical position is
+      a place in the ladder, not a measured quantity, which is why that axis carries no scale.</p>
   </section>
 
   <section id="phylogeny-aa" class="chapter" aria-labelledby="phylogeny-aa-heading">
@@ -154,10 +171,28 @@
       <p class="lede">The same three coding regions, built from translated amino acid distance.
         Emphasizes convergent or divergent evolution over ancestry.</p>
     </div>
-    <div class="wide-breakout figure-pending" data-figure="phylogeny-aa">
-      <p class="eyebrow">Figure pending</p>
-      <p>Stage 4 renders P1, P2 and P3 protein trees here.</p>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="phylogeny-aa-strip" role="group"
+           aria-label="Coding region — choose which one the large panel shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="phylogeny-aa-note">
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="phylogeny-aa-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks" id="phylogeny-aa-canvas" tabindex="0"
+                    aria-describedby="phylogeny-aa-readout"
+                    aria-label="Protein phylogeny. Use arrow keys to walk down the tree, Enter to pin a sequence, Escape to clear."></canvas>
+            <svg class="scientific-chart plot-overlay" id="phylogeny-aa-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="phylogeny-aa-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="phylogeny-aa-legend"></div>
+      </div>
+      <div class="readout" id="phylogeny-aa-readout" role="status"></div>
     </div>
+    <p class="warning">A codon counts only where all three of its bases are unambiguous in both
+      sequences being compared, so a synonymous change is invisible here by construction. Two
+      sequences at the same point in this figure are not the same sequence — they encode the same
+      protein.</p>
   </section>
 
   <section id="release" class="chapter closing" aria-labelledby="release-heading">

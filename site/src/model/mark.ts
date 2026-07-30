@@ -27,18 +27,42 @@ export interface Mark {
   flagged: boolean;
 }
 
+/** A straight segment in data coordinates, drawn beneath the marks.
+ *
+ *  Only a tree needs these — its marks are joined by branches, where a scatter's are
+ *  independent — but they belong here rather than in the tree model, because what the
+ *  renderer draws should not depend on which figure asked for it. */
+export interface Link {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
 export interface MarkSet {
   marks: Mark[];
   /** Everything the chapter wants to say about this panel, already counted. */
   facts: PanelFacts;
+  /** Structure joining the marks, for a figure that has any. */
+  links?: Link[];
 }
 
 export interface PanelFacts {
   region: string;
   total: number;
+  /** Coverage floor a record had to clear to appear, in `unit`. */
   minNt: number;
+  /** Region width, in `unit`. */
   columns: number;
+  /** What this figure counts and compares — nucleotides, or codons for a figure that
+   *  translates first. A figure that reported a codon threshold as a nucleotide one
+   *  would understate its own floor by a factor of three. */
+  unit: string;
   excludedBelowCoverage: number;
+  /** How many records cleared the coverage floor, when that is more than the figure
+   *  draws. A tree needs a complete distance matrix and so cannot carry everything
+   *  eligible; the two scatters can, and leave this unset. */
+  eligible?: number;
   /** Region-specific extras the note renders verbatim, in order. */
   notes: string[];
 }

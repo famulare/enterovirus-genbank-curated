@@ -48,11 +48,6 @@ def build_region(
             "columns": int(len(columns)),
         }
 
-    landmarks = distances.choose_landmarks(block, placeable, threshold)
-    landmark_distance = distances.landmark_matrix(block, landmarks, threshold)
-    to_landmarks, shared = distances.to_landmarks(block, placeable, landmarks, threshold)
-    resolved, confident = distances.confidence(to_landmarks, shared, len(columns))
-
     # Pin on Sabin where the alignment carries it, so poliovirus panels always open
     # with the vaccine reference in the same corner. Otherwise pin on the
     # confidently-placed centre of mass, which is stable for a stable population.
@@ -64,6 +59,19 @@ def build_region(
             if len(hits):
                 anchor = int(hits[0])
                 break
+
+    landmarks = distances.comparable_set(
+        block,
+        placeable,
+        threshold,
+        cap=distances.LANDMARK_CAP,
+        # Requiring the orientation anchor makes the pinning exact rather than
+        # conditional on the anchor happening to survive the greedy.
+        required=None if anchor is None else int(placeable[anchor]),
+    )
+    landmark_distance = distances.complete_matrix(block, landmarks, threshold)
+    to_landmarks, shared = distances.to_landmarks(block, placeable, landmarks, threshold)
+    resolved, confident = distances.confidence(to_landmarks, shared, len(columns))
 
     # Both transforms, from one landmark matrix and one set of projections. The
     # expensive work is the distance computation, which they share; fitting is a

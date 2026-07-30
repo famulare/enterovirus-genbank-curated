@@ -27,6 +27,8 @@ def _region_catalog() -> list[dict]:
             "coding": region in contract.CODING_REGIONS,
             "in_divergence": region in contract.DIVERGENCE_REGIONS,
             "in_distance": region in contract.DISTANCE_REGIONS,
+            "in_nucleotide_tree": region in contract.NUCLEOTIDE_TREE_REGIONS,
+            "in_protein_tree": region in contract.PROTEIN_TREE_REGIONS,
             "min_nt": contract.min_nt(region),
         }
         for region in (

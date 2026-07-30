@@ -20,7 +20,16 @@ const SRC = join(SITE, "src");
 const DIST = join(SITE, "dist");
 const DATA = join(SITE, "data");
 
-const REQUIRED_DATA = ["summary.json", "manifest.json"];
+// One artifact per family, so a half-finished data build fails here rather than as a
+// broken chapter in the browser. `summary.json` names the selections, but the per-
+// selection payloads are what the figures actually fetch.
+const REQUIRED_DATA = [
+  "summary.json",
+  "manifest.json",
+  "records.json",
+  "panels/PV1.json",
+  "trees/PV1.json",
+];
 
 async function main() {
   for (const name of REQUIRED_DATA) {

@@ -9,7 +9,7 @@
 
 import * as palette from "../model/palette.js";
 import type { Axis } from "../model/panel.js";
-import type { Mark } from "../model/mark.js";
+import type { Link, Mark } from "../model/mark.js";
 
 export interface Plot {
   width: number;
@@ -22,6 +22,9 @@ export interface Plot {
 
 export const FOCUS_PLOT: Plot = { width: 720, height: 520, left: 74, top: 18, right: 16, bottom: 58 };
 export const THUMB_PLOT: Plot = { width: 168, height: 132, left: 6, top: 6, right: 6, bottom: 6 };
+/** Taller, and with a narrow left gutter because a tree's vertical axis carries no
+ *  tick labels. A ladder of 2,500 tips needs every pixel of height it can get. */
+export const TREE_PLOT: Plot = { width: 720, height: 900, left: 30, top: 14, right: 20, bottom: 58 };
 
 export interface Frame {
   plot: Plot;
@@ -109,6 +112,43 @@ export interface DrawOptions {
   /** Flagged records get a cross through them rather than being plotted as though
    *  their value were trustworthy at face value. */
   markFlagged: boolean;
+  /** Structure to draw beneath the marks — a tree's branches. */
+  links?: Link[] | undefined;
+}
+
+/** Branch hairlines. Recessive by design: the branches are the armature and the tips
+ *  are the data, so the ink goes on the tips. Clipped to the plot rectangle so a
+ *  brushed range does not paint a branch across its own axis labels. */
+function drawLinks(
+  context: CanvasRenderingContext2D,
+  frame: Frame,
+  links: Link[],
+  weight: number,
+): void {
+  const { w, h } = inner(frame.plot);
+  context.save();
+  context.beginPath();
+  context.rect(frame.plot.left, frame.plot.top, w, h);
+  context.clip();
+
+  context.globalAlpha = 0.5;
+  context.strokeStyle = palette.INK;
+  context.lineWidth = weight;
+  context.beginPath();
+  for (const link of links) {
+    // A segment with both ends past the same edge cannot cross the plot; skipping it
+    // keeps a zoomed tree from stroking tens of thousands of invisible paths.
+    if (link.x1 < frame.x.min && link.x0 < frame.x.min) continue;
+    if (link.x0 > frame.x.max && link.x1 > frame.x.max) continue;
+    if (link.y1 < frame.y.min && link.y0 < frame.y.min) continue;
+    if (link.y0 > frame.y.max && link.y1 > frame.y.max) continue;
+    const [ax, ay] = toScreen(frame, link.x0, link.y0);
+    const [bx, by] = toScreen(frame, link.x1, link.y1);
+    context.moveTo(ax, ay);
+    context.lineTo(bx, by);
+  }
+  context.stroke();
+  context.restore();
 }
 
 export function drawMarks(
@@ -128,6 +168,9 @@ export function drawMarks(
   if (!context) return;
   context.setTransform(ratio, 0, 0, ratio, 0, 0);
   context.clearRect(0, 0, frame.plot.width, frame.plot.height);
+  if (options.links?.length) {
+    drawLinks(context, frame, options.links, options.radius > 1.4 ? 0.8 : 0.5);
+  }
   context.globalAlpha = ALPHA;
   context.lineWidth = 1.1;
 
@@ -216,7 +259,13 @@ export function axesMarkup(frame: Frame, xLabel: string, yLabel: string): string
     <rect class="panel-bg" fill="none" x="${plot.left}" y="${plot.top}" width="${w}" height="${h}"/>
     ${xTicks}${yTicks}
     <text class="axis-label" x="${plot.left + w / 2}" y="${plot.height - 6}" text-anchor="middle">${xLabel}</text>
-    <text class="axis-label" transform="translate(14 ${plot.top + h / 2}) rotate(-90)" text-anchor="middle">${yLabel}</text>
+    ${
+      yLabel
+        ? `<text class="axis-label" transform="translate(${Math.min(14, plot.left - 4)} ${
+            plot.top + h / 2
+          }) rotate(-90)" text-anchor="middle">${yLabel}</text>`
+        : ""
+    }
   `;
 }
 

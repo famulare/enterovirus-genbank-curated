@@ -17,9 +17,8 @@ import {
   type Zoom,
 } from "./model/view.js";
 import { Records, type RecordTable } from "./model/records.js";
-import { assertPanelSchema } from "./model/panel.js";
 import type { Mark } from "./model/mark.js";
-import { DISTANCE, DIVERGENCE } from "./model/specs.js";
+import { DISTANCE, DIVERGENCE, NUCLEOTIDE_TREE, PROTEIN_TREE } from "./model/specs.js";
 import * as chapter from "./ui/chapter.js";
 import {
   onControlEdit,
@@ -50,7 +49,7 @@ interface Manifest {
   build_identity: string;
 }
 
-const SPECS = [DIVERGENCE, DISTANCE];
+const SPECS = [DIVERGENCE, DISTANCE, NUCLEOTIDE_TREE, PROTEIN_TREE];
 
 let summary: Summary;
 let records: Records;
@@ -93,13 +92,17 @@ async function rebuild(spec: (typeof SPECS)[number]): Promise<void> {
   const container = byId(`${spec.id}-strip`).closest(".figure");
   container?.setAttribute("aria-busy", "true");
   try {
-    const file = assertPanelSchema(await chapter.loadPanels(view.selection));
+    const sets = await spec.sets(
+      view.selection,
+      chapter.regionsFor(summary, spec),
+      view.scale,
+    );
     entry.state = chapter.buildState(
       spec,
       summary,
       records,
       chapterView(spec.id),
-      file,
+      sets,
       entry.heldRecord,
     );
     chapter.render(entry.state);
@@ -151,7 +154,7 @@ function paintPinned(): void {
     const mark = state.held ?? set.marks.find((m) => m.record === row);
     if (!mark) continue;
     panels.push({
-      figure: spec.id === "divergence" ? "Divergence" : "Distance",
+      figure: spec.title,
       region: summary.regions.find((r) => r.id === state.region)?.label ?? state.region,
       rows: spec.measured(set, mark),
     });

@@ -143,6 +143,13 @@ REGION_LABELS = {
 DIVERGENCE_REGIONS = CODING_REGIONS
 DISTANCE_REGIONS = (REGION_5NCR, REGION_P1, REGION_P2, REGION_P3, REGION_3NCR)
 
+# Figure set 3 is the same nucleotide distances set 2 scales, so it covers the same
+# regions. Set 4 translates first, so it is coding-only — and excludes the whole
+# polyprotein, which at 2,210 codons would say nothing that its three parts do not say
+# separately while costing three times the build.
+NUCLEOTIDE_TREE_REGIONS = DISTANCE_REGIONS
+PROTEIN_TREE_REGIONS = (REGION_P1, REGION_P2, REGION_P3)
+
 # --- Thresholds ------------------------------------------------------------
 
 # Coverage below this many nucleotides of comparable material excludes a record

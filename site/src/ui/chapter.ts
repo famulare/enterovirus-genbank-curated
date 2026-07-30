@@ -14,9 +14,9 @@
 import * as categories from "../model/categories.js";
 import * as palette from "../model/palette.js";
 import * as scatter from "./scatter.js";
-import type { Axis, PanelFile } from "../model/panel.js";
-import { axis, zoomed } from "../model/panel.js";
-import { type Mark, type MarkSet, markExtent } from "../model/mark.js";
+import type { Axis } from "../model/panel.js";
+import { axis, ordinal, ordinalExtent, zoomed } from "../model/panel.js";
+import { type Link, type Mark, type MarkSet, markExtent } from "../model/mark.js";
 import { coverageOf } from "../model/specs.js";
 import type { Records } from "../model/records.js";
 import type { Summary, Trait } from "../model/types.js";
@@ -27,16 +27,30 @@ import { byId, esc, num } from "./dom.js";
 export interface ChapterSpec {
   /** Matches the element id prefix in index.html, and the region catalog flag. */
   id: string;
-  regionFlag: "in_divergence" | "in_distance";
+  regionFlag: "in_divergence" | "in_distance" | "in_nucleotide_tree" | "in_protein_tree";
+  /** Shown in the pinned inspector as the name of what this figure measured. */
+  title: string;
   xLabel: string;
   yLabel: string;
   /** False for a chapter whose coordinates are signed, where a square root has no
    *  meaning; such a chapter is drawn linear whatever the control says. */
   honoursScale: boolean;
-  /** Decode one region of a panel file into marks plus the facts the note states.
-   *  Takes the scale because for one chapter it selects the axis transform and for the
-   *  other it selects which embedding to show. */
-  marks: (file: PanelFile, region: string, scale: AxisScale) => MarkSet;
+  /** `ordinal` for an axis whose values are positions in an ordering rather than
+   *  quantities — a tree's ladder — which is drawn without ticks or a numbered scale. */
+  yAxis?: "quantitative" | "ordinal";
+  /** A figure that needs the taller focus panel. A ladder of 2,500 tips wants every
+   *  pixel of height it can get; a scatter does not. */
+  tall?: boolean;
+  /** Overrides how mark size falls off with population. */
+  radius?: (count: number, thumbnail?: boolean) => number;
+  /** Fetch and decode every region this chapter covers. The chapter owns its own
+   *  source: the two scatters read a panel file, the two trees read a tree file. Takes
+   *  the scale because for one chapter it selects which embedding to show. */
+  sets: (
+    selection: string,
+    regions: string[],
+    scale: AxisScale,
+  ) => Promise<Map<string, MarkSet>>;
   /** Lines for the compact hover readout, after the shared identity lines. */
   readout: (records: Records, set: MarkSet, mark: Mark) => string[];
   /** Rows for the pinned detail's "measured in this panel" list. */
@@ -48,7 +62,6 @@ export interface ChapterState {
   summary: Summary;
   records: Records;
   view: View;
-  file: PanelFile;
   regions: string[];
   /** The region this chapter is actually showing. Not always `view.region`: the two
    *  chapters cover different region sets — the polyprotein exists only in divergence,
@@ -64,16 +77,8 @@ export interface ChapterState {
   brush: scatter.Box | null;
 }
 
-const cache = new Map<string, PanelFile>();
-
-export async function loadPanels(selection: string): Promise<PanelFile> {
-  const existing = cache.get(selection);
-  if (existing) return existing;
-  const response = await fetch(`data/panels/${selection}.json`, { cache: "no-cache" });
-  if (!response.ok) throw new Error(`panels/${selection}.json: HTTP ${response.status}`);
-  const file = (await response.json()) as PanelFile;
-  cache.set(selection, file);
-  return file;
+export function regionsFor(summary: Summary, spec: ChapterSpec): string[] {
+  return summary.regions.filter((region) => region[spec.regionFlag]).map((region) => region.id);
 }
 
 /** `type_concordance` is not a stored column: it is the curated virus_type judged
@@ -97,13 +102,10 @@ export function buildState(
   summary: Summary,
   records: Records,
   view: View,
-  file: PanelFile,
+  sets: Map<string, MarkSet>,
   previousHeld: number | null,
 ): ChapterState {
-  const regions = summary.regions.filter((r) => r[spec.regionFlag]).map((r) => r.id);
-  const sets = new Map(
-    regions.map((region) => [region, spec.marks(file, region, view.scale)]),
-  );
+  const regions = regionsFor(summary, spec);
   const region = resolveRegion(regions, view.region);
 
   const scale = buildColorScale(summary, records, view, sets);
@@ -113,7 +115,6 @@ export function buildState(
     summary,
     records,
     view,
-    file,
     regions,
     region,
     sets,
@@ -196,7 +197,15 @@ export function currentSet(state: ChapterState): MarkSet {
 }
 
 function emptyFacts() {
-  return { region: "", total: 0, minNt: 0, columns: 0, excludedBelowCoverage: 0, notes: [] };
+  return {
+    region: "",
+    total: 0,
+    minNt: 0,
+    columns: 0,
+    unit: "nt",
+    excludedBelowCoverage: 0,
+    notes: [],
+  };
 }
 
 /** Filters change which marks are drawn; they never change the colour assignment, so
@@ -235,6 +244,32 @@ function styleOf(state: ChapterState) {
   };
 }
 
+/** The frame one mark set occupies.
+ *
+ *  Every panel snaps to its own data, recomputed on region, colour and filter changes:
+ *  absolute values differ by segment, so a shared range would compress most panels to
+ *  serve a comparison that is not the one being made.
+ */
+function frameFor(
+  state: ChapterState,
+  marks: Mark[],
+  plot: scatter.Plot,
+  scale: AxisScale,
+): scatter.Frame {
+  const own = markExtent(marks, scale, axis);
+  const range = state.view.zoom ? zoomed(state.view.zoom, scale) : own;
+  if (state.spec.yAxis === "ordinal") {
+    range.y = state.view.zoom
+      ? ordinal(state.view.zoom.y0, state.view.zoom.y1)
+      : ordinalExtent(marks.length);
+  }
+  return { plot, x: range.x, y: range.y };
+}
+
+function radiusFor(state: ChapterState, count: number, thumbnail = false): number {
+  return (state.spec.radius ?? scatter.radiusFor)(count, thumbnail);
+}
+
 export function render(state: ChapterState): void {
   const style = styleOf(state);
   const scale = effectiveScale(state);
@@ -244,12 +279,12 @@ export function render(state: ChapterState): void {
   const marks = visible(state, set);
   state.visibleMarks = marks;
 
-  // Every panel snaps to its own data, recomputed on region, colour and filter
-  // changes: absolute values differ by segment, so a shared range would compress most
-  // panels to serve a comparison that is not the one being made.
-  const own = markExtent(marks, scale, axis);
-  const range = state.view.zoom ? zoomed(state.view.zoom, scale) : own;
-  const frame: scatter.Frame = { plot: scatter.FOCUS_PLOT, x: range.x, y: range.y };
+  const frame = frameFor(
+    state,
+    marks,
+    state.spec.tall ? scatter.TREE_PLOT : scatter.FOCUS_PLOT,
+    scale,
+  );
   state.frame = frame;
 
   const svg = byId<SVGSVGElement>(`${state.spec.id}-axes`);
@@ -257,13 +292,26 @@ export function render(state: ChapterState): void {
   svg.innerHTML = scatter.axesMarkup(frame, state.spec.xLabel, state.spec.yLabel);
 
   scatter.drawMarks(byId<HTMLCanvasElement>(`${state.spec.id}-canvas`), frame, marks, style, {
-    radius: scatter.radiusFor(marks.length),
+    radius: radiusFor(state, marks.length),
     markFlagged: true,
+    links: linksFor(state, set, marks),
   });
 
   renderHighlight(state);
   renderLegend(state, marks);
   renderNote(state, set, marks);
+}
+
+/** A tree's branches, dropped when a filter is hiding tips.
+ *
+ *  The branch structure describes the whole tree. Once a filter removes tips, the
+ *  remaining branches no longer join what is on screen — they would draw a topology
+ *  whose leaves are not there, which is worse than drawing none. So the armature
+ *  appears only when the figure is showing the tree it was built from.
+ */
+function linksFor(state: ChapterState, set: MarkSet, marks: Mark[]): Link[] | undefined {
+  if (!set.links) return undefined;
+  return marks.length === set.marks.length ? set.links : undefined;
 }
 
 function renderThumbnails(
@@ -302,12 +350,21 @@ function renderThumbnails(
     // comparison a reader can make is shape, which stays fair across ranges; the
     // focus panel's labelled axes are where the numbers live.
     const own = markExtent(marks, scale, axis);
+    const thumbFrame: scatter.Frame = {
+      plot: scatter.THUMB_PLOT,
+      x: own.x,
+      y: state.spec.yAxis === "ordinal" ? ordinalExtent(marks.length) : own.y,
+    };
     scatter.drawMarks(
       button.querySelector<HTMLCanvasElement>("canvas")!,
-      { plot: scatter.THUMB_PLOT, x: own.x, y: own.y },
+      thumbFrame,
       marks,
       style,
-      { radius: scatter.radiusFor(marks.length, true), markFlagged: false },
+      {
+        radius: radiusFor(state, marks.length, true),
+        markFlagged: false,
+        links: set?.links && marks.length === set.marks.length ? set.links : undefined,
+      },
     );
   }
 }
@@ -317,7 +374,7 @@ export function renderHighlight(state: ChapterState): void {
   if (!frame) return;
   const overlay = byId<SVGSVGElement>(`${state.spec.id}-overlay`);
   overlay.setAttribute("viewBox", `0 0 ${frame.plot.width} ${frame.plot.height}`);
-  const radius = scatter.radiusFor(state.visibleMarks.length);
+  const radius = radiusFor(state, state.visibleMarks.length);
   overlay.innerHTML =
     scatter.highlightMarkup(frame, state.inspected, state.held, radius) +
     scatter.brushMarkup(frame, state.brush);
@@ -405,14 +462,24 @@ function renderNote(state: ChapterState, set: MarkSet, marks: Mark[]): void {
     : marks.length;
   const hidden = set.marks.length - marks.length;
 
+  const { minNt, unit, columns, eligible } = set.facts;
+  const label = esc(region?.label ?? state.region);
+  const width = `across ${num(columns)} ${unit === "nt" ? "alignment columns" : unit}`;
+  // A figure that cannot draw everything eligible says so in the same breath as the
+  // count, rather than leaving the reader to infer that the two numbers differ.
+  const lead =
+    eligible !== undefined && eligible > set.marks.length
+      ? `<strong>${num(marks.length)}</strong> of ${num(eligible)} sequences with at least
+         ${minNt} ${unit} in ${label} are on the tree, ${width}.`
+      : `<strong>${num(marks.length)}</strong> sequences with at least ${minNt} ${unit} in
+         ${label}, ${width}.`;
+
   const parts = [
     state.view.zoom
       ? `<strong>${num(inRange)}</strong> of ${num(marks.length)} sequences inside the brushed
          range. <button type="button" class="text-button" data-reset-zoom>Show all</button>`
       : "",
-    `<strong>${num(marks.length)}</strong> sequences with at least ${set.facts.minNt} nt in
-     ${esc(region?.label ?? state.region)}, across ${num(set.facts.columns)} alignment
-     columns.`,
+    lead,
     set.facts.excludedBelowCoverage
       ? `${num(set.facts.excludedBelowCoverage)} fall below that floor and are not drawn.`
       : "",
@@ -462,10 +529,15 @@ export function boxToZoom(state: ChapterState, box: scatter.Box): Zoom | null {
   return holds ? zoom : null;
 }
 
-/** Ordered for keyboard traversal: by x then y, so arrows walk the cloud in a
- *  predictable direction rather than in file order. */
+/** Ordered for keyboard traversal, so arrows walk the figure in a predictable direction
+ *  rather than in file order. A cloud walks left to right; a tree walks down its ladder,
+ *  which is the order the figure already puts its tips in and therefore the order a
+ *  reader is following. */
 export function ordered(state: ChapterState): Mark[] {
-  return [...state.visibleMarks].sort((a, b) => a.x - b.x || a.y - b.y);
+  const marks = [...state.visibleMarks];
+  return state.spec.yAxis === "ordinal"
+    ? marks.sort((a, b) => a.y - b.y || a.x - b.x)
+    : marks.sort((a, b) => a.x - b.x || a.y - b.y);
 }
 
 export function traitOf(state: ChapterState): Trait {

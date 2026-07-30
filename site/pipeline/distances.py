@@ -23,6 +23,9 @@ trustworthy as a whole genome's.
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
+
 import numpy as np
 
 import frame
@@ -35,6 +38,33 @@ LANDMARK_CAP = 1500
 # Rows processed at once when projecting against the landmarks. Each chunk holds one
 # float32 plane of (chunk x columns), so this bounds peak memory independent of n.
 CHUNK = 6000
+
+# How many rows the mutual-comparability greedy considers, best-covered first. The
+# greedy needs a pool x pool overlap matrix, so this bounds it at 6,000^2 float32 =
+# 144 MB. Every figure draws its set from this one pool, using the same ordering, so
+# a smaller cap always yields a prefix of what a larger cap yields.
+CANDIDATE_POOL = 6000
+
+
+@dataclass(frozen=True)
+class Alphabet:
+    """What counts as readable material, and which codes a match is counted over.
+
+    The metric is identical in nucleotide and residue space — mismatches over the
+    positions where both sequences carry readable material, pairwise, with a length
+    minimum — so it is written once and parameterized rather than written twice.
+    """
+
+    name: str
+    unit: str
+    readable: Callable[[np.ndarray], np.ndarray]
+    codes: tuple[int, ...]
+
+
+NUCLEOTIDE = Alphabet("nucleotide", "nt", frame.is_base, tuple(range(1, 5)))
+RESIDUE = Alphabet(
+    "residue", "codons", frame.is_residue, tuple(range(1, len(frame.RESIDUE_SYMBOLS) + 1))
+)
 
 # A row needs at least this fraction of the landmarks resolved before its position is
 # treated as confident. Below it the point is drawn open.
@@ -51,33 +81,61 @@ CONFIDENT_SHARED_FRACTION = 0.5
 CONFIDENT_SHARED_CAP = 300
 
 
-def confident_shared(columns: int) -> float:
-    return min(CONFIDENT_SHARED_CAP, CONFIDENT_SHARED_FRACTION * columns)
+def confident_shared(columns: int) -> int:
+    """The overlap a placement is expected to rest on, as a whole number of positions.
+
+    An integer because it is a count and the figures quote it to the reader. Returning
+    the raw float meant the 3'NCR's floor was 34.5, which shipped truncated to 34 while
+    the comparison still used 34.5 — so a tip sharing exactly 34 positions was marked
+    thin and simultaneously reported as clearing the bar.
+    """
+    return int(min(CONFIDENT_SHARED_CAP, CONFIDENT_SHARED_FRACTION * columns))
 
 
 def counts_against(
-    block: np.ndarray, rows: np.ndarray, reference_rows: np.ndarray
+    block: np.ndarray,
+    rows: np.ndarray,
+    reference_rows: np.ndarray,
+    alphabet: Alphabet = NUCLEOTIDE,
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Shared columns and matching columns between `rows` and `reference_rows`.
+    """Shared positions and matching positions between `rows` and `reference_rows`.
 
     Returned as (shared, matches), both (len(rows), len(reference_rows)) float32.
     Counting via matrix products rather than pairwise loops is what makes a
     22,000 x 1,500 comparison over 4,887 columns take seconds instead of hours.
     """
     right = block[reference_rows]
-    right_valid = frame.is_base(right).astype(np.float32)
+    right_valid = alphabet.readable(right).astype(np.float32)
     shared = np.zeros((len(rows), len(reference_rows)), dtype=np.float32)
     matches = np.zeros_like(shared)
 
     for start in range(0, len(rows), CHUNK):
         stop = min(start + CHUNK, len(rows))
         left = block[rows[start:stop]]
-        shared[start:stop] = frame.is_base(left).astype(np.float32) @ right_valid.T
-        for code in range(1, 5):
+        shared[start:stop] = alphabet.readable(left).astype(np.float32) @ right_valid.T
+        for code in alphabet.codes:
             matches[start:stop] += (left == code).astype(np.float32) @ (
                 right == code
             ).astype(np.float32).T
     return shared, matches
+
+
+def shared_against(
+    block: np.ndarray,
+    rows: np.ndarray,
+    reference_rows: np.ndarray,
+    alphabet: Alphabet = NUCLEOTIDE,
+) -> np.ndarray:
+    """Shared positions only. One matrix product instead of one per code, which is a
+    twenty-fold saving in residue space where the alphabet has twenty-one members and
+    the selection step needs the overlap but not the mismatches."""
+    right_valid = alphabet.readable(block[reference_rows]).astype(np.float32)
+    shared = np.zeros((len(rows), len(reference_rows)), dtype=np.float32)
+    for start in range(0, len(rows), CHUNK):
+        stop = min(start + CHUNK, len(rows))
+        left_valid = alphabet.readable(block[rows[start:stop]]).astype(np.float32)
+        shared[start:stop] = left_valid @ right_valid.T
+    return shared
 
 
 def distance_from_counts(
@@ -93,59 +151,90 @@ def distance_from_counts(
     return np.where(shared >= min_shared, distance, np.nan).astype(np.float32)
 
 
-def eligible(block: np.ndarray, min_nt: int) -> np.ndarray:
-    """Row indices carrying enough unambiguous material to place at all."""
-    return np.flatnonzero(frame.is_base(block).sum(axis=1) >= min_nt)
+def eligible(block: np.ndarray, min_nt: int, alphabet: Alphabet = NUCLEOTIDE) -> np.ndarray:
+    """Row indices carrying enough readable material to place at all."""
+    return np.flatnonzero(alphabet.readable(block).sum(axis=1) >= min_nt)
 
 
-def choose_landmarks(
-    block: np.ndarray, rows: np.ndarray, min_shared: int, cap: int = LANDMARK_CAP
+def comparable_set(
+    block: np.ndarray,
+    rows: np.ndarray,
+    min_shared: int,
+    cap: int,
+    required: int | None = None,
+    alphabet: Alphabet = NUCLEOTIDE,
 ) -> np.ndarray:
-    """Densely-covered rows whose pairwise distances are all defined.
+    """The largest set of rows the greedy finds whose pairwise distances are ALL defined.
 
-    Greedy in descending coverage: the best-covered sequence is always a landmark,
-    and each next candidate joins only if it overlaps every landmark already chosen.
-    Whole genomes overlap each other completely, so in practice almost nothing is
-    rejected — but the check has to be there, because one fragment admitted into the
-    landmark set would put a NaN in the matrix being eigendecomposed.
+    Pairwise deletion with a length minimum — the same rule figure set 1 uses — leaves
+    some pairs with no comparable positions at all, and those distances do not exist.
+    Anything that needs a complete matrix (an eigendecomposition, a neighbour join) has
+    to work on a subset where none are missing, so this finds one.
+
+    Ordered by **overlap degree**: how many other candidates a row is comparable to at
+    all. Ordering by coverage instead looked natural and was badly wrong. It admits the
+    longest sequence first, and one early fragment covering only VP4 then rejects every
+    VP1-only record behind it, because a VP4 fragment and a VP1 fragment share no
+    columns. On PV1's P1 that kept 672 of the 3,442 attainable sequences. Degree
+    ordering starts from the part of the region that everything covers — VP1, here, and
+    that is not a coincidence: VP1 is the typing gene, which is why a record is in the
+    alignment at all — so the mutually-comparable core is found first and the odd
+    fragments are the rows that get rejected.
+
+    `required` is admitted first whatever its degree, so a figure's reference sequence
+    is always present to root or to orient it.
     """
-    coverage = frame.is_base(block[rows]).sum(axis=1)
-    order = rows[np.argsort(-coverage, kind="stable")]
-    candidates = order[: min(len(order), cap * 2)]
+    coverage = alphabet.readable(block[rows]).sum(axis=1)
+    pool = rows[np.argsort(-coverage, kind="stable")][: min(len(rows), CANDIDATE_POOL)]
+    if required is not None and required not in pool:
+        pool = np.concatenate([np.array([required], dtype=pool.dtype), pool[:-1]])
 
-    shared, _ = counts_against(block, candidates, candidates)
+    overlaps = shared_against(block, pool, pool, alphabet) >= min_shared
+    # Stable, so equal-degree rows keep their coverage order and the result is
+    # reproducible run to run.
+    order = np.argsort(-overlaps.sum(axis=1), kind="stable")
+    if required is not None:
+        first = np.flatnonzero(pool == required)
+        if len(first):
+            order = np.concatenate([first, order[order != first[0]]])
+
     chosen: list[int] = []
-    for index in range(len(candidates)):
-        # The first candidate is the best-covered row, so it always qualifies; every
-        # later one must overlap every landmark already chosen.
-        if not chosen or np.all(shared[index, chosen] >= min_shared):
-            chosen.append(index)
+    for index in order:
+        if not chosen or bool(overlaps[index, chosen].all()):
+            chosen.append(int(index))
         if len(chosen) >= cap:
             break
-    return candidates[np.array(chosen, dtype=np.int64)]
+    return pool[np.array(chosen, dtype=np.int64)]
 
 
-def landmark_matrix(
-    block: np.ndarray, landmarks: np.ndarray, min_shared: int
+def complete_matrix(
+    block: np.ndarray,
+    members: np.ndarray,
+    min_shared: int,
+    alphabet: Alphabet = NUCLEOTIDE,
 ) -> np.ndarray:
-    """Complete square distance matrix over the landmarks. Raises if any pair is
-    undefined, because that is a bug in `choose_landmarks`, not a data condition."""
-    shared, matches = counts_against(block, landmarks, landmarks)
+    """Complete square distance matrix over `members`. Raises if any pair is undefined,
+    because that is a bug in `comparable_set`, not a data condition."""
+    shared, matches = counts_against(block, members, members, alphabet)
     distance = distance_from_counts(shared, matches, min_shared)
     np.fill_diagonal(distance, 0.0)
     if np.isnan(distance).any():
         raise ValueError(
-            f"{int(np.isnan(distance).sum())} landmark pairs are undefined; "
-            "choose_landmarks admitted a row it should have rejected"
+            f"{int(np.isnan(distance).sum())} pairs in the set are undefined; "
+            "comparable_set admitted a row it should have rejected"
         )
     return distance
 
 
 def to_landmarks(
-    block: np.ndarray, rows: np.ndarray, landmarks: np.ndarray, min_shared: int
+    block: np.ndarray,
+    rows: np.ndarray,
+    landmarks: np.ndarray,
+    min_shared: int,
+    alphabet: Alphabet = NUCLEOTIDE,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Each row's distances to every landmark, plus its shared-column counts."""
-    shared, matches = counts_against(block, rows, landmarks)
+    shared, matches = counts_against(block, rows, landmarks, alphabet)
     return distance_from_counts(shared, matches, min_shared), shared
 
 

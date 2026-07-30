@@ -213,3 +213,29 @@ export function axis(
 export function zoomed(zoom: Zoom, scale: AxisScale): { x: Axis; y: Axis } {
   return { x: axis(zoom.x0, zoom.x1, scale), y: axis(zoom.y0, zoom.y1, scale) };
 }
+
+/** An axis over positions in an ordering rather than over a quantity.
+ *
+ *  A tip's place in a tree's ladder is an index: the gap between tip 40 and tip 80 is
+ *  not twice the gap between 40 and 60 in any sense a reader should trust. So this
+ *  carries no ticks — there is nothing to label — and it does not snap its maximum to a
+ *  round number, which on a 2,499-tip ladder would round up to 3,000 and leave a fifth
+ *  of the panel empty.
+ */
+export function ordinal(min: number, max: number): Axis {
+  const lo = min;
+  const span = Math.max(max - min, Number.EPSILON);
+  return {
+    min: lo,
+    max: lo + span,
+    scale: "linear",
+    ticks: [],
+    t: (value) => (value - lo) / span,
+    invert: (fraction) => lo + fraction * span,
+  };
+}
+
+/** The full ladder, with half a slot of padding so the end tips are not clipped. */
+export function ordinalExtent(count: number): Axis {
+  return ordinal(-0.5, Math.max(count - 0.5, 0.5));
+}
