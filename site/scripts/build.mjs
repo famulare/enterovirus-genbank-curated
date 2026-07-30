@@ -1,10 +1,11 @@
 /** Build site/dist/ — the directory GitHub Pages publishes.
  *
- * Bundles the TypeScript, copies the stylesheets and the HTML, and copies the
- * committed data artifacts. It deliberately does NOT run the Python pipeline: the
- * deploy workflow must not need a bioinformatics toolchain, and the data artifacts
- * are committed and hash-gated instead. `uv run site/pipeline/cli.py check`
- * enforces that they are current.
+ * Bundles the TypeScript, copies the stylesheets and the HTML, and copies the data
+ * artifacts out of site/data/. It deliberately does NOT run the Python pipeline
+ * itself — the workflow does that first, as a separate step — so that the two
+ * toolchains stay independent and a bundling change cannot silently rebuild data.
+ * site/data/ is generated rather than committed, so the check below is a real
+ * failure mode: it fires when someone bundles without building.
  *
  * All asset references are relative, because Pages serves this under
  * /enterovirus-genbank-curated/ rather than at a domain root.

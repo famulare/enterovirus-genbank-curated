@@ -61,39 +61,38 @@ jobs:
       - name: Test against the full corpus
         run: python -m pytest -m slow
 
-  # The site publishes committed, precomputed artifacts rather than recomputing on
-  # deploy, so the failure mode worth engineering against is a figure built from
-  # data that has since changed. This job makes that impossible to land quietly.
-  site-data-is-current:
+  # site/data/ is built by pages.yml at deploy time and is not committed, so "are the
+  # committed artifacts stale?" is no longer a question anyone can get wrong — there
+  # are none. What is worth catching before a merge is the pipeline failing outright,
+  # or producing artifacts the figures cannot read, since either would now break the
+  # deploy rather than a hash check. This job runs the same build Pages runs.
+  site-pipeline-builds:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      # This asks only whether manifest.json is self-consistent with what is on disk,
-      # which is satisfiable two ways: rebuild the artifacts, or re-stamp the manifest.
-      # It cannot tell them apart, so editing a pipeline module's logic and re-stamping
-      # publishes stale figures behind a green tick. That hole is real and still open.
-      #
-      # The obvious fix — rebuild here and diff against what is committed — was tried
-      # (run 30563677088) and does not work, for a reason worth recording. The build is
-      # byte-reproducible on one machine, which is all `test_full_build_is_byte_
-      # reproducible_across_runs` checks, but NOT across platforms: rebuilding on
-      # ubuntu-latest reproduces records.json, summary.json, every tree and the three
-      # per-serotype panels exactly, and produces different bytes for panels/NPEV.json
-      # and panels/all.json. Those two are exactly the panels referenced against a
-      # computed consensus over the genus-wide EV_unified alignment, so the divergence
-      # is almost certainly linear-algebra dependent (macOS Accelerate vs the runner's
-      # BLAS), not a logic difference — unconfirmed, and worth confirming before anyone
-      # relies on it.
-      #
-      # So a byte diff cannot be the gate while the artifacts are built on a laptop and
-      # verified on a runner. Closing the re-stamp hole properly means picking one:
-      # build the artifacts in CI and commit from there, or compare within tolerance
-      # instead of byte-wise. Both are larger than this job.
-      - name: Check site data against final/
-        run: uv run --no-project site/pipeline/cli.py check
+      - name: Build site/data/ from final/
+        run: uv run --no-project site/pipeline/cli.py build
       # Metric and tree correctness: synthetic cases with hand-computed answers, plus
       # assertions against the shipped artifacts. Without this step the selftest would
       # only ever run when someone remembered to run it.
       - name: Selftest the site pipeline
         run: uv run --no-project site/pipeline/cli.py selftest
+      # pages.yml runs only on push to main, so without these the typecheck and the
+      # site tests never see a pull request. That was survivable while site/data/ was
+      # committed and hash-gated here; now the deploy would be the first place a
+      # broken bundle showed up, and it would show up already published.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - name: Install
+        run: npm ci
+        working-directory: site
+      - name: Typecheck
+        run: npm run check
+        working-directory: site
+      - name: Test
+        run: npm test
+        working-directory: site

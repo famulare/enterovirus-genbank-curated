@@ -3,10 +3,14 @@
 # requires-python = ">=3.12,<3.14"
 # dependencies = ["numpy==2.5.1"]
 # ///
-"""Build the site's data artifacts from `final/`, or check that they are current.
+"""Build the site's data artifacts from `final/`.
 
     uv run site/pipeline/cli.py build     # regenerate site/data/ and the manifest
-    uv run site/pipeline/cli.py check     # fail if final/ changed since the last build
+    uv run site/pipeline/cli.py selftest  # check the divergence metric and the frames
+
+`site/data/` is generated, not committed: ci.yml builds it on every pull request and
+pages.yml builds what it publishes. Nothing here is checked into the repository, so
+there is no `check` subcommand and no stale-artifact failure mode to guard against.
 
 Dependencies are declared inline (PEP 723) rather than in the project's
 `pyproject.toml`, so this runs from a fresh clone without installing the package
@@ -110,10 +114,6 @@ def command_build(_args) -> int:
     return 0
 
 
-def command_check(_args) -> int:
-    return manifest.report(manifest.check())
-
-
 def command_selftest(_args) -> int:
     import selftest
 
@@ -126,7 +126,6 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("build", help="regenerate site/data/ from final/").set_defaults(
         run=command_build
     )
-    sub.add_parser("check", help="verify site/data/ is current").set_defaults(run=command_check)
     sub.add_parser(
         "selftest", help="check the divergence metric and the coordinate frames"
     ).set_defaults(run=command_selftest)

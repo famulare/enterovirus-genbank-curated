@@ -438,11 +438,12 @@ SPECIES_ORGANISM_FALLBACK = {
 
 
 def gated_inputs() -> tuple[Path, ...]:
-    """Files whose bytes the committed site artifacts depend on.
+    """Files whose bytes the generated site artifacts depend on.
 
-    `uv run site/pipeline/cli.py check` recomputes these hashes and fails if any
-    differs from what `site/data/manifest.json` recorded, so a data change cannot
-    silently ship a stale figure.
+    Their hashes are recorded in `site/data/manifest.json` and published with the
+    figures, so a page can be traced to the exact inputs behind it. They no longer
+    gate anything: the artifacts are rebuilt per deploy rather than committed, so a
+    data change reaches the page by rebuilding rather than by passing a check.
     """
     paths = [
         CANONICAL_METADATA,
