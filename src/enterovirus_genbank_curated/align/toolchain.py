@@ -69,18 +69,26 @@ class ToolProbe:
     pattern: re.Pattern[str]
 
 
-# name -> how to identify it. Exit codes are deliberately absent from this table.
+# name -> how to identify it. Exit codes are deliberately absent from this table: `mafft --version`
+# and `mafft-xinsi --version` both exit 0 and write to stderr; the other three write to stdout.
+# Measured directly rather than assumed, same as the routine tier's mafft/Infernal probes.
 PROBES: dict[str, ToolProbe] = {
     "mafft": ToolProbe("mafft", ("--version",), re.compile(r"v(\d+\.\d+)")),
     "mafft-linsi": ToolProbe("mafft", ("--version",), re.compile(r"v(\d+\.\d+)")),
+    "mafft-xinsi": ToolProbe("mafft", ("--version",), re.compile(r"v(\d+\.\d+)")),
     "cmalign": ToolProbe("infernal", ("-h",), re.compile(r"INFERNAL (\d+\.\d+\.\d+)")),
     "cmbuild": ToolProbe("infernal", ("-h",), re.compile(r"INFERNAL (\d+\.\d+\.\d+)")),
+    "RNAalifold": ToolProbe("viennarna", ("--version",), re.compile(r"RNAalifold (\d+\.\d+\.\d+)")),
 }
 
 # Tools each tier is allowed to need. Derived by union in the completeness test rather than
 # hand-maintained in two places.
+#
+# The seed tier's set matches upstream's own `REQUIRED_TOOLS` for the NCR structural build
+# (`mafft-xinsi`, `RNAalifold`, `cmbuild`, `cmalign`) exactly -- not `mafft`/`mafft-linsi`, which
+# are routine-tier CDS tools the seed tier has no use for.
 ROUTINE_TOOLS = ("mafft", "mafft-linsi", "cmalign")
-SEED_TOOLS = ("mafft", "mafft-linsi", "cmalign", "cmbuild")
+SEED_TOOLS = ("mafft-xinsi", "RNAalifold", "cmbuild", "cmalign")
 
 
 class ToolchainError(ContractError):
@@ -105,6 +113,8 @@ class Toolchain:
     prefix: Path
     bin_dir: Path
     tools: dict[str, Tool]
+    # Populated only for the seed tier, since only mafft-xinsi needs it. None on the routine tier.
+    mxscarnamod: Path | None = None
 
     def child_path(self) -> str:
         return os.pathsep.join([str(self.bin_dir), *SYSTEM_PATH_SUFFIX])
@@ -244,12 +254,45 @@ def resolve(repository_root: Path, *, environment: str = ENV_ALIGN, scratch: Pat
             self_reported=reported,
             sha256=hashlib.sha256(real.read_bytes()).hexdigest(),
         )
+
+    mxscarnamod = None
+    if environment == ENV_SEED:
+        mxscarnamod = prefix / "libexec" / "mafft" / "mxscarnamod"
+        if not mxscarnamod.is_file():
+            raise ToolchainError(
+                f"{mxscarnamod} is missing. bioconda's mafft package omits it; build it with "
+                f"scripts/setup_mxscarna.sh (network + a C++ compiler, not expected to run on a "
+                f"fresh clone)."
+            )
+        # Content-based, not exit-code-based: mxscarnamod refuses to run with no arguments and
+        # exits 1 by design, which is not the same thing as being missing or broken. Captured
+        # separately from the exit-code check for the same reason scripts/setup_mxscarna.sh does:
+        # under `pipefail`, piping it straight into a grep would fail the check on its designed
+        # non-zero exit regardless of whether the probe text was found.
+        try:
+            probe = subprocess.run(
+                [str(mxscarnamod)],
+                capture_output=True,
+                text=True,
+                env={"PATH": str(bin_dir), "HOME": str(work), "LC_ALL": "C"},
+                cwd=str(work),
+                timeout=30,
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            raise ToolchainError(f"cannot run {mxscarnamod}: {exc}") from exc
+        if "SCARNA" not in (probe.stdout + probe.stderr):
+            raise ToolchainError(
+                f"{mxscarnamod} exists but does not respond to the liveness probe; it may be "
+                f"corrupted or built for the wrong platform"
+            )
+
     return Toolchain(
         environment=environment,
         platform=current_platform(),
         prefix=prefix,
         bin_dir=bin_dir,
         tools=resolved,
+        mxscarnamod=mxscarnamod,
     )
 
 
@@ -351,29 +394,60 @@ def packages_from_lock(
     return out
 
 
+def _environment_platforms(repository_root: Path) -> dict[str, set[str]]:
+    """Which platforms each pixi environment actually covers, per `pixi.toml`.
+
+    `seed` overrides its feature's platforms to `["osx-arm64"]` only; `align` inherits the
+    workspace's full list. Needed so `build_declaration` never asks the lock for a
+    (environment, platform) pair the manifest itself doesn't declare — e.g. `seed`/`linux-64`,
+    which does not exist and never will.
+    """
+    import tomllib
+
+    manifest = tomllib.loads((repository_root / PIXI_MANIFEST).read_text(encoding="utf-8"))
+    workspace_platforms = set(manifest["workspace"]["platforms"])
+    out: dict[str, set[str]] = {}
+    for env_name, env_spec in manifest["environments"].items():
+        platforms = set(workspace_platforms)
+        for feature_name in env_spec["features"]:
+            feature = manifest.get("feature", {}).get(feature_name, {})
+            if "platforms" in feature:
+                platforms &= set(feature["platforms"])
+        out[env_name] = platforms
+    return out
+
+
 def build_declaration(
     repository_root: Path,
     toolchains: list[Toolchain],
     *,
     also_from_lock: tuple[str, ...] = (CANONICAL_PLATFORM,),
 ) -> dict:
-    """Assemble the declaration: probed entries for live platforms, lock-derived for the rest."""
+    """Assemble the declaration: probed entries for live platforms, lock-derived for the rest.
+
+    `toolchains` may span more than one environment (`align` and `seed`), and each is filled in
+    independently for `also_from_lock` — a single toolchain list used to assume "the" environment
+    silently dropped whichever environment was not `toolchains[0]`'s.
+    """
     platforms: dict[str, dict] = {}
-    packages_seen: set[str] = set()
+    packages_by_environment: dict[str, set[str]] = {}
     for toolchain in toolchains:
         packages: dict[str, dict] = {}
         for tool in toolchain.tools.values():
             packages[tool.package] = {"version": tool.version, "build": tool.build}
-            packages_seen.add(tool.package)
+            packages_by_environment.setdefault(toolchain.environment, set()).add(tool.package)
         platforms.setdefault(toolchain.platform, {})[toolchain.environment] = packages
 
+    environment_platforms = _environment_platforms(repository_root)
     for target in also_from_lock:
-        if target in platforms:
-            continue
-        environment = toolchains[0].environment if toolchains else ENV_ALIGN
-        platforms.setdefault(target, {})[environment] = packages_from_lock(
-            repository_root, environment, target, tuple(sorted(packages_seen))
-        )
+        for environment, packages_seen in packages_by_environment.items():
+            if environment in platforms.get(target, {}):
+                continue
+            if target not in environment_platforms.get(environment, set()):
+                continue
+            platforms.setdefault(target, {})[environment] = packages_from_lock(
+                repository_root, environment, target, tuple(sorted(packages_seen))
+            )
     return {
         "schema": 1,
         "pixi_lock_sha256": lock_sha256(repository_root),

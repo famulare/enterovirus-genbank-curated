@@ -103,6 +103,7 @@ environments:
     - url: https://conda.anaconda.org/bioconda/
     packages:
       osx-arm64:
+      - conda: https://conda.anaconda.org/bioconda/osx-arm64/infernal-1.1.5-pl5321hd34ca47_4.tar.bz2
       - conda: https://conda.anaconda.org/bioconda/osx-arm64/viennarna-2.7.2-py313pl5321h39de4f0_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/ca-certificates-2026.7.22-hbd8a1cb_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/python_abi-3.13-8_cp313.conda

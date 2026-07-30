@@ -24,6 +24,17 @@ REQUIRES_ENV = pytest.mark.skipif(
     not (Path(__file__).resolve().parents[1] / ".pixi/envs/align/bin/mafft").exists(),
     reason="pixi align environment is not installed; run `pixi install --locked -e align`",
 )
+REQUIRES_SEED_ENV = pytest.mark.skipif(
+    not (Path(__file__).resolve().parents[1] / ".pixi/envs/seed/bin/mafft-xinsi").exists(),
+    reason="pixi seed environment is not installed; run `pixi install --locked -e seed`",
+)
+REQUIRES_MXSCARNAMOD = pytest.mark.skipif(
+    not (
+        Path(__file__).resolve().parents[1] / ".pixi/envs/seed/libexec/mafft/mxscarnamod"
+    ).exists(),
+    reason="mxscarnamod is not built; run scripts/setup_mxscarna.sh (network + a C++ compiler, "
+    "not expected on a fresh clone)",
+)
 
 
 @pytest.fixture(scope="module")
@@ -221,6 +232,96 @@ def test_mafft_actually_aligns_under_the_declared_child_environment(
         for block in [block.split("\n", 1)[1]]
     }
     assert len(widths) == 1, f"aligned rows are ragged: {widths}"
+
+
+# --- the seed tier: mafft-xinsi, RNAalifold, cmbuild, and the mxscarnamod it needs ---------------
+
+
+@pytest.fixture(scope="module")
+def resolved_seed(repository_root: Path, scratch: Path) -> tc.Toolchain:
+    return tc.resolve(
+        repository_root, environment=tc.ENV_SEED, tools=tc.SEED_TOOLS, scratch=scratch
+    )
+
+
+def test_the_seed_tools_are_upstreams_required_tools_exactly() -> None:
+    """Matches upstream's own `REQUIRED_TOOLS` for the NCR structural build. Not `mafft`/
+    `mafft-linsi` — those are routine-tier CDS tools the seed tier has no use for."""
+    assert set(tc.SEED_TOOLS) == {"mafft-xinsi", "RNAalifold", "cmbuild", "cmalign"}
+
+
+def test_the_declaration_covers_seed_on_osx_arm64_only(repository_root: Path) -> None:
+    """`seed` is declared `osx-arm64` only in pixi.toml; the declaration must not invent a
+    linux-64 entry for an environment the manifest says cannot exist there."""
+    declaration = tc.load_declaration(repository_root)
+    assert "seed" in declaration["platforms"]["osx-arm64"]
+    assert "seed" not in declaration["platforms"].get("linux-64", {})
+
+
+def test_the_declaration_carries_the_mxscarna_source_pin(repository_root: Path) -> None:
+    declaration = tc.load_declaration(repository_root)
+    mxscarna = declaration["mxscarna"]
+    assert mxscarna["source_url"].startswith("https://mafft.cbrc.jp/")
+    assert len(mxscarna["source_sha256"]) == 64
+
+
+@REQUIRES_SEED_ENV
+@REQUIRES_MXSCARNAMOD
+def test_the_live_seed_toolchain_matches_the_declaration(
+    repository_root: Path, resolved_seed: tc.Toolchain
+) -> None:
+    tc.assert_declared(repository_root, resolved_seed)
+
+
+@REQUIRES_SEED_ENV
+@REQUIRES_MXSCARNAMOD
+def test_mxscarnamod_is_resolved_and_passes_its_liveness_probe(
+    resolved_seed: tc.Toolchain,
+) -> None:
+    assert resolved_seed.mxscarnamod is not None
+    assert resolved_seed.mxscarnamod.is_file()
+
+
+@REQUIRES_SEED_ENV
+def test_resolving_the_seed_tier_without_mxscarnamod_fails_with_the_build_command(
+    repository_root: Path, tmp_path: Path
+) -> None:
+    """A missing mxscarnamod must name `scripts/setup_mxscarna.sh`, not fail opaquely."""
+    mxscarnamod = repository_root / ".pixi/envs/seed/libexec/mafft/mxscarnamod"
+    if not mxscarnamod.exists():
+        pytest.skip("mxscarnamod already absent; nothing to hide for this test")
+    hidden = tmp_path / "mxscarnamod.hidden"
+    mxscarnamod.rename(hidden)
+    try:
+        with pytest.raises(tc.ToolchainError, match="setup_mxscarna.sh"):
+            tc.resolve(
+                repository_root, environment=tc.ENV_SEED, tools=tc.SEED_TOOLS, scratch=tmp_path
+            )
+    finally:
+        hidden.rename(mxscarnamod)
+
+
+@REQUIRES_SEED_ENV
+def test_a_broken_mxscarnamod_fails_the_liveness_probe_not_silently(
+    repository_root: Path, tmp_path: Path
+) -> None:
+    """The probe is content-based; confirm it actually rejects a binary that cannot run."""
+    real = repository_root / ".pixi/envs/seed/libexec/mafft/mxscarnamod"
+    if not real.exists():
+        pytest.skip("mxscarnamod not built")
+    backup = tmp_path / "mxscarnamod.real"
+    real.rename(backup)
+    try:
+        broken = real
+        broken.write_text("#!/bin/sh\nexit 1\n")
+        broken.chmod(0o755)
+        with pytest.raises(tc.ToolchainError, match="liveness probe"):
+            tc.resolve(
+                repository_root, environment=tc.ENV_SEED, tools=tc.SEED_TOOLS, scratch=tmp_path
+            )
+    finally:
+        real.unlink(missing_ok=True)
+        backup.rename(real)
 
 
 def test_ci_has_the_toolchain(repository_root: Path) -> None:

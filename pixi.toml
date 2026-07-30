@@ -63,6 +63,8 @@ platforms = ["osx-arm64"]
 [feature.seed.dependencies]
 viennarna = "==2.7.2"  # supplies `RNAalifold`
 mafft = "==7.526"      # supplies `mafft-xinsi`, once mxscarnamod is in place
+infernal = "==1.1.5"   # supplies `cmbuild` (and `cmalign`, needed by the same NCR structural
+                       # scripts as `cmbuild`, per upstream's own REQUIRED_TOOLS list)
 
 [environments]
 align = { features = ["align"], solve-group = "align" }
