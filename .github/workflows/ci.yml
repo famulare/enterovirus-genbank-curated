@@ -13,17 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      # One environment manager. `locked: true` is the load-bearing flag: it fails when pixi.toml
+      # and pixi.lock disagree, which is what makes the `==` pins in the manifest mean anything.
+      # The interpreter and biopython/duckdb versions come from the lock, not from this file, so a
+      # dependency change is a reviewable lockfile diff rather than a silent CI-config drift.
+      - uses: prefix-dev/setup-pixi@v0.8.1
         with:
-          python-version: "3.12"
-          cache: pip
-          cache-dependency-path: requirements-dev.txt
-      - name: Install
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e . -r requirements-dev.txt
+          environments: align
+          locked: true
+          cache: true
       - name: Lint
-        run: ruff check .
+        run: pixi run -e align ruff check .
       # Fast tier. Includes the undeclared-input guard tests, each of which runs in a subprocess
       # because audit hooks cannot be uninstalled. Most assert a violation is refused; a handful are
       # positive controls asserting legitimate work still succeeds, so they must keep *passing* when
@@ -33,7 +33,7 @@ jobs:
       # but that is prose, not a runnable artifact — do not cite it as the check. This tier proves
       # the guard's mechanism, not the real build.
       - name: Test
-        run: python -m pytest
+        run: pixi run -e align pytest
       #
       # There is deliberately no separate `evgc validate-contracts` step. The tier above already runs
       # `validate_contracts` against the real tree with full baseline verification, via
@@ -48,10 +48,20 @@ jobs:
       # directly — `validate-contracts --skip-baseline-verification` costs milliseconds — rather than
       # a step that re-hashes all of final/ to reach conclusions pytest already reached.
       #
+      # The two alignment verbs follow that prescription rather than adding steps here:
+      # tests/test_alignment_cli.py calls `cli.main(["alignment-population"])` and
+      # `cli.main(["alignment-toolchain"])` directly, in the fast tier, which exercises both branches
+      # for the cost of the assertions themselves. The 1-to-1 population claim is checked there.
+      #
       # The corpus tier: reparse all 25,727 records from raw/ and compare every source artifact
       # against the hashes the release manifest declares, plus the canonical metadata transport
-      # cell-compared against the shipped table. ~50s, so it belongs on every push. When the
-      # pipeline grows a multi-hour alignment stage this must split into its own scheduled workflow.
+      # cell-compared against the shipped table. ~50s, so it belongs on every push.
+      #
+      # The alignment stage, when it can run end to end, does NOT belong here: it is multi-hour and
+      # needs the native toolchain under load. It gets its own scheduled workflow, and this job
+      # keeps only the cheap, toolchain-free half — the alignment CLI tests above, and later the
+      # artifact staleness check. If you are about to add a step here that invokes mafft, that is
+      # the signal you are in the wrong workflow.
       #
       # `evgc parity-metadata` is likewise not a separate step: this tier already runs it through
       # test_metadata_transport_matches_the_shipped_canonical, and a step would only buy a second
@@ -63,7 +73,7 @@ jobs:
       # Adding a step would run a second full corpus build for no extra coverage. If you are here to
       # add one, check that test first.
       - name: Test against the full corpus
-        run: python -m pytest -m slow
+        run: pixi run -e align pytest -m slow
 
   # site/data/ is built by pages.yml at deploy time and is not committed, so "are the
   # committed artifacts stale?" is no longer a question anyone can get wrong — there

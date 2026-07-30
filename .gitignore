@@ -4,6 +4,12 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+# Materialized pixi environments. `pixi.toml` and `pixi.lock` are committed and are the
+# authoritative declaration; the prefixes under here are reconstructible with
+# `pixi install --locked`. Note the alignment stage relies on these prefixes living *inside* the
+# clone: the native binaries resolve to real paths under `.pixi/envs/`, which is what keeps them
+# inside the undeclared-input guard's existing read roots without widening the allowlist.
+.pixi/
 build/
 dist/
 *.egg-info/
@@ -11,7 +17,14 @@ node_modules/
 # Local agent workspace. Holds git worktrees, and a skills symlink that points at an
 # absolute path outside this repository — committing it would give every other clone
 # a dangling link. The page style kit it references is documented in site/README.md.
-.claude/
+#
+# Written `.claude/*` rather than `.claude/` on purpose: git cannot re-include a file whose parent
+# *directory* is excluded, so the negation below only works against a contents glob. One exception
+# is re-included deliberately — the shared project settings, whose rules are meant to apply in
+# every clone rather than in one person's `settings.local.json`. That file stays ignored, which is
+# the point of the split.
+.claude/*
+!.claude/settings.json
 # site/data/ is built, never committed. It used to be committed and hash-gated, which
 # needed the gate to answer "are these bytes what the pipeline produces?" — and that
 # question has no stable answer, because the build is byte-reproducible on one machine

@@ -1,0 +1,24 @@
+{
+  "$comment": [
+    "Shared project settings, committed on purpose. `.claude/` is otherwise gitignored because it",
+    "holds git worktrees and a skills symlink pointing outside the repository; `.gitignore`",
+    "re-includes this one file so the rules below reach every clone rather than living in one",
+    "person's settings.local.json.",
+    "",
+    "Standing rule, authorised by Mike Famulare on 2026-07-30: git and gh operations are allowed",
+    "without a per-call prompt. This is a workflow decision, not a licence to be careless. The",
+    "judgement calls that still apply, because a permission allowlist cannot make them:",
+    "  - branch before committing if you are on main;",
+    "  - force-push, history rewrite, and branch deletion are destructive and still warrant saying",
+    "    what you are about to do first;",
+    "  - `final/` and `raw/` are immutable release trees. No git operation should rewrite them, and",
+    "    a diff that touches them is a bug until proven otherwise;",
+    "  - opening or merging a PR publishes work. Allowed, but say so plainly when you do it."
+  ],
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(gh:*)"
+    ]
+  }
+}
