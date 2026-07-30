@@ -24,12 +24,13 @@ csv.field_size_limit(10**9)
 LEDGER = "registry/decisions.tsv"
 SHIPPED = "final/audit/manual_decisions.tsv.gz"
 
-# Every difference from the 2,800 shipped decisions of release 2.3.0, enumerated. A test that
+# Every difference from the 2,912 shipped decisions of release 2.4.1, enumerated. A test that
 # merely counted rows would pass with the wrong rows.
 #
-# Re-pinned from the 2,753 of release 2.1.5 on 2026-07-30, when the ledger was resynced. The
-# resync is exact in the direction that matters: zero shipped assertions are absent from the
-# ledger. The ledger-only rows are these two enumerated sets and nothing else.
+# Re-pinned from the 2,800 of release 2.3.0 on 2026-07-30, when the ledger was resynced a second
+# time (release 2.1.5's original resync shipped 2,753). The resync is exact in the direction that
+# matters: zero shipped assertions are absent from the ledger. The ledger-only rows are these three
+# enumerated sets and nothing else.
 D2_ADDITIONS = {
     ("CS406436", "engineered_or_construct", "FALSE"),
     ("CS406482", "engineered_or_construct", "FALSE"),
@@ -43,10 +44,20 @@ D2_ADDITIONS = {
 SUPERSEDED_CARRY_FORWARD_ADDITIONS = {
     (accession, "classification", "iVDPV")
     for accession in ("AB180070", "AB180071", "AB180072", "AB180073")
+} | {
+    # JC013129: the 2.4.1 same-sequence-coherence fix reclassified this record (wild, human),
+    # overturning both fields' prior values. Same carry-forward mechanism, added at the 2.4.1
+    # resync. NOT a third field for engineered_or_construct=TRUE: the current registry no longer
+    # asserts that field at all (rather than asserting a contradicting value), so there is no
+    # active successor to carry it forward against -- see scripts/migrate_legacy_registries.py's
+    # SUPERSEDED_CARRY_FORWARD comment for why that is a legitimate, harmless gap rather than a
+    # silent loss (the shipped value is unchanged).
+    ("JC013129", "classification", "engineered/lab"),
+    ("JC013129", "origin_class", "non-human"),
 }
 LEDGER_ONLY_ADDITIONS = D2_ADDITIONS | SUPERSEDED_CARRY_FORWARD_ADDITIONS
 
-EXPECTED_STATUS = {"active": 2783, "retired": 17, "superseded": 7}
+EXPECTED_STATUS = {"active": 2895, "retired": 17, "superseded": 9}
 
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
 # so a registry rename does not rehash every id.
@@ -78,7 +89,7 @@ def test_ledger_satisfies_its_own_contract(
     repository_root: Path, decision_contract: DecisionContract
 ) -> None:
     summary = validate_decision_ledger(repository_root / LEDGER, decision_contract)
-    assert summary.rows == 2807
+    assert summary.rows == 2921
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
 
@@ -154,11 +165,12 @@ def test_retired_rows_agree_with_the_decision_that_governs_them(
 
 
 def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str, str]]) -> None:
-    """Two distinct causes of supersession, asserted separately so neither can absorb the other.
+    """Three distinct causes of supersession, asserted separately so none can absorb another.
 
     D2 overturned a legacy `classification=engineered` call on evidence. The AB180070-73 rows are a
-    curator revision preserved through a resync that would otherwise have deleted them. Both must
-    record *why*, but they say different things and are not interchangeable.
+    curator revision preserved through the 2.3.0 resync that would otherwise have deleted them.
+    JC013129's two rows are a curator revision preserved through the 2.4.1 resync, same shape. All
+    three must record *why*, but they say different things and are not interchangeable.
     """
     superseded = [r for r in ledger if r["status"] == "superseded"]
     d2 = [
@@ -167,7 +179,10 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
         if r["field_name"] == "classification" and r["new_value"] == "engineered"
     ]
     carried = [r for r in superseded if r["new_value"] == "iVDPV"]
-    assert len(d2) + len(carried) == len(superseded), "an unexplained supersession class appeared"
+    jc013129 = [r for r in superseded if r["subject_key"] == "JC013129"]
+    assert len(d2) + len(carried) + len(jc013129) == len(superseded), (
+        "an unexplained supersession class appeared"
+    )
 
     assert {r["subject_key"] for r in d2} == {"CS406436", "CS406482", "CS406483"}
     for row in d2:
@@ -182,6 +197,13 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     for row in carried:
         assert row["field_name"] == "classification"
         assert "superseded 2026-07-30 by classification=cVDPV" in row["notes"], (
+            "a carried-forward supersession must name what replaced it"
+        )
+
+    assert {r["field_name"] for r in jc013129} == {"classification", "origin_class"}
+    for row in jc013129:
+        assert row["new_value"] in {"engineered/lab", "non-human"}
+        assert "superseded 2026-07-30 by" in row["notes"], (
             "a carried-forward supersession must name what replaced it"
         )
 

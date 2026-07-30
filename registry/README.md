@@ -7,31 +7,35 @@ views and must never be edited by hand.
 
 ## What the row count does and does not mean
 
-The ledger has **2,756 rows**. Read that number carefully:
+The ledger has **2,921 rows**. Read that number carefully:
 
-- It migrates from **2,214 input rows** across ten hand-maintained registries, because one curator
-  row can assert several fields (`manual_review_overrides.csv` alone: 1,944 rows → 2,467 decisions,
-  one per non-empty column).
-- Those 2,214 rows carry only **310 distinct rationales** across all ten registries. The bulk
-  registry, `manual_review_overrides.csv`, accounts for 1,944 of the input rows but just **249
-  distinct `note` strings** and 78 distinct sources, with one batch of 387 rows sharing a single
-  note and PMID.
+- It migrates from **2,282 input rows** across ten hand-maintained registries, because one curator
+  row can assert several fields (`manual_review_overrides.csv` alone, as of the 2.4.1 resync: 2,008
+  rows → 2,620 decisions, one per non-empty column).
+- At the original 2.1.5 migration, those input rows carried only **310 distinct rationales** across
+  all ten registries — `manual_review_overrides.csv` accounted for 1,944 of the input rows but just
+  **249 distinct `note` strings** and 78 distinct sources, with one batch of 387 rows sharing a
+  single note and PMID. (Not re-measured at every resync since; as of the 2.4.1 source registries,
+  `manual_review_overrides.csv` alone carries 313 distinct notes and 80 distinct sources across its
+  2,008 rows — still the same order of duplication, not recomputed further across all ten.)
 
-So "2,756 decisions" is an accurate count of *field-level assertions* and would be roughly a 9×
-overstatement of *human judgments*. It is not a measure of curation effort.
+So "2,921 decisions" is an accurate count of *field-level assertions* and overstates *human
+judgments* by roughly the same order as at 2.1.5. It is not a measure of curation effort.
 
-Reconciliation against release 2.1.5, which shipped 2,753 rows in
-`final/audit/manual_decisions.tsv.gz`:
+Reconciliation against release 2.4.1, which shipped 2,912 rows in
+`final/audit/manual_decisions.tsv.gz`. (For the record: 2.1.5 shipped 2,753; 2.3.0 shipped 2,800 —
+the prior public baseline, resynced from at the time; 2.4.0 shipped 2,897 privately but was never a
+public baseline, see [`docs/pipeline.md`](../docs/pipeline.md).)
 
 | | rows |
 |---|---:|
-| shipped in v2.1.5 | 2,753 |
+| shipped in v2.4.1 | 2,912 |
 | shipped decisions absent from this ledger | **0** |
-| added here (see D2 below) | +3 |
-| **ledger total** | **2,756** |
-| — of which `active` | 2,736 |
+| added here, carried forward (D2: 3, AB180070-73: 4, JC013129: 2 — see below) | +9 |
+| **ledger total** | **2,921** |
+| — of which `active` | 2,895 |
 | — `retired` (redundant duplicates) | 17 |
-| — `superseded` (D2) | 3 |
+| — `superseded` (all 9 carried-forward rows above) | 9 |
 
 ## Migration decisions
 
@@ -69,7 +73,7 @@ file contains a double quote or if naive tab-splitting yields inconsistent field
 **`decision_id` excludes `source_artifact`.** Previously the bare source filename was hashed into the
 identity, so moving a registry to a public path would rehash every id. Ids are recomputed once here
 from `(decision_type, subject_key, field_name, new_value)` and are then stable against file renames.
-All 2,756 are unique.
+All 2,921 are unique.
 
 **Subject attributes are carried as attributes, not as evidence.** The release wrote
 `evidence_reference = "reference_label: Sabin1 | serotype: 1"`, but a reference's name and serotype
@@ -138,8 +142,11 @@ The conclusion happens to be right for `CS406436` and `CS406482` for a different
 their 4-nt signature vs AY238473 is shared by patent families with no relationship to this one, so it
 is lab-stock lineage. **`CS406483` is not parental and D2 was wrong about it** — it carries two
 further synonymous third-position changes at the VP2/VP3 junction that create an `AgeI` site found in
-exactly 2 of 24,546 records, itself and its own byte-identical twin. The trio is two parental records
-and one engineered derivative.
+exactly 2 of 24,546 records (canonical population at the time this was measured, 2.1.5/2.3.0-era —
+now 24,301 canonical rows as of 2.4.1; the pair itself, CS406483 and its byte-identical twin, is
+unaffected by the 245-record NPEV drop between those releases, but the site was not re-scanned
+against the smaller population), itself and its own byte-identical twin. The trio is two parental
+records and one engineered derivative.
 
 **The row above claiming the flip "lands when Phase B applies decisions" is not true as written, and
 this is the more important defect.** `engineered_or_construct` is **blank** for all three records in
@@ -159,7 +166,10 @@ Full evidence, per-record dispositions and the curator's revised definition:
 The three values are used with distinct meanings, not interchangeably:
 
 - `active` — the governing assertion.
-- `superseded` — a call that was **contradicted** and overturned. Currently only the three D2 rows.
+- `superseded` — a call that was **contradicted** and overturned. Nine rows as of the 2.4.1 resync:
+  the three D2 rows (2.1.5), the four `AB180070-73` rows (2.3.0), and two `JC013129` rows (2.4.1) —
+  see `SUPERSEDED_CARRY_FORWARD` in `scripts/migrate_legacy_registries.py` for the exact mechanism
+  and why each is genuinely a contradicted call rather than a mere retraction.
 - `retired` — withdrawn from force **without** being contradicted. Used for the 17 (subject, field)
   pairs that two registries assert with the *identical* value: the same human judgment recorded
   twice, not a conflict.
@@ -169,8 +179,10 @@ inferred: `canonical_reference_confirmed.csv` (purpose-built for canonical-refer
 `manual_review_overrides.csv` (current human curation) > `legacy_accession_classification_overrides.csv`
 (machine-generated 2015 bridge). Where two registries *disagree* on the value, the migration raises
 rather than applying precedence — adjudicating a scientific disagreement silently is how a curation
-database acquires an opinion nobody chose. All 17 current duplicates agree; the only disagreement
-was D2, and a human resolved it.
+database acquires an opinion nobody chose. All 17 current duplicates agree; the only cross-registry
+disagreement of that kind was D2, and a human resolved it. (The `AB180070-73` and `JC013129`
+supersessions are a different shape: one registry revising its own earlier value over time, not two
+registries disagreeing at once — see `SUPERSEDED_CARRY_FORWARD`'s docstring.)
 
 ## Fields with no source
 
@@ -262,10 +274,23 @@ public artifact behind, after which the ledger is the source of truth and nothin
 outside the clone again. It encodes every decision documented above and refuses to finish on any of
 them being violated.
 
+**Do not point `--source-dir` at the private tip.** The private repository is a live working tree
+where curation continues after any given release is built, so `--source-dir` must be the private
+registries **as of the release's own build commit** — extract them there first, then migrate from
+the extraction:
+
 ```bash
-python scripts/migrate_legacy_registries.py \
-  --source-dir ../MAD-VDPV/data/genbank/working
+rm -rf /tmp/evgc-registries && mkdir -p /tmp/evgc-registries
+git -C ../MAD-VDPV archive <release-build-commit> data/genbank/working \
+  | tar -x -C /tmp/evgc-registries --strip-components=3
+python scripts/migrate_legacy_registries.py --source-dir /tmp/evgc-registries
 ```
+
+`<release-build-commit>` is the `git_sha` the target release's own
+`final/audit/build_manifest.json` records (for 2.4.1: `67554e2`) — never `HEAD` of the private repo.
+An earlier version of this doc recommended `--source-dir ../MAD-VDPV/data/genbank/working` directly,
+which is exactly the tip-vs-build-commit mistake the next two paragraphs warn against; that command
+was never actually safe to run as written.
 
 Because it needs a private path, CI cannot run it. Its guards — the disagreement raise, the
 truncation repair, the quote normalization, the D2 adjudication, the DQ205099 annotation, the
@@ -273,16 +298,19 @@ release-baseline pin and id assignment — are covered by `tests/test_migration_
 synthetic inputs instead. It is deterministic in the sense that matters: the same inputs produce the
 same bytes.
 
-**It is pinned to release 2.1.5's curation state, not to whatever the private repository holds
+**It is pinned to release 2.4.1's curation state, not to whatever the private repository holds
 today.** That repository is a live working tree where curation continues, so re-running this script
 is not idempotent over time — and the failure mode is silent, because new private rows are
-well-formed decisions that migrate cleanly. Observed 2026-07-29: a concurrent private edit added two
-`date_override` rows for `KP004228`/`KP004229`, and an unguarded re-run wrote a 2,758-row ledger
-without comment. The ledger tests caught it, but only four stages downstream, as six failures about
-counts and status distributions rather than one statement about what happened.
+well-formed decisions that migrate cleanly. Observed 2026-07-29 (during 2.3.0 prep): a concurrent
+private edit added two `date_override` rows for `KP004228`/`KP004229`, and an unguarded re-run wrote
+a 2,758-row ledger without comment. The ledger tests caught it, but only four stages downstream, as
+six failures about counts and status distributions rather than one statement about what happened.
+Verified again at the 2.4.1 resync (2026-07-30): the private tip held 2,008 `manual_review_overrides`
+rows, identical to the count at the 2.4.1 build commit itself — no drift this time, but the
+extraction was still done from the build commit rather than assumed safe.
 
 So the baseline count is asserted at the point of divergence:
-`EXPECTED_BASELINE_DECISIONS = 2753` is checked immediately after the registries are read and before
+`EXPECTED_BASELINE_DECISIONS = 2912` is checked immediately after the registries are read and before
 any adjudication is applied. A moved source now stops the migration and names what to do about it.
 `--allow-baseline-drift` overrides it, deliberately awkward, for the case where the new decisions
 have been diffed and approved — at which point the constant, the counts in this file, and

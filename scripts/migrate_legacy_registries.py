@@ -115,14 +115,16 @@ ID_COLUMNS = ("decision_type", "subject_key", "field_name", "new_value")
 # Observed 2026-07-29: a concurrent private edit added two `date_override` rows and this script
 # wrote them without comment; the ledger tests caught it, four stages too late to be legible.
 #
-# Re-pinned to 2.3.0 on 2026-07-30, when the public release was refreshed. The source directory
-# must be the private registries **as of the release's own build commit** (2.3.0 was built from
-# private `c44a434`), not the private tip. Verified at the time: the tip held 2,003
-# `manual_review_overrides` rows against 1,985 at the build commit, so migrating from the tip would
-# have synced the ledger to curation *newer* than the shipped release, re-creating the divergence
-# in the other direction.
-PINNED_RELEASE = "2.3.0"
-EXPECTED_BASELINE_DECISIONS = 2800
+# Re-pinned to 2.4.1 on 2026-07-30, the same day, when the release was refreshed again. The source
+# directory must be the private registries **as of the release's own build commit** (2.4.1 was
+# built from private `67554e2`), not the private tip. `manual_review_overrides.csv` at that commit
+# holds 2,008 rows and yields the full 2,912-decision baseline below.
+#
+# Previously pinned to 2.3.0 (`c44a434`, 2800 decisions). That note's caution about tip-vs-build-
+# commit drift still applies and is not repeated in full here; see git history for this comment's
+# prior text if it is needed.
+PINNED_RELEASE = "2.4.1"
+EXPECTED_BASELINE_DECISIONS = 2912
 
 # Assertions a previous ledger recorded that the current registries no longer yield, because the
 # curator changed the value. `assign_ids` hashes `new_value`, so a changed value mints a new id and
@@ -155,6 +157,64 @@ SUPERSEDED_CARRY_FORWARD = tuple(
         ),
     }
     for accession in ("AB180070", "AB180071", "AB180072", "AB180073")
+) + (
+    # JC013129: the 2.4.1 same-sequence-coherence fix (see the private repo's
+    # docs/decision-log.md, "Release v2 schema 2.4.1") corrected this record's classification and
+    # origin_class, both of which the prior ledger held at the opposite value. Genuinely
+    # superseded, same shape as the AB180070-73 group above: a new active assertion on the same
+    # field contradicts the old one.
+    #
+    # Deliberately NOT three entries. The prior ledger also held engineered_or_construct=TRUE for
+    # this record, and the current registry no longer asserts that field at all (the override row's
+    # engineered_or_construct cell is blank) -- but nothing asserts a *replacement* value either, so
+    # there is no active successor to carry this one forward against. carry_forward_superseded's own
+    # validation (the `subjects` check) would correctly refuse that as "an orphan claiming a value
+    # nothing overturned" if it were added here. That is not silent loss: the shipped
+    # engineered_or_construct value is unchanged (still TRUE, still derived from the same
+    # PAT-division rule as before) -- only the now-redundant explicit override assertion was
+    # withdrawn, not the fact it asserted.
+    {
+        "decision_type": "manual_override",
+        "subject_key": "JC013129",
+        "accession": "JC013129",
+        "field_name": "classification",
+        "new_value": "engineered/lab",
+        "reason": (
+            "superseded by the 2.4.1 same-sequence-coherence fix, which reclassified this record "
+            "wild (exact Mahoney, 0nt/179 vs V01149) alongside its byte-identical twin DI499172"
+        ),
+        "evidence_reference": "docs/decision-log.md, private repo, Release v2 schema 2.4.1",
+        "confirmed_by": "Mike",
+        "source_artifact": "manual_review_overrides.csv",
+        "status": "superseded",
+        "effective_from": "",
+        "effective_through": "",
+        "notes": (
+            "superseded 2026-07-30 by classification=wild in the same registry; carried forward by "
+            "SUPERSEDED_CARRY_FORWARD so the reversal stays legible"
+        ),
+    },
+    {
+        "decision_type": "manual_override",
+        "subject_key": "JC013129",
+        "accession": "JC013129",
+        "field_name": "origin_class",
+        "new_value": "non-human",
+        "reason": (
+            "superseded by the 2.4.1 same-sequence-coherence fix, which corrected this record's "
+            "origin_class to human alongside its byte-identical twin DI499172"
+        ),
+        "evidence_reference": "docs/decision-log.md, private repo, Release v2 schema 2.4.1",
+        "confirmed_by": "Mike",
+        "source_artifact": "manual_review_overrides.csv",
+        "status": "superseded",
+        "effective_from": "",
+        "effective_through": "",
+        "notes": (
+            "superseded 2026-07-30 by origin_class=human in the same registry; carried forward by "
+            "SUPERSEDED_CARRY_FORWARD so the reversal stays legible"
+        ),
+    },
 )
 
 # The D2 adjudication is not a migration from any registry — it is a curator decision made during
