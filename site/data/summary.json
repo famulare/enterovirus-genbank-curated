@@ -1,35 +1,14 @@
 {
   "data_quality": [
     {
-      "detail": "Shapes present include '2020/2021', 'Sep-2010', 'Aug-2003'. Month-precision and range values are parsed here; a range resolves to its midpoint and a year to mid-year.",
-      "field": "collection_date",
-      "id": "collection_date_not_iso",
-      "n": 1393,
-      "summary": "Dates are not ISO-normalized."
-    },
-    {
-      "detail": "These records declare a collection-date precision but carry an empty date. They are drawn unfilled wherever date is the trait.",
-      "field": "collection_date_precision",
-      "id": "precision_without_date",
-      "n": 1755,
-      "summary": "Date precision is asserted where no date exists."
-    },
-    {
-      "detail": "Every non-polio record carries 'other_fragment', so the field is polio-only in practice and the facet does no work on the non-polio views.",
+      "detail": "Every non-polio record carries 'unknown', so the field is polio-only in practice and the facet does no work on the non-polio views.",
       "field": "sequence_scope",
       "id": "sequence_scope_polio_only",
-      "n": 14460,
+      "n": 14217,
       "summary": "Sequence scope is uninformative for non-polio records."
     },
     {
-      "detail": "These records have identical `admin1` and `locality`, so the two columns carry one field's worth of information.",
-      "field": "locality",
-      "id": "admin1_locality_duplicate",
-      "n": 4285,
-      "summary": "Locality frequently repeats admin1 verbatim."
-    },
-    {
-      "detail": "Dated 1909-07-06 \u2014 earlier than any plausible isolation, so likely transcription artifacts rather than genuinely archival material.",
+      "detail": "Dated 1937 \u2014 earlier than any plausible isolation, so likely transcription artifacts rather than genuinely archival material.",
       "field": "collection_date",
       "id": "implausible_early_dates",
       "n": 2,
@@ -113,17 +92,17 @@
   ],
   "release": {
     "built": "2026-07-29",
-    "n_fields": 24,
-    "n_manual_decisions": 1995,
-    "n_npev": 14460,
-    "n_polio": 10086,
-    "n_provisional": 14460,
-    "n_records": 24546,
+    "n_fields": 26,
+    "n_manual_decisions": 2038,
+    "n_npev": 14217,
+    "n_polio": 10084,
+    "n_provisional": 14217,
+    "n_records": 24301,
     "n_source_records": 25727,
-    "n_vouched": 10086,
+    "n_vouched": 10084,
     "raw_retrieved": "2026-05-07",
     "validation": "PASS",
-    "version": "2.1.5"
+    "version": "2.3.0"
   },
   "schema": 1,
   "selections": [
@@ -134,9 +113,9 @@
       "id": "PV1",
       "label": "Poliovirus 1",
       "n_aligned": 3732,
-      "n_canonical": 4354,
-      "n_discordant": 95,
-      "n_unaligned": 717,
+      "n_canonical": 4427,
+      "n_discordant": 20,
+      "n_unaligned": 715,
       "reference": "AY184219",
       "regions": {
         "3NCR": {
@@ -179,9 +158,9 @@
       "id": "PV2",
       "label": "Poliovirus 2",
       "n_aligned": 3604,
-      "n_canonical": 3817,
-      "n_discordant": 146,
-      "n_unaligned": 359,
+      "n_canonical": 3939,
+      "n_discordant": 23,
+      "n_unaligned": 358,
       "reference": "AY184220",
       "regions": {
         "3NCR": {
@@ -224,9 +203,9 @@
       "id": "PV3",
       "label": "Poliovirus 3",
       "n_aligned": 1425,
-      "n_canonical": 1630,
-      "n_discordant": 66,
-      "n_unaligned": 272,
+      "n_canonical": 1693,
+      "n_discordant": 1,
+      "n_unaligned": 270,
       "reference": "AY184221",
       "regions": {
         "3NCR": {
@@ -268,10 +247,10 @@
       "frame": "projected",
       "id": "NPEV",
       "label": "Non-polio enterovirus",
-      "n_aligned": 14050,
-      "n_canonical": 14460,
+      "n_aligned": 14052,
+      "n_canonical": 14217,
       "n_discordant": 0,
-      "n_unaligned": 410,
+      "n_unaligned": 165,
       "reference": "consensus",
       "regions": {
         "3NCR": {
@@ -287,12 +266,12 @@
         "P1": {
           "columns": 4887,
           "median_nt": 387,
-          "n": 12790
+          "n": 12792
         },
         "P2": {
           "columns": 1893,
           "median_nt": 0,
-          "n": 3124
+          "n": 3125
         },
         "P3": {
           "columns": 2337,
@@ -302,7 +281,7 @@
         "polyprotein": {
           "columns": 9117,
           "median_nt": 549,
-          "n": 14050
+          "n": 14052
         }
       },
       "root": "midpoint"
@@ -314,9 +293,9 @@
       "id": "all",
       "label": "All enterovirus",
       "n_aligned": 24038,
-      "n_canonical": 24546,
+      "n_canonical": 24301,
       "n_discordant": 0,
-      "n_unaligned": 508,
+      "n_unaligned": 263,
       "reference": "consensus",
       "regions": {
         "3NCR": {
@@ -365,8 +344,8 @@
       "id": "poliovirus_classification",
       "kind": "discrete",
       "label": "Classification",
-      "n_distinct": 16,
-      "n_present": 10086,
+      "n_distinct": 17,
+      "n_present": 10084,
       "note": "Empty for every non-polio record.",
       "order": [
         "Sabin",
@@ -384,7 +363,7 @@
       "kind": "discrete",
       "label": "Virus type",
       "n_distinct": 217,
-      "n_present": 23140,
+      "n_present": 23399,
       "scope": "record"
     },
     {
@@ -392,7 +371,7 @@
       "kind": "discrete",
       "label": "Species",
       "n_distinct": 13,
-      "n_present": 24546,
+      "n_present": 24301,
       "note": "Derived from the GenBank taxonomy lineage.",
       "scope": "record"
     },
@@ -413,7 +392,7 @@
       "kind": "discrete",
       "label": "Curation status",
       "n_distinct": 2,
-      "n_present": 24546,
+      "n_present": 24301,
       "order": [
         "vouched",
         "provisional"
@@ -425,7 +404,7 @@
       "kind": "discrete",
       "label": "Sample origin",
       "n_distinct": 4,
-      "n_present": 24546,
+      "n_present": 24301,
       "scope": "record"
     },
     {
@@ -433,7 +412,7 @@
       "kind": "discrete",
       "label": "Surveillance stream",
       "n_distinct": 8,
-      "n_present": 24546,
+      "n_present": 24301,
       "scope": "record"
     },
     {
@@ -441,7 +420,7 @@
       "kind": "discrete",
       "label": "Specimen type",
       "n_distinct": 5,
-      "n_present": 18050,
+      "n_present": 17818,
       "scope": "record"
     },
     {
@@ -449,7 +428,7 @@
       "kind": "discrete",
       "label": "Country",
       "n_distinct": 131,
-      "n_present": 22498,
+      "n_present": 22253,
       "scope": "record"
     },
     {
@@ -457,15 +436,15 @@
       "kind": "discrete",
       "label": "Host",
       "n_distinct": 124,
-      "n_present": 17705,
+      "n_present": 17460,
       "scope": "record"
     },
     {
       "id": "sequence_scope",
       "kind": "discrete",
       "label": "Sequence scope",
-      "n_distinct": 5,
-      "n_present": 24546,
+      "n_distinct": 6,
+      "n_present": 24301,
       "note": "other_fragment for every non-polio record; polio-only in practice.",
       "scope": "record"
     },
@@ -473,8 +452,8 @@
       "id": "collection_date_precision",
       "kind": "discrete",
       "label": "Date precision",
-      "n_distinct": 4,
-      "n_present": 24546,
+      "n_distinct": 5,
+      "n_present": 24301,
       "scope": "record"
     },
     {
@@ -482,14 +461,14 @@
       "kind": "discrete",
       "label": "Engineered or construct",
       "n_distinct": 2,
-      "n_present": 24546,
+      "n_present": 24301,
       "scope": "record"
     },
     {
       "id": "collection_year",
       "kind": "continuous",
       "label": "Collection date",
-      "n_present": 19926,
+      "n_present": 21496,
       "note": "Decimal year. Records with no parseable date are drawn unfilled.",
       "scope": "record"
     },
@@ -497,7 +476,7 @@
       "id": "sequence_length_nt",
       "kind": "continuous",
       "label": "Sequence length (nt)",
-      "n_present": 24546,
+      "n_present": 24301,
       "scope": "record"
     },
     {
