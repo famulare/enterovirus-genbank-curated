@@ -171,12 +171,17 @@ def main(argv: list[str] | None = None) -> int:
                 f"cannot carve, {len(parity.absent_from_release)} it carves that the release "
                 f"excludes"
             )
+            reproduced = [f for f in provenance.fields if f not in provenance.superseded_deltas]
             print(
-                f"provenance parity: PASS ({provenance.compared_rows} rows for "
-                f"{', '.join(provenance.fields)} match all nine shipped columns)"
+                f"provenance parity: PASS ({provenance.compared_rows} rows; "
+                f"{', '.join(reproduced)} match all nine shipped columns)"
             )
             for basis, count in sorted(provenance.basis_counts.items()):
                 print(f"    {basis:36} {count:>8}")
+            for field, delta in sorted(provenance.superseded_deltas.items()):
+                print(f"  declared delta: {field} differs from the release on {delta} records")
+            for field, count in sorted(provenance.unresolved_by_field.items()):
+                print(f"  declined: {field} on {count} records")
             if requested_guard:
                 print(GUARD_PASS_LINE)
             return 0

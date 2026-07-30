@@ -72,7 +72,10 @@ RULE_FIELD_ORDER = (
     "status",
 )
 ACTIVE_RULE_STATUS = "active"
-EXPECTED_RULE_COUNT = 28
+EXPECTED_RULE_COUNT = 30
+# How many of those carry the baseline's own rule_version and so appear in the frozen
+# `final/audit/rules.tsv.gz` view. The rest are the rewrite's own, on real semver.
+BASELINE_VIEW_RULE_COUNT = 28
 
 
 @dataclass(frozen=True)
@@ -129,9 +132,17 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.epi.sample_origin": "not yet written; increment 5",
     "derive.epi.surveillance_stream": "not yet written; increment 5",
     "derive.epi.specimen_type": "not yet written; increment 5",
-    "derive.dates.collection_date": "not yet written; increment 4",
-    "derive.dates.collection_date_precision": "not yet written; increment 4",
-    "derive.dates.collection_year_bounds": "not yet written; increment 4",
+    "derive.dates.collection_date_v241": (
+        "superseded by R-DATE-2; retained only so the frozen 2.4.1 rule view still lists R-DATE-1"
+    ),
+    "derive.dates.collection_date_precision_v241": (
+        "superseded by R-DATE-PRECISION-2; retained for the frozen 2.4.1 rule view"
+    ),
+    "derive.dates.collection_year_bounds": (
+        "the derivation is settled (interval endpoints, blank unless precision is range, verified "
+        "against all 121 shipped range rows) but R-DATE-RANGE-1 covers two canonical fields and "
+        "derive/apply.py projects one field per rule"
+    ),
     "derive.engineered.engineered_or_construct": (
         "the shipped values are superseded by the re-adjudication; the rewrite is increment 8"
     ),

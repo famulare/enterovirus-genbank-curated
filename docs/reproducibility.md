@@ -61,6 +61,50 @@ Of the 22,551 rows the rule does decide, every one matches the release, includin
 first place a recorded decision is shown to reach a generated provenance row rather than merely
 existing in the ledger, which is the D2 failure stated positively.
 
+### The one deliberate break so far: `collection_date_precision`
+
+Everything above reproduces the release. The date family does not, on purpose, and this is the first
+place the rewrite corrects rather than reproduces.
+
+For every record that deposited a `/collection_date`, the canonical date **is** the ISO normalization
+of that qualifier and the precision **is** its shape — 19,730 rows, exactly, with no curated input,
+including the floor-of-mean midpoint on all 121 interval records. The release describes these as
+projections of curated fields; for these rows those curated fields evidently just held the normalized
+source value.
+
+The problem is the 4,569 records that deposited **no** date. The release splits them: 2,805 get
+precision `unknown`, and 1,764 get precision `year` with a year recovered outside GenBank by an
+archival reconstruction whose inputs are not in this repository. Nothing in `raw/` separates those two
+groups, so the split cannot be reproduced, and guessing it would fabricate 4,569 values.
+
+**Curator decision, 2026-07-30: a record with no date has no precision.** Those rows now carry `NA`
+and a blank date.
+
+**Invariant broken, and its replacement.** 2.4.1 guaranteed
+`collection_date_precision ∈ {day, month, year, range, unknown}` and said nothing relating the
+precision to the value. The vocabulary is now `{day, month, year, range, NA}` — `unknown` retired,
+`NA` new — under a stronger guarantee that ties the two columns together:
+
+> `collection_date` is blank if and only if `collection_date_precision` is `NA`.
+
+That is checkable in both directions and both matter: a blank date with a real precision claims a
+determination about a date that is not there, and a populated date with `NA` claims no determination
+about one that is. It is enforced against the build's own output by `validation/invariants.py` before
+anything is written, so it holds for a fresh clone with no `final/` present and cannot be satisfied by
+copying. `unknown` is also freed to mean what it says — a date exists but its precision is unclear.
+
+The break is counted, not just described: **1,761** records differ on `collection_date` and **4,549**
+on `collection_date_precision`, declared in `oracle/parity.py` and required to match exactly, so a
+deliberate delta changing size fails the gate. The 1,764 whose year came from identifier parsing are
+recoverable later — the frozen archival-dates extract labels 21 identifier rule families, usable as a
+validation oracle rather than an input — and each one recovered moves a row from `NA` back to `year`,
+never the reverse.
+
+R-DATE-1 and R-DATE-PRECISION-1 are therefore `deprecated` in the catalog and superseded by R-DATE-2
+and R-DATE-PRECISION-2 on real semver. `final/audit/rules.tsv.gz` still regenerates byte-for-byte,
+because the view emits only rules carrying the baseline's own `rule_version` — which is how the
+catalog can evolve without moving a published artifact.
+
 One shipped label is reproduced despite overstating its case, and is pinned rather than quietly
 inherited: `duplicate_of_admin1_suppressed` covers 2,048 records that deposited no
 `/geo_loc_name` at all, where there was never a locality to suppress. Splitting it would mean moving

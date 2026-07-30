@@ -22,6 +22,7 @@ from enterovirus_genbank_curated.derive.metadata import (
     UNDECLARED_EXCLUSIONS,
 )
 from enterovirus_genbank_curated.oracle.parity import (
+    SUPERSEDED_FIELD_DELTAS,
     UNRESOLVED_PARTITION_ROWS,
     verify_metadata_parity,
 )
@@ -106,8 +107,16 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
     # is the first field where `manual_override` is non-trivial: it is TRUE on exactly the seventeen
     # records the ledger's `is_poliovirus` decisions resolve, so this also proves the decision
     # reaches the provenance row rather than merely existing in the ledger.
-    assert provenance.fields == ("curation_status", "locality", "virus_group")
-    assert provenance.compared_rows == 24284 + 2 * (24284 - UNRESOLVED_PARTITION_ROWS)
+    assert provenance.fields == (
+        "collection_date",
+        "collection_date_precision",
+        "curation_status",
+        "locality",
+        "virus_group",
+    )
+    # locality and both date columns resolve on every shared record; the two partition columns
+    # decline on the same population.
+    assert provenance.compared_rows == 3 * 24284 + 2 * (24284 - UNRESOLVED_PARTITION_ROWS)
     assert sum(provenance.basis_counts.values()) == provenance.compared_rows
     # Counted as (version, field) keys, so the declared row-set gap scales with the number of
     # projected fields: every gap record is missing one row per implemented rule.
@@ -120,3 +129,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "virus_group": UNRESOLVED_PARTITION_ROWS,
         "curation_status": UNRESOLVED_PARTITION_ROWS,
     }
+
+    # The two date columns deliberately differ from the release, by exactly the declared amount.
+    # A delta that cannot be stated as a number is not a declared delta.
+    assert provenance.superseded_deltas == SUPERSEDED_FIELD_DELTAS

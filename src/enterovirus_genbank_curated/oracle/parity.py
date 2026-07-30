@@ -265,6 +265,25 @@ def compare_metadata_to_release(
 UNRESOLVED_PARTITION_ROWS = 1733
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
+# Fields the rewrite deliberately produces differently from the release. For these, requiring nine
+# columns to match is the wrong gate — a superseding rule has a different `rule_id` and often a
+# different `evidence_basis` on *every* row, so an equality check would report thousands of
+# differences that are all intended and hide the one that is not.
+#
+# So the value is compared, the count of disagreements is required to equal a declared number, and
+# the rule/basis columns are expected to differ. A delta that cannot be stated as a number is not a
+# declared delta.
+SUPERSEDED_FIELD_DELTAS = {
+    # 1,761 = the 1,764 dateless records 2.4.1 gave a year recovered from outside GenBank, now
+    #         emitting blank − 3 whose year an active `collection_year_curated` decision supplies,
+    #         so the rewrite emits it too. The 2,805 the release left blank already agree.
+    "collection_date": 1761,
+    # 4,549 = 4,569 records that deposited no date, all moving from `unknown` or `year` to `NA`
+    #         − 17 that are `SEQUENCE_RESCUED_INCLUSIONS` and so are not in the carve
+    #         − 3 resolved to `year` by a ledger decision, which the release also calls `year`.
+    "collection_date_precision": 4549,
+}
+
 
 @dataclass(frozen=True)
 class ProvenanceParityResult:
@@ -274,6 +293,7 @@ class ProvenanceParityResult:
     absent_from_build: int
     absent_from_release: int
     unresolved_by_field: dict[str, int]
+    superseded_deltas: dict[str, int]
 
 
 def compare_provenance_to_release(
@@ -334,10 +354,16 @@ def compare_provenance_to_release(
         )
 
     differences: list[str] = []
+    superseded_deltas: dict[str, int] = {}
     for row in resolved:
         key = (row["version"], row["canonical_field"])
         want = shipped.get(key)
         if want is None:
+            continue
+        field = row["canonical_field"]
+        if field in SUPERSEDED_FIELD_DELTAS:
+            if row["final_value"] != want[index["final_value"]]:
+                superseded_deltas[field] = superseded_deltas.get(field, 0) + 1
             continue
         for column in PROVENANCE_COLUMNS:
             if row[column] != want[index[column]]:
@@ -349,6 +375,16 @@ def compare_provenance_to_release(
         raise ContractError(
             f"{len(differences)} provenance cells disagree with the shipped release — {shown}"
         )
+
+    for field, expected in SUPERSEDED_FIELD_DELTAS.items():
+        if field not in {row["canonical_field"] for row in resolved}:
+            continue
+        actual = superseded_deltas.get(field, 0)
+        if actual != expected:
+            raise ContractError(
+                f"{field} disagrees with the release on {actual} records, not the declared "
+                f"{expected}; a deliberate delta has changed size and needs re-adjudicating"
+            )
 
     # Counted over compared rows only, so the reported branch tallies sum to `compared_rows` rather
     # than silently including rows that have no shipped counterpart.
@@ -364,6 +400,7 @@ def compare_provenance_to_release(
         absent_from_build=len(release_only),
         absent_from_release=len(built_only),
         unresolved_by_field=unresolved_by_field,
+        superseded_deltas=superseded_deltas,
     )
 
 
