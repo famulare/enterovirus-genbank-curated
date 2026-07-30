@@ -91,9 +91,9 @@
     }
   ],
   "release": {
-    "built": "2026-07-29",
+    "built": "2026-07-30",
     "n_fields": 26,
-    "n_manual_decisions": 2038,
+    "n_manual_decisions": 2061,
     "n_npev": 14217,
     "n_polio": 10084,
     "n_provisional": 14217,
@@ -102,7 +102,7 @@
     "n_vouched": 10084,
     "raw_retrieved": "2026-05-07",
     "validation": "PASS",
-    "version": "2.3.0"
+    "version": "2.4.1"
   },
   "schema": 1,
   "selections": [
