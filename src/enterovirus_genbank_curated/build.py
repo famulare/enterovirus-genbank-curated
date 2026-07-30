@@ -56,7 +56,10 @@ from enterovirus_genbank_curated.registry.rules import (
     load_rule_catalog,
     load_rule_contract,
 )
-from enterovirus_genbank_curated.validation.invariants import assert_date_precision_invariant
+from enterovirus_genbank_curated.validation.invariants import (
+    assert_date_precision_invariant,
+    assert_locality_basis_invariant,
+)
 
 IMMUTABLE_DIRS = ("final", "raw")
 
@@ -204,6 +207,7 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # Cross-column invariants, before anything is written. A rule can be individually right and the
     # table still incoherent, and no single rule can see two columns.
     not_applicable_dates = assert_date_precision_invariant(provenance)
+    locality_bases = assert_locality_basis_invariant(provenance, transport.rows)
 
     row_counts = {
         "source_records": len(tables["records"]),
@@ -212,6 +216,7 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         "excluded_as_non_enterovirus": transport.excluded_as_non_enterovirus,
         "provenance_rows": len(provenance),
         "dates_not_applicable": not_applicable_dates,
+        "localities_without_geography": locality_bases.get("no_geography_deposited", 0),
     }
     write_metadata_transport(output_dir, transport.rows, row_counts, provenance)
     write_projection_provenance(output_dir, provenance)

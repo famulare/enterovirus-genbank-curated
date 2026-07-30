@@ -72,7 +72,7 @@ RULE_FIELD_ORDER = (
     "status",
 )
 ACTIVE_RULE_STATUS = "active"
-EXPECTED_RULE_COUNT = 30
+EXPECTED_RULE_COUNT = 31
 # How many of those carry the baseline's own rule_version and so appear in the frozen
 # `final/audit/rules.tsv.gz` view. The rest are the rewrite's own, on real semver.
 BASELINE_VIEW_RULE_COUNT = 28
@@ -148,6 +148,9 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
     ),
     "derive.carve.canonical_inclusion": (
         "the carve predicate exists in derive/metadata.py but is not yet a bound rule"
+    ),
+    "derive.geo.locality_v241": (
+        "superseded by R-GEO-LOCALITY-2; retained for the frozen 2.4.1 rule view"
     ),
     "derive.evidence.sequence_tier_wild": "needs the pairwise sequence-evidence stage",
     "derive.evidence.sequence_tier_sabin_like": "needs the pairwise sequence-evidence stage",

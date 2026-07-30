@@ -179,7 +179,8 @@ def main(argv: list[str] | None = None) -> int:
             for basis, count in sorted(provenance.basis_counts.items()):
                 print(f"    {basis:36} {count:>8}")
             for field, delta in sorted(provenance.superseded_deltas.items()):
-                print(f"  declared delta: {field} differs from the release on {delta} records")
+                moved = {c: n for c, n in delta.items() if n}
+                print(f"  declared delta: {field} {moved}")
             for field, count in sorted(provenance.unresolved_by_field.items()):
                 print(f"  declined: {field} on {count} records")
             if requested_guard:

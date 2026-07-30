@@ -14,9 +14,62 @@ from collections.abc import Iterable
 
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.derive.dates import PRECISION_NOT_APPLICABLE
+from enterovirus_genbank_curated.derive.geo import (
+    BASIS_NO_ADMIN1,
+    BASIS_NO_GEOGRAPHY,
+    BASIS_SUPPRESSED,
+)
 
 DATE_FIELD = "collection_date"
 PRECISION_FIELD = "collection_date_precision"
+LOCALITY_FIELD = "locality"
+
+
+def assert_locality_basis_invariant(
+    rows: Iterable[dict[str, str]], transport: Iterable[dict[str, str]]
+) -> dict[str, int]:
+    """Each blank-`locality` basis must be true of the record's own geography.
+
+    2.4.1 labelled every blank `locality` `duplicate_of_admin1_suppressed`, and only 4,233 of
+    23,268 were suppressions — nothing constrained the label, so it drifted into meaning "blank".
+    These four checks are what make the basis column load-bearing rather than decorative:
+
+    * blank `locality` iff the basis is one of the three blank reasons;
+    * `duplicate_of_admin1_suppressed` requires a non-blank `admin1` for the locality to have
+      repeated;
+    * `no_admin1_deposited` requires a non-blank `country` and a blank `admin1`;
+    * `no_geography_deposited` requires both blank.
+
+    `country` and `admin1` are transport columns rather than projections, so they arrive
+    separately — which is why this cannot live inside the rule: no rule sees two columns at once.
+    """
+    geography = {row["version"]: row for row in transport}
+    blank_bases = {BASIS_SUPPRESSED, BASIS_NO_ADMIN1, BASIS_NO_GEOGRAPHY}
+    breaches: list[str] = []
+    counts: dict[str, int] = {}
+    for row in rows:
+        if row["canonical_field"] != LOCALITY_FIELD:
+            continue
+        basis, value = row["evidence_basis"], row["final_value"]
+        counts[basis] = counts.get(basis, 0) + 1
+        record = geography.get(row["version"])
+        if record is None:
+            continue
+        country, admin1 = record["country"], record["admin1"]
+        if bool(value) == (basis in blank_bases):
+            breaches.append(f"{row['version']}: value {value!r} with basis {basis}")
+        elif basis == BASIS_SUPPRESSED and not admin1:
+            breaches.append(f"{row['version']}: {basis} but admin1 is blank")
+        elif (basis == BASIS_NO_ADMIN1 and (admin1 or not country)) or (
+            basis == BASIS_NO_GEOGRAPHY and (country or admin1)
+        ):
+            breaches.append(f"{row['version']}: {basis} with country={country!r} admin1={admin1!r}")
+    if breaches:
+        shown = "; ".join(breaches[:10])
+        raise ContractError(
+            f"{len(breaches)} records break the locality basis invariant — {shown}"
+        )
+    return counts
 
 
 def assert_date_precision_invariant(rows: Iterable[dict[str, str]]) -> int:

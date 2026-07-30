@@ -105,18 +105,42 @@ and R-DATE-PRECISION-2 on real semver. `final/audit/rules.tsv.gz` still regenera
 because the view emits only rules carrying the baseline's own `rule_version` — which is how the
 catalog can evolve without moving a published artifact.
 
-One shipped label is reproduced despite overstating its case, and is pinned rather than quietly
-inherited: `duplicate_of_admin1_suppressed` covers 2,048 records that deposited no
-`/geo_loc_name` at all, where there was never a locality to suppress. Splitting it would mean moving
-a published controlled value, which belongs to a release that can afford it.
+### The second deliberate break: `locality`'s basis
 
-The other thirteen columns are not written at all, and the build ships a
-`metadata_transport_coverage.json` next to the table naming each one and the input it needs —
-`sample_origin`, `surveillance_stream`, `specimen_type` and the `collection_date` family project
-curated-master fields; `sequence_scope`, `virus_type`, `poliovirus_classification`, `virus_group`
-and `curation_status` need sequence comparison against a reference panel. A partial table is not a
-release table, which is why it is written as `canonical/sequence_metadata_transport.tsv.gz` with a
-coverage declaration rather than under the shipped name.
+The same defect, found by the same method. 2.4.1 labels **every** blank `locality`
+`duplicate_of_admin1_suppressed`. Measured, only **4,233 of 23,268** are suppressions:
+
+| n | what the record deposited | the release said | the rewrite says |
+|---|---|---|---|
+| 4,233 | `Country: Region` | suppressed | `duplicate_of_admin1_suppressed` |
+| 16,987 | `Country` only, no region | suppressed | `no_admin1_deposited` |
+| 2,048 | no `/geo_loc_name` at all | suppressed | `no_geography_deposited` |
+
+So the label asserts a determination that was never made on 19,035 records. The two new bases stay
+distinct deliberately: a record naming only a country *did* deposit geography, so folding it into
+"nothing deposited" would replace one overstatement with another.
+
+**Invariant broken, and its replacement.** The release constrained the basis column to a vocabulary
+and nothing more, which is how one value drifted into meaning "blank". Each basis is now a claim about
+the record's own geography, and all four parts are enforced by `validation/invariants.py` against the
+build's own output:
+
+> `locality` is blank iff the basis is one of the three blank reasons;
+> `duplicate_of_admin1_suppressed` implies a non-blank `admin1`;
+> `no_admin1_deposited` implies a non-blank `country` and a blank `admin1`;
+> `no_geography_deposited` implies both blank.
+
+`country` and `admin1` are transport columns rather than projections, so this cannot live inside the
+rule — no rule sees two columns at once, which is exactly why cross-column invariants get their own
+module.
+
+**This break is why declared deltas are counted per column rather than per field.** No `locality`
+*value* changes: every blank stays blank and every non-blank was already right. The entire correction
+is in `evidence_basis`. An earlier version of the parity gate compared only `final_value` for a
+superseded field, so this correction would have registered as zero difference — and a genuine
+regression in `source_field` or `manual_override` would have passed unnoticed alongside it. Every
+provenance column is now declared for every superseded field, zeros included, so the *shape* of a
+break is legible and a disagreement in an unexpected column fails.
 
 **The row set has a known 18-record gap, and it is pinned rather than absorbed.** The transport
 carves on two closed predicates — the GenBank lineage names the `Enterovirus` genus, and the ledger

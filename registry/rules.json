@@ -152,9 +152,9 @@
     "rule_version": "2.4.1",
     "field_name": "locality",
     "description": "Sub-admin1 detail only. parse_geo derives country/admin1/locality from one GenBank geo_loc_name string, so locality was byte-identical to admin1 whenever no finer detail was deposited (4,285 of 5,319 rows; containment is exact -- locality always startswith admin1). Blank it when it equals admin1 so a non-blank locality means genuine sub-admin1 information.",
-    "implementation": "derive.geo.locality",
+    "implementation": "derive.geo.locality_v241",
     "parameters": {},
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-EXCLUDE-1",
@@ -362,6 +362,18 @@
         "year",
         "range"
       ]
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-GEO-LOCALITY-2",
+    "rule_version": "1.0.0",
+    "field_name": "locality",
+    "description": "Sub-admin1 detail only, with the reason a locality is blank recorded honestly. parse_geo derives country/admin1/locality from one GenBank geo_loc_name string, and locality is blanked when it would merely repeat admin1. R-GEO-LOCALITY-1 labelled every blank duplicate_of_admin1_suppressed, but only 4,233 of 23,268 are suppressions: 16,987 records deposited a country and no region, which projects no_admin1_deposited, and 2,048 deposited no geo_loc_name at all, which projects no_geography_deposited. Those two stay distinct because a record naming only a country did deposit geography. A non-blank locality still means genuine sub-admin1 information.",
+    "implementation": "derive.geo.locality",
+    "parameters": {
+      "no_admin1_basis": "no_admin1_deposited",
+      "no_geography_basis": "no_geography_deposited"
     },
     "status": "active"
   }
