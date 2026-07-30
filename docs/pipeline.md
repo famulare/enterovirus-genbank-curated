@@ -123,12 +123,20 @@ ways.** Corrected 2026-07-29 after a full-population re-adjudication
 ([`engineered-readjudication.md`](engineered-readjudication.md),
 [`engineered-full-population-readjudication.md`](engineered-full-population-readjudication.md)):
 
-1. **Not three records — 45.** Of the 58 canonical records shipping `engineered_or_construct=TRUE`
-   at ≥3000 nt, 44 are re-deposits or replicates of an existing reference and should be FALSE, plus
-   `A09260` below that length. 25 of them are *byte-identical* to a natural reference that already
-   ships FALSE. Four are not poliovirus (Coxsackievirus A11, in oncolytic-virus patents) and three
-   are not viruses at all. The predicate is a text match on `\bPAT\b` inside a concatenated blob, so
-   all 506 patent-division records ship TRUE regardless of sequence.
+1. **Not three records — 43, with 2 more unresolved.** Of the 58 canonical records shipping
+   `engineered_or_construct=TRUE` at ≥3000 nt, **42** are re-deposits or replicates of an existing
+   reference and should be FALSE, plus `A09260` below that length — **43 flips**. Two more
+   (`LY501105`/`LZ216100`) are the same patent family as a record the curator ruled TRUE and are
+   **open, not implemented in either direction**. 25 of the 42 are *byte-identical* to a natural
+   reference that already ships FALSE. Four are not poliovirus (Coxsackievirus A11, in
+   oncolytic-virus patents) and three are not viruses at all. The predicate is a text match on
+   `\bPAT\b` inside a concatenated blob, so all 506 patent-division records ship TRUE regardless of
+   sequence.
+
+   **The 58 is not the whole problem.** Only 58 of the **543** records shipping TRUE were
+   adjudicated per-record; the ≥3000 nt floor is a tractability choice, and the rule rewrite will
+   flip ~478 unadjudicated records mechanically. `CS406433` (2,745 nt, same patent family as the D2
+   trio, verbatim Sabin 2 substring) sits just under the floor and is backlog item B1.
 2. **Not one field.** Taking the reference's label also moves `poliovirus_classification`,
    `sample_origin` and `surveillance_stream` on 18 of the 25 byte-identical records. Separately,
    `classification` already disagrees on six records nobody documented (`AJ416942`, `DQ205099`,
@@ -148,12 +156,28 @@ adjudicate call rested on "an infectious clone is a construct", which is exactly
 simplified definition removes. Its three differences from Sabin 2 are each independently attested in
 natural field isolates.
 
-Fourteen records stay TRUE and are genuinely engineered: the `CS406483`/`PU749298` pair (a unique
+Eleven records stay TRUE and are genuinely engineered: the `CS406483`/`PU749298` pair (a unique
 AgeI cloning site created by two synonymous changes at the VP2/VP3 junction), `MN654096` (nOPV2-CD,
-recoded capsid), the six S19 capsid-swap chimeras `PP068131`–`PP068136`, `FV537075`–`FV537077`, and
-`LY501107`/`LZ216102` (directed cold-adaptation selection). Current counts are pinned in
+recoded capsid), the six S19 capsid-swap chimeras `PP068131`–`PP068136`, and `LY501107`/`LZ216102`
+(directed cold-adaptation selection). `FV537075`–`FV537077` are a fourth, separate case: they are not
+poliovirus genomes at all — bisulfite-converted Mahoney reference strings, one a straight conversion
+and two the reverse complement — and the disposition is to carve-exclude them from `final/` entirely
+with a recorded reason, not to ship them as TRUE. Current counts are pinned in
 [`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py) so that none of these
 numbers can move silently again, which is how the delta grew unnoticed in the first place.
+
+Of those eleven, only four need an explicit TRUE curation row to survive the rule rewrite —
+`CS406483`, `PU749298`, `LY501107`, `LZ216102`. The other seven are reachable structurally by
+`division == "SYN"`. `LY501107`/`LZ216102` are the trap: they are `PAT`-division, so without a row
+the rewritten rule would silently flip them to FALSE.
+
+**A concurrent private curation pass has partly overtaken point 2.** The private repository's
+commit `f848530` moved `poliovirus_classification` / `sample_origin` / `surveillance_stream` on six
+records in this population, changing **no** `engineered_or_construct` value. Four of the six moved to
+exactly what the re-adjudication planned, so that much of the label-inheritance work is already done.
+Two (`PE314016`/`PH149759`) moved the *opposite* way, to `engineered/lab`; the curator adjudicated in
+favour of the re-adjudication's FALSE call, since both are `sequence_sha256`-identical to `AF111984`,
+a named wild PV1 field isolate. Those two now need correcting private-side.
 
 ## Review stop conditions
 

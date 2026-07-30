@@ -18,8 +18,20 @@ records to the exhaustive population currently shipping `engineered_or_construct
 Operative test: **(a) did someone assemble this specific genotype, and (b) is it a genotype that did
 not occur in nature?** Both must hold for TRUE.
 
-**Headline: 46 of the 58 should flip FALSE; 12 should stay TRUE.** The 12 that stay are not the 12
-the prior report guessed at, and three of them are not virus constructs at all.
+> **SUPERSEDED IN PART — read [Appendix B](#appendix-b-curator-answers-2026-07-29--decided) before
+> acting on any number in this report.** The curator answered all ten §9 questions on 2026-07-29 and
+> revised the operative test above: **directed selection under an applied selective pressure now
+> counts as engineered**, not only physical assembly. That reverses `LY501107`/`LZ216102`, and the
+> §4 disposition table is wrong for those two rows. Appendix B also carves `FV537075`–`FV537077` out
+> of `final/` entirely rather than shipping them TRUE, and leaves `LY501105`/`LZ216100` **undecided**.
+> Body-text totals below are the pre-Appendix-B figures and are retained as the record of what the
+> evidence alone supported.
+
+**Headline (as revised by Appendix B): of the 58, 42 flip FALSE, 14 stay TRUE, and 2 are open.**
+The pre-revision figure was 46 FALSE / 12 TRUE. The set that actually lands is **42 + `A09260`
+= 43 records**, because the two open records (`LY501105`/`LZ216100`) are not being implemented in
+either direction until the curator rules. The records that stay TRUE are not the ones the prior
+report guessed at.
 
 ---
 
@@ -115,7 +127,10 @@ The 7 SYN are `MN654096` and `PP068131`–`PP068136`. The 1 VRL is `DQ205099`.
 | F | **Genuinely engineered viral constructs** | 9 | AgeI cassette site; recoded-capsid nOPV2; six capsid-swap S19 chimeras | all **TRUE** |
 | G | **Bisulfite-converted reference strings** | 3 | not viruses at all (§6.1) | **TRUE**, but see §6.1 |
 
-25 + 6 + 5 + 3 + 4 + 9 + 3 = 58. **46 FALSE, 12 TRUE.**
+25 + 6 + 5 + 3 + 4 + 9 + 3 = 58. **46 FALSE, 12 TRUE** on the evidence alone —
+**42 FALSE / 14 TRUE / 2 open after [Appendix B](#appendix-b-curator-answers-2026-07-29--decided)**,
+which moves family E's `LY501107`/`LZ216102` to TRUE, leaves E's `LY501105`/`LZ216100` open, and
+carve-excludes family G rather than shipping it TRUE.
 
 ---
 
@@ -503,12 +518,40 @@ natural-occurrence + restriction evidence all concordant, **M** = defensible eit
 | `PP068135` | SYN | 7434 | engineered/lab | TRUE | **TRUE** | MEF-1 capsid swap; all 733 mm in 790–3415 | VH |
 | `PP068136` | SYN | 7432 | engineered/lab | TRUE | **TRUE** | Saukett capsid swap; all 315 mm in 790–3412 | VH |
 
-**Totals: 46 → FALSE (36 VH, 6 H, 4 M), 12 stay TRUE.**
+**Totals on the evidence alone: 46 → FALSE (36 VH, 6 H, 4 M), 12 stay TRUE.**
 
-Label inheritance (Q8) for the 46, where the record's other fields disagree with its parent's, is
-tabulated in §6.3 — 18 of the 46 need one or more of
+**After [Appendix B](#appendix-b-curator-answers-2026-07-29--decided): 42 → FALSE (36 VH, 6 H),
+14 stay TRUE, 2 open.** Three corrections to the table above, all from Appendix B:
+
+- **`LY501107`/`LZ216102` read TRUE, not FALSE** (Q1 — directed cold-adaptation selection satisfies
+  the revised criterion). They were 2 of the 4 confidence-**M** rows, so the FALSE set's confidence
+  split becomes 36 VH / 6 H / **0 M**.
+- **`LY501105`/`LZ216100` are open, not FALSE.** They are the other 2 M rows and the only remaining
+  M in the population; not implemented in either direction until the curator rules.
+- **`FV537075`/`FV537076`/`FV537077` are carve-excluded, not TRUE** (Q5). They stay inside the 14
+  "not FALSE" count here because they are not flips, but they leave `final/` entirely rather than
+  shipping any `engineered` value.
+
+The flip set that actually lands is therefore **42 + `A09260` = 43 records**.
+
+Label inheritance (Q8), where a flipped record's other fields disagree with its parent's, is
+tabulated in §6.3 — **18 of the 25 byte-identical records** need one or more of
 `poliovirus_classification`/`sample_origin`/`surveillance_stream` moved as well, and two of those
-inheritances are themselves questionable (Q3).
+inheritances are themselves questionable (Q3). (The denominator is the 25 of family A, not the 46
+flips; §6.3 states it correctly and this line previously did not.)
+
+**Partly overtaken by concurrent private curation, 2026-07-29.** A separate curation pass in the
+private repository (its commit `f848530`, "Fix 19 patent-deposit reference-strain
+misclassifications") has since moved co-fields on six records in this table. It changed **no**
+`engineered_or_construct` value, so every disposition above stands, but the `cls` and "ships"
+columns are now stale for those six:
+
+| accession | what moved privately | effect here |
+|---|---|---|
+| `DD214216`, `HV932178` | `cls`→`wild`, `origin`→`human`, `stream`→`vaccine/reference` | exactly what §6.3 planned — **already done**, only the `engineered` flip remains |
+| `DD214218` | `cls`→`wild` (agrees with parent `K01392`) | `stream` still needs the §6.3 move |
+| `DD214223` | `cls`→`wild`, `reference_label`→`Leon37` | **attributed to the wrong parent** — it is byte-identical to `X00596` (Sabin 3, 7,434 nt), not to `K01392` (7,431 nt). Flag for private-side correction; does not change the FALSE call |
+| `PE314016`, `PH149759` | `cls`→`engineered/lab`, `origin`→`non-human` | the private pass concluded these are codon-recoded constructs, i.e. the **opposite** of the FALSE call here. **Adjudicated by the curator 2026-07-29 in favour of FALSE**: they are `sequence_sha256`-identical to `AF111984`, a named wild PV1 field isolate, and the 20.2% figure the private note relies on is divergence from *Sabin*, not from that byte-identical relative. The private values need correcting, not this table |
 
 ---
 
@@ -833,8 +876,16 @@ no floor, explicit allowlist.**
 
 Nothing anywhere currently pins the number of `engineered=TRUE` records (the prior report's R4
 finding). Add pinned expectations for: total `engineered=TRUE` (543 today), `engineered=TRUE` at
-≥3000 nt (58 today → 12 proposed), and `PAT`-division records shipping TRUE (506 today). Those three
-numbers moving silently is what made a full-population re-adjudication necessary.
+≥3000 nt (58 today → **14 proposed**, per Appendix B; 12 on the evidence alone), and `PAT`-division
+records shipping TRUE (506 today). Those three numbers moving silently is what made a
+full-population re-adjudication necessary.
+
+**Done, and it went further than this section asked.** Implemented in
+[`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py), which pins those
+three plus the SYN counts, Invariant A's scoped record count (513), and the constrained-group
+membership *digest* — because an adversarial review demonstrated that the group counts alone
+(178/374) survive both deleting `SYN` from the scope and a compensating scope swap. That file also
+carries the mutation evidence proving each pin fires.
 
 ---
 
@@ -954,21 +1005,45 @@ records; union (3 overlap) → **113 records**. Current rule: **954**. So the ru
 | reachable by the new structured signal | **12** |
 | — of which the 7 genuine polio constructs | `MN654096` `PP068131` `PP068132` `PP068133` `PP068134` `PP068135` `PP068136` |
 | — of which 70-nt `synthetic construct` PAT oligos | `JA792237` `JA792238` `JA792249` `JA792250` `JA792251` |
-| need an explicit TRUE ledger row to hold TRUE | **5** — `CS406483` `PU749298` `FV537075` `FV537076` `FV537077` |
-| **TRUE after the change** | **17** |
-| **flip TRUE→FALSE** | **526** |
+| need an explicit TRUE ledger row to hold TRUE | **4** — `CS406483` `PU749298` `LY501107` `LZ216102` |
+| **TRUE after the change** | **16** |
+| **carve-excluded rather than valued** | **3** — `FV537075` `FV537076` `FV537077` |
+| **flip TRUE→FALSE** | **524** |
+
+**Revised by Appendix B; the original row is preserved here because the arithmetic matters.** The
+held-TRUE list first read *5 — `CS406483` `PU749298` `FV537075` `FV537076` `FV537077`*, giving 17
+TRUE and 526 flips. Two changes:
+
+- `FV537075`/`FV537076`/`FV537077` do **not** need a TRUE ledger row. Q5 carve-excludes them from
+  `final/` with a recorded reason, so they carry no `engineered` value at all. Note the knock-on:
+  `FV537076`/`FV537077` are a byte-identical PAT pair forming one of Invariant A's 178 constrained
+  groups, so carve-excluding them moves that pin to **177 groups / 372 records**.
+- `LY501107`/`LZ216102` **do** need one (Q1, directed selection). They are PAT-division and not
+  reachable by `division == "SYN"` or `organism == "synthetic construct"`, so without an explicit
+  ledger row the rewritten rule would flip them to FALSE — which is exactly the failure the "reason
+  and rule agree" check below was meant to catch, and it would have been missed.
 
 Every one of the 12 structurally-reachable records currently ships TRUE, so **the new rule creates
-zero new TRUEs** — it only removes. And all 12 of my §4 "stays TRUE" records are reachable: 7 by
-`division=SYN`, 5 by explicit curation. The rule and the hand adjudication agree exactly, which is
-the check I most wanted to pass.
+zero new TRUEs** — it only removes. And all of my §4 "stays TRUE" records are reachable: 7 by
+`division=SYN`, the rest by explicit curation. The rule and the hand adjudication agree exactly,
+which is the check I most wanted to pass. (Post-Appendix-B that is 7 by `division=SYN` + 4 by
+explicit curation, with 3 carve-excluded; the agreement still holds, but only because
+`LY501107`/`LZ216102` were added to the explicit set — see the revision note above.)
 
-**Blast-radius honesty — 480 of the 526 flips are unadjudicated by me.** The 531 canonical TRUE
-records not reachable by the structured signal break down as:
+**Blast-radius honesty — 478 of the 524 flips are unadjudicated by me.** This is the single most
+important caveat in the report and it is deliberately not in the headline summary, so read it here:
+**this report adjudicated 58 of the 543 records shipping TRUE.** The remaining 485 are not covered
+by any per-record judgement, and the rule rewrite flips almost all of them mechanically. That is the
+same "boundary inherited from whatever artifact framed the analysis" failure (root cause R4) the
+prior report was criticised for — the ≥3000 nt floor is a tractability choice, not a scientific one.
+`CS406433` (2,745 nt, same patent family as the D2 trio, a verbatim Sabin 2 substring, shipping TRUE
+with zero ledger rows) sits just under it and is backlog item B1.
+
+The 531 canonical TRUE records not reachable by the structured signal break down as:
 
 | length band | n | division | notes |
 |---|---|---|---|
-| **≥3000** | **51** | 50 PAT, 1 VRL (`DQ205099`) | **this report's population** (58 minus the 7 SYN); 46 flip, 5 held TRUE |
+| **≥3000** | **51** | 50 PAT, 1 VRL (`DQ205099`) | **this report's population** (58 minus the 7 SYN); 42 flip, 4 held TRUE, 3 carve-excluded, 2 open |
 | 900–2999 | 30 | 23 PAT, 7 VRL | the 7 VRL are exactly `JN105289`–`JN105295` (2634–2643 nt, explicit curator TRUEs — Q1) |
 | 200–899 | 301 | 298 PAT, 3 VRL | prior report measured this band as overwhelmingly exact-substring re-deposits |
 | 100–199 | 17 | 15 PAT, 2 VRL | |
@@ -987,16 +1062,46 @@ they are where the remaining judgment lives:
 | `M14761` | 1 | "Poliovirus (Lansing strain) recombinant junction", 223 nt, `recombinant/lab` | probably TRUE; not adjudicated |
 | `S61236` `S65446` `S65447` `S65449` `S65450` | 5 | site-directed deletion mutants / pseudorevertants (`PV1/Delta 8`), 53–68 nt | probably TRUE; not adjudicated |
 
-**Recommended landing sequence**, because 526 flips in one commit is not gate-diffable by eye:
+Of these 30, Appendix B decides 24 (`DQ205099` FALSE; `AJ512791`/`AJ512792` FALSE per Q8;
+`JN105289`–`JN105295` TRUE per Q1; the 14 DI RNAs FALSE + reclassified per Q4). **Six were never
+adjudicated by anyone** — `M14761` and `S61236`/`S65446`/`S65447`/`S65449`/`S65450`. That is a small,
+closable gap and it should be closed before the rule rewrite flips them, not after.
 
-1. Land **Invariant A** (§7) now — it is green today and it prevents the next adjudication from
-   creating a CS/PU-style split.
-2. Land the ledger rows for the **46 + `A09260`** this report adjudicates, and pin the counts. That
-   takes Invariant B to green with an empty allowlist.
+**Recommended landing sequence**, because 524 flips in one commit is not gate-diffable by eye. Step 1
+is done; steps 2–4 restated against Appendix B's numbers:
+
+1. ~~Land **Invariant A** (§7)~~ — **done**, and the design changed under adversarial review. A turned
+   out to have no independent detection power (all 513 PAT/SYN records ship TRUE, so two neighbouring
+   checks entail its green), and the live D2 defect is a *ledger*-vs-canonical split that no
+   canonical-only check can see. What landed is Invariant B as a pinned violator set plus a
+   differential ledger check. See
+   [`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py).
+2. Land the **42 + `A09260` = 43** flips **in the private `manual_review_overrides.csv`**, not as
+   public ledger rows — the D2 episode's lesson is that a ledger assertion with no counterpart in the
+   applied source of truth never takes effect. Hold `LY501107`/`LZ216102` TRUE explicitly in the same
+   pass, or the rewritten rule flips them.
 3. Land the rule change as a **separate, gate-diffed commit**, staged by length band
    (`≥3000` first — it should be a no-op against step 2 — then `900–2999`, then `<900`), with the
    diff asserted to touch exactly the predicted accession set at each stage.
-4. Handle the 30 VRL records and the Q5 29 as their own passes.
+4. Handle the Q5 vaccine-source set, the Q5 carve-exclusion of `FV537075`–`FV537077`, and the **six
+   unadjudicated VRL records** above as their own passes.
+5. Adjudicate `CS406433` (backlog B1) and decide whether the 456 sub-3000 nt PAT records get a
+   positive-evidence pass or ride the rewrite wholesale.
+
+### 8.6a Residuals left by the concurrent private pass (2026-07-29)
+
+Not created by this report and outside its ≥3000 nt population, but found while remapping against the
+private repository's commit `f848530` and recorded so they are not rediscovered from scratch. Both are
+cases where fixing part of a byte-identical group left the rest inconsistent:
+
+| sha256 group | what happened | residual |
+|---|---|---|
+| the 2,643-nt group: `HZ411066`, `LG059180`, `LQ076634`, `MA816556`, `FW503126`, `HI553343`, `HZ037987` | the four with override rows moved to `wild`/`human`/`vaccine/reference`; the other three were left | `poliovirus_classification` now disagrees **three ways** across byte-identical records — `wild` ×5, `engineered/lab` (`FW503126`), `reference/lab` (`HZ037987`) |
+| `DI499171`/`JC013128`, `DI499173`/`JC013130`, `DI499174`/`JC013131`, `DI499175`/`JC013132`, `DI499176`/`JC013133` | classification was aligned on the `DI499*` side | `origin_class` and `sampling_frame` **agreed before and disagree now** — one disagreement traded for two |
+
+Also worth noting: the residual that pass set out to shrink (`engineered=TRUE` shipping a field-epi
+classification) went **47 → 50**, because fixing 7 records' classification pulled 7 new records into
+the residual while removing only 4.
 
 ### 8.7 Three latent hazards found while reading the rule layer
 
@@ -1220,8 +1325,25 @@ selection. The disposition table in §4 is therefore wrong for `LY501107`/`LZ216
 from Saukett `PP972258`, panel gap closed in 2024) still stands and still invalidates the *recorded
 reason*; it just no longer changes the conclusion.
 
-Totals move from "46 FALSE / 12 TRUE" to **44 FALSE / 14 TRUE** for the 58, plus `A09260` (Q7) as a
-45th flip outside the ≥3000 nt population.
+Totals move from "46 FALSE / 12 TRUE" to **42 FALSE / 14 TRUE / 2 open** for the 58, plus `A09260`
+(Q7) as a 43rd flip outside the ≥3000 nt population.
+
+**Arithmetic, spelled out, because an earlier draft of this line said "44 FALSE / 14 TRUE" and that
+was internally incoherent** — it counted `LY501105`/`LZ216100` inside the 44 while the subsection
+immediately below declares them undecided. A record cannot be both. The reconciliation:
+
+| | n | records |
+|---|---:|---|
+| flip to FALSE, decided | **42** | the §4 FALSE set minus `LY501107`/`LZ216102` (now TRUE) and minus `LY501105`/`LZ216100` (open) |
+| stay TRUE, decided | **14** | 9 of §3F, plus `FV537075`–`FV537077`, plus `LY501107`/`LZ216102` |
+| **open, not implemented either way** | **2** | `LY501105`, `LZ216100` |
+| total | **58** | |
+
+Of the 14 staying TRUE, only **11 ship a TRUE value**: `FV537075`–`FV537077` are carve-excluded from
+`final/` per Q5 and carry no `engineered` value at all.
+
+**The set that lands is 42 + `A09260` = 43 records.** Any statement of "44 flips" is wrong in both
+directions at once — too many if the open pair stays open, too few if it resolves to FALSE.
 
 ### Still open — one record pair, flagged not decided
 
