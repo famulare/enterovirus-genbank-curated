@@ -37,6 +37,31 @@ def make_segmentation(
     )
 
 
+# --- classify_fragment ---------------------------------------------------------------------------
+
+
+def test_classify_fragment_empty() -> None:
+    assert structural.classify_fragment("", SIDE_SPEC) == structural.FRAGMENT_EMPTY
+
+
+def test_classify_fragment_below_pop_min() -> None:
+    assert structural.classify_fragment("A" * 5, SIDE_SPEC) == structural.FRAGMENT_BELOW_POP_MIN
+
+
+def test_classify_fragment_included() -> None:
+    assert structural.classify_fragment("A" * 50, SIDE_SPEC) == structural.FRAGMENT_INCLUDED
+
+
+def test_classify_fragment_excluded_oversized() -> None:
+    result = structural.classify_fragment("A" * 500, SIDE_SPEC)
+    assert result == structural.FRAGMENT_EXCLUDED_OVERSIZED
+
+
+def test_classify_fragment_no_ceiling_when_pop_max_is_none() -> None:
+    spec = contract.NcrSideSpec(pop_min_nt=20, pop_max_nt=None, cm_path="unused")
+    assert structural.classify_fragment("A" * 5000, spec) == structural.FRAGMENT_INCLUDED
+
+
 # --- _ncr_population ------------------------------------------------------------------------------
 
 

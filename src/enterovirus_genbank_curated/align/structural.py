@@ -39,6 +39,27 @@ CMALIGN_STOCKHOLM = {"5p": "ncr_5p_cmalign.sto", "3p": "ncr_3p_cmalign.sto"}
 NOT_MATCH_COLUMN = frozenset({".", "-", "~"})
 GAP_SYMBOL = "-"
 
+# The closed vocabulary for what happens to one record's NCR fragment against a side's population
+# window — shared by the cmalign population filter below and align.stitch's coverage sidecar, so
+# the two can never classify the same fragment differently.
+FRAGMENT_INCLUDED = "included"
+FRAGMENT_EMPTY = "empty_fragment"
+FRAGMENT_BELOW_POP_MIN = "below_pop_min"
+FRAGMENT_EXCLUDED_OVERSIZED = "excluded_oversized"
+
+
+def classify_fragment(fragment: str, spec: contract.NcrSideSpec) -> str:
+    """Which of the four fates one NCR fragment meets against a side's population window. The
+    single place this predicate is expressed — see the module-level vocabulary comment above."""
+    if not fragment:
+        return FRAGMENT_EMPTY
+    length = len(fragment)
+    if length < spec.pop_min_nt:
+        return FRAGMENT_BELOW_POP_MIN
+    if spec.pop_max_nt is not None and length > spec.pop_max_nt:
+        return FRAGMENT_EXCLUDED_OVERSIZED
+    return FRAGMENT_INCLUDED
+
 
 @dataclass(frozen=True)
 class NcrBlock:
@@ -66,15 +87,11 @@ def _ncr_population(
         if segmentation.method != "annotated":
             continue
         sequence = segmentation.ncr5 if side == "5p" else segmentation.ncr3
-        if not sequence:
-            continue
-        length = len(sequence)
-        if length < spec.pop_min_nt:
-            continue
-        if spec.pop_max_nt is not None and length > spec.pop_max_nt:
+        classification = classify_fragment(sequence, spec)
+        if classification == FRAGMENT_INCLUDED:
+            population[accession] = sequence
+        elif classification == FRAGMENT_EXCLUDED_OVERSIZED:
             excluded.append(accession)
-            continue
-        population[accession] = sequence
     return population, tuple(sorted(excluded))
 
 
