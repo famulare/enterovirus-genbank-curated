@@ -184,12 +184,12 @@ its four determinants — the frozen archive, the decision ledger, the rule cata
 the same inputs produce the same bytes tomorrow, and a difference between two builds points at which
 determinant moved.
 
-**What is still not true:** `final/audit/`, `final/dictionaries/` and `final/alignments/` are not
-regenerated, and two records the shipped carve reaches are not in this one — `E00765.1` and
-`E01571.1`, which land in R-MEMBERSHIP-AA-1's undecided 8-15% band. Both look like patent
-transcription artifacts (their same-patent siblings sit at 0.2-0.6%), but moving a published
-threshold to catch two records would be fitting the parameter to the answer, so they stay a declared
-gap awaiting a curator decision about the patent text.
+**What is still not true:** of `final/audit/` only `rules.tsv.gz` is regenerated; the rest of it,
+`final/dictionaries/` and `final/alignments/` are not. And two records the shipped carve reaches are
+not in this one — `E00765.1` and `E01571.1`, which land in R-MEMBERSHIP-AA-1's undecided 8-15% band.
+Both look like patent transcription artifacts (their same-patent siblings sit at 0.2-0.6%), but
+moving a published threshold to catch two records would be fitting the parameter to the answer, so
+they stay a declared gap awaiting a curator decision about the patent text.
 
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the

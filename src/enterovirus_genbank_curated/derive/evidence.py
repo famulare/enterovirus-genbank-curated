@@ -456,6 +456,9 @@ def measure_membership_rescue(
     return rescued
 
 
+# The schema of `audit/vp1_divergence.tsv.gz`, which `export/audit.write_vp1_divergence` writes. It
+# is deliberately not the shipped `final/audit/sequence_evidence.tsv.gz` schema, and the choice of
+# name is argued where the name is chosen rather than here.
 EVIDENCE_COLUMNS = (
     "accession",
     "version",

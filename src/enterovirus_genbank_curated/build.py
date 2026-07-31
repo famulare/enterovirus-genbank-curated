@@ -53,6 +53,8 @@ from enterovirus_genbank_curated.export.audit import (
     write_decision_applications,
     write_membership_rescue,
     write_projection_provenance,
+    write_rules_view,
+    write_vp1_divergence,
 )
 from enterovirus_genbank_curated.export.canonical import (
     assemble_canonical_rows,
@@ -288,8 +290,26 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # the artifact is checked.
     canonical = assemble_canonical_rows(transport.rows, provenance)
     row_counts.update(write_canonical_table(output_dir, canonical, sequences))
-    row_counts["vp1_measured"] = len(evidence)
 
+    # Two audit views the pipeline could already produce and no build wrote, so every release so far
+    # shipped an `audit/` directory missing them.
+    #
+    # The rule view is the sharper omission: it comes out byte-identical to the release's own
+    # `rules.tsv.gz`, and only one test ever called it, which proved the writer and not the release.
+    # A rule catalog a release does not carry is a catalog a consumer has to take on trust.
+    #
+    # The VP1 divergence view was worse than absent — it was computed on every build, used by
+    # R-CLASS-2 to decide `poliovirus_classification`, and then discarded, so the release published
+    # verdicts and withheld the measurements behind them.
+    row_counts["rules_in_baseline_view"] = write_rules_view(output_dir, catalog)
+    # Was `vp1_measured`, the length of an in-memory dict. Renamed because the number now counts
+    # rows in an artifact a reader can open, which is the only form of a count that can be checked.
+    row_counts["vp1_divergence_rows"] = write_vp1_divergence(output_dir, evidence)
+
+    # Both counts go in before this call, because `write_metadata_transport` snapshots `row_counts`
+    # into the coverage JSON. A key added after it would reach the build manifest and not the
+    # coverage declaration, and two artifacts disagreeing about the same build is exactly the defect
+    # the coverage declaration exists to prevent.
     write_metadata_transport(output_dir, transport.rows, row_counts, provenance)
     write_projection_provenance(output_dir, provenance)
     write_curation_queue(output_dir, queue)

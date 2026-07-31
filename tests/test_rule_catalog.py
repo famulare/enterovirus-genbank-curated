@@ -9,6 +9,10 @@ The load-bearing test is `test_the_catalog_regenerates_the_shipped_rules_table_b
 what makes the catalog demonstrably a description of the release rather than a plausible-looking
 file next to it, and it is why the parameter mutation test can be trusted: perturb a threshold and a
 real gate goes red.
+
+It is not sufficient on its own, which is why the slow test beside it exists. Writing the view to a
+`tmp_path` supplies the very call a build was omitting, so for 25 commits it reported PASS while no
+release carried the file at all.
 """
 
 from __future__ import annotations
@@ -21,6 +25,7 @@ from typing import Any
 
 import pytest
 
+from enterovirus_genbank_curated.build import build_metadata_layer
 from enterovirus_genbank_curated.contracts import (
     BASELINE_RELEASE,
     RULES_SCHEMA_PATH,
@@ -80,6 +85,25 @@ def test_the_catalog_regenerates_the_shipped_rules_table_byte_for_byte(
     """The gate. Four of the catalog's seven fields are a projection of a frozen artifact."""
     specs = load_rule_catalog(repository_root / RULES_CATALOG_PATH, contract)
     write_rules_view(tmp_path, specs)
+    assert (tmp_path / RULES_VIEW_RELATIVE).read_bytes() == (
+        repository_root / SHIPPED_RULES
+    ).read_bytes()
+
+
+@pytest.mark.slow
+def test_the_real_build_writes_the_shipped_rules_table_byte_for_byte(
+    repository_root: Path, tmp_path: Path
+) -> None:
+    """The same byte comparison, on the artifact a build actually produces.
+
+    The projection test above is a claim about `write_rules_view`. This is the claim that matters to
+    a consumer: the release directory contains `audit/rules.tsv.gz`, and its bytes are the frozen
+    release's bytes. Those came apart. The writer reproduced the file from the day it landed and no
+    build ever called it, so the gate stayed green through 25 commits of releases that shipped
+    without it. A test that supplies the missing call cannot notice a missing call.
+    """
+    result = build_metadata_layer(repository_root, tmp_path)
+    assert result.row_counts["rules_in_baseline_view"] == BASELINE_VIEW_RULE_COUNT
     assert (tmp_path / RULES_VIEW_RELATIVE).read_bytes() == (
         repository_root / SHIPPED_RULES
     ).read_bytes()

@@ -1,11 +1,23 @@
 """Write the `audit/` release views.
 
-Only the rule view exists so far. It matters more than its size suggests: it is generated from
-`registry/rules.json` and must come out **byte-identical** to the shipped
+Five views, and they fall into three kinds. The kind decides the *filename*, which is the only part
+of an audit artifact a consumer reads before trusting it.
+
+**One reproduces a frozen artifact, so it wears the frozen name.** `write_rules_view` is generated
+from `registry/rules.json` and must come out **byte-identical** to the shipped
 `final/audit/rules.tsv.gz`, which is what turns the new catalog from a plausible-looking data file
 into one demonstrably describing the release. The four shipped columns are a projection of the
 catalog's seven; `implementation`, `parameters` and `status` are the rewrite's own additions and are
 deliberately not in the view, because the view has to reproduce a frozen artifact.
+
+**Two have a shipped counterpart and cover less of it, so they carry their own names.** A partial
+table under a frozen table's filename would be read as that table, and no `notes` column undoes a
+filename. `PROVENANCE_RELATIVE` and `VP1_DIVERGENCE_RELATIVE` each declare what they do cover at the
+point the name is chosen.
+
+**Two have no shipped counterpart at all.** `APPLICATIONS_RELATIVE` and
+`MEMBERSHIP_RESCUE_RELATIVE` are the rewrite's own audit trail — what became of each curator
+decision, and why a record outside the GenBank lineage is nonetheless in the carve.
 """
 
 from __future__ import annotations
@@ -15,7 +27,11 @@ from pathlib import Path
 
 from enterovirus_genbank_curated.contracts import BASELINE_RELEASE
 from enterovirus_genbank_curated.curate.apply import APPLICATION_COLUMNS, DecisionApplication
-from enterovirus_genbank_curated.derive.evidence import MEMBERSHIP_COLUMNS, MembershipRescue
+from enterovirus_genbank_curated.derive.evidence import (
+    EVIDENCE_COLUMNS,
+    MEMBERSHIP_COLUMNS,
+    MembershipRescue,
+)
 from enterovirus_genbank_curated.export.source import write_tsv
 from enterovirus_genbank_curated.registry.rules import RuleSpec
 
@@ -112,3 +128,39 @@ def write_membership_rescue(
         for rescue in sorted(rescued.values(), key=lambda rescue: rescue.version)
     ]
     return write_tsv(output_dir / MEMBERSHIP_RESCUE_RELATIVE, MEMBERSHIP_COLUMNS, rows)
+
+
+# Deliberately not the shipped name, for the same reason `PROVENANCE_RELATIVE` is not. The release's
+# `final/audit/sequence_evidence.tsv.gz` is 21 columns over all 24,301 carved records: a sequence-
+# derived serotype and its confidence, a classification tier and basis, capsid amino-acid p-distance
+# and codon count, a VP1/capsid agreement flag, a CDS frameshift flag, recombinant junction and
+# breakpoint, Sabin-segment divergence, and an independent enterovirus type call.
+#
+# `measure_sequence_evidence` produces exactly one of those measurements, VP1 nucleotide divergence,
+# over the 7,728 carved records whose organism name names a serotype to pick a reference with.
+# `accession` and `version` are the only two column names the two tables have in common, so this is
+# not a projection of the shipped table the way the rule view is a projection of `rules.tsv.gz`; it
+# is a different, smaller measurement that answers one of the shipped table's questions. Under the
+# shipped name it would promise nineteen columns of evidence it does not have, over three times the
+# records it reaches.
+VP1_DIVERGENCE_RELATIVE = "audit/vp1_divergence.tsv.gz"
+
+
+def write_vp1_divergence(output_dir: Path, measured: Mapping[str, Mapping[str, str]]) -> int:
+    """The VP1 measurement R-CLASS-2 decided from, in the carve's own row order.
+
+    Written because the rule's *input* was being thrown away. `poliovirus_classification` is decided
+    by comparing this divergence to the thresholds the catalog publishes, and the canonical table
+    carries only the verdict — so a reader who wanted to check a `VDPV` call against the 1% boundary
+    had the call and the threshold with no number in between. `unresolved_reason` already says when
+    no measurement was possible; this says what it was when one was.
+
+    Emission order rather than a re-sort: `measure_sequence_evidence` walks the carved rows, so the
+    keys already arrive in the canonical table's own order, and sorting them again would only invent
+    a second ordering to keep in step with the first.
+    """
+    rows = [
+        {"accession": version.rsplit(".", 1)[0], "version": version, **fields}
+        for version, fields in measured.items()
+    ]
+    return write_tsv(output_dir / VP1_DIVERGENCE_RELATIVE, EVIDENCE_COLUMNS, rows)
