@@ -14,6 +14,7 @@ from collections.abc import Iterable
 from pathlib import Path
 
 from enterovirus_genbank_curated.contracts import BASELINE_RELEASE
+from enterovirus_genbank_curated.curate.apply import APPLICATION_COLUMNS, DecisionApplication
 from enterovirus_genbank_curated.export.source import write_tsv
 from enterovirus_genbank_curated.registry.rules import RuleSpec
 
@@ -66,3 +67,15 @@ def write_rules_view(output_dir: Path, specs: Iterable[RuleSpec]) -> int:
 def write_projection_provenance(output_dir: Path, rows: list[dict[str, str]]) -> int:
     """Write the projection rows exactly as the rules produced them, in emission order."""
     return write_tsv(output_dir / PROVENANCE_RELATIVE, PROVENANCE_OUTPUT_COLUMNS, rows)
+
+
+APPLICATIONS_RELATIVE = "audit/decision_applications.tsv.gz"
+
+
+def write_decision_applications(output_dir: Path, applications: list[DecisionApplication]) -> int:
+    """One row per decision per canonical field it can reach, in ledger order."""
+    return write_tsv(
+        output_dir / APPLICATIONS_RELATIVE,
+        APPLICATION_COLUMNS,
+        [application.as_row() for application in applications],
+    )

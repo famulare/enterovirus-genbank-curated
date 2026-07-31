@@ -566,3 +566,19 @@ them out because the field was curated for poliovirus only, but GenBank states a
 them, so a scoped-out `unknown` is arguably asserting non-determination about something the data does
 state. Extending the rule there would move ~10,000 records, which is a larger scientific change than
 anything else in the rewrite so far and was not the question asked.
+
+### B27 closed 2026-07-30
+`src/enterovirus_genbank_curated/curate/apply.py`
+
+`REGISTRY_FIELD_TO_CANONICAL` maps each of the seventeen ledger `field_name`s to the canonical fields
+it can reach, and `apply_decisions` raises on a field absent from the map rather than defaulting to
+"ignored". `audit/decision_applications.tsv.gz` records an outcome for every one of the 3,164 ledger
+rows, with set equality on `decision_id` enforced in both directions: a decision with no row is D2, a
+row naming no decision means the build invented curation.
+
+Two mappings needed a decision rather than a lookup. `membership_excluded` and `carve_excluded` set no
+canonical value at all — their whole effect is an absence — so they target R-EXCLUDE-1's own
+`canonical_inclusion` and the build *verifies* the record really is out of the carve. And
+`canonical_reference`, `reference_label`, `canonical_reference_available` and `epi_context` reach no
+canonical column, which is now stated as `no_canonical_field` rather than looking like curation the
+pipeline dropped.

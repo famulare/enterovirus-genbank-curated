@@ -156,6 +156,8 @@ def main(argv: list[str] | None = None) -> int:
             for name, count in metadata.row_counts.items():
                 print(f"  {name:32} {count:>8}")
             print(f"metadata transport written to {output}")
+            for status, count in sorted(metadata.application_tally.items()):
+                print(f"  decisions {status:28} {count:>8}")
             if guard is not None:
                 print(GUARD_PASS_LINE)
             return 0

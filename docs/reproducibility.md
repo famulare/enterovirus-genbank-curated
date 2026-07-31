@@ -370,6 +370,42 @@ release without undeclared files, network access, private repositories, or exist
 artifacts. That transition requires a new release version; the current baseline release remains
 unchanged in the meantime, exactly as 2.1.5 and 2.3.0 did before it.
 
+### Every decision now has a stated outcome
+
+D2 was not a bug in a rule. An assertion sat in `registry/decisions.tsv` for two releases while the
+pipeline recomputed the value from scratch, and nobody noticed — because nothing anywhere said what
+had become of it. `evgc build-metadata` now writes `audit/decision_applications.tsv.gz`, one row per
+decision per canonical field it can reach, and **a decision with no row is a build failure** rather
+than an absence.
+
+The measured tally over all 3,164 ledger rows:
+
+| status | n | what it means |
+|---|---|---|
+| `field_not_projected` | 2,553 | the field's rule is not written yet — named, not ignored |
+| `applied_filled_unresolved` | 221 | the decision is the only reason the cell has a value |
+| `applied_exclusion` | 173 | the record is absent from the carve *because* the ledger says so |
+| `no_canonical_field` | 123 | reference-selection curation the canonical schema has no column for |
+| `applied_unchanged` | 55 | **a rule now reaches the same value on its own** |
+| `subject_outside_carve` | 18 | no canonical value exists to change |
+| `applied_changed` | 17 | in force, and the value differs from the rule's |
+| `not_in_force_retired` / `_superseded` | 17 / 9 | the curator took it back |
+
+Two of those rows are worth dwelling on. **`applied_unchanged` is a finding, not bookkeeping**: 55
+assertions the rules would now make anyway, which makes them candidates for retirement rather than
+curation doing work — the opposite of the D2 problem and only visible because the status exists.
+And `applied_exclusion` **verifies** the absence rather than trusting it: an active exclusion whose
+record is still in the carve fails the build.
+
+Distinguishing `applied_changed` from `applied_unchanged` requires a counterfactual, so every field is
+projected twice — once with the ledger and once with it withheld. There is no way to tell from the
+final value alone whether a decision changed anything, and asserting that it did without checking is
+how D2 happened.
+
+Closes backlog **B27**: `REGISTRY_FIELD_TO_CANONICAL` is the join between a ledger `field_name` and
+the canonical fields it reaches, and a field missing from it is a build failure rather than a silent
+default.
+
 ## What a code review changed, 2026-07-30
 
 An independent review of the increments above found twelve issues. Five mattered enough to change
