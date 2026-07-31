@@ -36,10 +36,12 @@ from enterovirus_genbank_curated.contracts import (
     validate_parity_spec,
     verify_raw_input,
 )
+from enterovirus_genbank_curated.curate.queue import build_queue
 from enterovirus_genbank_curated.derive.apply import build_record_views, project_field
 from enterovirus_genbank_curated.derive.metadata import transport_metadata
 from enterovirus_genbank_curated.export.audit import write_projection_provenance
 from enterovirus_genbank_curated.export.metadata import write_metadata_transport
+from enterovirus_genbank_curated.export.queue import write_curation_queue
 from enterovirus_genbank_curated.export.source import (
     write_source_relational,
     write_source_tsv,
@@ -209,6 +211,11 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     not_applicable_dates = assert_date_precision_invariant(provenance)
     locality_bases = assert_locality_basis_invariant(provenance, transport.rows)
 
+    # Every declined cell becomes exactly one queue row, grouped by the input the rule could not
+    # decide from. A rule that declines has done its job; the value still has to come from a
+    # curator.
+    queue = build_queue(provenance)
+
     row_counts = {
         "source_records": len(tables["records"]),
         "transported": len(transport.rows),
@@ -217,9 +224,12 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         "provenance_rows": len(provenance),
         "dates_not_applicable": not_applicable_dates,
         "localities_without_geography": locality_bases.get("no_geography_deposited", 0),
+        "curation_queue_groups": len(queue),
+        "curation_queue_records": sum(len(group.versions) for group in queue),
     }
     write_metadata_transport(output_dir, transport.rows, row_counts, provenance)
     write_projection_provenance(output_dir, provenance)
+    write_curation_queue(output_dir, queue)
     return MetadataBuildResult(
         rows=transport.rows,
         provenance=provenance,

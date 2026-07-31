@@ -515,3 +515,54 @@ exclusion. **Curator disposition: they belong in the carve.** So this is a gap t
 implementing the membership rule, not by dropping records, and closing it by exclusion would remove
 real poliovirus sequence from the release. `SEQUENCE_RESCUED_INCLUSIONS` should reach empty when the
 pairwise sequence-evidence stage lands.
+
+### B53. `sample_origin` is not a function of its declared inputs, and `unknown` means two things
+Measured 2026-07-30 while attempting R-ORIGIN-2.
+
+**The release is split on identical inputs.** 10,084 poliovirus records reduce to 160 distinct
+`(host, isolation_source, environmental_sample, lab_host)` groups, and several groups carry more than
+one shipped `sample_origin`:
+
+| inputs | shipped values |
+|---|---|
+| `host=Homo sapiens`, nothing else | 3,177 `human`, 55 `unknown`, 3 `vaccine` |
+| `host=Homo sapiens`, `isolation_source=human stool` | 46 `human`, 64 `unknown` |
+| `host=Homo sapiens`, `isolation_source=sewage` | 383 `human`, 36 `unknown` |
+| `isolation_source=acute flaccid paralysis case` | 13 `human`, 1 `unknown` |
+
+A candidate keyword rule resolved 6,852 of 10,084 and disagreed on 227. Splitting those by whether
+the record's own input group is unanimous: **193 fall in groups where the release contradicts itself**
+and cannot be reproduced by anything, and **34 are real rule defects**. So the measured 96.5–97.5%
+"ceiling" is not a statement about how good a rule could be — it is mostly the release's internal
+inconsistency, and a rule scoring at the ceiling would be reproducing that inconsistency by accident.
+
+The 34 real defects are informative: 23 are `isolation_source=opv`, which ships `unknown`. An oral
+polio vaccine isolate is not straightforwardly a human-origin sample, and what it *should* be is a
+curator's call rather than a keyword's.
+
+**`unknown` is doing double duty**, which is the same conflation already corrected for
+`collection_date_precision` and the `locality` basis: 14,204 non-polio records get `sample_origin
+=unknown` because the field was never curated outside poliovirus, and 260 poliovirus records get
+`unknown` because it was curated and undetermined. Those are different facts. `surveillance_stream`
+keeps them apart — non-polio gets `not_applicable` — so the two columns are inconsistent with each
+other about the same records.
+
+**Answered 2026-07-30.** A human host means a human-origin sample; an OPV-derived isolate is `human`
+if it came from a person, with the vaccine-derived fact staying in `poliovirus_classification` where it
+already lives. R-ORIGIN-2 implements that: 19,801 of 24,284 resolved, **4** disagreements, and
+`manual_override` exact.
+
+Two things fell out of implementing it that were not visible from the ceiling analysis. Scoping the
+rule by partition removed 23 of the 34 apparent defects on its own — the `/isolation_source=opv`
+records are `Enterovirus C`, whose membership no organism name settles, so no epi rule should have been
+asked about them. And the release's `unknown` origins turn out to concentrate in records whose
+*membership* is also uncertain, which is coherent rather than arbitrary: the upstream was conservative
+about origin exactly where it was unsure what the virus was.
+
+`surveillance_stream` is still pending (ceiling 93.5% on generalizing features).
+
+**Still open:** whether non-poliovirus records should keep `sample_origin=unknown`. R-ORIGIN-2 scopes
+them out because the field was curated for poliovirus only, but GenBank states a `/host` for many of
+them, so a scoped-out `unknown` is arguably asserting non-determination about something the data does
+state. Extending the rule there would move ~10,000 records, which is a larger scientific change than
+anything else in the rewrite so far and was not the question asked.

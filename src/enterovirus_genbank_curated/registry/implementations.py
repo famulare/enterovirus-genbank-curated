@@ -14,7 +14,12 @@ from __future__ import annotations
 from importlib import import_module
 
 # Modules holding `@rule_implementation`-decorated functions, relative to the package root.
-IMPLEMENTATION_MODULES = ("derive.dates", "derive.geo", "derive.partition")
+IMPLEMENTATION_MODULES = (
+    "derive.dates",
+    "derive.epi",
+    "derive.geo",
+    "derive.partition",
+)
 
 
 def load_rule_implementations() -> None:

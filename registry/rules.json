@@ -70,9 +70,9 @@
     "rule_version": "2.4.1",
     "field_name": "sample_origin",
     "description": "Project the curated origin_class.",
-    "implementation": "derive.epi.sample_origin",
+    "implementation": "derive.epi.sample_origin_v241",
     "parameters": {},
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-SURVEILLANCE-1",
@@ -88,9 +88,9 @@
     "rule_version": "2.4.1",
     "field_name": "specimen_type",
     "description": "Project the curated specimen_type.",
-    "implementation": "derive.epi.specimen_type",
+    "implementation": "derive.epi.specimen_type_v241",
     "parameters": {},
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-DATE-1",
@@ -374,6 +374,40 @@
     "parameters": {
       "no_admin1_basis": "no_admin1_deposited",
       "no_geography_basis": "no_geography_deposited"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-SPECIMEN-2",
+    "rule_version": "1.0.0",
+    "field_name": "specimen_type",
+    "description": "Derive specimen_type from the GenBank /isolation_source qualifier by keyword, replacing R-SPECIMEN-1's projection of a curated field that no declared input carries. One regex per category, matched case-insensitively against the whole qualifier: environmental is 'sewage|wastewater|waste water|effluent|water|environmental'; stool is 'stool|faeces|faecal|feces|fecal|rectal'; respiratory is 'throat|nasal|nasopharyn|oropharyn|respiratory|sputum|pharyn'; CNS is '\\bcsf\\b|cerebrospinal'; serum is 'serum|blood|plasma'. Patterns are anchored on whole words or explicit alternatives because a bare 'fec' also matches 'infection'. A qualifier matching more than one category names more than one specimen and is left unresolved rather than decided by pattern order; a qualifier matching none is left unresolved too. Resolves 11,601 of 24,301 records and agrees with the release on 11,600.",
+    "implementation": "derive.epi.specimen_type",
+    "parameters": {
+      "patterns": {
+        "environmental": "sewage|wastewater|waste water|effluent|water|environmental",
+        "stool": "stool|faeces|faecal|feces|fecal|rectal",
+        "respiratory": "throat|nasal|nasopharyn|oropharyn|respiratory|sputum|pharyn",
+        "CNS": "\\bcsf\\b|cerebrospinal",
+        "serum": "serum|blood|plasma"
+      }
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-ORIGIN-2",
+    "rule_version": "1.0.0",
+    "field_name": "sample_origin",
+    "description": "Derive sample_origin from the GenBank /host qualifier, falling back to human-specimen keywords in /isolation_source, replacing R-ORIGIN-1's projection of a curated origin_class that no declared input carries. Partition-scoped: sample_origin was curated for poliovirus only, so a non-poliovirus record projects unknown and a record whose membership is undecided is left unresolved rather than scoped either way. Within poliovirus, /host is authoritative when present -- a host matching 'homo sapiens|\\bhuman\\b' gives human and any other named host gives non-human, because a human host means a human-origin sample. Only when no host was deposited does the specimen text stand in, matching 'stool|faeces|faecal|feces|fecal|sewage|wastewater|waste water|water|throat|nasal|nasopharyn|oropharyn|\\bcsf\\b|cerebrospinal|serum|blood|patient|\\bafp\\b|acute flaccid|paralysis|paralytic|meningitis|gastroenteritis' for human; otherwise unresolved. The release is not a function of these inputs -- /host=Homo sapiens alone ships 3,177 human, 55 unknown and 3 vaccine -- so 228 records are a declared correction, including one /host=nonhuman primate the release calls human.",
+    "implementation": "derive.epi.sample_origin",
+    "parameters": {
+      "human_host_pattern": "homo sapiens|\\bhuman\\b",
+      "human_specimen_pattern": "stool|faeces|faecal|feces|fecal|sewage|wastewater|waste water|water|throat|nasal|nasopharyn|oropharyn|\\bcsf\\b|cerebrospinal|serum|blood|patient|\\bafp\\b|acute flaccid|paralysis|paralytic|meningitis|gastroenteritis",
+      "origins": {
+        "human": "human",
+        "non_human": "non-human"
+      },
+      "outside_scope_value": "unknown"
     },
     "status": "active"
   }

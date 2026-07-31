@@ -72,7 +72,7 @@ RULE_FIELD_ORDER = (
     "status",
 )
 ACTIVE_RULE_STATUS = "active"
-EXPECTED_RULE_COUNT = 31
+EXPECTED_RULE_COUNT = 33
 # How many of those carry the baseline's own rule_version and so appear in the frozen
 # `final/audit/rules.tsv.gz` view. The rest are the rewrite's own, on real semver.
 BASELINE_VIEW_RULE_COUNT = 28
@@ -129,9 +129,13 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
         "needs classification_reconciled: text classification plus the sequence tier"
     ),
     "derive.classification.reconcile_aa_band": "needs capsid AA p-distance",
-    "derive.epi.sample_origin": "not yet written; increment 5",
+    "derive.epi.sample_origin_v241": (
+        "superseded by R-ORIGIN-2; retained for the frozen 2.4.1 rule view"
+    ),
     "derive.epi.surveillance_stream": "not yet written; increment 5",
-    "derive.epi.specimen_type": "not yet written; increment 5",
+    "derive.epi.specimen_type_v241": (
+        "superseded by R-SPECIMEN-2; retained for the frozen 2.4.1 rule view"
+    ),
     "derive.dates.collection_date_v241": (
         "superseded by R-DATE-2; retained only so the frozen 2.4.1 rule view still lists R-DATE-1"
     ),
