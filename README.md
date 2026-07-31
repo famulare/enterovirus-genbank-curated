@@ -35,9 +35,9 @@ final/
   dictionaries/    Column-level data dictionaries (definition, type, nullability,
                     controlled vocabulary, observed population) for every table above.
   alignments/      Reference multiple-sequence alignments: per-serotype poliovirus
-                    (PV1/PV2/PV3), the full enterovirus genus, and a non-polio-only
-                    subset, each as Stockholm (.sto.gz) and FASTA (_aln.fasta.gz), plus a
-                    genomic region coordinate map.
+                    (PV1/PV2/PV3), all-serotype poliovirus pooled, a non-polio-only
+                    subset, and the full enterovirus genus, each as Stockholm (.sto.gz)
+                    and FASTA (_aln.fasta.gz), plus a genomic region coordinate map.
 
 raw/
   genbank_query.md    The GenBank query that defined this release's candidate record set.
@@ -112,6 +112,11 @@ None of that affects the correctness of what's shipped; it affects whether you c
 it yourself today. See [`docs/reproducibility.md`](docs/reproducibility.md), which states the
 per-column boundary and also documents an inherited GenBank parse loss affecting five records.
 
+For `final/alignments/`, the groundwork is laid but no alignment file is produced yet:
+`evgc alignment-population` derives each of the six shipped alignments' row set from
+`final/canonical/` and `final/audit/` alone, and it is not the same population the shipped
+alignments carry — see [`docs/reproducibility.md`](docs/reproducibility.md) for the measured gap.
+
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the
 release from declared public inputs and passes the complete parity contract. See
@@ -119,11 +124,12 @@ release from declared public inputs and passes the complete parity contract. See
 
 ## Development contract checks
 
-With Python 3.12 and the development requirements installed:
+With [pixi](https://pixi.sh) and the `align` environment installed (`pixi install --locked -e
+align`):
 
 ```bash
-evgc validate-contracts    # contract shape + re-verification of the shipped release
-python -m pytest
+pixi run -e align evgc validate-contracts    # contract shape + re-verification of the shipped release
+pixi run -e align pytest
 ```
 
 `validate-contracts` does two separable things. It checks that the schemas and

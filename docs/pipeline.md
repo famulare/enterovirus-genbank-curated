@@ -58,6 +58,29 @@ a release path literal or an `oracle` import under `derive/`, `curate/`, `export
 `genbank/` or in `build.py`/`contracts.py`; `sandbox.READ_REFUSED_DIRS` refuses the read at runtime;
 and the `parity-*` verbs build in a guarded child and compare in the unguarded parent.
 
+A second package is also not in that list, for the opposite reason: `align` derives alignment
+inputs *from* `final/` deliberately, because the pipeline stages that would produce them natively —
+`derive`, `curate`, and an eventual alignment-specific stage — do not exist yet. It is oracle-adjacent
+rather than a build module: free to read `final/` and import `oracle`, exempted from
+`test_module_boundaries.py`'s build-tree rule by name rather than by accident. `align/contract.py`
+carries one exception to its own exemption, by decision (2026-07-30): it may not redeclare a `final/`
+path itself, only import one already declared in `oracle.parity`, which a dedicated test enforces.
+
+## The alignment layer today
+
+`align/` makes each shipped alignment's row set derivable from `final/canonical/` and
+`final/audit/` alone: `evgc alignment-population` prints all six populations and their tier/family
+breakdowns from metadata, with no aligner installed. The populations are **not** the shipped ones —
+see [`reproducibility.md`](reproducibility.md) for the measured gap and why closing it is the point,
+not a defect. The native toolchain (`mafft`, Infernal) is declared once in `pixi.toml`, pinned twice
+(statically via conda-meta, dynamically via each binary's own self-report) in
+`registry/toolchain.json`, and checked by `evgc alignment-toolchain`. The four NCR covariance models
+the structural block needs are committed as inputs-of-record under `registry/alignment_seeds/` and
+hash-gated by `evgc alignment-verify-seeds`, so a routine build needs no compiler and no network; the
+full from-scratch rebuild path (`scripts/setup_mxscarna.sh`) exists behind a file-presence gate and
+is not expected to run even on a fresh clone. None of this yet produces an alignment file — that is
+staged-delivery item 7, below.
+
 ## Public commands
 
 ```bash
@@ -67,7 +90,17 @@ evgc build-source   --output DIR
 evgc parity-source
 evgc build-metadata --output DIR
 evgc parity-metadata
+evgc alignment-population
+evgc alignment-toolchain
+evgc alignment-verify-seeds
 ```
+
+The three `alignment-*` verbs are named `alignment-<stage>` rather than `build-alignments` /
+`parity-alignments` on purpose: there is no single `build`/`parity` pair for the alignment layer
+yet, only independent, stage-scoped checks, and naming them otherwise would claim a symmetry with
+`build-source`/`parity-source` that does not exist. `alignment-population` and
+`alignment-verify-seeds` need no native toolchain; `alignment-toolchain` does, and is the one that
+fails on a machine without `pixi install --locked -e align`.
 
 Still planned, and not yet in any form:
 
@@ -98,7 +131,12 @@ is declared in code, compared for equality, and invisible to the build — see
    provenance row compared to the release on all nine columns. The sequence-derived and
    curated-master columns remain.
 6. Decision application, disposition, and complete provenance.
-7. Dictionaries, references, and reproducible alignments.
+7. Dictionaries, references, and reproducible alignments. **Partly delivered:** each of the six
+   shipped alignments' row set is now derivable from `final/canonical/` and `final/audit/` alone
+   (`evgc alignment-population`), the native toolchain is pinned two ways
+   (`evgc alignment-toolchain`), and the NCR covariance-model core is committed and hash-gated
+   (`evgc alignment-verify-seeds`). No alignment file is produced yet — segmentation, the
+   codon-aware CDS block, the structural NCR block, and stitching are all still unwritten.
 8. Full fresh-clone parity and deterministic rebuild gate.
 9. A new pipeline-native release; 2.1.5 remains historical and immutable.
 
