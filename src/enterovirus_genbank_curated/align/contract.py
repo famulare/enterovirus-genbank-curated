@@ -50,6 +50,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
+from enterovirus_genbank_curated.align.seeds import SEED_DIR
 from enterovirus_genbank_curated.oracle.parity import (
     SHIPPED_CANONICAL_FASTA,
     SHIPPED_CANONICAL_METADATA,
@@ -183,6 +184,30 @@ class CodonSpec:
 
 
 @dataclass(frozen=True)
+class NcrSideSpec:
+    """The population window and covariance model for one NCR side (`"5p"` or `"3p"`).
+
+    `pop_max_nt=None` means no ceiling — NPEV's own upstream build never needed one. Where a
+    ceiling exists, it excludes records whose NCR fragment is implausibly long for a genuine
+    untranslated region — almost always a mis-segmented CDS tail (a GenBank CDS annotation that
+    stops short of the true ORF end, so `align.segment` buckets the remainder as "3'NCR") rather
+    than real biology. An excluded record is not dropped from the artifact — only its NCR
+    fragment is excluded from this side's alignment; it still contributes its CDS block, and gets
+    an all-gap NCR block like any other record with no usable fragment on this side.
+    """
+
+    pop_min_nt: int
+    pop_max_nt: int | None
+    cm_path: str
+
+
+@dataclass(frozen=True)
+class NcrSpec:
+    five_prime: NcrSideSpec
+    three_prime: NcrSideSpec
+
+
+@dataclass(frozen=True)
 class AlignmentSpec:
     name: str
     stack: Literal["unified", "anchored"]
@@ -191,9 +216,30 @@ class AlignmentSpec:
     # metadata by the tests rather than trusted, so this is a tripwire and not a source of truth.
     expected_rows: int
     codon: CodonSpec = CodonSpec()
+    # None for the anchored stack (PV1/PV2/PV3): their NCR comes from align.anchored, not cmalign.
+    ncr: NcrSpec | None = None
 
 
 POLIO_TYPES = ("PV1", "PV2", "PV3")
+
+# EV_unified reuses NPEV's own committed CM on both sides — not a separate "EV" model — exactly as
+# upstream's `build_grand_ev_ncr_structural.py` does (its own error message, on a missing CM, names
+# `build_ev_ncr_structural.py` — the NPEV script — as the producer to check). Its 3' ceiling (350nt)
+# is wider than standalone POLIO_unified's own (150nt): it must still admit NPEV's legitimately
+# longer 3'NCR range (observed up to 329nt) while excluding polio's pathological >500nt
+# mis-segmented-CDS cluster that the standalone POLIO_unified ceiling was built to exclude.
+POLIO_NCR = NcrSpec(
+    five_prime=NcrSideSpec(pop_min_nt=50, pop_max_nt=1000, cm_path=f"{SEED_DIR}/polio_ncr_5p.cm"),
+    three_prime=NcrSideSpec(pop_min_nt=20, pop_max_nt=150, cm_path=f"{SEED_DIR}/polio_ncr_3p.cm"),
+)
+NPEV_NCR = NcrSpec(
+    five_prime=NcrSideSpec(pop_min_nt=50, pop_max_nt=None, cm_path=f"{SEED_DIR}/npev_ncr_5p.cm"),
+    three_prime=NcrSideSpec(pop_min_nt=20, pop_max_nt=None, cm_path=f"{SEED_DIR}/npev_ncr_3p.cm"),
+)
+EV_NCR = NcrSpec(
+    five_prime=NcrSideSpec(pop_min_nt=50, pop_max_nt=1000, cm_path=f"{SEED_DIR}/npev_ncr_5p.cm"),
+    three_prime=NcrSideSpec(pop_min_nt=20, pop_max_nt=350, cm_path=f"{SEED_DIR}/npev_ncr_3p.cm"),
+)
 
 ARTIFACTS: dict[str, AlignmentSpec] = {
     "POLIO_unified": AlignmentSpec(
@@ -201,18 +247,21 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,)),
         expected_rows=10_084,
+        ncr=POLIO_NCR,
     ),
     "NPEV_unified": AlignmentSpec(
         name="NPEV_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(NON_POLIO,)),
         expected_rows=14_217,
+        ncr=NPEV_NCR,
     ),
     "EV_unified": AlignmentSpec(
         name="EV_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS, NON_POLIO)),
         expected_rows=24_301,
+        ncr=EV_NCR,
     ),
     "PV1_unified": AlignmentSpec(
         name="PV1_unified",
