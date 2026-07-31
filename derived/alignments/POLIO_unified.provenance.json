@@ -14,14 +14,14 @@
     "cds:no_cds_untranslatable": 66
   },
   "artifact_sha256": {
-    "coverage": "da0bc7503eb8f20c8095ecff455afcf074af2c834281944cc5d16413b147734f",
-    "fasta": "843a19b726af26db4453976a160694fd74c0ef312f2dbcbccb11eb22927e4d2b",
-    "stockholm": "104e55c3289becf53f4d4ed63933cd86d742023974765cb33b0aabd905e5d05e"
+    "coverage": "8f45030eec1792b43f21f6dad81604659e80ec0d634c8d25e7304d5b9e6b56dd",
+    "fasta": "0f08e44d13a8fbb75a9a285070dfdfa62a61cdc5435bc6af76265a5129d9439d",
+    "stockholm": "4a65decaaa39f34ef521bf1f6d9c02320dce75d54e54e83e24181076b22d051e"
   },
   "block_widths": {
     "3ncr": 70,
     "5ncr": 746,
-    "cds": 7839
+    "cds": 6909
   },
   "blocks_present": {
     "3ncr": 1902,
@@ -29,11 +29,12 @@
     "cds": 9986
   },
   "blocks_present_cds": 9986,
-  "cds_codons": 2613,
+  "cds_codons": 2303,
   "cds_width_is_whole_codons": true,
   "codon": {
     "accept_annotated_max_internal_stops": 1,
     "accept_annotated_min_aa": 20,
+    "gap_extend": 0.5,
     "infer_max_x_fraction": 0.4,
     "infer_min_aa": 20,
     "keeplength": false,
@@ -65,13 +66,14 @@
   },
   "name": "POLIO_unified",
   "parameter_departures": {
+    "gap_extend": "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat at the default 0.123 through every build, which is what let a single unalignable fragment open a wide insertion block: opening the gap is paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at --ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best.",
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
   "population_sha256": "ce43c66bec9bf6f1ffa6e0ad062e1a3f3a1fa2f14a5c7c4a4846a69d001c4552",
   "rows": 10084,
   "schema": 1,
-  "seconds": 1811.9,
+  "seconds": 2027.3,
   "stack": "unified",
   "threads": 8,
   "tiers": {
@@ -89,5 +91,5 @@
     "PV3": 1693,
     "PV?": 25
   },
-  "width_nt": 8655
+  "width_nt": 7725
 }
