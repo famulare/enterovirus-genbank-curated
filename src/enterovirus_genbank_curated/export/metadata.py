@@ -78,9 +78,14 @@ def read_metadata_transport(output_dir: Path) -> list[dict[str, str]]:
 
 
 def read_projection_provenance(output_dir: Path) -> list[dict[str, str]]:
+    # PROVENANCE_OUTPUT_COLUMNS, not PROVENANCE_COLUMNS: the written artifact carries the tenth
+    # column, `unresolved_reason`. Reading it back with the nine release columns made
+    # `parity-metadata --guard-inputs` fail on every run, and loosening the header check instead
+    # would silently drop `unresolved_reason` — every declined row would then be compared against
+    # the release and the decline pins would be skipped by their own `if field in ...` guards.
     from enterovirus_genbank_curated.export.audit import (
-        PROVENANCE_COLUMNS,
+        PROVENANCE_OUTPUT_COLUMNS,
         PROVENANCE_RELATIVE,
     )
 
-    return read_written_tsv(output_dir / PROVENANCE_RELATIVE, PROVENANCE_COLUMNS)
+    return read_written_tsv(output_dir / PROVENANCE_RELATIVE, PROVENANCE_OUTPUT_COLUMNS)

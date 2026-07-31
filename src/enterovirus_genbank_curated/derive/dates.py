@@ -2,7 +2,7 @@
 
 Measured against the release before being written: for every record that deposited a date, the
 canonical `collection_date` **is** the ISO normalization of the source qualifier and the canonical
-precision **is** the shape of that qualifier — 19,730 rows, exactly, with no curated input. The
+precision **is** the shape of that qualifier — 19,732 carved records, with no curated input. The
 release's rule text describes these as projections of curated fields (`collection_date_curated`,
 `collection_year_curated`), and for these rows those curated fields evidently just held the
 normalized source value.
@@ -69,6 +69,7 @@ BASIS_NO_DATE = "no_date_deposited"
 BASIS_PRECISION_PROJECTION = "canonical_projection"
 
 LEDGER_YEAR_FIELD = "collection_year_curated"
+UNRESOLVED_UNPARSEABLE = "collection_date_not_parseable"
 
 _MONTHS = {
     name: number
@@ -128,9 +129,15 @@ def _resolved_date(view: RecordView) -> tuple[str, str, bool]:
     asserted = view.decisions.get(LEDGER_YEAR_FIELD)
     if asserted:
         return asserted, PRECISION_YEAR, True
-    value, precision = normalize_collection_date(view.qualifier(DATE_QUALIFIER))
+    raw = view.qualifier(DATE_QUALIFIER)
+    value, precision = normalize_collection_date(raw)
     if not precision:
-        return "", PRECISION_NOT_APPLICABLE, False
+        # A deposited date the parser cannot read is NOT an absent date. Calling it `NA` would
+        # assert "this record has no date", the same false determination both deliberate breaks
+        # corrected elsewhere. It declines instead, which also routes it to the curation queue.
+        # No such value exists in the corpus today, and a test pins that zero, so a raw refresh
+        # introducing `>2013` or `20130706` surfaces rather than being silently mislabelled.
+        return ("", "", False) if raw.strip() else ("", PRECISION_NOT_APPLICABLE, False)
     return value, precision, False
 
 
@@ -141,6 +148,14 @@ def _resolved_date(view: RecordView) -> tuple[str, str, bool]:
 )
 def collection_date_precision(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     _, precision, from_decision = _resolved_date(view)
+    if not precision:
+        return RuleOutcome(
+            value="",
+            evidence_basis=BASIS_NO_DATE,
+            source_field=DATE_QUALIFIER,
+            source_value=view.qualifier(DATE_QUALIFIER),
+            unresolved_reason=UNRESOLVED_UNPARSEABLE,
+        )
     if precision == PRECISION_NOT_APPLICABLE:
         return RuleOutcome(
             value=parameters["not_applicable"],
@@ -180,6 +195,14 @@ def collection_date(parameters: Mapping[str, Any], view: RecordView) -> RuleOutc
     normalized from, and a year or range midpoint against `collection_year_curated`.
     """
     value, precision, from_decision = _resolved_date(view)
+    if not precision:
+        return RuleOutcome(
+            value="",
+            evidence_basis=BASIS_NO_DATE,
+            source_field=DATE_QUALIFIER,
+            source_value=view.qualifier(DATE_QUALIFIER),
+            unresolved_reason=UNRESOLVED_UNPARSEABLE,
+        )
     if precision == PRECISION_NOT_APPLICABLE:
         return RuleOutcome(
             value="",

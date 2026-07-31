@@ -8,8 +8,8 @@ this module.
 ## What is here: `specimen_type`
 
 A keyword rule over `/isolation_source`, with the patterns declared in the catalog rather than
-buried here. It resolves 11,601 of 24,301 records, agrees with the release on 11,600, and **declines
-the other 12,700 rather than guessing**.
+buried here. Measured over the 24,285 records the carve produces, it resolves 11,608 and declines
+12,677 rather than guessing, agreeing with the release on all but one of the resolved rows.
 
 Two things the disagreements taught, which is the reason to look at them one by one instead of
 tuning a rate:
@@ -88,6 +88,10 @@ SPECIMEN_SOURCE_FIELD = "specimen_type"
 BASIS_ISOLATION_SOURCE = "isolation_source_keyword"
 UNRESOLVED_NO_KEYWORD = "no_specimen_keyword_in_isolation_source"
 UNRESOLVED_AMBIGUOUS = "multiple_specimen_keywords"
+# Distinct from "no keyword matched": a record that deposited nothing cannot be resolved by any
+# pattern change, so it must not be advised as a rule-parameter fix. See `curate/queue.py`.
+UNRESOLVED_NO_SOURCE = "no_isolation_source_deposited"
+LEDGER_SPECIMEN_FIELD = "specimen_type"
 
 
 def matching_specimen_types(patterns: Mapping[str, str], isolation_source: str) -> set[str]:
@@ -109,10 +113,26 @@ def matching_specimen_types(patterns: Mapping[str, str], isolation_source: str) 
     evidence_bases=(BASIS_ISOLATION_SOURCE,),
 )
 def specimen_type(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
+    # The ledger wins outright, as for every other rule that reads it. Seven active `specimen_type`
+    # assertions exist and all seven deposit no `/isolation_source`, so the first version of this
+    # rule declined all of them and the queue then asked the curator for a decision the ledger
+    # already contained. That is the D2 failure inside the mechanism built to prevent it.
+    asserted = view.decisions.get(LEDGER_SPECIMEN_FIELD)
+    if asserted:
+        return RuleOutcome(
+            value=asserted,
+            evidence_basis=BASIS_ISOLATION_SOURCE,
+            source_field=SPECIMEN_SOURCE_FIELD,
+            source_value=asserted,
+            manual_override=True,
+        )
+
     source = view.qualifier(ISOLATION_SOURCE_QUALIFIER)
     matched = matching_specimen_types(parameters["patterns"], source)
 
-    if not matched:
+    if not source.strip():
+        reason = UNRESOLVED_NO_SOURCE
+    elif not matched:
         reason = UNRESOLVED_NO_KEYWORD
     elif len(matched) > 1:
         reason = UNRESOLVED_AMBIGUOUS

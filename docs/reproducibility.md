@@ -51,10 +51,10 @@ That matters more than it looks. Defaulting those names to non-polio scores **98
 release, which reads as success and is a guess on 414 records — and `virus_group` gates
 `sequence_scope`, `curation_status`, `poliovirus_classification` and the whole epi partition, so four
 later columns would inherit the guess and each look right for the wrong reason. The honest population
-is **1,733 declined rows**, not 414: 414 is only where a default would have landed wrong. Sizing an
+is **1,832 declined rows**, not 414: 414 is only where a default would have landed wrong. Sizing an
 ambiguity by its disagreements rather than by its inputs is the specific mistake being avoided here.
 
-Of the 22,551 rows the rule does decide, every one matches the release, including `manual_override`
+Of the 22,452 rows the rule does decide, every one matches the release, including `manual_override`
 — TRUE on exactly the seventeen records the ledger's `is_poliovirus` decisions resolve. That is the
 first place a recorded decision is shown to reach a generated provenance row rather than merely
 existing in the ledger, which is the D2 failure stated positively.
@@ -82,7 +82,7 @@ The date family does not reproduce the release, on purpose. This is the first pl
 corrects rather than reproduces, and the second follows it.
 
 For every record that deposited a `/collection_date`, the canonical date **is** the ISO normalization
-of that qualifier and the precision **is** its shape — 19,730 rows, exactly, with no curated input,
+of that qualifier and the precision **is** its shape — 19,732 carved records, no curated input,
 including the floor-of-mean midpoint on all 121 interval records. The release describes these as
 projections of curated fields; for these rows those curated fields evidently just held the normalized
 source value.
@@ -126,9 +126,9 @@ catalog can evolve without moving a published artifact.
 curated-master field, so 24,301 values carry no record of how they were decided. `specimen_type` is
 the first one recovered.
 
-R-SPECIMEN-2 matches one regex per category against `/isolation_source`. It **resolves 11,601 of
-24,301 records, agrees with the release on 11,600, and declines the other 12,684** rather than
-guessing. The patterns are declared in the catalog, not buried in code.
+R-SPECIMEN-2 matches one regex per category against `/isolation_source`, after an active ledger
+`specimen_type` decision. Over the 24,285 carved records it **resolves 11,608, declines 12,677 rather
+than guessing, and disagrees with the release on one**. The patterns are declared in the catalog.
 
 Two rule defects came out of reading the disagreements one at a time instead of tuning a rate:
 `"throat swab and stool samples"` names two specimens, so more than one matching category is now
@@ -159,7 +159,7 @@ irreducibly ambiguous and belong in a curation queue rather than in a rule.
 Declining honestly is only half the design. `evgc build-metadata` now also writes
 `curation/curation_queue.tsv`, and it is what stops `unresolved_reason` being a note nobody acts on.
 
-**14,417 declined rows collapse into 148 groups**, because records decline for the *same* reason:
+**17,366 declined cells collapse into 186 groups**, because records decline for the *same* reason:
 every record whose `/isolation_source` is `conjunctival swab` is one decision, not 462. The queue is
 keyed on the input the rule examined and could not decide from, so resolving one group resolves every
 record in it. `queue_id` is derived from that content rather than allocated sequentially, so
@@ -174,7 +174,7 @@ Three properties are worth stating because each is a failure mode avoided:
   `decision`; a mapping that generalizes is a `rule_parameter` change with a version bump. Encoding a
   general rule as 2,000 identical decisions would bury it in curation history.
 - **Consequential declines are not queued.** `curation_status` declines only because `virus_group`
-  did, so queueing both would ask for 3,466 decisions where 1,733 exist. A queue that overstates its
+  did, so queueing both would ask for twice the decisions that exist. A queue that overstates its
   own size is worse than no queue.
 
 It is **not** a diff against the release. Every row is knowable from `raw/` and `registry/` at build
@@ -479,3 +479,50 @@ The README reproducibility claim changes only after a fresh clone builds and val
 release without undeclared files, network access, private repositories, or existing `final/`
 artifacts. That transition requires a new release version; the current baseline release remains
 unchanged in the meantime, exactly as 2.1.5 and 2.3.0 did before it.
+
+## What a code review changed, 2026-07-30
+
+An independent review of the increments above found twelve issues. Five mattered enough to change
+behaviour, and they are recorded here because each one is a class of mistake this repository claims to
+defend against.
+
+**`evgc parity-metadata --guard-inputs` had never worked.** The reader required the release's nine
+provenance columns while the writer wrote ten, so the guarded path raised on every invocation. The
+unguarded path keeps its rows in memory and never reads the artifact back, so neither the corpus test
+nor CI could see it. The claim that the verb runs its build in a guarded child was therefore half
+unexecuted and half broken. Fixed, and `test_the_guarded_parity_verb_actually_runs` now shells out to
+it — the only way to cover it, since an audit hook cannot be uninstalled from the testing process.
+
+**The partition rule was guessing on 99 records.** `Human enterovirus` — the pre-2016 ICTV name of the
+polio-containing species, unqualified — was absent from `UNINFORMATIVE_ORGANISMS`, so 95 records
+carrying it fell through to `non_polio_enterovirus`, along with four named for a strain rather than a
+type. One of the 95 ships as `EV-C96`, inside that very species. Every one of the 99 happens to ship
+`non_polio_enterovirus`, so the rule scored 100% on the group and parity agreed: the top declared risk,
+realized in the same commit whose docstring warns against sizing an ambiguity by its disagreements.
+The declined population is **1,832**, not 1,733.
+
+**A declared delta could be satisfied by a substituted record.** Comparing per-column *counts* let one
+record be fixed while another regressed, keeping the total identical and the gate green — demonstrated,
+not theorised. `SUPERSEDED_FIELD_WITNESSES` now declares a hash of the disagreeing set itself, per
+column, so any substitution fails. Columns whose count already equals every compared row need no hash,
+because "all of them" is already an identity.
+
+**The cross-column invariants were enforced by nothing.** Replacing both with no-ops left `pytest`,
+`pytest -m slow`, `validate-contracts` and `parity-metadata` all green — so the claim that they are
+enforced was prose, which is R2 in the file that describes R2. `tests/test_invariants.py` now supplies
+a negative control per property plus positive controls. Two real holes went with it: a locality row
+whose transport row was missing skipped all four checks rather than failing, and either invariant
+passed vacuously on an empty input.
+
+**Two rules ignored the ledger.** `specimen_type` never consulted `view.decisions`, so seven active
+assertions were silently overridden — inside the mechanism built to prevent exactly that. And
+`_membership` compared `is_poliovirus` against `"TRUE"`/`"FALSE"` and fell through on anything else, so
+a decision filed as Python's `True` would validate, be ignored, and reappear in the curation queue with
+no error anywhere. Both fixed; the malformed value now fails the build.
+
+Also corrected: the curation queue advised a *rule change* for ~10,000 records that deposited no
+`/isolation_source` at all, where no pattern can ever help; an unparseable date was reported as "no
+date deposited", the same false determination the date break had just corrected; `water` and `blood`
+matched inside "watery" and "bloody" in patterns the commit fixing `fec`-in-`infection` left unanchored;
+`coverage_by_field` was dead; and seven of eight `REGISTRY_FIELD_FOR_CANONICAL` entries were
+unreachable, one of them structurally so.

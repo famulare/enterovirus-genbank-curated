@@ -68,6 +68,16 @@ UNINFORMATIVE_ORGANISMS = {
     "Enterovirus coxsackiepol": "the same species under its current ICTV name",
     # Genus level, and below it nothing is determined.
     "Enterovirus sp.": "genus level only",
+    # `Human enterovirus C` was the pre-2016 ICTV name of the polio-containing species, so the
+    # unqualified form sits above the type level exactly as the genus does. 95 records carry it, and
+    # one of them ships as EV-C96 — inside that very species — which is why it cannot be read as
+    # "some enterovirus that is not poliovirus".
+    "Human enterovirus": "the pre-2016 species name, unqualified: above the type level",
+    # A strain epithet is not a type: these four name an isolate, not a deciding taxon.
+    "Human Enterovirus Mumbai4-03": "a strain name, not a type",
+    "Human Enterovirus Pune6-03": "a strain name, not a type",
+    "Human enterovirus Hangzhou13-02": "a strain name, not a type",
+    "Human enterovirus Ningbo3-02": "a strain name, not a type",
     # Not a virus identification at all: the deposit names the host, a construct, or nothing.
     "unidentified": "no organism was identified",
     "synthetic construct": "names the construct, not the virus it encodes",
@@ -75,6 +85,7 @@ UNINFORMATIVE_ORGANISMS = {
 }
 
 LEDGER_MEMBERSHIP_FIELD = "is_poliovirus"
+LEDGER_MEMBERSHIP_VALUES = frozenset({"TRUE", "FALSE"})
 
 
 def _membership(view: RecordView) -> tuple[str, bool]:
@@ -84,10 +95,17 @@ def _membership(view: RecordView) -> tuple[str, bool]:
     text predicate that overrode them would make the decision ornamental, which is the D2 failure.
     """
     asserted = view.decisions.get(LEDGER_MEMBERSHIP_FIELD)
-    if asserted == "TRUE":
-        return POLIOVIRUS, True
-    if asserted == "FALSE":
-        return NON_POLIO_ENTEROVIRUS, True
+    if asserted:
+        # Refuse anything outside the vocabulary rather than falling through. The ledger schema
+        # constrains `new_value` only to `minLength: 1`, so `True` in Python casing validates; the
+        # earlier code then ignored the decision, re-declined the record, and put it back in the
+        # curation queue with no error anywhere. A decision that cannot be read is a build failure.
+        if asserted not in LEDGER_MEMBERSHIP_VALUES:
+            raise ValueError(
+                f"{view.version}: {LEDGER_MEMBERSHIP_FIELD}={asserted!r} is not one of "
+                f"{sorted(LEDGER_MEMBERSHIP_VALUES)}"
+            )
+        return (POLIOVIRUS if asserted == "TRUE" else NON_POLIO_ENTEROVIRUS), True
 
     organism = view.record.get("organism_name", "")
     if any(fragment in organism.lower() for fragment in POLIO_NAME_FRAGMENTS):

@@ -52,13 +52,20 @@ def assert_locality_basis_invariant(
             continue
         basis, value = row["evidence_basis"], row["final_value"]
         counts[basis] = counts.get(basis, 0) + 1
-        record = geography.get(row["version"])
-        if record is None:
-            continue
-        country, admin1 = record["country"], record["admin1"]
+        # Property 1 needs no geography at all, so it is checked before the transport lookup. The
+        # earlier `continue` here skipped all four checks when a transport row was missing, which
+        # meant a blank locality carrying `geo_parse` passed silently.
         if bool(value) == (basis in blank_bases):
             breaches.append(f"{row['version']}: value {value!r} with basis {basis}")
-        elif basis == BASIS_SUPPRESSED and not admin1:
+            continue
+        record = geography.get(row["version"])
+        if record is None:
+            raise ContractError(
+                f"{row['version']}: a projected locality row has no transport row, so the "
+                f"geography its basis claims cannot be checked at all"
+            )
+        country, admin1 = record["country"], record["admin1"]
+        if basis == BASIS_SUPPRESSED and not admin1:
             breaches.append(f"{row['version']}: {basis} but admin1 is blank")
         elif (basis == BASIS_NO_ADMIN1 and (admin1 or not country)) or (
             basis == BASIS_NO_GEOGRAPHY and (country or admin1)
@@ -68,6 +75,11 @@ def assert_locality_basis_invariant(
         shown = "; ".join(breaches[:10])
         raise ContractError(
             f"{len(breaches)} records break the locality basis invariant — {shown}"
+        )
+    if not counts:
+        raise ContractError(
+            "the locality basis invariant examined no rows; an invariant that passes vacuously is "
+            "indistinguishable from one that is not running"
         )
     return counts
 
@@ -93,9 +105,11 @@ def assert_date_precision_invariant(rows: Iterable[dict[str, str]]) -> int:
 
     breaches: list[str] = []
     not_applicable = 0
+    examined = 0
     for version, values in sorted(by_record.items()):
         if DATE_FIELD not in values or PRECISION_FIELD not in values:
             continue
+        examined += 1
         date, precision = values[DATE_FIELD], values[PRECISION_FIELD]
         if precision == PRECISION_NOT_APPLICABLE:
             not_applicable += 1
@@ -108,5 +122,10 @@ def assert_date_precision_invariant(rows: Iterable[dict[str, str]]) -> int:
         raise ContractError(
             f"{len(breaches)} records break the date/precision invariant "
             f"(blank date iff precision {PRECISION_NOT_APPLICABLE}) — {shown}"
+        )
+    if not examined:
+        raise ContractError(
+            "the date/precision invariant examined no rows; it needs both columns present, and one "
+            "that passes vacuously is indistinguishable from one that is not running"
         )
     return not_applicable
