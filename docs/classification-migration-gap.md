@@ -1,4 +1,4 @@
-# The 1,161 curated classification calls this pipeline cannot reach
+# Every `poliovirus_classification` difference from 2.4.1, accounted for
 
 `poliovirus_classification` is the one column where a shipped value can encode a judgement that no
 input in this clone contains. The distinction between `VDPV`, `cVDPV` and `iVDPV` is
@@ -10,8 +10,40 @@ investigations, and 1,506 of the ledger's active rows already cite a PMID for ex
 **A coarsened value is a lost judgement, not a conservative one**, and this file names precisely
 which ones are still lost so they can be migrated rather than rediscovered.
 
-`docs/classification-migration-gap.tsv` is the machine-readable list: one row per record, with the
-value 2.4.1 ships, the value this pipeline emits, and why it cannot do better.
+`docs/classification-migration-gap.tsv` is the machine-readable list — **all 2,159 differing
+records**, one row each, with the value 2.4.1 ships, the value this pipeline emits, the
+`unresolved_reason` if it declined, and a category. Every row has a category; the count of
+uncategorised rows is asserted to be zero, because "we looked at the big buckets" is how a residue
+of unexplained differences survives a review.
+
+An earlier version of this file covered only the 1,161 rows where 2.4.1 ships a *refinement* or
+`wild`. That was the interesting subset, not the whole difference, and scoping a reconciliation to
+the interesting subset is how the remaining 998 would have gone unnoticed.
+
+## All 2,159, by category
+
+| category | n | what it means |
+|---|---:|---|
+| `declined_too_little_vp1` | 1,557 | under 300 nt of VP1 to measure divergence over |
+| `coarsened_attribution_not_in_sequence` | 348 | `cVDPV`/`iVDPV` → `VDPV`: the epidemiology is not in the sequence |
+| `declined_membership_undecided` | 153 | organism name cannot settle poliovirus membership |
+| `declined_no_serotype_in_name` | 33 | no serotype in the organism name to pick a Sabin reference |
+| `sequence_band_disagrees_with_release` | 31 | both resolved, VP1 divergence lands in a different band |
+| `shipped_class_outside_sequence_reach` | 24 | shipped `engineered/lab`, `chimera`, `vaccine`, `unresolved` — claims about construction or provenance, not distance |
+| `curated_refinement_vs_sequence_band` | 6 | shipped a refinement, we emit a band that is not `VDPV` |
+| `declined_ledger_value_out_of_vocabulary` | 3 | an active decision asserts a value outside the controlled list |
+| `ledger_refines_beyond_the_release` | 3 | the ledger is *finer* than 2.4.1 |
+| `record_text_refines_beyond_the_release` | 1 | `PP481414.1`: the record text says `aVDPV`, 2.4.1 ships `VDPV` |
+
+The last two categories are worth noticing: on four records this pipeline is **more** specific than
+the release, not less. A reconciliation that only counted losses would have reported them as noise.
+
+### Membership is fully understood, and it is a cleaner story
+
+`virus_group` and `curation_status` differ on 1,588 shared rows each, and **every single one is a
+decline** — `organism_name_does_not_determine_membership`, and `follows_unresolved_virus_group`
+downstream of it. There is not one row where this pipeline asserts a membership that contradicts
+2.4.1. 1,435 of them the release calls `non_polio_enterovirus` and 153 `poliovirus`.
 
 ## What is already recovered, and how
 
@@ -26,7 +58,7 @@ Nothing here should be migrated twice. Two mechanisms already carry curated clas
    for "following" the partition — throwing away a paper-based judgement because a *weaker* signal
    was silent. All 259 ship as `poliovirus`/`vouched` in 2.4.1.
 
-## The 1,161 that remain
+## The 1,161 where a curated refinement or `wild` is the thing lost
 
 | 2.4.1 ships | this pipeline emits | why | n |
 |---|---|---|---:|
@@ -40,7 +72,9 @@ Nothing here should be migrated twice. Two mechanisms already carry curated clas
 | `iVDPV` | `wild` | VP1 divergence at or above 15% | 4 |
 | `cVDPV` | `Sabin-like` | VP1 divergence under 1% | 2 |
 
-Every one is a distinct accession, so 1,161 ledger rows would close it.
+Every one is a distinct accession, so 1,161 ledger rows would close this subset; the
+full 2,159 is in the TSV, and the categories above say which of them a ledger row is even
+the right instrument for.
 
 ### Lowering the VP1 floor does not help — measured
 
