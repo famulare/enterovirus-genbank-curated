@@ -275,6 +275,10 @@ UNRESOLVED_SPECIMEN_ROWS = 12677
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
 # itself undecided and so cannot be scoped either way.
 UNRESOLVED_ORIGIN_ROWS = 3693
+# `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
+# context at all — including the 2,823 poliovirus records the release spreads across all seven of
+# its values — plus 1,288 whose partition is undecided and so cannot be scoped either way.
+UNRESOLVED_STREAM_ROWS = 8630
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -308,9 +312,15 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "evidence_basis": "7e6522502070b4fb",
     },
     "locality": {"evidence_basis": "8c042f23e8b20cd4"},
+    "surveillance_stream": {
+        "final_value": "882f2bb66d1a407b",
+        "source_value": "6cd27e18d13b5cd9",
+        "manual_override": "7f1c4a18e070b024",
+    },
     "sample_origin": {
         "final_value": "81505b557e961fee",
-        "source_value": "5f4a81297425dc09",
+        "source_value": "15a97bb84bbd17ae",
+        "manual_override": "74441f560e198627",
     },
     "specimen_type": {
         "final_value": "a8aa1248a8e83d19",
@@ -363,14 +373,42 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # The rule records the input it read — the host, the specimen text, or the partition it
         # scoped by — where the release recorded the curated `origin_class` it projected. The 242
         # agreeing rows are where the host string already was the origin, plus the ledger overrides.
-        "source_value": 20349,
+        "source_value": 20487,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
         "source_field": 0,
-        # Exact: TRUE on precisely the records an active `origin_class` decision resolves. A text
-        # rule overriding the ledger shows up here, which is how the omission was caught.
-        "manual_override": 0,
+        # 138 = the redundant `origin_class` decisions retired on 2026-07-30. The release's
+        #       provenance says a human touched those cells; the rewrite no longer has an override
+        #       there, because the rule derives the same value from `/host`. The *value* is
+        #       unchanged — which is what `applied_unchanged` established before they were retired —
+        #       so this delta is the honest consequence of retiring redundant curation, not a
+        #       regression. A text rule silently overriding a live decision would also appear here,
+        #       which is how that omission was caught in the first place.
+        "manual_override": 138,
+    },
+    "surveillance_stream": {
+        # 3,487 = 3,315 non-poliovirus records where the rule reads the record's own text and the
+        #         release said `not_applicable`, never having curated non-polio: 2,287
+        #         environmental, 917 AFP/clinical, 111 healthy/community
+        #       + 92 poliovirus records whose text names BOTH a healthy contact and a poliomyelitis
+        #         patient. The release says AFP/clinical; pattern order picks healthy/community.
+        #         Whether a contact sampled during an AFP investigation belongs to AFP surveillance
+        #         or to the community is a real question about the surveillance system, so this is a
+        #         declared disagreement awaiting that call rather than a settled one.
+        #       + 78 poliovirus records the release left `not_applicable`, `AFP/clinical` or
+        #         `unknown` where the text names an environmental or clinical context outright.
+        "final_value": 3487,
+        "winning_rule_id": 15654,
+        "evidence_basis": 15654,
+        "source_value": 15334,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "source_field": 0,
+        # 24 = the redundant `sampling_frame` decisions retired on 2026-07-30, same reasoning as
+        #      `sample_origin`'s 138: the value is unchanged, the override is gone.
+        "manual_override": 24,
     },
     "specimen_type": {
         # One record: GQ331952.1 deposits `/isolation_source=groundwater` and ships `stool`.

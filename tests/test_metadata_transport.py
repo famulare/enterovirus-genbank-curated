@@ -30,6 +30,7 @@ from enterovirus_genbank_curated.oracle.parity import (
     UNRESOLVED_ORIGIN_ROWS,
     UNRESOLVED_PARTITION_ROWS,
     UNRESOLVED_SPECIMEN_ROWS,
+    UNRESOLVED_STREAM_ROWS,
     verify_metadata_parity,
     witness_digest,
 )
@@ -121,6 +122,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "locality",
         "sample_origin",
         "specimen_type",
+        "surveillance_stream",
         "virus_group",
     )
     # Per field, how many of the 24,284 shared records the rule resolves. Spelled out rather than
@@ -137,6 +139,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         # No -1 here, unlike specimen_type: AF326751.2 has no host, but its organism decides a
         # non-polio partition, which scopes sample_origin out to `unknown` — a resolved value.
         "sample_origin": 24284 - UNRESOLVED_ORIGIN_ROWS,
+        "surveillance_stream": 24284 - UNRESOLVED_STREAM_ROWS,
     }
     assert set(resolved_per_field) == set(provenance.fields)
     assert provenance.compared_rows == sum(resolved_per_field.values())
@@ -158,6 +161,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "curation_status": UNRESOLVED_PARTITION_ROWS,
         "specimen_type": UNRESOLVED_SPECIMEN_ROWS,
         "sample_origin": UNRESOLVED_ORIGIN_ROWS,
+        "surveillance_stream": UNRESOLVED_STREAM_ROWS,
     }
 
     # The two date columns deliberately differ from the release, by exactly the declared amount.

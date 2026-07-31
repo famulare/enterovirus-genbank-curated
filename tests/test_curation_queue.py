@@ -29,8 +29,8 @@ from enterovirus_genbank_curated.derive.partition import (
 # records. `curation_status` declines on the same records as `virus_group` and is absent because it
 # follows the partition rather than needing a decision of its own; sample_origin declines that are
 # themselves consequences of an undecided partition are excluded for the same reason.
-EXPECTED_QUEUE_WORK_ITEMS = 17366
-EXPECTED_QUEUE_GROUPS = 186
+EXPECTED_QUEUE_WORK_ITEMS = 24708
+EXPECTED_QUEUE_GROUPS = 239
 
 
 def declined(

@@ -69,7 +69,15 @@ EXPECTED_VDPV_ROWS = 243
 EXPECTED_VDPV_VALUES = {"wild": 237, "VDPV": 6}
 CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 
-EXPECTED_STATUS = {"active": 2895 + EXPECTED_VDPV_ROWS, "retired": 17, "superseded": 9}
+# 162 rows were retired on 2026-07-30 because a *rule* now derives their value, not because another
+# decision replaced them. That is a second meaning for `retired` and the reason the invariant below
+# had to be split.
+RULE_REDUNDANT_RETIREMENTS = 162
+EXPECTED_STATUS = {
+    "active": 2895 + EXPECTED_VDPV_ROWS - RULE_REDUNDANT_RETIREMENTS,
+    "retired": 17 + RULE_REDUNDANT_RETIREMENTS,
+    "superseded": 9,
+}
 
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
 # so a registry rename does not rehash every id.
@@ -189,25 +197,42 @@ def test_no_two_active_decisions_govern_the_same_subject_and_field(
 def test_retired_rows_agree_with_the_decision_that_governs_them(
     ledger: list[dict[str, str]],
 ) -> None:
-    """`retired` means "redundant", so a retired row must NOT contradict the active one.
+    """`retired` means "redundant", so a retired row must NOT contradict what now governs it.
 
-    A retired row whose value differed would be a silently buried conflict — exactly what the
-    status vocabulary is supposed to prevent.
+    A retired row whose value differed would be a silently buried conflict — exactly what the status
+    vocabulary is supposed to prevent.
+
+    **`retired` now carries two meanings** and this test assumed only the first. Originally it meant
+    "another decision replaced this one", so every retired row had an active counterpart. As of
+    2026-07-30 it also means "a rule now derives this value", where there is no counterpart to point
+    at — 162 such rows, retired precisely because `decision_applications` showed them as
+    `applied_unchanged`. Those are checked differently: not against another ledger row, but by the
+    fact that retiring them moved no canonical value, which `oracle/parity.py`'s unchanged
+    `final_value` witness digests establish over the whole corpus.
     """
     governing = {
         (r["subject_key"], r["field_name"]): r["new_value"]
         for r in ledger
         if r["status"] == "active"
     }
+    superseded_by_a_decision = 0
+    superseded_by_a_rule = 0
     for row in ledger:
         if row["status"] != "retired":
             continue
         key = (row["subject_key"], row["field_name"])
-        assert key in governing, f"retired {row['decision_id']} has no active counterpart"
+        if key not in governing:
+            superseded_by_a_rule += 1
+            continue
+        superseded_by_a_decision += 1
         assert row["new_value"] == governing[key], (
             f"retired {row['decision_id']} contradicts the active decision "
             f"({row['new_value']!r} vs {governing[key]!r}) — that is a conflict, not redundancy"
         )
+
+    # Both populations pinned, so a row cannot drift from one meaning to the other unnoticed.
+    assert superseded_by_a_rule == RULE_REDUNDANT_RETIREMENTS
+    assert superseded_by_a_decision == 17
 
 
 def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str, str]]) -> None:

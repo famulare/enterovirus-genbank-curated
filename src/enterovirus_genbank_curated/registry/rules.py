@@ -72,7 +72,7 @@ RULE_FIELD_ORDER = (
     "status",
 )
 ACTIVE_RULE_STATUS = "active"
-EXPECTED_RULE_COUNT = 33
+EXPECTED_RULE_COUNT = 34
 # How many of those carry the baseline's own rule_version and so appear in the frozen
 # `final/audit/rules.tsv.gz` view. The rest are the rewrite's own, on real semver.
 BASELINE_VIEW_RULE_COUNT = 28
@@ -132,7 +132,9 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.epi.sample_origin_v241": (
         "superseded by R-ORIGIN-2; retained for the frozen 2.4.1 rule view"
     ),
-    "derive.epi.surveillance_stream": "not yet written; increment 5",
+    "derive.epi.surveillance_stream_v241": (
+        "superseded by R-SURVEILLANCE-2; retained for the frozen 2.4.1 rule view"
+    ),
     "derive.epi.specimen_type_v241": (
         "superseded by R-SPECIMEN-2; retained for the frozen 2.4.1 rule view"
     ),

@@ -27,21 +27,26 @@ from enterovirus_genbank_curated.curate.apply import (
     assert_every_decision_is_accounted_for,
 )
 
-# Measured, and pinned so a decision cannot quietly stop being applied. `applied_unchanged` is the
-# interesting one: 138 assertions the rules now reach on their own, so they are candidates for
-# retirement rather than curation doing work. It rose from 55 and `applied_filled_unresolved` fell
-# from 221 by the same 83 when R-ORIGIN-2 began reading `/host` outside poliovirus — decisions that
-# had been the only source of a value became redundant with the rule. That movement is the status
-# earning its place: no other column would have shown it.
+# Measured, and pinned so a decision cannot quietly stop being applied.
+#
+# `applied_unchanged` is **zero on purpose**, and the story of that number is the argument for the
+# status existing. It read 55, then 138 once R-ORIGIN-2 began reading `/host` outside poliovirus,
+# then 162 once R-SURVEILLANCE-2 landed — each rule that grew made more curation redundant. On
+# 2026-07-30 the curator retired all 162, which is why `not_in_force_retired` is 179 rather than 17.
+# The retirement moved no canonical value: `applied_unchanged` had already established the rules
+# reached those values alone, and the `final_value` witness digests in `oracle/parity.py` were
+# unchanged across it. It did move `manual_override` on 162 rows, which is the honest consequence —
+# the release says a human touched those cells and the rewrite no longer claims one did.
+#
+# A non-zero value here means new redundant curation has appeared and is worth a look.
 EXPECTED_TALLY = {
-    "field_not_projected": 2553,
-    "applied_filled_unresolved": 138,
+    "field_not_projected": 2209,
+    "applied_filled_unresolved": 458,
     "applied_exclusion": 173,
+    "not_in_force_retired": 179,
     "no_canonical_field": 123,
-    "applied_unchanged": 138,
     "subject_outside_carve": 18,
     "applied_changed": 17,
-    "not_in_force_retired": 17,
     "not_in_force_superseded": 9,
 }
 
