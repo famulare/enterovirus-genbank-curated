@@ -35,6 +35,7 @@ from enterovirus_genbank_curated.oracle.parity import SHIPPED_RECORD_DISPOSITION
 from enterovirus_genbank_curated.oracle.release import read_tsv_gz
 
 SHIPPED_ALIGNMENT_DIR = "alignments"
+GAP = "-"
 
 # Why a shipped row is not in the rebuild. Closed, because "some other reason" is how a real
 # regression hides among adjudicated ones.
@@ -197,6 +198,7 @@ def shape_of(
         "families": dict(sorted(Counter(by_accession[a].family for a in rows).items())),
         "types": dict(sorted(Counter(by_accession[a].type_sort_key for a in rows).items())),
         "cds_translation": translation,
+        "insertion_attribution": _insertion_attribution(rows, artifact.block_widths),
         "residue_occupancy": {
             "min": occupancy[0] if occupancy else 0,
             "p10": percentile(0.10),
@@ -258,6 +260,65 @@ def _translation_qc(
     }
 
 
+def _insertion_attribution(
+    rows: dict[str, str], block_widths: dict[str, int], sparse_fraction: float = 0.01
+) -> dict:
+    """Which records own the CDS columns almost nobody occupies.
+
+    Width surplus in a profile alignment is not spread evenly: it concentrates in columns opened for
+    one record that no other record occupies. Measured on the first `POLIO_unified` build, 837 of
+    7,839 CDS columns were occupied by exactly one row and 1,188 by under 1% of rows, and **14
+    accessions owned every singleton column**, three of them owning 85%. Removing that tail would
+    have left 2,217 codons against a 2,209 aa polyprotein — so the alignment core was already
+    essentially exact and the surplus was entirely attributable.
+
+    That attribution was found by hand, which is the reason it is computed here now: a reviewer
+    asking "why is this alignment wider than the protein" should get the answer from the report
+    rather than from an ad-hoc session. The named records are the ones to examine for data quality —
+    typically a frameshift or an unalignable fragment, where a stop-free but wrong-frame inferred
+    ORF passes every gate and MAFFT accommodates it by opening private columns.
+
+    One caveat on the two counts: `singleton_columns` is scale-free, but the sparse floor is a
+    *fraction* of the row count, so below about a hundred rows `n * sparse_fraction < 1` and nothing
+    can qualify. That is fine for the six real artifacts (the smallest is 1,693 rows) and is why the
+    fraction is a parameter rather than a constant.
+    """
+    width_cds = block_widths.get("cds", 0)
+    offset = block_widths.get("5ncr", 0)
+    if not width_cds or not rows:
+        return {}
+
+    blocks = {a: r[offset : offset + width_cds] for a, r in rows.items()}
+    n = len(blocks)
+    occupancy = [0] * width_cds
+    for block in blocks.values():
+        for index, character in enumerate(block):
+            if character != GAP:
+                occupancy[index] += 1
+
+    singleton = {i for i, c in enumerate(occupancy) if c == 1}
+    sparse = {i for i, c in enumerate(occupancy) if 0 < c < n * sparse_fraction}
+    owners: Counter[str] = Counter()
+    for accession, block in blocks.items():
+        owned = sum(1 for i in singleton if block[i] != GAP)
+        if owned:
+            owners[accession] = owned
+
+    core = sum(1 for c in occupancy if c >= n * sparse_fraction)
+    return {
+        "cds_columns": width_cds,
+        "singleton_columns": len(singleton),
+        "sparse_columns": len(sparse),
+        "columns_above_sparse_floor": core,
+        "codons_above_sparse_floor": core // 3,
+        "accessions_owning_singleton_columns": len(owners),
+        "top_owners": [
+            {"accession": a, "singleton_columns": c, "codons": c // 3}
+            for a, c in owners.most_common(10)
+        ],
+    }
+
+
 def build_report(
     repository_root: Path, output_dir: Path, names: tuple[str, ...] | None = None
 ) -> dict:
@@ -312,6 +373,19 @@ def render(report: dict) -> str:
                     f"; exceptions {[o['accession'] for o in offenders]}" if offenders else ""
                 )
             )
+        attribution = shape.get("insertion_attribution") or {}
+        if attribution:
+            owners = attribution["top_owners"]
+            lines.append(
+                f"- CDS columns: {attribution['columns_above_sparse_floor']} above the 1% floor "
+                f"({attribution['codons_above_sparse_floor']} codons); "
+                f"{attribution['sparse_columns']} sparse, {attribution['singleton_columns']} "
+                f"single-row, owned by {attribution['accessions_owning_singleton_columns']} "
+                f"accession(s)"
+            )
+            if owners:
+                named = ", ".join(f"{o['accession']}({o['codons']}cod)" for o in owners[:5])
+                lines.append(f"- widest insertion owners: {named}")
         occupancy = shape["residue_occupancy"]
         lines.append(
             f"- residue occupancy: median {occupancy['median']}, p10 {occupancy['p10']}, "

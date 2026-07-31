@@ -206,3 +206,49 @@ def test_the_near_complete_floor_is_an_absolute_length_not_a_block_fraction() ->
         "a complete ORF must be selected even though it fills only "
         f"{residues / width_cds:.0%} of the block"
     )
+
+
+# --- insertion attribution -----------------------------------------------------------------------
+
+
+def test_insertion_attribution_names_the_owner_of_a_private_column() -> None:
+    """The diagnostic that answers "why is this alignment wider than the protein". One record holds
+    residues in columns no other record occupies; it must be named, with the codon count."""
+    widths = {"5ncr": 0, "cds": 6, "3ncr": 0}
+    rows = {
+        "A": "ATG---",
+        "B": "ATG---",
+        "C": "ATG---",
+        # OWNER alone occupies the last three columns: one private codon.
+        "OWNER": "ATGGCC",
+    }
+    # The sparse floor is a fraction of the row count, so with four rows it has to be set
+    # explicitly: 0.5 makes "sparse" mean "fewer than two rows", i.e. exactly the private columns.
+    attribution = shape._insertion_attribution(rows, widths, sparse_fraction=0.5)
+    assert attribution["singleton_columns"] == 3
+    assert attribution["accessions_owning_singleton_columns"] == 1
+    top = attribution["top_owners"][0]
+    assert top["accession"] == "OWNER"
+    assert top["singleton_columns"] == 3
+    assert top["codons"] == 1
+    # The three shared columns are the only ones above the floor.
+    assert attribution["columns_above_sparse_floor"] == 3
+    assert attribution["codons_above_sparse_floor"] == 1
+
+
+def test_insertion_attribution_is_empty_without_a_cds_block() -> None:
+    assert shape._insertion_attribution({"A": "---"}, {"5ncr": 3}) == {}
+
+
+@pytest.mark.skipif(not BUILT.is_file(), reason="PV3_unified has not been built in this tree")
+def test_the_anchored_stack_has_no_private_columns_by_construction(repository_root: Path) -> None:
+    """The structural difference between the two stacks, asserted rather than described. An anchored
+    artifact's columns *are* the reference genome's positions, so no record can add one; a record
+    that does not fit is gapped or dropped instead. The unified stack can and does widen."""
+    from enterovirus_genbank_curated.validation import alignment as gate
+
+    artifact = gate.load_artifact(repository_root / "derived/alignments", "PV3_unified")
+    attribution = shape._insertion_attribution(artifact.rows, artifact.block_widths)
+    assert attribution["singleton_columns"] == 0
+    assert attribution["sparse_columns"] == 0
+    assert attribution["columns_above_sparse_floor"] == artifact.block_widths["cds"]
