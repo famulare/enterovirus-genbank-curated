@@ -1,10 +1,11 @@
 """Assemble the 5'NCR + CDS + 3'NCR blocks into one row per record.
 
-Ported from MAD-VDPV's `build_{ev,polio,grand_ev}_unified_stockholm.py`: a per-column
-majority-nucleotide `#=GC RF` computed separately per block (not one row's true genome
-coordinates — that convention belongs to the anchored stack, `align.anchored`), and `#=GC SS_cons`
-carrying each NCR block's own consensus structure with an all-gap run over the CDS span
-(protein-coding, no base-pair model). Row order is this repo's own already-declared convention
+Ported from MAD-VDPV's `build_{ev,polio,grand_ev}_unified_stockholm.py` and, for the anchored
+stack, `build_unified_stockholm.py` — upstream had one of these per population; the assembly is the
+same in all of them. `#=GC RF` is computed per block: a per-column majority nucleotide for the
+unified stack, or the reference's own bases where the caller supplies `cds_rf` (see `stitch`).
+`#=GC SS_cons` carries each NCR block's own consensus structure with an all-gap run over the CDS
+span (protein-coding, no base-pair model). Row order is this repo's own already-declared convention
 (`align.population.select`'s `(type_sort_key, accession)`), not upstream's `(family, virus_type,
 accession)` — a population's `.records` order is already that, so this module just follows it.
 
@@ -21,13 +22,27 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
+from typing import Protocol
 
 from enterovirus_genbank_curated.align import contract, structural
-from enterovirus_genbank_curated.align.codon import CodonAlignment
 from enterovirus_genbank_curated.align.population import AlignedRecord, AlignmentPopulation
 from enterovirus_genbank_curated.align.segment import Segmentation
 from enterovirus_genbank_curated.align.structural import NcrBlock
 from enterovirus_genbank_curated.contracts import ContractError
+
+
+class CdsBlock(Protocol):
+    """All this module needs of a CDS block, whichever stack produced it.
+
+    Stated as a protocol rather than a union of `codon.CodonAlignment` and
+    `anchored.AnchoredCdsBlock` because stitching genuinely does not depend on which one it got —
+    a fixed width and one row per placed record is the entire contract. The two differ in what
+    `#=GC RF` means over that span, and that is passed separately as `cds_rf`.
+    """
+
+    width_nt: int
+    aligned_nt: dict[str, str]
+
 
 GAP = "-"
 GAP_RF = "."
@@ -120,10 +135,19 @@ def _coverage_row(
 def stitch(
     population: AlignmentPopulation,
     segmentations: dict[str, Segmentation],
-    codon_alignment: CodonAlignment,
+    cds_block: CdsBlock,
     five_prime: NcrBlock,
     three_prime: NcrBlock,
+    *,
+    cds_rf: str | None = None,
 ) -> StitchedAlignment:
+    """Assemble one row per population record.
+
+    `cds_rf` overrides the CDS span's `#=GC RF`. The unified stack leaves it None and gets a
+    per-column majority nucleotide, which is the only honest summary of a de-novo profile alignment.
+    The anchored stack passes the Sabin reference's own CDS substring, because there every column
+    *is* that reference's position and a majority would obscure a coordinate the reader can use.
+    """
     ncr_spec = population.spec.ncr
     if ncr_spec is None:
         raise ContractError(f"{population.spec.name} has no declared NcrSpec")
@@ -133,7 +157,7 @@ def stitch(
         )
 
     width_5 = five_prime.width_nt
-    width_cds = codon_alignment.width_nt
+    width_cds = cds_block.width_nt
     width_3 = three_prime.width_nt
     total_width = width_5 + width_cds + width_3
 
@@ -145,7 +169,7 @@ def stitch(
         segmentation = segmentations[record.accession]
 
         row5 = five_prime.aligned_nt.get(record.accession)
-        row_cds = codon_alignment.aligned_nt.get(record.accession)
+        row_cds = cds_block.aligned_nt.get(record.accession)
         row3 = three_prime.aligned_nt.get(record.accession)
 
         stitched = (
@@ -180,14 +204,14 @@ def stitch(
 
     ordered_accessions_5 = [a for a in accessions if a in five_prime.aligned_nt]
     ordered_accessions_3 = [a for a in accessions if a in three_prime.aligned_nt]
-    ordered_accessions_cds = [a for a in accessions if a in codon_alignment.aligned_nt]
+    ordered_accessions_cds = [a for a in accessions if a in cds_block.aligned_nt]
 
     rows_5 = [five_prime.aligned_nt[a] for a in ordered_accessions_5]
     rows_3 = [three_prime.aligned_nt[a] for a in ordered_accessions_3]
-    rows_cds = [codon_alignment.aligned_nt[a] for a in ordered_accessions_cds]
+    rows_cds = [cds_block.aligned_nt[a] for a in ordered_accessions_cds]
     rf5 = _majority_rf(rows_5, width_5) if width_5 else ""
     rf3 = _majority_rf(rows_3, width_3) if width_3 else ""
-    rf_cds = _majority_rf(rows_cds, width_cds)
+    rf_cds = cds_rf if cds_rf is not None else _majority_rf(rows_cds, width_cds)
     rf = rf5 + rf_cds + rf3
     ss_cons = five_prime.ss_cons + (GAP_RF * width_cds) + three_prime.ss_cons
 

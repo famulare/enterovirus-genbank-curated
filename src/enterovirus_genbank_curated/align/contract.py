@@ -208,6 +208,36 @@ class NcrSpec:
 
 
 @dataclass(frozen=True)
+class AnchorSpec:
+    """The Sabin-anchored CDS block for one serotype: which reference frames the coordinates, and
+    the two do-no-harm guards that decide when codon-aware placement is trusted over the plain
+    nucleotide anchor. See `align.anchored` for what each guard actually protects against.
+
+    `length_cap` is **not** a membership filter here, and that is a deliberate departure. Upstream
+    used 7700 as a *candidacy* pre-filter, before any serotype had been assigned — a step this port
+    does not have, because membership is canonical `virus_type` by curator decision. Dropping a
+    canonical record for length would break the 1-to-1 row-set rule outright. So it is carried as a
+    declared reporting threshold: a record above it is reported, never removed. Worth keeping rather
+    than deleting as unreachable — the longest PV record today is 7694 nt, 6 nt of headroom.
+    """
+
+    serotype: str
+    reference_accession: str
+    length_cap: int = 7700
+    # Revert to the nucleotide anchor when codon-aware placement worsens CDS nt p-distance by more
+    # than this. Fixes short-divergent-fragment amino-acid mis-placement.
+    pdist_guard_increase_pp: float = 2.0
+    # Override a record's OWN GenBank frame for the ref-inferred one only on overwhelming evidence.
+    # Deliberately far above the nt guard: overriding a submitter's annotation needs a real rescue
+    # (~70-90% -> <15% amino-acid divergence), not alignment noise.
+    aa_guard_increase_pp: float = 30.0
+    # Hand-adjudicated per-accession opt-out of the nt guard. Upstream verified this record's
+    # guard-rejected codon-aware candidate is genuinely stop-free at comparable coverage, so the
+    # guard is a false positive for it; three sibling accessions were checked and rejected.
+    pdist_guard_bypass: frozenset[str] = frozenset({"OR538733"})
+
+
+@dataclass(frozen=True)
 class AlignmentSpec:
     name: str
     stack: Literal["unified", "anchored"]
@@ -221,8 +251,13 @@ class AlignmentSpec:
     # asserting a coincidence that does not hold.
     description: str
     codon: CodonSpec = CodonSpec()
-    # None for the anchored stack (PV1/PV2/PV3): their NCR comes from align.anchored, not cmalign.
+    # Both stacks build their NCR blocks with cmalign; they differ only in which CM. The unified
+    # stack uses the genus-wide occupancy-consensus models, the anchored stack the per-serotype
+    # `cmbuild --hand` models whose every match column is a real Sabin genome position.
     ncr: NcrSpec | None = None
+    # Set only for the anchored stack, whose CDS block is a pairwise reference-frame projection
+    # (`align.anchored`) rather than a MAFFT profile alignment (`align.codon`).
+    anchor: AnchorSpec | None = None
 
 
 POLIO_TYPES = ("PV1", "PV2", "PV3")
@@ -233,10 +268,39 @@ POLIO_TYPES = ("PV1", "PV2", "PV3")
 # is wider than standalone POLIO_unified's own (150nt): it must still admit NPEV's legitimately
 # longer 3'NCR range (observed up to 329nt) while excluding polio's pathological >500nt
 # mis-segmented-CDS cluster that the standalone POLIO_unified ceiling was built to exclude.
+# The polio population windows, declared once and shared by the genus-wide POLIO_unified models and
+# the six per-serotype ones below: same underlying records, same mis-segmented-CDS ceiling.
+_POLIO_5P_WINDOW = {"pop_min_nt": 50, "pop_max_nt": 1000}
+_POLIO_3P_WINDOW = {"pop_min_nt": 20, "pop_max_nt": 150}
+
 POLIO_NCR = NcrSpec(
-    five_prime=NcrSideSpec(pop_min_nt=50, pop_max_nt=1000, cm_path=f"{SEED_DIR}/polio_ncr_5p.cm"),
-    three_prime=NcrSideSpec(pop_min_nt=20, pop_max_nt=150, cm_path=f"{SEED_DIR}/polio_ncr_3p.cm"),
+    five_prime=NcrSideSpec(**_POLIO_5P_WINDOW, cm_path=f"{SEED_DIR}/polio_ncr_5p.cm"),
+    three_prime=NcrSideSpec(**_POLIO_3P_WINDOW, cm_path=f"{SEED_DIR}/polio_ncr_3p.cm"),
 )
+
+# The per-serotype Sabin-anchored models. Population windows are POLIO_unified's own, because these
+# are the same underlying polio records and the same mis-segmented-CDS ceiling rationale applies.
+# What differs is the model: `cmbuild --hand` against that serotype's Sabin reference, so each
+# model's match-column count equals its serotype's true UTR length exactly (measured: 742/69,
+# 747/68, 742/69 against 5'UTR/3'UTR lengths of the same values). That is what makes the anchored
+# stack's stitched width come out at the Sabin genome length rather than merely near it.
+PV_NCR = {
+    serotype: NcrSpec(
+        five_prime=NcrSideSpec(
+            **_POLIO_5P_WINDOW, cm_path=f"{SEED_DIR}/{serotype.lower()}_ncr_5p.cm"
+        ),
+        three_prime=NcrSideSpec(
+            **_POLIO_3P_WINDOW, cm_path=f"{SEED_DIR}/{serotype.lower()}_ncr_3p.cm"
+        ),
+    )
+    for serotype in POLIO_TYPES
+}
+
+# Each serotype's Sabin whole-genome reference. These are themselves canonical records (verified:
+# AY184219/20/21 carry virus_type PV1/PV2/PV3 and lengths 7441/7439/7432), so the reference row is a
+# population member rather than an imported outsider.
+SABIN_REFERENCE = {"PV1": "AY184219", "PV2": "AY184220", "PV3": "AY184221"}
+
 NPEV_NCR = NcrSpec(
     five_prime=NcrSideSpec(pop_min_nt=50, pop_max_nt=None, cm_path=f"{SEED_DIR}/npev_ncr_5p.cm"),
     three_prime=NcrSideSpec(pop_min_nt=20, pop_max_nt=None, cm_path=f"{SEED_DIR}/npev_ncr_3p.cm"),
@@ -288,6 +352,8 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         description=(
             "Poliovirus serotype 1 whole-genome multiple sequence alignment, Sabin-anchored"
         ),
+        ncr=PV_NCR["PV1"],
+        anchor=AnchorSpec(serotype="PV1", reference_accession=SABIN_REFERENCE["PV1"]),
     ),
     "PV2_unified": AlignmentSpec(
         name="PV2_unified",
@@ -297,6 +363,8 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         description=(
             "Poliovirus serotype 2 whole-genome multiple sequence alignment, Sabin-anchored"
         ),
+        ncr=PV_NCR["PV2"],
+        anchor=AnchorSpec(serotype="PV2", reference_accession=SABIN_REFERENCE["PV2"]),
     ),
     "PV3_unified": AlignmentSpec(
         name="PV3_unified",
@@ -306,6 +374,8 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         description=(
             "Poliovirus serotype 3 whole-genome multiple sequence alignment, Sabin-anchored"
         ),
+        ncr=PV_NCR["PV3"],
+        anchor=AnchorSpec(serotype="PV3", reference_accession=SABIN_REFERENCE["PV3"]),
     ),
 }
 
