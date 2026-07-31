@@ -171,6 +171,27 @@ class CodonSpec:
     pass1_gap_open: float = 4.5
     pass2_gap_open: float = 6.0
     pass2_local_gap_open: float = -24.0
+    # MAFFT's `--ep`, the gap *extension* penalty, applied to both `--add` passes. Upstream never
+    # set it, so it sat at MAFFT's default 0.123 through every build — and cheap extension is what
+    # lets a single unalignable fragment open a wide insertion block, because opening the gap is
+    # paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input
+    # (8,730 sequences onto the 6-row seed), CDS width in amino acids:
+    #
+    #     --op 4.5  --ep 0.123 (default)   2465
+    #     --op 4.5  --ep 0.5              2300   <- chosen
+    #     --op 6.0  --ep 0.5              2883
+    #     --op 8.0  --ep 1.0              2878
+    #
+    # Note the non-monotonicity: raising `--op` above 4.5 makes the alignment *wider*, because a
+    # higher opening cost pushes the aligner away from reusing an existing gapped region and toward
+    # opening a fresh column elsewhere. That is the real mechanism behind upstream's `op1 = 3.0`
+    # blowing up to 3,911 aa, which its own source recorded only as a bug. `--op` therefore cannot
+    # be tuned by intuition in either direction; 4.5 is kept because it measures best.
+    #
+    # Deliberately not applied to the seed stage: measured there it is a no-op (2,224 aa either
+    # way), since six near-identical complete polyproteins have no long gaps to extend, and leaving
+    # the seed on defaults keeps the column frame the 2,300 measurement was made against.
+    gap_extend: float = 0.5
     seed_min_aa: int = 2000
     seed_per_type: int = 2
     accept_annotated_max_internal_stops: int = 1

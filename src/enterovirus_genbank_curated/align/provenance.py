@@ -39,6 +39,14 @@ PARAMETER_DEPARTURES = {
         "documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied "
         "once as a command-line override and never propagated into the script."
     ),
+    "gap_extend": (
+        "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat "
+        "at the default 0.123 through every build, which is what let a single unalignable fragment "
+        "open a wide insertion block: opening the gap is paid for once and widening it is nearly "
+        "free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at "
+        "--ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so "
+        "the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best."
+    ),
     "pass2_local_gap_open": (
         "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, "
         "which shreds short addon fragments. This is the larger scientific change of the two."

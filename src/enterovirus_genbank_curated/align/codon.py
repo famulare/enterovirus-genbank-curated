@@ -184,6 +184,7 @@ def build_codon_block(
             "mafft",
             [
                 "--thread", str(threads), "--anysymbol", "--op", str(spec.pass1_gap_open),
+                "--ep", str(spec.gap_extend),
                 "--add", BACKBONE_REST_FASTA, onto_basename,
             ],
             scratch=scratch,
@@ -210,6 +211,7 @@ def build_codon_block(
             "mafft",
             [
                 "--thread", str(threads), "--anysymbol", "--op", str(spec.pass2_gap_open),
+                "--ep", str(spec.gap_extend),
                 "--lop", str(spec.pass2_local_gap_open), "--addfragments", ADDON_FASTA,
                 onto_basename,
             ],
