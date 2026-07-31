@@ -35,12 +35,13 @@ row from `NA` to `year`, never the reverse.
 R-DATE-PRECISION-1 and R-DATE-1 are therefore superseded here by `-2` rules carrying real semver,
 which keeps the frozen `rules.tsv.gz` view byte-identical while the catalog moves on.
 
-## Not yet done: `collection_year_earliest` / `collection_year_latest`
+## `collection_year_earliest` / `collection_year_latest`
 
-Both are correct and cheap — the interval endpoints, blank unless precision is `range`, verified
-against all 121 shipped range rows including the floor-of-mean midpoint. They are not written
-because one catalog rule (R-DATE-RANGE-1) covers *two* canonical fields while `derive/apply.py`
-projects one field per rule. That is a projection-layer limitation, not a missing derivation.
+The interval endpoints, blank unless precision is `range`, verified against all 121 shipped range
+rows including the floor-of-mean midpoint. One catalog rule covers *two* canonical columns, which is
+why `rule_implementation` takes a `fields` argument and a body may return a mapping: the release
+records it the same way, a single `winning_rule_id` on both columns. Requiring the returned keys to
+equal the declared set is what stops such a rule writing a column nobody declared.
 """
 
 from __future__ import annotations
@@ -226,3 +227,78 @@ def collection_date(parameters: Mapping[str, Any], view: RecordView) -> RuleOutc
         source_value=view.qualifier(DATE_QUALIFIER) if precision == PRECISION_MONTH else value,
         manual_override=from_decision,
     )
+
+
+EARLIEST_FIELD = "collection_year_earliest"
+LATEST_FIELD = "collection_year_latest"
+BASIS_NOT_A_RANGE = "not_a_range"
+
+
+def interval_endpoint_years(value: str) -> tuple[str, str]:
+    """The two endpoint years of a GenBank date interval, or `("", "")` if it is not one."""
+    if "/" not in value:
+        return "", ""
+    first, _, second = value.partition("/")
+    start, end = _year_of(first), _year_of(second)
+    return (start, end) if start and end else ("", "")
+
+
+@rule_implementation(
+    "derive.dates.collection_year_bounds",
+    parameters=("populated_when_precision_is",),
+    evidence_bases=(BASIS_PRECISION_PROJECTION, BASIS_NOT_A_RANGE, BASIS_NO_DATE),
+    fields=(EARLIEST_FIELD, LATEST_FIELD),
+)
+def collection_year_bounds(
+    parameters: Mapping[str, Any], view: RecordView
+) -> dict[str, RuleOutcome]:
+    """Both interval endpoints, populated only for a `range` and blank on every other row.
+
+    The one rule that projects two canonical columns, which is why `rule_implementation` grew a
+    `fields` argument. The release records it the same way — a single `winning_rule_id` on both.
+
+    On a non-range row the value is blank but `source_value` still carries the record's year, the
+    release's own convention: the year *was* known, it simply is not a bound. Verified against all
+    121 shipped range rows including the floor-of-mean midpoint `collection_date` reports.
+    """
+    raw = view.qualifier(DATE_QUALIFIER)
+    _, precision, _ = _resolved_date(view)
+    ranged = parameters["populated_when_precision_is"]
+
+    if precision == ranged:
+        earliest, latest = interval_endpoint_years(raw)
+        return {
+            field: RuleOutcome(
+                value=value,
+                evidence_basis=BASIS_PRECISION_PROJECTION,
+                source_field=field,
+                source_value=value,
+            )
+            for field, value in ((EARLIEST_FIELD, earliest), (LATEST_FIELD, latest))
+        }
+
+    if not precision:
+        return {
+            field: RuleOutcome(
+                value="",
+                evidence_basis=BASIS_NO_DATE,
+                source_field=field,
+                source_value="",
+                unresolved_reason=UNRESOLVED_UNPARSEABLE,
+            )
+            for field in (EARLIEST_FIELD, LATEST_FIELD)
+        }
+
+    # Not a range: no bounds exist, but the year the record does have is recorded as what was read.
+    known_year = "" if precision == PRECISION_NOT_APPLICABLE else _year_of(raw) or _year_of(
+        view.decisions.get(LEDGER_YEAR_FIELD, "")
+    )
+    return {
+        field: RuleOutcome(
+            value="",
+            evidence_basis=BASIS_NOT_A_RANGE,
+            source_field=field,
+            source_value=known_year,
+        )
+        for field in (EARLIEST_FIELD, LATEST_FIELD)
+    }

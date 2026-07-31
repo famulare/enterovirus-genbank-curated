@@ -118,6 +118,8 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
     assert provenance.fields == (
         "collection_date",
         "collection_date_precision",
+        "collection_year_earliest",
+        "collection_year_latest",
         "curation_status",
         "locality",
         "sample_origin",
@@ -133,6 +135,10 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "locality": 24284,
         "collection_date": 24284,
         "collection_date_precision": 24284,
+        # One rule projects both, and neither ever declines: a non-range row is a real blank, not an
+        # absence. Their values and bases match the release on every row.
+        "collection_year_earliest": 24284,
+        "collection_year_latest": 24284,
         "virus_group": 24284 - UNRESOLVED_PARTITION_ROWS,
         "curation_status": 24284 - UNRESOLVED_PARTITION_ROWS,
         "specimen_type": 24284 - (UNRESOLVED_SPECIMEN_ROWS - 1),

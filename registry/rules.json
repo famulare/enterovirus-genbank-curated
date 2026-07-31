@@ -132,11 +132,11 @@
     "rule_version": "2.4.1",
     "field_name": "collection_year_earliest",
     "description": "For an interval /collection_date, the exact endpoint years, populated IFF collection_date_precision == 'range' and blank on every other row. collection_date carries the midpoint (floor of the mean of the endpoints), so the point estimate is usable without string parsing while the true bounds stay recoverable. Upstream producer: build_curated_genbank_metadata.parse_date_range / range_midpoint_year.",
-    "implementation": "derive.dates.collection_year_bounds",
+    "implementation": "derive.dates.collection_year_bounds_v241",
     "parameters": {
       "populated_when_precision_is": "range"
     },
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-CONSTRUCT-1",
@@ -427,6 +427,17 @@
         "clinical_pattern": "\\bafp\\b|acute flaccid|paralysis|paralytic|patient|case of|meningitis|gastroenteritis"
       },
       "outside_scope_value": "not_applicable"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-DATE-RANGE-2",
+    "rule_version": "1.0.0",
+    "field_name": "collection_year_earliest",
+    "description": "For an interval /collection_date, the exact endpoint years, populated IFF collection_date_precision == 'range' and blank on every other row — one rule projecting two canonical columns, collection_year_earliest and collection_year_latest, exactly as R-DATE-RANGE-1 did. collection_date carries the midpoint (floor of the mean of the endpoints), so the point estimate is usable without string parsing while the true bounds stay recoverable. On a non-range row the value is blank but source_value still records the year the record does have, which is the release's own convention. This supersedes R-DATE-RANGE-1, whose derivation was already reachable from raw/ but which the projection layer could not express while it emitted one field per rule.",
+    "implementation": "derive.dates.collection_year_bounds",
+    "parameters": {
+      "populated_when_precision_is": "range"
     },
     "status": "active"
   }

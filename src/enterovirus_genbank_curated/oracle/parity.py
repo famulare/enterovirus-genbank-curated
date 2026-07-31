@@ -311,6 +311,8 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "source_value": "d248b53f82e488c2",
         "evidence_basis": "7e6522502070b4fb",
     },
+    "collection_year_earliest": {"source_value": "5cee506fac0fac17"},
+    "collection_year_latest": {"source_value": "5cee506fac0fac17"},
     "locality": {"evidence_basis": "8c042f23e8b20cd4"},
     "surveillance_stream": {
         "final_value": "882f2bb66d1a407b",
@@ -386,6 +388,32 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         #       regression. A text rule silently overriding a live decision would also appear here,
         #       which is how that omission was caught in the first place.
         "manual_override": 138,
+    },
+    "collection_year_earliest": {
+        # The cleanest result in the rewrite: `final_value` and `evidence_basis` both match the
+        # release on all 24,284 rows, so the endpoint derivation and the basis assignment are
+        # exactly what shipped. Only the superseding rule id differs everywhere, plus `source_value`
+        # on the 1,763 archival-date records where the release had a year and precision is now `NA`.
+        "final_value": 0,
+        "evidence_basis": 0,
+        "winning_rule_id": 24284,
+        "source_value": 1763,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "source_field": 0,
+        "manual_override": 0,
+    },
+    "collection_year_latest": {
+        "final_value": 0,
+        "evidence_basis": 0,
+        "winning_rule_id": 24284,
+        "source_value": 1763,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "source_field": 0,
+        "manual_override": 0,
     },
     "surveillance_stream": {
         # 3,487 = 3,315 non-poliovirus records where the rule reads the record's own text and the
