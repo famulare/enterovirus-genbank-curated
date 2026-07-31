@@ -1,0 +1,115 @@
+{
+  "artifacts": {
+    "npev_ncr_3p": {
+      "cm": "npev_ncr_3p.cm",
+      "cmbuild_hand": false,
+      "match_columns": 87,
+      "population": 1536,
+      "seed": 115,
+      "seed_aln_fa": "npev_ncr_3p_seed_aln.fa",
+      "seed_sto": "npev_ncr_3p_seed.sto"
+    },
+    "npev_ncr_5p": {
+      "cm": "npev_ncr_5p.cm",
+      "cmbuild_hand": false,
+      "match_columns": 738,
+      "population": 2198,
+      "seed": 83,
+      "seed_aln_fa": "npev_ncr_5p_seed_aln.fa",
+      "seed_sto": "npev_ncr_5p_seed.sto"
+    },
+    "polio_ncr_3p": {
+      "cm": "polio_ncr_3p.cm",
+      "cmbuild_hand": false,
+      "match_columns": 70,
+      "population": 1902,
+      "seed": 100,
+      "seed_aln_fa": "polio_ncr_3p_seed_aln.fa",
+      "seed_sto": "polio_ncr_3p_seed.sto"
+    },
+    "polio_ncr_5p": {
+      "cm": "polio_ncr_5p.cm",
+      "cmbuild_hand": false,
+      "match_columns": 746,
+      "population": 2036,
+      "seed": 80,
+      "seed_aln_fa": "polio_ncr_5p_seed_aln.fa",
+      "seed_sto": "polio_ncr_5p_seed.sto"
+    },
+    "pv1_ncr_3p": {
+      "cm": "pv1_ncr_3p.cm",
+      "cmbuild_hand": true,
+      "match_columns": 69,
+      "population": 413,
+      "seed": 85,
+      "seed_aln_fa": "pv1_ncr_3p_seed_aln.fa",
+      "seed_sto": "pv1_ncr_3p_seed.sto"
+    },
+    "pv1_ncr_5p": {
+      "cm": "pv1_ncr_5p.cm",
+      "cmbuild_hand": true,
+      "match_columns": 742,
+      "population": 469,
+      "seed": 163,
+      "seed_aln_fa": "pv1_ncr_5p_seed_aln.fa",
+      "seed_sto": "pv1_ncr_5p_seed.sto"
+    },
+    "pv2_ncr_3p": {
+      "cm": "pv2_ncr_3p.cm",
+      "cmbuild_hand": true,
+      "match_columns": 68,
+      "population": 1249,
+      "seed": 134,
+      "seed_aln_fa": "pv2_ncr_3p_seed_aln.fa",
+      "seed_sto": "pv2_ncr_3p_seed.sto"
+    },
+    "pv2_ncr_5p": {
+      "cm": "pv2_ncr_5p.cm",
+      "cmbuild_hand": true,
+      "match_columns": 747,
+      "population": 1288,
+      "seed": 185,
+      "seed_aln_fa": "pv2_ncr_5p_seed_aln.fa",
+      "seed_sto": "pv2_ncr_5p_seed.sto"
+    },
+    "pv3_ncr_3p": {
+      "cm": "pv3_ncr_3p.cm",
+      "cmbuild_hand": true,
+      "match_columns": 69,
+      "population": 348,
+      "seed": 88,
+      "seed_aln_fa": "pv3_ncr_3p_seed_aln.fa",
+      "seed_sto": "pv3_ncr_3p_seed.sto"
+    },
+    "pv3_ncr_5p": {
+      "cm": "pv3_ncr_5p.cm",
+      "cmbuild_hand": true,
+      "match_columns": 742,
+      "population": 380,
+      "seed": 163,
+      "seed_aln_fa": "pv3_ncr_5p_seed_aln.fa",
+      "seed_sto": "pv3_ncr_5p_seed.sto"
+    }
+  },
+  "description": "Covariance-model core for the NCR structural block: the mafft-xinsi seed alignment (genus-wide) or the hand-annotated Sabin-anchored seed (per-serotype), and the cmbuild output built from each, for the 5' and 3' non-coding regions of POLIO_unified, NPEV_unified (genus-wide, anchor-free), and PV1/PV2/PV3_unified (per-serotype, Sabin-anchored via cmbuild --hand). Committed as inputs-of-record so a routine alignment build needs only mafft + Infernal (cmalign); rebuilding a CM from scratch additionally needs mafft-xinsi (genus-wide) or RNAalifold (either stack), plus the mxscarnamod helper bioconda's mafft package omits (see scripts/setup_mxscarna.sh) -- a path that exists but is not expected to run even on a fresh clone.",
+  "reused_by": {
+    "EV_unified": "reuses npev_ncr_5p.cm and npev_ncr_3p.cm as-is (cmalign only, no new CM built) -- matches the shipped EV_unified.provenance.json's cm_reused field, and confirmed by grand_ev_unified's own working tree in MAD-VDPV carrying no .cm files of its own."
+  },
+  "population_note": "`population` means something different per stack: for the four genus-wide (anchor-free) artifacts it is the pop_min/pop_max-windowed cmalign population upstream's own build script filtered to; for the six per-serotype (Sabin-anchored) artifacts it is upstream's own 'any-overlap' production population (every record whose GenBank-derived span touches the NCR region at all), a materially different selection rule. Both are historical counts from upstream's own build, recorded for provenance only -- this repository's own population selection for each stack is declared independently in align.contract / align.anchored and is not required to reproduce either number.",
+  "schema": 1,
+  "scrubbed": "Each .cm's COM and DATE header lines (both the outer header and the internal HMM-filter copy) named an absolute local build path and a non-reproducible build timestamp. Both are replaced with fixed placeholder text; cmbuild_hand below records which convention actually built the file, since that information is otherwise only in the scrubbed COM line.",
+  "source_commits": {
+    "npev_ncr_3p": "057bbf3b26e538ad809f3dcd0884eaeeff29ce81",
+    "npev_ncr_5p": "057bbf3b26e538ad809f3dcd0884eaeeff29ce81",
+    "polio_ncr_3p": "638ca38c33d6ec86d0f2f8c2944630215ce57dfc",
+    "polio_ncr_5p": "638ca38c33d6ec86d0f2f8c2944630215ce57dfc",
+    "pv1_ncr_3p": "07ead7828d5beead1b4c16da2d0c0cb4e54bff62",
+    "pv1_ncr_5p": "07ead7828d5beead1b4c16da2d0c0cb4e54bff62",
+    "pv2_ncr_3p": "07ead7828d5beead1b4c16da2d0c0cb4e54bff62",
+    "pv2_ncr_5p": "07ead7828d5beead1b4c16da2d0c0cb4e54bff62",
+    "pv3_ncr_3p": "07ead7828d5beead1b4c16da2d0c0cb4e54bff62",
+    "pv3_ncr_5p": "07ead7828d5beead1b4c16da2d0c0cb4e54bff62"
+  },
+  "source_repository": "MAD-VDPV (private)",
+  "verified": "Each scrubbed .cm confirmed to still run under `cmalign --outformat Stockholm` (exit 0, well-formed Stockholm output) after scrubbing, 2026-07-30 (genus-wide four); 2026-07-30 (per-serotype six)."
+}

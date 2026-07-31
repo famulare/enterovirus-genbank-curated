@@ -1,0 +1,102 @@
+{
+  "absence_reasons": {
+    "3ncr:below_pop_min": 4,
+    "3ncr:empty_fragment": 1175,
+    "3ncr:inferred_no_ncr": 183,
+    "3ncr:no_cds_untranslatable": 33,
+    "5ncr:empty_fragment": 1138,
+    "5ncr:inferred_no_ncr": 183,
+    "5ncr:no_cds_untranslatable": 33,
+    "cds:no_cds_overlap": 92,
+    "cds:no_cds_untranslatable": 8
+  },
+  "anchor": {
+    "aa_guard_increase_pp": 30.0,
+    "length_cap": 7700,
+    "pdist_guard_bypass": [
+      "OR538733"
+    ],
+    "pdist_guard_increase_pp": 2.0,
+    "reference_accession": "AY184221",
+    "serotype": "PV3"
+  },
+  "anchored_audit": {
+    "frameshift_recovered": 1,
+    "frameshift_recovery_failed": 9,
+    "methods": {
+      "codon": 1477,
+      "codon_ref_inferred": 102,
+      "nt_better": 3,
+      "nt_cds_fallback": 9,
+      "nt_fallback": 101,
+      "recovered": 1
+    },
+    "rows_with_internal_stop": 10,
+    "rows_with_misphased_cds_gap": 0,
+    "rows_with_non_multiple_of_three_cds_gap": 2,
+    "strands": {
+      "forward": 1685,
+      "reverse_complement": 8
+    }
+  },
+  "artifact_sha256": {
+    "coverage": "81fa46a1d55ff6e244a4ec412f0deb37cd81c391b809a00da20663236c48b0d6",
+    "fasta": "342a9de8fa0ea1dddde6ee7b1ac8628eec650ddf6c3370613c45480ad3c1a802",
+    "stockholm": "3a232ab54a2a5a58145c0c33c0180d14eb93a222c0dab062730d27ec4275b54c"
+  },
+  "block_widths": {
+    "3ncr": 69,
+    "5ncr": 742,
+    "cds": 6621
+  },
+  "blocks_present": {
+    "3ncr": 298,
+    "5ncr": 339,
+    "cds": 1593
+  },
+  "covariance_models": {
+    "3p": {
+      "cm_path": "registry/alignment_seeds/pv3_ncr_3p.cm",
+      "cm_sha256": "9706baf5a97c54ca45881d4fec18567440d70ca781d151fa7f545f36efcf865e",
+      "pop_max_nt": 150,
+      "pop_min_nt": 20
+    },
+    "5p": {
+      "cm_path": "registry/alignment_seeds/pv3_ncr_5p.cm",
+      "cm_sha256": "05230cff27d2b454dc30a79828bf33157924a2460f7f9c3e362cc1c96a6aa9ec",
+      "pop_max_nt": 1000,
+      "pop_min_nt": 50
+    }
+  },
+  "description": "Poliovirus serotype 3 whole-genome multiple sequence alignment, Sabin-anchored",
+  "expected_rows": 1693,
+  "families": {
+    "PV": 1693
+  },
+  "n_reference_columns": 7432,
+  "name": "PV3_unified",
+  "over_length_cap": [],
+  "parameter_departures": {
+    "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
+    "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
+  },
+  "population_sha256": "45ac1e77ad7f07a0e41e82ada4f8b460284b5b615e551865c37f70f4c09b5a8d",
+  "rows": 1693,
+  "schema": 1,
+  "seconds": 792.1,
+  "stack": "anchored",
+  "threads": 8,
+  "tiers": {
+    "addon": 255,
+    "backbone": 1438
+  },
+  "tool_identity": {
+    "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
+    "mafft": "mafft 7.526 h99b78c6_0",
+    "mafft-linsi": "mafft 7.526 h99b78c6_0"
+  },
+  "types": {
+    "PV3": 1693
+  },
+  "width_nt": 7432
+}

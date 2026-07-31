@@ -30,6 +30,54 @@ from enterovirus_genbank_curated.registry.rules import validate_rule_catalog
 BUILD_MANIFEST_PATH = "final/audit/build_manifest.json"
 RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
 
+# The twenty files under `final/` that `release_file_manifest.tsv` does not declare, and cannot.
+#
+# Nineteen are the carved-in alignments, produced by a private pipeline whose scripts are not in
+# this repository; the manifest covers only the release_v2 build outputs. The twentieth is the
+# manifest itself, which cannot declare its own hash without becoming self-referential.
+#
+# Their sha256s are pinned in `tests/test_carried_files.py`, following the same pattern as
+# `registry/legacy/`: hashes in code, so moving one takes a reviewed source edit rather than a
+# data edit. All twenty are single-source — see that file's module docstring for why a second
+# witness was tried and dropped.
+#
+# This set shrinks to empty when the alignment layer is regenerated natively: at that point every
+# file here either gains a real manifest row or is dropped. Do not add to it for a file this
+# repository produces — that is what the manifest is for.
+CARRIED_FINAL_FILES = frozenset({
+    "final/alignments/EV_unified.provenance.json",
+    "final/alignments/EV_unified.sto.gz",
+    "final/alignments/EV_unified_aln.fasta.gz",
+    "final/alignments/NPEV_unified.provenance.json",
+    "final/alignments/NPEV_unified.sto.gz",
+    "final/alignments/NPEV_unified_aln.fasta.gz",
+    "final/alignments/POLIO_unified.provenance.json",
+    "final/alignments/POLIO_unified.sto.gz",
+    "final/alignments/POLIO_unified_aln.fasta.gz",
+    "final/alignments/PV1_unified.sto.gz",
+    "final/alignments/PV1_unified_aln.fasta.gz",
+    "final/alignments/PV2_unified.sto.gz",
+    "final/alignments/PV2_unified_aln.fasta.gz",
+    "final/alignments/PV3_unified.sto.gz",
+    "final/alignments/PV3_unified_aln.fasta.gz",
+    "final/alignments/reference_alignment_provenance.json",
+    "final/alignments/reference_msa_provenance.json",
+    "final/alignments/reference_region_coordinates.tsv",
+    "final/alignments/unified_stockholm_provenance.json",
+    RELEASE_FILE_MANIFEST_PATH,
+})
+
+# Filesystem debris that is never release content, so `verify_manifest_completeness` must not
+# demand a hash for it. Narrow by name rather than a dotfile glob, because "skip anything starting
+# with a dot" would also skip a real artifact that happened to be named that way, and this check
+# exists to notice unhashed files.
+#
+# `.DS_Store` is written by macOS Finder whenever someone opens `final/` in a window. It is
+# gitignored and has never been part of a release, but the completeness walk reads the filesystem
+# rather than the index — it has to, since the whole point is to find files nobody declared — so the
+# two disagree exactly here.
+IGNORED_FINAL_NAMES = frozenset({".DS_Store"})
+
 # Where each expected_counts key is measured in the shipped release. provisional_rows is not a
 # table row count; it is derived from curation_status and handled separately.
 COUNT_SOURCES = {
@@ -122,6 +170,98 @@ def verify_expected_artifacts(repository_root: Path, artifacts: list[dict[str, A
                 )
 
 
+def verify_release_manifest_hashes(repository_root: Path) -> int:
+    """Recompute every `file_bytes` hash `final/audit/release_file_manifest.tsv` declares.
+
+    `verify_expected_artifacts` only ever recomputed the `file_bytes` entries named in
+    `expected_artifacts`. That left the rest of the manifest's declared hashes — e.g.
+    `audit/build_manifest.json`, `audit/canonical_projection_provenance.tsv.gz`,
+    `audit/sequence_evidence.tsv.gz`, the four `dictionaries/*.tsv` — computed by nothing, so
+    replacing any of them with the word `garbage` passed every gate (backlog B7). Recomputing all
+    of them here subsumes the split rather than adding a fourth place that has to remember which
+    subset it owns.
+
+    `logical_content` entries are skipped, and deliberately: no code in this repository computes a
+    logical digest, so a check here would either be a no-op or invent a definition (backlog B6).
+    Returns the number of hashes actually recomputed, so a caller can assert it is not zero.
+    """
+    manifest = load_release_file_manifest(repository_root / RELEASE_FILE_MANIFEST_PATH)
+    final_root = repository_root / "final"
+    checked = 0
+    for relative, (scope, declared) in sorted(manifest.items()):
+        if scope not in {"file_bytes", "logical_content"}:
+            raise ContractError(
+                f"{RELEASE_FILE_MANIFEST_PATH} declares unknown hash_scope {scope!r} "
+                f"for {relative}"
+            )
+        target = final_root / relative
+        if not target.is_file():
+            raise ContractError(
+                f"{RELEASE_FILE_MANIFEST_PATH} declares final/{relative}, which does not exist"
+            )
+        if scope != "file_bytes":
+            continue
+        actual = sha256_file(target)
+        if actual != declared:
+            raise ContractError(
+                f"final/{relative} sha256 {actual} does not match the hash "
+                f"{RELEASE_FILE_MANIFEST_PATH} declares ({declared})"
+            )
+        checked += 1
+    if checked == 0:
+        raise ContractError(
+            f"{RELEASE_FILE_MANIFEST_PATH} declared no file_bytes hashes to recompute; "
+            f"a check that verifies nothing is worse than no check"
+        )
+    return checked
+
+
+def verify_manifest_completeness(repository_root: Path) -> None:
+    """Require every file under `final/` to be covered by the manifest or declared as carried.
+
+    The gap this closes is not a wrong hash but an absent one: nineteen alignment files and the
+    self-referential manifest sat in no declaration at all, so deleting one outright left every
+    gate green. The check runs in both directions — an undeclared *new* file fails just as loudly
+    as a missing declared one — because a one-directional completeness check is how the original
+    gap survived review.
+
+    Membership lives in code rather than beside the hashes in a data file on purpose. A path set
+    that a data edit could extend would let a future build silently move a file out of scope,
+    which is the shape of defect B4.
+    """
+    manifest = load_release_file_manifest(repository_root / RELEASE_FILE_MANIFEST_PATH)
+    declared = {f"final/{relative}" for relative in manifest}
+    final_root = repository_root / "final"
+    if not final_root.is_dir():
+        raise ContractError("final/ is missing; there is no release to validate")
+    present = {
+        str(path.relative_to(repository_root))
+        for path in final_root.rglob("*")
+        if path.is_file() and path.name not in IGNORED_FINAL_NAMES
+    }
+
+    overlap = declared & CARRIED_FINAL_FILES
+    if overlap:
+        raise ContractError(
+            f"CARRIED_FINAL_FILES names {sorted(overlap)}, which the release manifest also "
+            f"declares; a file cannot be both carried and declared"
+        )
+    stale = CARRIED_FINAL_FILES - present
+    if stale:
+        raise ContractError(
+            f"CARRIED_FINAL_FILES names files that do not exist: {sorted(stale)}"
+        )
+    uncovered = present - declared - CARRIED_FINAL_FILES
+    if uncovered:
+        raise ContractError(
+            f"these files under final/ are covered by neither {RELEASE_FILE_MANIFEST_PATH} nor "
+            f"CARRIED_FINAL_FILES: {sorted(uncovered)}. Every shipped file needs a hash "
+            f"somewhere; if this one is a new release artifact it belongs in the manifest, and if "
+            f"it is carried from the private pipeline it belongs in CARRIED_FINAL_FILES with its "
+            f"sha256 pinned in tests/test_carried_files.py."
+        )
+
+
 def verify_expected_counts(repository_root: Path, counts: dict[str, int]) -> None:
     for key, relative in COUNT_SOURCES.items():
         path = repository_root / relative
@@ -177,6 +317,8 @@ def verify_release_baseline(repository_root: Path, spec: dict[str, Any]) -> None
     verify_build_manifest(repository_root, spec)
     verify_raw_input(repository_root, spec["raw_input"])
     verify_expected_artifacts(repository_root, spec["expected_artifacts"])
+    verify_release_manifest_hashes(repository_root)
+    verify_manifest_completeness(repository_root)
     verify_expected_counts(repository_root, spec["expected_counts"])
 
 

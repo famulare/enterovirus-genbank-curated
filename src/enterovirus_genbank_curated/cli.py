@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from enterovirus_genbank_curated.align import build as align_build
 from enterovirus_genbank_curated.build import build_metadata_layer, build_source_layer
 from enterovirus_genbank_curated.contracts import (
     BASELINE_RELEASE,
@@ -97,6 +98,74 @@ def build_parser() -> argparse.ArgumentParser:
         help="run the build in a guarded child process; the comparison itself reads final/ and "
              "therefore cannot be guarded",
     )
+
+    alignment_population = subparsers.add_parser(
+        "alignment-population",
+        help="derive each alignment's row set from final metadata; needs no aligner",
+    )
+    alignment_population.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_population.add_argument(
+        "--artifact", action="append", dest="artifacts", metavar="NAME",
+        help="restrict to one alignment; repeatable. Default: all six.",
+    )
+
+    alignment_toolchain = subparsers.add_parser(
+        "alignment-toolchain",
+        help="resolve the native aligners and check them against registry/toolchain.json",
+    )
+    alignment_toolchain.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_toolchain.add_argument(
+        "--write-declaration", action="store_true",
+        help="re-stamp registry/toolchain.json from the installed environment and the lock",
+    )
+
+    alignment_verify_seeds = subparsers.add_parser(
+        "alignment-verify-seeds",
+        help="re-hash the committed NCR covariance-model core; needs no aligner",
+    )
+    alignment_verify_seeds.add_argument("--repository-root", type=Path, default=Path.cwd())
+
+    alignment_build = subparsers.add_parser(
+        "alignment-build",
+        help="build alignment artifacts, strictly one at a time (needs mafft + Infernal)",
+    )
+    alignment_build.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_build.add_argument(
+        "--output-dir", type=Path, required=True,
+        help="where to write <name>.sto.gz, <name>_aln.fasta.gz and <name>.coverage.tsv.gz",
+    )
+    alignment_build.add_argument(
+        "--artifact", action="append", dest="artifacts", metavar="NAME",
+        help="restrict to one alignment; repeatable. Default: all six.",
+    )
+    # No --parallel, by design: concurrent aligner processes are what exhausted memory on a real
+    # machine (see align/build.py). --threads is the one knob, and its default is 1.
+    alignment_build.add_argument(
+        "--threads", type=int, default=align_build.DEFAULT_THREADS,
+        help=f"threads per tool invocation (default {align_build.DEFAULT_THREADS})",
+    )
+
+    alignment_verify = subparsers.add_parser(
+        "alignment-verify",
+        help="check built alignments against metadata-derived populations; needs no aligner",
+    )
+    alignment_verify.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_verify.add_argument("--output-dir", type=Path, required=True)
+    alignment_verify.add_argument(
+        "--artifact", action="append", dest="artifacts", metavar="NAME",
+        help="restrict to one alignment; repeatable. Default: all six.",
+    )
+
+    alignment_shape = subparsers.add_parser(
+        "alignment-shape",
+        help="write the shape report and the declared delta against 2.4.1; needs no aligner",
+    )
+    alignment_shape.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_shape.add_argument("--output-dir", type=Path, required=True)
+    alignment_shape.add_argument(
+        "--artifact", action="append", dest="artifacts", metavar="NAME",
+        help="restrict to one alignment; repeatable. Default: all six.",
+    )
     return parser
 
 
@@ -187,6 +256,120 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  declined: {field} on {count} records")
             if requested_guard:
                 print(GUARD_PASS_LINE)
+            return 0
+        if args.command == "alignment-population":
+            from enterovirus_genbank_curated.align.contract import ARTIFACTS
+            from enterovirus_genbank_curated.align.population import load_all_records, select
+
+            names = args.artifacts or list(ARTIFACTS)
+            unknown = [name for name in names if name not in ARTIFACTS]
+            if unknown:
+                raise ContractError(
+                    f"unknown alignment(s) {unknown}; declared: {sorted(ARTIFACTS)}"
+                )
+            records = load_all_records(root)
+            print(f"canonical records: {len(records)}")
+            for name in names:
+                pop = select(records, ARTIFACTS[name])
+                tiers = pop.tier_counts()
+                status = "ok" if len(pop.records) == pop.spec.expected_rows else "UNEXPECTED"
+                print(
+                    f"\n{name}  {len(pop.records)} rows "
+                    f"(expected {pop.spec.expected_rows}: {status})"
+                )
+                print(f"  population sha256  {pop.digest()}")
+                print(f"  tiers              backbone {tiers['backbone']}, addon {tiers['addon']}")
+                all_types = pop.type_counts()
+                shown = list(all_types.items())[:8]
+                types = ", ".join(f"{k} {v}" for k, v in shown)
+                if len(all_types) > len(shown):
+                    types += f", … ({len(all_types)} types total)"
+                print(f"  types              {types}")
+                families = ", ".join(f"{k} {v}" for k, v in pop.family_counts().items())
+                print(f"  families           {families}")
+            return 0
+        if args.command == "alignment-toolchain":
+            import json
+
+            from enterovirus_genbank_curated.align import toolchain as tc
+
+            resolved = tc.resolve(root)
+            print(f"platform     {resolved.platform}")
+            print(f"environment  {resolved.environment}")
+            print(f"prefix       {resolved.prefix}")
+            for name, tool in sorted(resolved.tools.items()):
+                print(
+                    f"  {name:12} {tool.package:9} {tool.version:8} {tool.build:24} "
+                    f"{tool.self_reported}"
+                )
+            if args.write_declaration:
+                declaration = tc.build_declaration(root, [resolved])
+                target = root / tc.TOOLCHAIN_DECLARATION
+                target.write_text(
+                    json.dumps(declaration, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+                )
+                print(f"wrote {tc.TOOLCHAIN_DECLARATION}")
+            tc.assert_declared(root, resolved)
+            print("alignment toolchain: PASS (matches registry/toolchain.json and pixi.lock)")
+            return 0
+        if args.command == "alignment-verify-seeds":
+            from enterovirus_genbank_curated.align.seeds import verify_seeds
+
+            checked = verify_seeds(root)
+            print(
+                f"alignment seeds: PASS ({checked} files in registry/alignment_seeds/ match "
+                f"their pinned hashes and declared match-column counts)"
+            )
+            return 0
+        if args.command == "alignment-build":
+            names = tuple(args.artifacts) if args.artifacts else None
+
+            def report(stage: str, name: str, result=None) -> None:
+                if stage == "load":
+                    print("loading canonical records ...", flush=True)
+                elif stage == "segment":
+                    print("segmenting all records (one pass, shared) ...", flush=True)
+                elif stage == "start":
+                    print(f"building {name} ...", flush=True)
+                elif stage == "done" and result is not None:
+                    s = result.stitched
+                    print(
+                        f"  {name}: {len(s.accessions)} rows x {s.width_nt} nt "
+                        f"(5'NCR {s.width_5ncr} + CDS {s.width_cds} + 3'NCR {s.width_3ncr}) "
+                        f"in {result.seconds / 60:.1f} min",
+                        flush=True,
+                    )
+
+            results = align_build.build_all(
+                root, args.output_dir.resolve(), names=names,
+                threads=args.threads, on_event=report,
+            )
+            print(f"alignment build: PASS ({len(results)} artifact(s) written)")
+            return 0
+        if args.command == "alignment-verify":
+            from enterovirus_genbank_curated.validation import alignment as validate_alignment
+
+            names = tuple(args.artifacts) if args.artifacts else None
+            report = validate_alignment.verify(root, args.output_dir.resolve(), names)
+            if not report.passed:
+                for failure in report.failures:
+                    print(f"  {failure}", file=sys.stderr)
+                print(
+                    f"alignment verify: FAIL ({len(report.failures)} of {report.checks} checks)",
+                    file=sys.stderr,
+                )
+                return 1
+            print(f"alignment verify: PASS ({report.checks} checks)")
+            return 0
+        if args.command == "alignment-shape":
+            from enterovirus_genbank_curated.align import shape as align_shape
+
+            names = tuple(args.artifacts) if args.artifacts else None
+            output_dir = args.output_dir.resolve()
+            report = align_shape.build_report(root, output_dir, names)
+            json_path, md_path = align_shape.write_report(output_dir, report)
+            print(align_shape.render(report))
+            print(f"wrote {json_path.name} and {md_path.name}")
             return 0
     except ContractError as exc:
         print(f"contract validation failed: {exc}", file=sys.stderr)

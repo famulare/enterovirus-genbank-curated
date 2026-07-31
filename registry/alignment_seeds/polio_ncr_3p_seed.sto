@@ -1,0 +1,304 @@
+# STOCKHOLM 1.0
+#=GF SQ 100
+AB180070 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS AB180070 AC AB180070
+#=GS AB180070 DE AB180070
+AB205395 caaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS AB205395 AC AB205395
+#=GS AB205395 DE AB205395
+AF111953 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------g
+#=GS AF111953 AC AF111953
+#=GS AF111953 DE AF111953
+AF111961 tgaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS AF111961 AC AF111961
+#=GS AF111961 DE AF111961
+AF111966 taaccctacctcagtcgagttggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS AF111966 AC AF111966
+#=GS AF111966 DE AF111966
+AF111981 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS AF111981 AC AF111981
+#=GS AF111981 DE AF111981
+AF405662 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS AF405662 AC AF405662
+#=GS AF405662 DE AF405662
+AF405664 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttgattc----------------------ggag------------------------------------------------------------------a
+#=GS AF405664 AC AF405664
+#=GS AF405664 DE AF405664
+AF405666 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS AF405666 AC AF405666
+#=GS AF405666 DE AF405666
+AF405670 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttgattc----------------------ggag------------------------------------------------------------------a
+#=GS AF405670 AC AF405670
+#=GS AF405670 DE AF405670
+AF462418 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------g
+#=GS AF462418 AC AF462418
+#=GS AF462418 DE AF462418
+AF538840 taaccctaccttagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaaaaaaaaaaaaaaaa-------------------------aaaaaaaa-----aaaaaaaa----a
+#=GS AF538840 AC AF538840
+#=GS AF538840 DE AF538840
+AF538841 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaaaaaaaaaaaaaaaa-------------------------aaaaaaaaaaaaaaaaaaaaa----a
+#=GS AF538841 AC AF538841
+#=GS AF538841 DE AF538841
+AF538842 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaaaaaaaaaaaaaaa---------------------------------------aaaaaaaa----a
+#=GS AF538842 AC AF538842
+#=GS AF538842 DE AF538842
+AF538843 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaaaaaa--------------------------------------------------aaaaaa----a
+#=GS AF538843 AC AF538843
+#=GS AF538843 DE AF538843
+AJ430385 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------g
+#=GS AJ430385 AC AJ430385
+#=GS AJ430385 DE AJ430385
+AY560657 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------gggg------------------------------------------------------------------a
+#=GS AY560657 AC AY560657
+#=GS AY560657 DE AY560657
+EF682343 taaccctacctcagtcgaataggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------gggg------------------------------------------------------------------a
+#=GS EF682343 AC EF682343
+#=GS EF682343 DE EF682343
+EF682345 taaccctacctcagtcgaataggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS EF682345 AC EF682345
+#=GS EF682345 DE EF682345
+EF682355 taaccctacctcagtcgaataggattgggtcatactgttgcaggggtaaatttttct-ttaattc----------------------gggg------------------------------------------------------------------a
+#=GS EF682355 AC EF682355
+#=GS EF682355 DE EF682355
+EU684056 taaccctacctcagtcgaattggattgggttatactgctgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS EU684056 AC EU684056
+#=GS EU684056 DE EU684056
+EU794954 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS EU794954 AC EU794954
+#=GS EU794954 DE EU794954
+EU794958 taaccctacctcagtcgaattggattgggtcatactgctgtaagggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS EU794958 AC EU794958
+#=GS EU794958 DE EU794958
+EU794963 taaccctacttcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS EU794963 AC EU794963
+#=GS EU794963 DE EU794963
+FJ460223 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaaaaa--------------------------------------------------------a----a
+#=GS FJ460223 AC FJ460223
+#=GS FJ460223 DE FJ460223
+FJ460227 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggggaaaa--------------------------------------------------------------a
+#=GS FJ460227 AC FJ460227
+#=GS FJ460227 DE FJ460227
+FJ859061 tgaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS FJ859061 AC FJ859061
+#=GS FJ859061 DE FJ859061
+FJ859192 taaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttct-ttaattc----------------------gggg------------------------------------------------------------------a
+#=GS FJ859192 AC FJ859192
+#=GS FJ859192 DE FJ859192
+FJ914252 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaaaaa--------------------------------------------------------a----a
+#=GS FJ914252 AC FJ914252
+#=GS FJ914252 DE FJ914252
+GQ984141 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaattttcct-ttaattc----------------------ggag------------------------------------------------------------------g
+#=GS GQ984141 AC GQ984141
+#=GS GQ984141 DE GQ984141
+JX275009 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggaga-----------------------------------------------------------------g
+#=GS JX275009 AC JX275009
+#=GS JX275009 DE JX275009
+JX275106 taaccctacctcagtcgaattggattgggtgatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaaaaa-------------------------------------------------------------g
+#=GS JX275106 AC JX275106
+#=GS JX275106 DE JX275106
+JX275166 taaccctacctcagtcgaattggattgggtgatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaaaa--------------------------------------------------------------a
+#=GS JX275166 AC JX275166
+#=GS JX275166 DE JX275166
+JX275210 taaccctacctcagtcgaattggattgggtcacactgctgtaggggtaaatttttcttttaattc----------------------ggggg-----------------------------------------------------------------a
+#=GS JX275210 AC JX275210
+#=GS JX275210 DE JX275210
+JX275212 taaccctacttcagtcggattggattgggttatactgtcgtaggggtaaatttttct-ttaattc----------------------gggga-----------------------------------------------------------------a
+#=GS JX275212 AC JX275212
+#=GS JX275212 DE JX275212
+JX275220 taaccctatttcagtcgaattggattgggttatactgttgtaggggtaaatttttcc-ttaattc----------------------gggga-----------------------------------------------------------------a
+#=GS JX275220 AC JX275220
+#=GS JX275220 DE JX275220
+JX275282 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaag---------------------------------------------------------------a
+#=GS JX275282 AC JX275282
+#=GS JX275282 DE JX275282
+JX275283 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------ggaggaaaa-------------------------------------------------------------a
+#=GS JX275283 AC JX275283
+#=GS JX275283 DE JX275283
+JX275381 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaaag--------------------------------------------------------------a
+#=GS JX275381 AC JX275381
+#=GS JX275381 DE JX275381
+KC784367 caaccctacttcagtcgaattggattgggttatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaaaaa---------------------------------------------------aaaaaa----a
+#=GS KC784367 AC KC784367
+#=GS KC784367 DE KC784367
+KC784372 caaccctacatcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaaa---------------------------------------------------------------a
+#=GS KC784372 AC KC784372
+#=GS KC784372 DE KC784372
+KJ019833 taaccttacctcagtcgaattggattgggtgatactgttgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS KJ019833 AC KJ019833
+#=GS KJ019833 DE KJ019833
+KP793687 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggggaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa----a
+#=GS KP793687 AC KP793687
+#=GS KP793687 DE KP793687
+KT946714 taaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaatttctttt-ttaattc----------------------ggg-------------------------------------------------------------------g
+#=GS KT946714 AC KT946714
+#=GS KT946714 DE KT946714
+KX162684 caaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------gggga-----------------------------------------------------------------a
+#=GS KX162684 AC KX162684
+#=GS KX162684 DE KX162684
+KY941935 taaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaaaaa-------------------------------------------------------aa----a
+#=GS KY941935 AC KY941935
+#=GS KY941935 DE KY941935
+MF678293 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagg-----------------------------------------------------------------a
+#=GS MF678293 AC MF678293
+#=GS MF678293 DE MF678293
+MG212429 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaaaaaaaaaaaaaaaa-------------------------aaaaaaaaaaaagagaaaaaa----t
+#=GS MG212429 AC MG212429
+#=GS MG212429 DE MG212429
+MG212430 taaccctacttcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggg----------------------------------------------------------------g
+#=GS MG212430 AC MG212430
+#=GS MG212430 DE MG212430
+MG212431 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagggaaaaaa----------------------------------------------aaaaaaag----t
+#=GS MG212431 AC MG212431
+#=GS MG212431 DE MG212431
+MG212434 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggg----------------------------------------------------------------g
+#=GS MG212434 AC MG212434
+#=GS MG212434 DE MG212434
+MG212436 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagg-----------------------------------------------------------------g
+#=GS MG212436 AC MG212436
+#=GS MG212436 DE MG212436
+MG212439 taaccctacctcagtcgaattggattgggttatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaga---------------------------------------------------------------g
+#=GS MG212439 AC MG212439
+#=GS MG212439 DE MG212439
+MG212441 taaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttct-ttaattc----------------------gggga-----------------------------------------------------------------g
+#=GS MG212441 AC MG212441
+#=GS MG212441 DE MG212441
+MG212445 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagagaagtgg----------------------------------------------gccatga-----g
+#=GS MG212445 AC MG212445
+#=GS MG212445 DE MG212445
+MG212446 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggaaaa-------------------------------------------------------------g
+#=GS MG212446 AC MG212446
+#=GS MG212446 DE MG212446
+MG212452 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagagtagtgg----------------------------------------------ggaaagag----t
+#=GS MG212452 AC MG212452
+#=GS MG212452 DE MG212452
+MG212454 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagcggagtgg----------------------------------------------ggaaagagtt-tg
+#=GS MG212454 AC MG212454
+#=GS MG212454 DE MG212454
+MG212455 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagcggagtga----------------------------------------------ggaaagag----t
+#=GS MG212455 AC MG212455
+#=GS MG212455 DE MG212455
+MG212456 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaggagtgg----------------------------------------------ggaaagag----t
+#=GS MG212456 AC MG212456
+#=GS MG212456 DE MG212456
+MG212457 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaggagtgc----------------------------------------------ggaaagagtc-tg
+#=GS MG212457 AC MG212457
+#=GS MG212457 DE MG212457
+MG212458 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagcggagtgg----------------------------------------------ggaaagag----t
+#=GS MG212458 AC MG212458
+#=GS MG212458 DE MG212458
+MG212459 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagaggagtgg----------------------------------------------ggaaagag----t
+#=GS MG212459 AC MG212459
+#=GS MG212459 DE MG212459
+MG212461 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagcggaaag----------------------------------------------------------cg
+#=GS MG212461 AC MG212461
+#=GS MG212461 DE MG212461
+MG212462 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagag----------------------------------------------------------------g
+#=GS MG212462 AC MG212462
+#=GS MG212462 DE MG212462
+MG212463 taaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttct-ttaattc----------------------ggggaggagtgg----------------------------------------------ggaaagag----t
+#=GS MG212463 AC MG212463
+#=GS MG212463 DE MG212463
+MG212467 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggaggggaatgg----------------------------------------------ggaaagag----t
+#=GS MG212467 AC MG212467
+#=GS MG212467 DE MG212467
+MG212468 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagggtcgtgg----------------------------------------------ggaaagag---tc
+#=GS MG212468 AC MG212468
+#=GS MG212468 DE MG212468
+MG212469 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggggagtgg----------------------------------------------ggaaagag----t
+#=GS MG212469 AC MG212469
+#=GS MG212469 DE MG212469
+MG212470 taaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttct-ttaattc----------------------ggggagtagtgg----------------------------------------------ggaaagag----t
+#=GS MG212470 AC MG212470
+#=GS MG212470 DE MG212470
+MG212473 taaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttct-ttaattc----------------------ggggaggagtgg----------------------------------------------ggaaagagtc-tg
+#=GS MG212473 AC MG212473
+#=GS MG212473 DE MG212473
+MG212474 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaggaatag----------------------------------------------gaaaagag----t
+#=GS MG212474 AC MG212474
+#=GS MG212474 DE MG212474
+MG212475 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaggagtgg----------------------------------------------gcaaggac---tc
+#=GS MG212475 AC MG212475
+#=GS MG212475 DE MG212475
+MG212476 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggagagaagagg----------------------------------------------ggaaagagtaaaa
+#=GS MG212476 AC MG212476
+#=GS MG212476 DE MG212476
+MG212477 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagagaagtgg----------------------------------------------ggaaagagtc-tg
+#=GS MG212477 AC MG212477
+#=GS MG212477 DE MG212477
+MG212478 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaggaaaag----------------------------------------------ggaaagag----t
+#=GS MG212478 AC MG212478
+#=GS MG212478 DE MG212478
+MG212479 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggggagtgg----------------------------------------------agaaagagtaaaa
+#=GS MG212479 AC MG212479
+#=GS MG212479 DE MG212479
+MG212480 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggggagtgg----------------------------------------------ggaaagagtc-tg
+#=GS MG212480 AC MG212480
+#=GS MG212480 DE MG212480
+MG212483 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggggagtgg----------------------------------------------ggaaagagtg-tg
+#=GS MG212483 AC MG212483
+#=GS MG212483 DE MG212483
+MG212484 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggggagtgg----------------------------------------------ggaaacagtc-tg
+#=GS MG212484 AC MG212484
+#=GS MG212484 DE MG212484
+MG212486 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaggagtgg----------------------------------------------ggaaagagtaaaa
+#=GS MG212486 AC MG212486
+#=GS MG212486 DE MG212486
+MG212487 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagagaaaaaaaaaa------------------------------------------aaaaaaaa----a
+#=GS MG212487 AC MG212487
+#=GS MG212487 DE MG212487
+MG212488 taaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttct-ttaattc----------------------ggggagg---------------------------------------------------------------a
+#=GS MG212488 AC MG212488
+#=GS MG212488 DE MG212488
+MG212489 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggaggggaaaaaaaaa------------------------------------------aaaaaaaa----a
+#=GS MG212489 AC MG212489
+#=GS MG212489 DE MG212489
+MG212490 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------ggagaaaaaaaaaaaa------------------------------------------aaaaaaaa----a
+#=GS MG212490 AC MG212490
+#=GS MG212490 DE MG212490
+MG571845 taaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttct-ttaattc----------------------ggggtggtat--------------------------------------------------cctcca----g
+#=GS MG571845 AC MG571845
+#=GS MG571845 DE MG571845
+MK028134 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaattttctt-ttaaatt--------------------------------------------------------------------------------------cg----g
+#=GS MK028134 AC MK028134
+#=GS MK028134 DE MK028134
+OK042929 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggg-------------------------------------------------------------------g
+#=GS OK042929 AC OK042929
+#=GS OK042929 DE OK042929
+OK042932 taaccctacttcagtcgaattggattgggtcatgctgctgtaggggtaaatttttct-ttaattc----------------------ggg-------------------------------------------------------------------g
+#=GS OK042932 AC OK042932
+#=GS OK042932 DE OK042932
+OP137281 taaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttct-ttaattc----------------------gggg------------------------------------------------------------------g
+#=GS OP137281 AC OP137281
+#=GS OP137281 DE OP137281
+OP137282 taaccctacctcagtcgaattggattgggtcatactgccgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS OP137282 AC OP137282
+#=GS OP137282 DE OP137282
+OP137311 taaccctacctcagtcgaattggattgggttatactgtcgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS OP137311 AC OP137311
+#=GS OP137311 DE OP137311
+OP137312 caaccctacttcagtcgaattggattgggttatactgttgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS OP137312 AC OP137312
+#=GS OP137312 DE OP137312
+OP137314 caaccctacctcagtcgaattggattgggttatactgttgtaggggtgaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS OP137314 AC OP137314
+#=GS OP137314 DE OP137314
+OP137317 caaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS OP137317 AC OP137317
+#=GS OP137317 DE OP137317
+OP137324 tgaccctacctcagtcgaattggattgggttatactgtcgtaggggtgaatttttct-ttaattc----------------------gga-------------------------------------------------------------------g
+#=GS OP137324 AC OP137324
+#=GS OP137324 DE OP137324
+PP348560 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaattttcct-ttaattccgtattcccagctaaccctgccggcgaatat----------------------------------------------------caccg----a
+#=GS PP348560 AC PP348560
+#=GS PP348560 DE PP348560
+PV867360 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------r
+#=GS PV867360 AC PV867360
+#=GS PV867360 DE PV867360
+PV867381 taaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaanttttct-ttaattc----------------------ggag------------------------------------------------------------------a
+#=GS PV867381 AC PV867381
+#=GS PV867381 DE PV867381
+PV867394 taaccctacctcagtcgaattggattgggtcatactgytgtaggggtaaatttttct-ttaattc----------------------ggag------------------------------------------------------------------d
+#=GS PV867394 AC PV867394
+#=GS PV867394 DE PV867394
+#=GC SS_cons ...(((((((((((((......)))))))..........)))))).................................................................................................................
+//

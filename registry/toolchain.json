@@ -1,0 +1,51 @@
+{
+  "canonical_platform": "linux-64",
+  "mxscarna": {
+    "built_binary_sha256": "c8d71d903db2583aaa8cc9cb6c6bb252a6862aa6888df2b450f60c82b67c67b1",
+    "built_binary_sha256_is": "documentary -- varies with the local compiler; the runtime check is the content-based liveness probe in align.toolchain.resolve, not this hash",
+    "source_sha256": "2876f4adc1a2de4ed206bc40896763bf208bf1a02bda52f8bfdd91cf52d73e4a",
+    "source_url": "https://mafft.cbrc.jp/alignment/software/mafft-7.525-with-extensions-src.tgz"
+  },
+  "pixi_lock_sha256": "ed3a3642d5d380b3f77f2ce8c890677b836279fdb21174029d9fdaccfc0b95c0",
+  "platforms": {
+    "linux-64": {
+      "align": {
+        "infernal": {
+          "build": "pl5321h7b50bb2_4",
+          "version": "1.1.5"
+        },
+        "mafft": {
+          "build": "h4bc722e_0",
+          "version": "7.526"
+        }
+      }
+    },
+    "osx-arm64": {
+      "align": {
+        "infernal": {
+          "build": "pl5321hd34ca47_4",
+          "version": "1.1.5"
+        },
+        "mafft": {
+          "build": "h99b78c6_0",
+          "version": "7.526"
+        }
+      },
+      "seed": {
+        "infernal": {
+          "build": "pl5321hd34ca47_4",
+          "version": "1.1.5"
+        },
+        "mafft": {
+          "build": "h99b78c6_0",
+          "version": "7.526"
+        },
+        "viennarna": {
+          "build": "py313pl5321h39de4f0_1",
+          "version": "2.7.2"
+        }
+      }
+    }
+  },
+  "schema": 1
+}

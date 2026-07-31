@@ -1,0 +1,79 @@
+# One environment manager, not two.
+#
+# This repository used to declare its Python dependencies in `pyproject.toml` (installed with uv or
+# pip) and would have needed a second, conda-based manifest for the alignment layer's native
+# binaries — mafft and Infernal are not on PyPI. Two managers for one build is a standing source of
+# "works on my machine", so everything lives here.
+#
+# The parity-critical pins do not weaken to get that. pixi resolves `[pypi-dependencies]` with uv
+# internally and records the result in `pixi.lock`, so `biopython==1.87` and `duckdb==1.5.5` are the
+# same exact wheels, resolved by the same resolver, now locked in one place instead of declared in
+# two. `pyproject.toml` remains the package definition; what went away is the second install path.
+#
+# Version pins are `==` rather than `*` on purpose. With `*`, a `pixi update` moves every tool and
+# the manifest diff shows nothing, so review has to happen against a 45 kB lockfile. With `==`, a
+# version bump is one reviewable line, and `pixi install --locked` fails when manifest and lock
+# disagree.
+
+[workspace]
+name = "enterovirus-genbank-curated"
+version = "0.0.0"
+description = "Reproducibility pipeline for the enterovirus-genbank-curated data release"
+channels = ["conda-forge", "bioconda"]
+platforms = ["linux-64", "osx-arm64"]
+
+# --- align: everything the build and CI actually run -------------------------------------------
+#
+# Python is pinned to 3.12 deliberately. See the note on `seed` below for why that pin is what keeps
+# the two environments separate rather than merged.
+
+[feature.align.dependencies]
+python = "3.12.*"
+mafft = "==7.526"      # supplies `mafft` and `mafft-linsi`
+infernal = "==1.1.5"   # supplies `cmalign`, and `cmbuild` for the seed tier
+
+[feature.align.pypi-dependencies]
+# Pinned exactly: these versions produced the baseline the parity gate compares against, and
+# GenBank parse output is version-sensitive. Duplicated from `pyproject.toml` on purpose — two
+# independent declarations of the same fact is this repository's standing pattern, and
+# `test_environment.py` asserts they agree.
+biopython = "==1.87"
+duckdb = "==1.5.5"
+pytest = "==8.4.1"
+ruff = "==0.12.5"
+enterovirus-genbank-curated = { path = ".", editable = true }
+
+# --- seed: a binary provider, and osx-arm64 only ------------------------------------------------
+#
+# Needed only to *build* the NCR covariance models, which are committed as inputs-of-record and are
+# not expected to be rebuilt — even from a fresh clone. It additionally needs `mxscarnamod`, which
+# no conda package ships and which has to be compiled from the mafft-with-extensions source; see
+# `scripts/setup_mxscarna.sh`.
+#
+# It is a separate environment, and NOT in a solve-group with `align`, because `viennarna` 2.7.2 is
+# a py313 build. A single solve would drag project Python from 3.12 to 3.13 and re-resolve biopython
+# against an interpreter the parity gate has never run on — for a package one tier needs, on one
+# platform, for a stage that is not expected to run. Upstream frames this as a version collision to
+# resolve; it is only a collision if the two ever share a solve or a PATH, and neither happens here.
+# No Python code runs from this environment: it hands binaries to a child process and nothing else.
+
+[feature.seed]
+platforms = ["osx-arm64"]
+
+[feature.seed.dependencies]
+viennarna = "==2.7.2"  # supplies `RNAalifold`
+mafft = "==7.526"      # supplies `mafft-xinsi`, once mxscarnamod is in place
+infernal = "==1.1.5"   # supplies `cmbuild` (and `cmalign`, needed by the same NCR structural
+                       # scripts as `cmbuild`, per upstream's own REQUIRED_TOOLS list)
+
+[environments]
+align = { features = ["align"], solve-group = "align" }
+seed = { features = ["seed"] }
+
+[tasks]
+test = "pytest"
+test-slow = "pytest -m slow"
+lint = "ruff check ."
+contracts = "evgc validate-contracts"
+parity = "evgc parity-source --guard-inputs"
+population = "evgc alignment-population"

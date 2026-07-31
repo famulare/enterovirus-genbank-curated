@@ -58,6 +58,32 @@ a release path literal or an `oracle` import under `derive/`, `curate/`, `export
 `genbank/` or in `build.py`/`contracts.py`; `sandbox.READ_REFUSED_DIRS` refuses the read at runtime;
 and the `parity-*` verbs build in a guarded child and compare in the unguarded parent.
 
+A second package is also not in that list, for the opposite reason: `align` derives alignment
+inputs *from* `final/` deliberately, because the pipeline stages that would produce them natively —
+`derive`, `curate`, and an eventual alignment-specific stage — do not exist yet. It is oracle-adjacent
+rather than a build module: free to read `final/` and import `oracle`, exempted from
+`test_module_boundaries.py`'s build-tree rule by name rather than by accident. `align/contract.py`
+carries one exception to its own exemption, by decision (2026-07-30): it may not redeclare a `final/`
+path itself, only import one already declared in `oracle.parity`, which a dedicated test enforces.
+
+## The alignment layer today
+
+`align/` makes each shipped alignment's row set derivable from `final/canonical/` and
+`final/audit/` alone: `evgc alignment-population` prints all six populations and their tier/family
+breakdowns from metadata, with no aligner installed. The populations are **not** the shipped ones —
+see [`reproducibility.md`](reproducibility.md) for the measured gap and why closing it is the point,
+not a defect. The native toolchain (`mafft`, Infernal) is declared once in `pixi.toml`, pinned twice
+(statically via conda-meta, dynamically via each binary's own self-report) in
+`registry/toolchain.json`, and checked by `evgc alignment-toolchain`. The ten NCR covariance models
+the structural block needs (four genus-wide, six per-serotype Sabin-anchored) are committed as
+inputs-of-record under `registry/alignment_seeds/` and hash-gated by `evgc alignment-verify-seeds`,
+so a routine build needs no compiler and no network; the full from-scratch rebuild path
+(`scripts/setup_mxscarna.sh`) exists behind a file-presence gate and is not expected to run even on
+a fresh clone. `evgc alignment-build` then produces all six artifacts into `derived/alignments/`
+(strictly one at a time — concurrent aligner processes are what exhausted memory on a real machine),
+`evgc alignment-verify` gates them against metadata-derived populations with no aligner installed,
+and `evgc alignment-shape` writes the shape report and the declared delta against 2.4.1.
+
 ## Public commands
 
 ```bash
@@ -67,7 +93,28 @@ evgc build-source   --output DIR
 evgc parity-source
 evgc build-metadata --output DIR
 evgc parity-metadata
+evgc alignment-population
+evgc alignment-toolchain
+evgc alignment-verify-seeds
+evgc alignment-build  --output-dir DIR [--artifact NAME ...] [--threads N]
+evgc alignment-verify --output-dir DIR [--artifact NAME ...]
+evgc alignment-shape  --output-dir DIR [--artifact NAME ...]
 ```
+
+The `alignment-*` verbs are named `alignment-<stage>` rather than `build-alignments` /
+`parity-alignments` on purpose. There is deliberately no `parity-alignments`: the shipped alignment
+bytes cannot be reproduced even in principle, so a verb promising parity with them would be claiming
+a symmetry with `build-source`/`parity-source` that does not exist. `alignment-verify` checks the
+rebuild against metadata instead, and `alignment-shape` states the declared delta against 2.4.1.
+
+Only `alignment-build` and `alignment-toolchain` need the native toolchain. `alignment-population`,
+`alignment-verify-seeds`, `alignment-verify` and `alignment-shape` are all pure Python, which is what
+lets the gate run on every push while a build takes hours.
+
+`alignment-build` has no `--parallel` option, and that absence is load-bearing rather than an
+omission: no single step of a build needs more than about 0.7 GB, but running several concurrently
+reached roughly 50 GB and froze a real machine. Artifacts are built strictly one at a time, and
+`--threads` defaults to 1.
 
 Still planned, and not yet in any form:
 
@@ -98,7 +145,15 @@ is declared in code, compared for equality, and invisible to the build — see
    provenance row compared to the release on all nine columns. The sequence-derived and
    curated-master columns remain.
 6. Decision application, disposition, and complete provenance.
-7. Dictionaries, references, and reproducible alignments.
+7. Dictionaries, references, and reproducible alignments. **Largely delivered:** all six
+   alignments are now built natively by this repository (`evgc alignment-build`) from
+   `final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft`
+   and `cmalign` — segmentation, the codon-aware CDS block, the Sabin-anchored CDS projection, the
+   structural NCR block, stitching and the export writer all exist. `evgc alignment-verify` gates
+   the result against metadata-derived populations and `evgc alignment-shape` states the declared
+   delta against 2.4.1, both without an aligner. Outputs land in `derived/alignments/`; promoting
+   them into `final/` alongside a new release, and the site rebuild that depends on it, is the
+   remaining work. Dictionaries and references are untouched.
 8. Full fresh-clone parity and deterministic rebuild gate.
 9. A new pipeline-native release; 2.1.5 remains historical and immutable.
 

@@ -59,6 +59,23 @@ Of the 22,452 rows the rule does decide, every one matches the release, includin
 first place a recorded decision is shown to reach a generated provenance row rather than merely
 existing in the ledger, which is the D2 failure stated positively.
 
+### Being hash-gated is not the same claim as being regenerable
+
+`final/audit/release_file_manifest.tsv` covers 38 of the 58 files in `final/`; the other twenty had
+no hash anywhere at all, so truncating all nineteen `final/alignments/` files to zero bytes and
+deleting one outright left every gate reporting PASS. `oracle.release.verify_release_manifest_hashes`
+now recomputes all thirty-seven `file_bytes` hashes the manifest declares (previously six were), and
+`verify_manifest_completeness` requires every file under `final/` to be covered by either the
+manifest or `oracle.release.CARRIED_FINAL_FILES` — bidirectionally, so an undeclared new file fails
+as loudly as a deleted declared one. The twenty carried hashes are pinned in
+`tests/test_carried_files.py`, in code rather than in a new `releases/2.4.1/parity.json` key, because
+a data key would give them a single declaration computed from the very bytes it gates and movable by
+a data edit.
+
+None of this makes `final/alignments/` reproducible. It makes it *immutable in a way something
+checks*, which is the weaker property that was missing. See "The alignment layer" below for what
+*is* reproducible there today.
+
 ### The first deliberate break: `collection_date_precision`
 
 The date family does not reproduce the release, on purpose. This is the first place the rewrite
@@ -237,6 +254,161 @@ shipped data.
 
 Because parity is byte-exact, this loss cannot be corrected without deliberately breaking the gate
 and cutting a new release. That is a real constraint, not an oversight.
+
+## The alignment layer
+
+`final/alignments/` was carved in from a private pipeline. **This repository now builds its own
+alignments natively** — `evgc alignment-build` produces all six artifacts from
+`final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft` and
+Infernal's `cmalign`. They are written to `derived/alignments/`, not `final/alignments/`, so 2.4.1's
+bytes stay immutable while the rebuild is reviewed; promotion into a release is a separate step.
+
+None of this is a parity claim on the shipped bytes, and it never can be: those bytes came from code
+that no longer exists in that form, built at an unrecorded thread count with accidental
+tie-breaking. What replaces parity is a **declared delta** — `evgc alignment-shape` states exactly
+which accessions each rebuild adds and drops relative to the shipped file, with a reason per dropped
+row from a closed vocabulary, and an *undeclared* drop raises rather than being absorbed. That is
+the stronger claim: parity against artifacts built by vanished code would prove only that nobody has
+touched the file since.
+
+`evgc alignment-verify` is the acceptance gate. It re-reads the written artifacts and checks them
+against populations derived independently from metadata — row set both directions, row order, block
+widths summing to the row width, one declared alphabet, the coverage sidecar agreeing row for row,
+the FASTA being a faithful projection of the Stockholm, and the cross-artifact set identities
+(`EV == POLIO ∪ NPEV`, disjointness, each `PV{n}` inside POLIO). It is pure Python and needs no
+aligner, so it runs on every push while a build takes hours. Every check ships with the mutation
+that proves it fires.
+
+**Two properties the anchored stack gets for free, and they are checked.** For `PV{1,2,3}` every
+column is a real Sabin genome position, because the per-serotype covariance models are
+`cmbuild --hand` against that serotype's own reference. So the three block widths sum to exactly the
+reference genome length — 7,441 / 7,439 / 7,432, matching the shipped `n_sabin_reference_columns` —
+the reference row projected onto its own frame equals its genome byte-for-byte, and `#=GC RF` *is*
+that genome. Confirmed on real builds, not asserted.
+
+**The rebuild reproduces upstream's own intermediate counts, which is the port-fidelity evidence
+that does not depend on the shipped bytes.** Three independent agreements, none of them arranged:
+
+- `POLIO_unified`'s `cmalign` populations come out at **2,036** sequences on the 5' side and
+  **1,902** on the 3' — exactly the `population` figures recorded in the committed covariance
+  models' own provenance, which were measured by the upstream build years earlier from a different
+  codebase. The population filter is a rewrite, not a port, so agreeing to the record on both sides
+  is evidence the filter means the same thing.
+- **7** records are excluded from that 3' population as oversized, which is exactly the
+  500–1,571 nt mis-segmented-CDS cluster upstream documented when it introduced the ceiling.
+- The row-set deltas against the shipped artifacts land on the numbers the plan derived from
+  metadata alone, before any alignment existed: **+98/−2** for `POLIO_unified`, **+715/−20** for
+  `PV1_unified`, **+270/−2** for `PV3_unified`, with every dropped row attributed to a declared
+  reason.
+
+**Sequencing is per artifact; threading is per tool. Both were measured, and I had one backwards.**
+A first build attempt fanned the six artifacts out concurrently, reached roughly 50 GB and froze the
+machine. No single step is anywhere near that: pinned to one CPU, the MAFFT seed peaks at 0.10 GB,
+`mafft --add` at 0.34 GB over 4,040 rows, `cmalign` at 0.57 GB, and the anchored pairwise projection
+at 0.29 GB. So the fix was structural — `evgc alignment-build` has no `--parallel` option and builds
+strictly one artifact at a time.
+
+I then over-corrected and pinned one *thread*, which is a different axis and the wrong one. MAFFT's
+`--addfragments` builds its guide tree with an all-to-all pairwise stage over the combined set; that
+is the dominant cost of a large build, and it is threaded. On the real `POLIO_unified` pass-2 input
+the difference is 97% CPU and 58 MB at one thread — still unfinished after 90 minutes — against 770%
+CPU and 582 MB at eight. One thread bought no memory that mattered and gave up an eightfold speedup.
+The default is now eight, a literal constant rather than `os.cpu_count()`, because the thread count
+is recorded in provenance and a declared input should not depend on the host that built it.
+
+**What the rebuild is honest about.** The NCR blocks keep only `cmalign` match columns, so
+insert-column residues are discarded; the anchored CDS projection drops insertions relative to the
+reference for the same reason a fixed reference frame must. Both are lossy by construction and both
+are reported in the shape report's residue-occupancy distribution rather than hidden. A record with
+no placeable material still gets a row — all gaps, with the reason recorded per block in
+`<name>.coverage.tsv.gz` — so the row set stays literally 1-to-1 with metadata and "block absent"
+stays distinguishable from "deleted" without inventing an alignment character.
+
+**The shipped alignments are not 1-to-1 with the release they ship beside, measured.** Row sets read
+out of the shipped Stockholm files against `final/canonical/sequence_metadata.tsv.gz`:
+
+| artifact | shipped rows | canonical target | delta |
+|---|---|---|---|
+| `POLIO_unified` | 9,988 | 10,084 | +98 added, −2 dropped (2 records canonical now calls non-polio) |
+| `NPEV_unified` | 14,050 | 14,217 | +167 added |
+| `EV_unified` | 24,038 | 24,301 | +263 added |
+| `PV1_unified` | 3,732 | 4,427 | +715 added, −20 dropped |
+| `PV2_unified` | 3,604 | 3,939 | +358 added, −23 dropped |
+| `PV3_unified` | 1,425 | 1,693 | +270 added, −2 dropped |
+
+`evgc alignment-population` derives the target column: upstream tied *membership* to evidence
+confidence (a record its typing could not resolve confidently was simply absent), and the rebuild
+ties membership to curated `virus_group`/`virus_type` instead, using evidence only to assign the
+seed/backbone/addon tier. For the three `PV{n}` artifacts the 45 dropped rows are not a bug —
+Mike adjudicated them 2026-07-30, since 40 of the 43 relabelled records have fewer than 100 capsid
+codons compared (mean 58.3), so the coverage-guarded serotype rule correctly rejects the
+sequence-based capsid call and falls back to the submitted GenBank name.
+
+Applied to the *shipped* row sets, this repository's tiering columns reproduce the shipped tier
+splits exactly for `POLIO_unified` (8,736/1,252) and `NPEV_unified` (10,418/3,632) — the strongest
+port-fidelity evidence available without running an aligner, since it needs no aligner at all.
+
+**The native toolchain is pinned twice, from independent sources.** `pixi.toml` declares two
+environments: `align` (Python 3.12, `mafft` 7.526, Infernal 1.1.5, both `linux-64` and `osx-arm64`)
+and `seed` (`osx-arm64` only; adds `viennarna` 2.7.2 and hands `mafft-xinsi`/`RNAalifold`/`cmbuild`
+to a child process when a covariance model is rebuilt). They are not in one solve group on purpose:
+`viennarna` is a `py313` build, and a single solve would drag the project interpreter from 3.12 to
+3.13 and re-resolve `biopython`/`duckdb` against a version the parity gate has never run on.
+`registry/toolchain.json` records each tool's resolved `(version, build)` per platform;
+`evgc alignment-toolchain` re-derives it statically from `conda-meta/` and dynamically from each
+binary's own self-report, and refuses on any disagreement — either source alone is satisfiable by a
+lie, together they are not.
+
+**The NCR covariance-model core is committed, not rebuilt.** `mafft-xinsi` does not work from a bare
+bioconda install — bioconda's `mafft` package omits the `mxscarnamod` helper binary — so building a
+genus-wide covariance model from scratch additionally needs a compiler and a network fetch
+(`scripts/setup_mxscarna.sh`, pinned by sha256, not expected to run even on a fresh clone). Per
+Mike's decision, the ten models the NCR structural block needs — four genus-wide, anchor-free
+models (`POLIO`/`NPEV` × 5′/3′) and six per-serotype, Sabin-anchored models (`PV1`/`PV2`/`PV3` ×
+5′/3′, built `cmbuild --hand` against each serotype's own Sabin reference genome coordinates) — are
+committed as inputs-of-record under `registry/alignment_seeds/` instead, so a routine build needs
+only `mafft` + Infernal's `cmalign`. `evgc alignment-verify-seeds` re-hashes them and cross-checks
+each model's match-column count against its recorded provenance, with no native toolchain required.
+`EV_unified` builds no covariance model of its own; it reuses `NPEV_unified`'s, matching the shipped
+`EV_unified.provenance.json`'s `cm_reused` field.
+
+**Running `mafft`/`cmalign` needs a second, weaker guard, by design.** `sandbox.ESCAPE_EVENTS`
+refuses every way of starting a child process, on the stated grounds that a child is unguarded and
+could read anything — which means the alignment stage genuinely cannot run under
+`install_input_guard`. `sandbox_exec.install_tool_guard` is the honest resolution: a second,
+differently-named mechanism, sharing every path decision with the first guard via
+`sandbox._path_rule_set` (so `final/`, `raw/` and `registry/legacy/` stay exactly as protected),
+but permitting exactly one call shape — the single `subprocess.run` `align.runner.run_tool` makes —
+inside a one-shot armed window, with an exact-key child environment, a scratch-only cwd, a
+basename-only argv, and a resolved-binary allowlist. Its own module docstring carries a full
+"what this does and does not prove" account in the same voice as this section's; the headline
+limit is the same one this guard has always had for children: the child itself is starved, not
+audited, once it starts.
+
+One design correction is worth recording because it was found by measuring, not by reading code.
+An earlier draft keyed the binary allowlist on the `_posixsubprocess.fork_exec` audit event, which
+carries the fully `PATH`-resolved candidate list — verified against CPython 3.14. Run against
+CPython **3.12.13**, the version this repository is actually pinned to, that event **never fires**
+for a `subprocess.run` call. Had that shipped, the allowlist check it depended on would have never
+executed on the one interpreter this repository uses, passing every test written against 3.14 while
+doing nothing in production. The fix resolves the executable against `PATH` in Python instead,
+inside the one event (`subprocess.Popen`) that both versions do raise.
+
+A second gap, also found only by running the falsification battery rather than by reading the
+guard's own code: an early version of the hook had no branch for the `open` event at all, so a
+plain `Path.write_text()` into `final/` or `Path.read_bytes()` from `registry/legacy/` passed
+silently — those never go through `MUTATION_EVENTS`, only through `open`. Two tests that planted
+exactly those two calls caught it before anything else did.
+
+**Byte parity with the shipped alignments is not a goal, and is not achievable even by porting
+upstream's code unchanged.** Upstream's own history records a gap-parameter change (`--lop -24`,
+adopted to stop short addon fragments being shredded) that landed in code but was never used to
+regenerate the shipped artifacts — the shipped provenance still carries the pre-change parameters.
+So the shipped bytes were produced by code that no longer exists in that form; reproducing them
+would mean reproducing a bug, not a build. Acceptance for a future alignment build is population
+correspondence, internal invariants (the amino-acid-to-codon backtranslate invariant, zero CDS
+residue loss, Sabin-row recovery), and a human-reviewed shape report — not a hash match against
+`final/alignments/`.
 
 ## The undeclared-input guard
 

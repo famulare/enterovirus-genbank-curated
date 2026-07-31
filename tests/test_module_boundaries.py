@@ -33,6 +33,21 @@ ORACLE_PACKAGE = "enterovirus_genbank_curated.oracle"
 # being opened. Exempting the one assignment keeps the rule sharp rather than the whole module.
 RELEASE_PREFIX_EXEMPTION = 'RELEASE_PATH_PREFIX = "final/"'
 
+# `align/` is not a build tree: its charter is to derive alignment inputs from the shipped release
+# because the pipeline stages that would produce them natively (`derive`, `curate`, and an eventual
+# alignment-specific stage) do not exist yet — the same justification `oracle/` has for reading
+# `final/`, aimed at derivation rather than comparison. So `align/` is free to import the oracle and
+# free to read `final/` in general.
+#
+# `align/contract.py` specifically is not, by decision (2026-07-30): every `final/` path the
+# alignment layer needs is declared once in `oracle.parity` and imported from there, so a canonical
+# metadata path bug is one constant to fix rather than two definitions that can drift. This is
+# narrower than the build-tree rule above — it names one file, not a tree — because only
+# `contract.py` claims to be the single declaration point; `align/regions.py` legitimately names its
+# own *output* path (the file it regenerates), which is a destination being written, not a shipped
+# path being redeclared.
+ALIGN_CONTRACT_PATH = "src/enterovirus_genbank_curated/align/contract.py"
+
 
 def _build_sources(repository_root: Path) -> list[Path]:
     root = repository_root / PACKAGE
@@ -97,3 +112,50 @@ def test_no_build_tree_names_the_frozen_legacy_registries(repository_root: Path,
         if "__pycache__" not in path.parts and "registry/legacy" in path.read_text(encoding="utf-8")
     ]
     assert not named, f"build modules must not name registry/legacy: {named}"
+
+
+def test_align_contract_names_no_final_path_itself(repository_root: Path) -> None:
+    """`align/contract.py` must import every `final/` path from `oracle.parity`, never spell one.
+
+    Same substring mechanism as `test_no_build_module_names_the_shipped_release`: an actual string
+    literal reads `"final/` or `'final/`; a docstring mention in backticks does not, which is why
+    the module's own extensive prose about *why* it reads `final/` does not trip this.
+    """
+    path = repository_root / ALIGN_CONTRACT_PATH
+    offenders = [
+        number
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+        if '"final/' in line or "'final/" in line
+    ]
+    assert not offenders, (
+        f"{ALIGN_CONTRACT_PATH} names a final/ path directly at line(s) {offenders}; import it "
+        f"from oracle.parity instead"
+    )
+
+
+def test_align_contract_imports_its_final_paths_from_oracle(repository_root: Path) -> None:
+    """The positive half: every `final/`-backed constant must actually come from `oracle.parity`.
+
+    Guards against satisfying the test above by moving the literal into a different align/ module
+    and importing it from there instead of from oracle — which would keep the letter of the rule
+    while defeating its point.
+    """
+    path = repository_root / ALIGN_CONTRACT_PATH
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    oracle_parity_module = "enterovirus_genbank_curated.oracle.parity"
+    oracle_parity_names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == oracle_parity_module:
+            oracle_parity_names |= {alias.name for alias in node.names}
+    expected = {
+        "SHIPPED_CANONICAL_METADATA",
+        "SHIPPED_CANONICAL_FASTA",
+        "SHIPPED_SEQUENCE_EVIDENCE",
+        "SHIPPED_SOURCE_FEATURES",
+        "SHIPPED_SOURCE_FEATURE_PARTS",
+        "SHIPPED_SOURCE_FEATURE_QUALIFIERS",
+    }
+    missing = expected - oracle_parity_names
+    assert not missing, (
+        f"{ALIGN_CONTRACT_PATH} no longer imports {sorted(missing)} from oracle.parity"
+    )

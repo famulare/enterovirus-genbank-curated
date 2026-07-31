@@ -4,6 +4,12 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .venv/
+# Materialized pixi environments. `pixi.toml` and `pixi.lock` are committed and are the
+# authoritative declaration; the prefixes under here are reconstructible with
+# `pixi install --locked`. Note the alignment stage relies on these prefixes living *inside* the
+# clone: the native binaries resolve to real paths under `.pixi/envs/`, which is what keeps them
+# inside the undeclared-input guard's existing read roots without widening the allowlist.
+.pixi/
 build/
 dist/
 *.egg-info/
@@ -11,6 +17,10 @@ node_modules/
 # Local agent workspace. Holds git worktrees, and a skills symlink that points at an
 # absolute path outside this repository — committing it would give every other clone
 # a dangling link. The page style kit it references is documented in site/README.md.
+#
+# Nothing under here is committed, settings included. A tracked `settings.json` would grant its
+# tool permissions to every clone and every agent session on it — a repository-wide grant is not
+# something a repository should carry, least of all a public one. Permissions stay local.
 .claude/
 # site/data/ is built, never committed. It used to be committed and hash-gated, which
 # needed the gate to answer "are these bytes what the pipeline produces?" — and that
