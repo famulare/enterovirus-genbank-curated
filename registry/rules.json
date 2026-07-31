@@ -37,11 +37,11 @@
     "rule_version": "2.4.1",
     "field_name": "virus_type",
     "description": "Poliovirus uses the canonical coverage-guarded serotype: the sequence serotype iff serotype_sequence_confident AND sequence_capsid_aa_compared >= 100 codons AND not an intra-capsid recombinant (VP1 == capsid serotype), else the curated text serotype -- build_final_carve.canonical_serotype, ONE shared definition with the v1 carve. Non-polio EV uses the name-derived enterovirus_type first; if the name type is absent, a confident enterovirus_type_sequence may supply the canonical value; a sequence call never overwrites an existing name-derived type.",
-    "implementation": "derive.typing.virus_type",
+    "implementation": "derive.typing.virus_type_v241",
     "parameters": {
       "min_capsid_codons": "100"
     },
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-CLASS-1",
@@ -447,6 +447,15 @@
     "field_name": "engineered_or_construct",
     "description": "Decide engineered_or_construct from structured GenBank fields, replacing R-CONSTRUCT-1's projection of a curated boolean whose upstream predicate was one case-insensitive regex from a list of eighteen matched against a blob of twenty concatenated fields that included the database division code as free text, the paper titles and the author list. That predicate contained \\bPAT\\b, so all 862 patent-division source records matched and the 506 of them in the carve all ship TRUE: the column reported where a sequence was deposited rather than what it is. The curator's settled criterion (2026-07-29) is that someone deliberately produced this specific genotype for a stated purpose, by physical assembly or by directed selection under an applied selective pressure, and that patent re-deposit, spontaneous defective-interfering particles and ordinary lab-stock or passage-lineage variants are not engineered. An active engineered_or_construct decision in the ledger wins outright. Otherwise the structured signal is division == SYN or organism_name exactly equal to 'synthetic construct', NCBI's controlled name for taxid 32630, which every one of the 105 records matching /synthetic/i on that field carries verbatim. The signal is then promoted across every source record sharing the same sequence_sha256, because organism_name is depositor metadata and is demonstrably inconsistent across byte-identical deposits: the same 70 nt is 'synthetic construct' in JA792237 and 'Enterovirus C' in FB743426, so a rule reading only its own row gives one genotype two answers. There is no metadata-completeness veto; R-CONSTRUCT-1's veto fired on any parseable /collection_date, which would silently make a genuine construct FALSE for carrying a collection date. LY501105 and LZ216100 are unresolved rather than FALSE, because the curator recorded that pair as open in either direction and a structural FALSE would assert a decision that was explicitly withheld.",
     "implementation": "derive.engineered.engineered_or_construct",
+    "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-TYPE-2",
+    "rule_version": "1.0.0",
+    "field_name": "virus_type",
+    "description": "Read the enterovirus type out of the NCBI organism name, replacing R-TYPE-1's projection of a curated enterovirus_type or serotype. R-TYPE-1 recorded name_derived as the basis for 12,792 of its rows, and that basis is the whole method: of the 223 distinct organism names on those rows, 220 map to exactly one type, and the three that do not are the bare species names Enterovirus A, Enterovirus B and Enterovirus C, which state no type at all. An active corrected_type, confirmed_serotype or serotype decision wins outright, in that order, normalized through the same parser because the ledger holds a bare 1, 2 or 3 or an organism-style name rather than a canonical value; a curated value of unknown is unresolved, since it records that the type is undetermined. Otherwise the patterns are, case-insensitively: poliovirus followed by one of 123 with no digit after it gives PV plus that digit; coxsackievirus followed by a or b and a number gives CV, the letter and the number; echovirus followed by an optional e and a number gives E plus the number; enterovirus followed by a species letter a to d and a number gives EV- plus both; rhinovirus followed by a to c and a number gives RV- plus both. Text after the number is not part of the type, so Human coxsackievirus A20a is CVA20 and rhinovirus A1B is RV-A1. Four names in the corpus are traps the anchoring exists for: Human poliovirus 30/ROU/2008 is PV2 and not PV3 because the 30 is an isolate number; Enterovirus 6 and Enterovirus 103 carry no species letter and so no type; Enterovirus J115 and Simian enterovirus SV46 belong to a simian species outside the A-to-D human scheme; and Human rhinovirus 1A is digits-then-letter, the old serial numbering, not a species and number. A name stating no type is unresolved rather than blank, because the release's blanks conflate a name that says nothing with a type it recovered from the sequence, which is a stage this pipeline does not have. Enterovirus coxsackiepol declines for the same reason: the release types those 82 records PV2, and the name is a chimera label containing no serotype.",
+    "implementation": "derive.typing.virus_type",
     "parameters": {},
     "status": "active"
   }

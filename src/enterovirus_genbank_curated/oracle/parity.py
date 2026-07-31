@@ -284,6 +284,12 @@ UNRESOLVED_STREAM_ROWS = 8630
 # rule declines rather than emitting the structural FALSE, because a FALSE here would assert a
 # decision the curator explicitly withheld.
 UNRESOLVED_ENGINEERED_ROWS = 2
+# `virus_type` rows R-TYPE-2 declines: 2,156 whose organism name states no type — species-level
+# names like `Enterovirus C`, the pre-2016 bare numbering (`Enterovirus 19`), simian species outside
+# A-to-D scheme (`Enterovirus J115`), and the chimera label `Enterovirus coxsackiepol` the release
+# types PV2 — plus 37 where an active decision records the type as `unknown`, which is a curator
+# stating that it is undetermined.
+UNRESOLVED_TYPE_ROWS = 2193
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -338,6 +344,11 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "source_field": "b84e06c600e82ef1",
         "source_value": "6237fe2e63654ad6",
         "manual_override": "0322a79c5c21729f",
+    },
+    "virus_type": {
+        "final_value": "3ded0ff32a906ad7",
+        "source_field": "5c3cae6ee684912d",
+        "source_value": "3ecf43454058cfeb",
     },
 }
 
@@ -508,6 +519,41 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
+    },
+    # Ten values move, and they are two different stories in equal numbers. Both are enumerated
+    # because ten is small enough to enumerate and a column that types viruses should not disagree
+    # anonymously.
+    #
+    # **Five the release ships blank while recording `manual_override=TRUE`.** `AB206350.1`
+    # (`corrected_type=Coxsackievirus A18`), `M22129.1` and `M24195.1` (`confirmed_serotype=1`/`2`),
+    # `S72981.1` and `S72984.1` (`confirmed_serotype=2`). The release states that a decision reached
+    # the cell and then wrote nothing into it; the last two even record `evidence_basis=serotype`,
+    # naming the field it projected, and ship empty anyway. Applying the decision fills five cells
+    # the release left blank — the D2 lesson again, and the third distinct instance this rewrite has
+    # turned up.
+    #
+    # **Five where the organism name states the wrong serotype and the release is right.**
+    # `AY297766.1` and `AY830709.1` are both named `Human poliovirus 1 strain Sabin` and are PV3 and
+    # PV2; `HM537010.1` is named `Poliovirus 2` and is PV3; `MG212473.1` and `OR208596.1` are named
+    # `Poliovirus 3` and are PV2 and PV1. The release corrected each by coverage-guarded sequence
+    # typing. A name-derived rule reproduces the name, and on these five the name is a mislabelled
+    # deposit. This is the clearest case in the rewrite for the sequence stage: it is not a
+    # disagreement about method, it is five wrong serotypes that only the sequence can catch.
+    "virus_type": {
+        "final_value": 10,
+        "winning_rule_id": 22092,
+        "evidence_basis": 22092,
+        # The release named the curated column; R-TYPE-2 names `organism_name`, or the ledger field
+        # when a decision won. The 93 that agree are the rows where the release also named a ledger
+        # field.
+        "source_field": 21999,
+        "source_value": 21996,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        # Zero, and it is the one column that had to be zero: every row R-TYPE-2 reaches through the
+        # ledger is a row the release also marked as overridden, including the five it then blanked.
+        "manual_override": 0,
     },
     "locality": {
         # No value moves: every blank stays blank and every non-blank was already correct. The whole

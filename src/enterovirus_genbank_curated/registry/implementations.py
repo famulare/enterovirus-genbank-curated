@@ -20,6 +20,7 @@ IMPLEMENTATION_MODULES = (
     "derive.epi",
     "derive.geo",
     "derive.partition",
+    "derive.typing",
 )
 
 

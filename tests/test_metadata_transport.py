@@ -32,6 +32,7 @@ from enterovirus_genbank_curated.oracle.parity import (
     UNRESOLVED_PARTITION_ROWS,
     UNRESOLVED_SPECIMEN_ROWS,
     UNRESOLVED_STREAM_ROWS,
+    UNRESOLVED_TYPE_ROWS,
     verify_metadata_parity,
     witness_digest,
 )
@@ -128,6 +129,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "specimen_type",
         "surveillance_stream",
         "virus_group",
+        "virus_type",
     )
     # Per field, how many of the 24,284 shared records the rule resolves. Spelled out rather than
     # computed, because the declined counts below are over the 24,285 *built* rows: AF326751.2
@@ -151,6 +153,9 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         # The only rule that declines because a *curator* left the question open rather than because
         # the record is silent: R-CONSTRUCT-2 will not turn "not adjudicated" into FALSE.
         "engineered_or_construct": 24284 - UNRESOLVED_ENGINEERED_ROWS,
+        # Both declines land on shared rows, so no -1 correction: AF326751.2's organism is
+        # `Enterovirus betacoxsackie`, which states no type, and it declines outside the shared set.
+        "virus_type": 24284 - (UNRESOLVED_TYPE_ROWS - 1),
     }
     assert set(resolved_per_field) == set(provenance.fields)
     assert provenance.compared_rows == sum(resolved_per_field.values())
@@ -161,10 +166,12 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         provenance.fields
     )
     # The converse is not symmetric, and the asymmetry is the point: AF326751.2 contributes only the
-    # five rows its rules *resolve*. It deposits no `/isolation_source`, so specimen_type declines,
-    # and a declined row is not compared at all — so it cannot be counted as a missing comparison.
+    # rows its rules *resolve*, and a declined row is not compared at all, so it cannot be counted
+    # as a missing comparison. Two of the twelve fields decline on it: `specimen_type`, because it
+    # deposits no `/isolation_source`, and `virus_type`, because its organism `Enterovirus
+    # betacoxsackie` names a species and no type.
     assert len(UNDECLARED_EXCLUSIONS) == 1
-    assert provenance.absent_from_release == len(provenance.fields) - 1
+    assert provenance.absent_from_release == len(provenance.fields) - 2
 
     # Both partition columns decline on the same population, and never on a different one.
     assert provenance.unresolved_by_field == {
@@ -174,6 +181,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "sample_origin": UNRESOLVED_ORIGIN_ROWS,
         "surveillance_stream": UNRESOLVED_STREAM_ROWS,
         "engineered_or_construct": UNRESOLVED_ENGINEERED_ROWS,
+        "virus_type": UNRESOLVED_TYPE_ROWS,
     }
 
     # The two date columns deliberately differ from the release, by exactly the declared amount.

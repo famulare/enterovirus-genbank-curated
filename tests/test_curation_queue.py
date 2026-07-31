@@ -35,11 +35,16 @@ from enterovirus_genbank_curated.derive.partition import (
 # queue items in the whole build that exist because a *curator* withheld a decision rather than
 # because a record is silent, and they are the shape the queue is for — a rule refusing to invent
 # an answer the adjudication explicitly declined to give.
-EXPECTED_QUEUE_WORK_ITEMS = 24710
+#
+# 26,903 the same day, when R-TYPE-2 landed: 2,193 `virus_type` declines join, all but 37 of them a
+# record whose organism name states no type. That is the largest single population in the queue that
+# a *sequence* stage would clear rather than a curator — 685 `Enterovirus C` records alone — and it
+# is listed as curation work because until that stage exists a human is what resolves it.
+EXPECTED_QUEUE_WORK_ITEMS = 26903
 # One group, not two: both declined records deposit `division=PAT`, and the queue groups by the
 # input the rule examined, so the pair the curator left open arrives as one question. That is the
 # grouping working — an answer to it is one adjudication covering both.
-EXPECTED_QUEUE_GROUPS = 240
+EXPECTED_QUEUE_GROUPS = 285
 
 
 def declined(
