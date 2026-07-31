@@ -472,3 +472,47 @@ def test_verify_reports_a_missing_artifact_rather_than_raising(
 ) -> None:
     report = gate.verify(repository_root, tmp_path, (NAME,))
     assert _fails_with(report, "is absent")
+
+
+def _loaded_with_types(name: str, types: dict[str, str]) -> gate.LoadedArtifact:
+    """A LoadedArtifact whose coverage carries a virus_type per accession, which is what the
+    partition check reads."""
+    coverage = tuple(
+        {"accession": accession, "virus_type": virus_type, "block": "cds",
+         "present": "TRUE", "absence_reason": "", "block_nt": "3"}
+        for accession, virus_type in types.items()
+    )
+    return gate.LoadedArtifact(
+        name=name, accessions=tuple(types), rows=dict.fromkeys(types, "-"),
+        rf="-", ss_cons="-", width_nt=1, block_widths={}, coverage=coverage,
+    )
+
+
+def test_cross_artifact_requires_the_serotypes_to_partition_polio() -> None:
+    """A resolved-type POLIO row belonging to no serotype means the partition is broken — that
+    record should have been in one of the three."""
+    polio = _loaded_with_types("POLIO_unified", {"IN1": "PV1", "ORPHAN": "PV2", "BLANK": "PV?"})
+    report = gate.verify_cross_artifact({
+        "POLIO_unified": polio,
+        "NPEV_unified": _loaded("NPEV_unified", []),
+        "EV_unified": _loaded("EV_unified", list(polio.accessions)),
+        "PV1_unified": _loaded("PV1_unified", ["IN1"]),
+        "PV2_unified": _loaded("PV2_unified", []),  # ORPHAN is missing from PV2
+        "PV3_unified": _loaded("PV3_unified", []),
+    })
+    assert _fails_with(report, "carry a resolved")
+
+
+def test_cross_artifact_accepts_blank_type_rows_outside_every_serotype() -> None:
+    """The legitimate case: a blank-`virus_type` poliovirus record belongs to POLIO and to no
+    serotype, which is exactly what the 25 such records do."""
+    polio = _loaded_with_types("POLIO_unified", {"IN1": "PV1", "BLANK": "PV?"})
+    report = gate.verify_cross_artifact({
+        "POLIO_unified": polio,
+        "NPEV_unified": _loaded("NPEV_unified", []),
+        "EV_unified": _loaded("EV_unified", list(polio.accessions)),
+        "PV1_unified": _loaded("PV1_unified", ["IN1"]),
+        "PV2_unified": _loaded("PV2_unified", []),
+        "PV3_unified": _loaded("PV3_unified", []),
+    })
+    assert report.passed, report.failures

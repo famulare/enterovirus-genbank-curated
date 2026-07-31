@@ -399,11 +399,32 @@ def verify_cross_artifact(loaded: dict[str, LoadedArtifact]) -> Report:
             )
             report.check(not (union & rows), f"{name} overlaps another serotype")
             union |= rows
-        # The remainder is the blank-`virus_type` poliovirus records, which are members of POLIO and
-        # of no serotype. Counted from the artifacts rather than hardcoded.
         report.check(
             union <= polio,
             f"the serotype union has {len(union - polio)} row(s) outside POLIO_unified",
+        )
+        # The partition claim itself: what POLIO has and no serotype has must be exactly the
+        # blank-`virus_type` poliovirus records. Read out of POLIO's own coverage sidecar rather
+        # than hardcoded, so the count is derived and a change in it shows up here rather than
+        # having to be remembered. Stated against artifacts this is a real check; stated against
+        # metadata-derived sets it would be a tautology, since a partition sums to its parent by
+        # construction.
+        blank_sentinel = contract.BLANK_TYPE_SENTINEL_BY_GROUP[contract.POLIOVIRUS]
+        virus_type_of = {
+            row["accession"]: row["virus_type"] for row in loaded["POLIO_unified"].coverage
+        }
+        remainder = polio - union
+        mistyped = sorted(a for a in remainder if virus_type_of.get(a) != blank_sentinel)
+        report.check(
+            not mistyped,
+            f"{len(mistyped)} POLIO row(s) belong to no serotype yet carry a resolved "
+            f"virus_type: {mistyped[:10]}",
+        )
+        blanks = {a for a, t in virus_type_of.items() if t == blank_sentinel}
+        report.check(
+            remainder == blanks,
+            f"POLIO minus the three serotypes is {len(remainder)} rows but there are "
+            f"{len(blanks)} blank-type rows; the serotypes do not partition POLIO",
         )
     return report
 
