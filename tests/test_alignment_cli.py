@@ -95,7 +95,7 @@ def test_alignment_verify_seeds_needs_no_toolchain(
     """The one alignment verb that must pass on every push with no native binary installed."""
     assert cli.main(["alignment-verify-seeds", "--repository-root", str(repository_root)]) == 0
     out = capsys.readouterr().out
-    assert "alignment seeds: PASS (12 files" in out
+    assert "alignment seeds: PASS (30 files" in out
 
 
 def test_alignment_verify_seeds_fails_loudly_without_the_directory(

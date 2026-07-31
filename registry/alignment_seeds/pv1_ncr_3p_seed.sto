@@ -1,0 +1,260 @@
+# STOCKHOLM 1.0
+#=GF SQ 85
+AY184219_Sabin1_ref t---aaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------g
+#=GS AY184219_Sabin1_ref AC AY184219_Sabin1_ref
+#=GS AY184219_Sabin1_ref DE AY184219_Sabin1_ref
+AB180070_PV1_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AB180070_PV1_VDPV AC AB180070_PV1_VDPV
+#=GS AB180070_PV1_VDPV DE AB180070_PV1_VDPV
+AF405662_PV1_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS AF405662_PV1_VDPV AC AF405662_PV1_VDPV
+#=GS AF405662_PV1_VDPV DE AF405662_PV1_VDPV
+AF405664_PV1_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttgattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS AF405664_PV1_VDPV AC AF405664_PV1_VDPV
+#=GS AF405664_PV1_VDPV DE AF405664_PV1_VDPV
+AF405666_PV1_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS AF405666_PV1_VDPV AC AF405666_PV1_VDPV
+#=GS AF405666_PV1_VDPV DE AF405666_PV1_VDPV
+AF405670_PV1_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttgattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS AF405670_PV1_VDPV AC AF405670_PV1_VDPV
+#=GS AF405670_PV1_VDPV DE AF405670_PV1_VDPV
+AF462418_PV1_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------g
+#=GS AF462418_PV1_VDPV AC AF462418_PV1_VDPV
+#=GS AF462418_PV1_VDPV DE AF462418_PV1_VDPV
+AJ132960_PV1_VDPV tagtaaccctacctcagtcgaattgggttgggtcatactgatgtaggggtaaatttttctttaattcggg------------------------------------------------------------------------------------------------------------------------------g
+#=GS AJ132960_PV1_VDPV AC AJ132960_PV1_VDPV
+#=GS AJ132960_PV1_VDPV DE AJ132960_PV1_VDPV
+AJ132961_PV1_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgatgtaggggtaaatttttctttaattcggg------------------------------------------------------------------------------------------------------------------------------g
+#=GS AJ132961_PV1_VDPV AC AJ132961_PV1_VDPV
+#=GS AJ132961_PV1_VDPV DE AJ132961_PV1_VDPV
+AY928384_PV1_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY928384_PV1_VDPV AC AY928384_PV1_VDPV
+#=GS AY928384_PV1_VDPV DE AY928384_PV1_VDPV
+DD214215_PV1_VDPV t---aaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcggagaaaaaa------------------a-----------------------------------------------------------------------------------aaaaaa---------aaa
+#=GS DD214215_PV1_VDPV AC DD214215_PV1_VDPV
+#=GS DD214215_PV1_VDPV DE DD214215_PV1_VDPV
+DQ411567_PV1_VDPV tagcaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS DQ411567_PV1_VDPV AC DQ411567_PV1_VDPV
+#=GS DQ411567_PV1_VDPV DE DQ411567_PV1_VDPV
+EF682343_PV1_VDPV tagtaaccctacctcagtcgaataggattgggtcatactgttgtaggggtaaatttttctttaattcgggg-----------------------------------------------------------------------------------------------------------------------------a
+#=GS EF682343_PV1_VDPV AC EF682343_PV1_VDPV
+#=GS EF682343_PV1_VDPV DE EF682343_PV1_VDPV
+EF682345_PV1_VDPV tagtaaccctacctcagtcgaataggattgggtcatactgttgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS EF682345_PV1_VDPV AC EF682345_PV1_VDPV
+#=GS EF682345_PV1_VDPV DE EF682345_PV1_VDPV
+EF682355_PV1_VDPV tagtaaccctacctcagtcgaataggattgggtcatactgttgcaggggtaaatttttctttaattcgggg-----------------------------------------------------------------------------------------------------------------------------a
+#=GS EF682355_PV1_VDPV AC EF682355_PV1_VDPV
+#=GS EF682355_PV1_VDPV DE EF682355_PV1_VDPV
+EU794963_PV1_VDPV tagtaaccctacttcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS EU794963_PV1_VDPV AC EU794963_PV1_VDPV
+#=GS EU794963_PV1_VDPV DE EU794963_PV1_VDPV
+FJ859061_PV1_VDPV tagtgaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS FJ859061_PV1_VDPV AC FJ859061_PV1_VDPV
+#=GS FJ859061_PV1_VDPV DE FJ859061_PV1_VDPV
+KR259355_PV1_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaatt----------------------------------------------------------------------------------------------------------------------------------c
+#=GS KR259355_PV1_VDPV AC KR259355_PV1_VDPV
+#=GS KR259355_PV1_VDPV DE KR259355_PV1_VDPV
+OR129532_PV1_VDPV tagtaaccctacttcagtcgaattggattgggtcatactgttgtaggggtaaatttttctt---------------------------------------------------------------------------------------------------------------------------------------t
+#=GS OR129532_PV1_VDPV AC OR129532_PV1_VDPV
+#=GS OR129532_PV1_VDPV DE OR129532_PV1_VDPV
+AF111953_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------g
+#=GS AF111953_PV1_wild AC AF111953_PV1_wild
+#=GS AF111953_PV1_wild DE AF111953_PV1_wild
+AF111961_PV1_wild tagtgaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AF111961_PV1_wild AC AF111961_PV1_wild
+#=GS AF111961_PV1_wild DE AF111961_PV1_wild
+AF111966_PV1_wild tagtaaccctacctcagtcgagttggattgggttatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AF111966_PV1_wild AC AF111966_PV1_wild
+#=GS AF111966_PV1_wild DE AF111966_PV1_wild
+AF111981_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AF111981_PV1_wild AC AF111981_PV1_wild
+#=GS AF111981_PV1_wild DE AF111981_PV1_wild
+AF111982_PV1_wild tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AF111982_PV1_wild AC AF111982_PV1_wild
+#=GS AF111982_PV1_wild DE AF111982_PV1_wild
+AF111983_PV1_wild tagtaaccctacttcagtcgaattggattgggtcatactgttgtgggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AF111983_PV1_wild AC AF111983_PV1_wild
+#=GS AF111983_PV1_wild DE AF111983_PV1_wild
+AF111984_PV1_wild tagtaaccctacttcagtcggattggattgggttatattgtcgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AF111984_PV1_wild AC AF111984_PV1_wild
+#=GS AF111984_PV1_wild DE AF111984_PV1_wild
+AY278553_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtgaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY278553_PV1_wild AC AY278553_PV1_wild
+#=GS AY278553_PV1_wild DE AY278553_PV1_wild
+AY518708_PV1_wild tagtgaccctacctcagtcgaattggattgggttatactgctgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518708_PV1_wild AC AY518708_PV1_wild
+#=GS AY518708_PV1_wild DE AY518708_PV1_wild
+AY518710_PV1_wild tagtaaccctacctcagtcgaattggattgggttatgctgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518710_PV1_wild AC AY518710_PV1_wild
+#=GS AY518710_PV1_wild DE AY518710_PV1_wild
+AY518714_PV1_wild tagtaaccctacatcagtcgaattggattgggttatgctgctgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518714_PV1_wild AC AY518714_PV1_wild
+#=GS AY518714_PV1_wild DE AY518714_PV1_wild
+AY518715_PV1_wild tagtaaccctacatcagtcgaattggattgggttatactgctgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518715_PV1_wild AC AY518715_PV1_wild
+#=GS AY518715_PV1_wild DE AY518715_PV1_wild
+AY518716_PV1_wild tagtaaccctacttcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518716_PV1_wild AC AY518716_PV1_wild
+#=GS AY518716_PV1_wild DE AY518716_PV1_wild
+AY518721_PV1_wild tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtgaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518721_PV1_wild AC AY518721_PV1_wild
+#=GS AY518721_PV1_wild DE AY518721_PV1_wild
+AY518724_PV1_wild tagcaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518724_PV1_wild AC AY518724_PV1_wild
+#=GS AY518724_PV1_wild DE AY518724_PV1_wild
+AY518725_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcggg------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518725_PV1_wild AC AY518725_PV1_wild
+#=GS AY518725_PV1_wild DE AY518725_PV1_wild
+AY518728_PV1_wild tagtaaccctacctcagtcgaattggattgggttatgctgatgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS AY518728_PV1_wild AC AY518728_PV1_wild
+#=GS AY518728_PV1_wild DE AY518728_PV1_wild
+AY560657_PV1_wild tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcgggg-----------------------------------------------------------------------------------------------------------------------------a
+#=GS AY560657_PV1_wild AC AY560657_PV1_wild
+#=GS AY560657_PV1_wild DE AY560657_PV1_wild
+DI499146_PV1_wild t---aaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS DI499146_PV1_wild AC DI499146_PV1_wild
+#=GS DI499146_PV1_wild DE DI499146_PV1_wild
+JF838278_PV1_wild tagtaaccctacttcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS JF838278_PV1_wild AC JF838278_PV1_wild
+#=GS JF838278_PV1_wild DE JF838278_PV1_wild
+KC880365_PV1_wild tagcaaccctacctcagtcgaattggattgggtcatactgatgtaggggtaaatttttctttaattcgg-------------------------------------------------------------------------------------------------------------------------------a
+#=GS KC880365_PV1_wild AC KC880365_PV1_wild
+#=GS KC880365_PV1_wild DE KC880365_PV1_wild
+KC880368_PV1_wild tagcaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgg-------------------------------------------------------------------------------------------------------------------------------a
+#=GS KC880368_PV1_wild AC KC880368_PV1_wild
+#=GS KC880368_PV1_wild DE KC880368_PV1_wild
+KC880370_PV1_wild tagtaaccctacctcagtcgaattggattgggtcatactgatgtaggggtaaatttttctttaattcgg-------------------------------------------------------------------------------------------------------------------------------a
+#=GS KC880370_PV1_wild AC KC880370_PV1_wild
+#=GS KC880370_PV1_wild DE KC880370_PV1_wild
+KC880375_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgg-------------------------------------------------------------------------------------------------------------------------------a
+#=GS KC880375_PV1_wild AC KC880375_PV1_wild
+#=GS KC880375_PV1_wild DE KC880375_PV1_wild
+KC880381_PV1_wild tagtgaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgg-------------------------------------------------------------------------------------------------------------------------------a
+#=GS KC880381_PV1_wild AC KC880381_PV1_wild
+#=GS KC880381_PV1_wild DE KC880381_PV1_wild
+KF537633_PV1_wild tagtaaccctacctcagtcgaattggattgggttacactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS KF537633_PV1_wild AC KF537633_PV1_wild
+#=GS KF537633_PV1_wild DE KF537633_PV1_wild
+KJ019831_PV1_wild tagtaaccctacctcagtcgaattggattgggtgatactgttgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS KJ019831_PV1_wild AC KJ019831_PV1_wild
+#=GS KJ019831_PV1_wild DE KJ019831_PV1_wild
+KJ019833_PV1_wild tagtaaccttacctcagtcgaattggattgggtgatactgttgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS KJ019833_PV1_wild AC KJ019833_PV1_wild
+#=GS KJ019833_PV1_wild DE KJ019833_PV1_wild
+KP793687_PV1_wild tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcggggaaaaaa------------------aaaaaaaaaaaaaaa----------aaaaaaaaaaaaaaaaaaa--------------------------aaaaaaaaaaaaaaaaaaaa---------aaa
+#=GS KP793687_PV1_wild AC KP793687_PV1_wild
+#=GS KP793687_PV1_wild DE KP793687_PV1_wild
+KU161396_PV1_wild tagtaaccctacctcagtcgaattggattgggtgatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS KU161396_PV1_wild AC KU161396_PV1_wild
+#=GS KU161396_PV1_wild DE KU161396_PV1_wild
+KU161398_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggaaaatttg---ttaa-----------------------------------------------------------------------------------------------------------------------------------ac
+#=GS KU161398_PV1_wild AC KU161398_PV1_wild
+#=GS KU161398_PV1_wild DE KU161398_PV1_wild
+KX162684_PV1_wild tagcaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgggga----------------------------------------------------------------------------------------------------------------------------a
+#=GS KX162684_PV1_wild AC KX162684_PV1_wild
+#=GS KX162684_PV1_wild DE KX162684_PV1_wild
+KX162693_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttataggggtaaatttttctttaattcgg-------------------------------------------------------------------------------------------------------------------------------a
+#=GS KX162693_PV1_wild AC KX162693_PV1_wild
+#=GS KX162693_PV1_wild DE KX162693_PV1_wild
+KY941931_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttgattcg--------------------------------------------------------------------------------------------------------------------------------g
+#=GS KY941931_PV1_wild AC KY941931_PV1_wild
+#=GS KY941931_PV1_wild DE KY941931_PV1_wild
+KY941935_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcggagaaaaa----------------------------------------------------------------------------------------------------------------------aaa
+#=GS KY941935_PV1_wild AC KY941935_PV1_wild
+#=GS KY941935_PV1_wild DE KY941935_PV1_wild
+LY501104_PV1_wild t---aaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcggg------------------------------------------------------------------------------------------------------------------------------g
+#=GS LY501104_PV1_wild AC LY501104_PV1_wild
+#=GS LY501104_PV1_wild DE LY501104_PV1_wild
+OP828752_PV1_wild tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------a
+#=GS OP828752_PV1_wild AC OP828752_PV1_wild
+#=GS OP828752_PV1_wild DE OP828752_PV1_wild
+PE314016_PV1_wild t---aaccctacttcagtcggattggattgggttatattgtcgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS PE314016_PV1_wild AC PE314016_PV1_wild
+#=GS PE314016_PV1_wild DE PE314016_PV1_wild
+V01148_PV1_wild tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------g
+#=GS V01148_PV1_wild AC V01148_PV1_wild
+#=GS V01148_PV1_wild DE V01148_PV1_wild
+AF462419_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------g
+#=GS AF462419_PV1_Sabin-like AC AF462419_PV1_Sabin-like
+#=GS AF462419_PV1_Sabin-like DE AF462419_PV1_Sabin-like
+DD214216_PV1_Sabin-like t---aaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS DD214216_PV1_Sabin-like AC DD214216_PV1_Sabin-like
+#=GS DD214216_PV1_Sabin-like DE DD214216_PV1_Sabin-like
+DD214219_PV1_Sabin-like t---aaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------g
+#=GS DD214219_PV1_Sabin-like AC DD214219_PV1_Sabin-like
+#=GS DD214219_PV1_Sabin-like DE DD214219_PV1_Sabin-like
+EU794954_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS EU794954_PV1_Sabin-like AC EU794954_PV1_Sabin-like
+#=GS EU794954_PV1_Sabin-like DE EU794954_PV1_Sabin-like
+EU794958_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaagggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS EU794958_PV1_Sabin-like AC EU794958_PV1_Sabin-like
+#=GS EU794958_PV1_Sabin-like DE EU794958_PV1_Sabin-like
+GQ984141_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaattttcctttaattcggag-----------------------------------------------------------------------------------------------------------------------------g
+#=GS GQ984141_PV1_Sabin-like AC GQ984141_PV1_Sabin-like
+#=GS GQ984141_PV1_Sabin-like DE GQ984141_PV1_Sabin-like
+KU866422_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------g
+#=GS KU866422_PV1_Sabin-like AC KU866422_PV1_Sabin-like
+#=GS KU866422_PV1_Sabin-like DE KU866422_PV1_Sabin-like
+LY501109_PV1_Sabin-like t---aaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggaggaaaaa------------------aaaaaaa-----------------------------------------------------------------------------aaaaaa---------aaa
+#=GS LY501109_PV1_Sabin-like AC LY501109_PV1_Sabin-like
+#=GS LY501109_PV1_Sabin-like DE LY501109_PV1_Sabin-like
+MG212429_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagaaaaaa------------------aaaaaaaaaa-------------------------------------------------------------aaaaaaaaaaaagagaaaa---------aat
+#=GS MG212429_PV1_Sabin-like AC MG212429_PV1_Sabin-like
+#=GS MG212429_PV1_Sabin-like DE MG212429_PV1_Sabin-like
+MG212433_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcgga------------------------------------------------------------------------------------------------------------------------------g
+#=GS MG212433_PV1_Sabin-like AC MG212433_PV1_Sabin-like
+#=GS MG212433_PV1_Sabin-like DE MG212433_PV1_Sabin-like
+MG212436_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagg----------------------------------------------------------------------------------------------------------------------------g
+#=GS MG212436_PV1_Sabin-like AC MG212436_PV1_Sabin-like
+#=GS MG212436_PV1_Sabin-like DE MG212436_PV1_Sabin-like
+MG212472_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagcggagt------------------gg----------------------------------------------------------------------------------ggaaag---------agt
+#=GS MG212472_PV1_Sabin-like AC MG212472_PV1_Sabin-like
+#=GS MG212472_PV1_Sabin-like DE MG212472_PV1_Sabin-like
+MG212479_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggaggggagt------------------ggagaa------------------------------------------------------------------------------agagta---------aaa
+#=GS MG212479_PV1_Sabin-like AC MG212479_PV1_Sabin-like
+#=GS MG212479_PV1_Sabin-like DE MG212479_PV1_Sabin-like
+MT957182_PV1_Sabin-like t---aaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagggatat--------------------------------------------------------------------------------------------------------cctc---------cag
+#=GS MT957182_PV1_Sabin-like AC MT957182_PV1_Sabin-like
+#=GS MT957182_PV1_Sabin-like DE MT957182_PV1_Sabin-like
+MT957194_PV1_Sabin-like t---aaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagggattatcctccacgtacgtgggtaacaaaattactgaagtggatgagcacatgaaagaggcagtagaccactatgctggccagctcatgtcactagacatcaacacagaacaaatgtgcttggag
+#=GS MT957194_PV1_Sabin-like AC MT957194_PV1_Sabin-like
+#=GS MT957194_PV1_Sabin-like DE MT957194_PV1_Sabin-like
+MT957202_PV1_Sabin-like t---aaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagggarmg-------------------------------------------------------------------------------------------------------wwtcc---------tcc
+#=GS MT957202_PV1_Sabin-like AC MT957202_PV1_Sabin-like
+#=GS MT957202_PV1_Sabin-like DE MT957202_PV1_Sabin-like
+PV867355_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggg------------------------------------------------------------------------------------------------------------------------------g
+#=GS PV867355_PV1_Sabin-like AC PV867355_PV1_Sabin-like
+#=GS PV867355_PV1_Sabin-like DE PV867355_PV1_Sabin-like
+PV867360_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------r
+#=GS PV867360_PV1_Sabin-like AC PV867360_PV1_Sabin-like
+#=GS PV867360_PV1_Sabin-like DE PV867360_PV1_Sabin-like
+PV867364_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcg--------------------------------------------------------------------------------------------------------------------------------g
+#=GS PV867364_PV1_Sabin-like AC PV867364_PV1_Sabin-like
+#=GS PV867364_PV1_Sabin-like DE PV867364_PV1_Sabin-like
+PV867381_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaanttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS PV867381_PV1_Sabin-like AC PV867381_PV1_Sabin-like
+#=GS PV867381_PV1_Sabin-like DE PV867381_PV1_Sabin-like
+PV867394_PV1_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgytgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------d
+#=GS PV867394_PV1_Sabin-like AC PV867394_PV1_Sabin-like
+#=GS PV867394_PV1_Sabin-like DE PV867394_PV1_Sabin-like
+AF538840_PV1_iVDPV tagtaaccctaccttagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagaaaaaa------------------aaaaaaaaaa-------------------------------------------------------------aaaaaaaa-----aaaaaa---------aaa
+#=GS AF538840_PV1_iVDPV AC AF538840_PV1_iVDPV
+#=GS AF538840_PV1_iVDPV DE AF538840_PV1_iVDPV
+AF538841_PV1_iVDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagaaaaaa------------------aaaaaaaaaa-------------------------------------------------------------aaaaaaaaaaaaaaaaaaa---------aaa
+#=GS AF538841_PV1_iVDPV AC AF538841_PV1_iVDPV
+#=GS AF538841_PV1_iVDPV DE AF538841_PV1_iVDPV
+AF538842_PV1_iVDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagaaaaaa------------------aaaaaaaaa---------------------------------------------------------------------------aaaaaa---------aaa
+#=GS AF538842_PV1_iVDPV AC AF538842_PV1_iVDPV
+#=GS AF538842_PV1_iVDPV DE AF538842_PV1_iVDPV
+AF538843_PV1_iVDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggagaaaaaa--------------------------------------------------------------------------------------------------------aaaa---------aaa
+#=GS AF538843_PV1_iVDPV AC AF538843_PV1_iVDPV
+#=GS AF538843_PV1_iVDPV DE AF538843_PV1_iVDPV
+FJ769378_PV1_cVDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag-----------------------------------------------------------------------------------------------------------------------------a
+#=GS FJ769378_PV1_cVDPV AC FJ769378_PV1_cVDPV
+#=GS FJ769378_PV1_cVDPV DE FJ769378_PV1_cVDPV
+OR253701_PV1_nOPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaaatttttctttaattcggg------------------------------------------------------------------------------------------------------------------------------g
+#=GS OR253701_PV1_nOPV AC OR253701_PV1_nOPV
+#=GS OR253701_PV1_nOPV DE OR253701_PV1_nOPV
+#=GC RF t...aaccctacctcagtcgaattggattgggtcatactgctgtaggggtaaatttttctttaattcggag.............................................................................................................................g
+#=GC SS_cons ......(((((((((((((......)))))))..........)))))).....................................................................................................................................................
+//

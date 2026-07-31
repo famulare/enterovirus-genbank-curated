@@ -1,0 +1,407 @@
+# STOCKHOLM 1.0
+#=GF SQ 134
+AY184220_Sabin2_ref t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS AY184220_Sabin2_ref AC AY184220_Sabin2_ref
+#=GS AY184220_Sabin2_ref DE AY184220_Sabin2_ref
+MT432122_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-attttcctttaattcgg-----------------------------------------------------------------------------------------------------------------------a
+#=GS MT432122_PV2_VDPV AC MT432122_PV2_VDPV
+#=GS MT432122_PV2_VDPV DE MT432122_PV2_VDPV
+JX275270_PV2_VDPV tagtaaccttacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275270_PV2_VDPV AC JX275270_PV2_VDPV
+#=GS JX275270_PV2_VDPV DE JX275270_PV2_VDPV
+HQ738289_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgctgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS HQ738289_PV2_VDPV AC HQ738289_PV2_VDPV
+#=GS HQ738289_PV2_VDPV DE HQ738289_PV2_VDPV
+PX000287_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-attttcctt-------------------------------------------------------------------------------------------------------------------------------t
+#=GS PX000287_PV2_VDPV AC PX000287_PV2_VDPV
+#=GS PX000287_PV2_VDPV DE PX000287_PV2_VDPV
+GU390707_PV2_VDPV tagcaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS GU390707_PV2_VDPV AC GU390707_PV2_VDPV
+#=GS GU390707_PV2_VDPV DE GU390707_PV2_VDPV
+JX275142_PV2_VDPV tagtgaccctacctcagtcgaattggattgggttatgctgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275142_PV2_VDPV AC JX275142_PV2_VDPV
+#=GS JX275142_PV2_VDPV DE JX275142_PV2_VDPV
+JX275009_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggaga--------------------------------------------------------------------------------------------------------------------g
+#=GS JX275009_PV2_VDPV AC JX275009_PV2_VDPV
+#=GS JX275009_PV2_VDPV DE JX275009_PV2_VDPV
+JX274985_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtgatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX274985_PV2_VDPV AC JX274985_PV2_VDPV
+#=GS JX274985_PV2_VDPV DE JX274985_PV2_VDPV
+JX275282_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggagaag------------------------------------------------------------------------------------------------------------------a
+#=GS JX275282_PV2_VDPV AC JX275282_PV2_VDPV
+#=GS JX275282_PV2_VDPV DE JX275282_PV2_VDPV
+MT432121_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-attttcttttaattcgg-----------------------------------------------------------------------------------------------------------------------a
+#=GS MT432121_PV2_VDPV AC MT432121_PV2_VDPV
+#=GS MT432121_PV2_VDPV DE MT432121_PV2_VDPV
+JX275278_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtgggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275278_PV2_VDPV AC JX275278_PV2_VDPV
+#=GS JX275278_PV2_VDPV DE JX275278_PV2_VDPV
+JX275165_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275165_PV2_VDPV AC JX275165_PV2_VDPV
+#=GS JX275165_PV2_VDPV DE JX275165_PV2_VDPV
+JX275035_PV2_VDPV tagtgaccctacctcagtcgaattggattgggtgatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275035_PV2_VDPV AC JX275035_PV2_VDPV
+#=GS JX275035_PV2_VDPV DE JX275035_PV2_VDPV
+JX275168_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcgggg---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275168_PV2_VDPV AC JX275168_PV2_VDPV
+#=GS JX275168_PV2_VDPV DE JX275168_PV2_VDPV
+KX162686_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtgggggtaa-atttttctttaattcgggt---------------------------------------------------------------------------------------------------------------------c
+#=GS KX162686_PV2_VDPV AC KX162686_PV2_VDPV
+#=GS KX162686_PV2_VDPV DE KX162686_PV2_VDPV
+JX275238_PV2_VDPV tagtgaccctacttcagtcgaattggattgggttatactgctgtaggggtaa-atttttctttaattcgggg---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275238_PV2_VDPV AC JX275238_PV2_VDPV
+#=GS JX275238_PV2_VDPV DE JX275238_PV2_VDPV
+KX162712_PV2_VDPV tagtaaccctaccacagtcgaattggattgggttatactgttgtaggggtta-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS KX162712_PV2_VDPV AC KX162712_PV2_VDPV
+#=GS KX162712_PV2_VDPV DE KX162712_PV2_VDPV
+JX275088_PV2_VDPV tagtaaccctacatcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275088_PV2_VDPV AC JX275088_PV2_VDPV
+#=GS JX275088_PV2_VDPV DE JX275088_PV2_VDPV
+JX275365_PV2_VDPV tagtaaccctacctcagtcggattggattgggttatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275365_PV2_VDPV AC JX275365_PV2_VDPV
+#=GS JX275365_PV2_VDPV DE JX275365_PV2_VDPV
+JX569710_PV2_VDPV tagtgaccctacttcagtcgaattggattgggttatactgctgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX569710_PV2_VDPV AC JX569710_PV2_VDPV
+#=GS JX569710_PV2_VDPV DE JX569710_PV2_VDPV
+AY278549_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS AY278549_PV2_VDPV AC AY278549_PV2_VDPV
+#=GS AY278549_PV2_VDPV DE AY278549_PV2_VDPV
+JX275039_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtgttactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275039_PV2_VDPV AC JX275039_PV2_VDPV
+#=GS JX275039_PV2_VDPV DE JX275039_PV2_VDPV
+JX275253_PV2_VDPV tagtaaccctacatcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------g
+#=GS JX275253_PV2_VDPV AC JX275253_PV2_VDPV
+#=GS JX275253_PV2_VDPV DE JX275253_PV2_VDPV
+HQ738303_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattc-------------------------------------------------------------------------------------------------------------------------g
+#=GS HQ738303_PV2_VDPV AC HQ738303_PV2_VDPV
+#=GS HQ738303_PV2_VDPV DE HQ738303_PV2_VDPV
+JX275099_PV2_VDPV tagtgaccctacctcagtcgaattggattgggtgatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275099_PV2_VDPV AC JX275099_PV2_VDPV
+#=GS JX275099_PV2_VDPV DE JX275099_PV2_VDPV
+JX275101_PV2_VDPV tagcaaccctacctcagccgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275101_PV2_VDPV AC JX275101_PV2_VDPV
+#=GS JX275101_PV2_VDPV DE JX275101_PV2_VDPV
+JX275323_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttcttaatttcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275323_PV2_VDPV AC JX275323_PV2_VDPV
+#=GS JX275323_PV2_VDPV DE JX275323_PV2_VDPV
+JX275234_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtga-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275234_PV2_VDPV AC JX275234_PV2_VDPV
+#=GS JX275234_PV2_VDPV DE JX275234_PV2_VDPV
+JX275132_PV2_VDPV tagcaaccctacctcagtcggattggattgggttatactgttgtaggggtga-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275132_PV2_VDPV AC JX275132_PV2_VDPV
+#=GS JX275132_PV2_VDPV DE JX275132_PV2_VDPV
+JX275213_PV2_VDPV tagcaaccctacctcagtcgaattggattgggttatgctgttgtaggggtaa-atttttccttaattcgggg---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275213_PV2_VDPV AC JX275213_PV2_VDPV
+#=GS JX275213_PV2_VDPV DE JX275213_PV2_VDPV
+JX275266_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275266_PV2_VDPV AC JX275266_PV2_VDPV
+#=GS JX275266_PV2_VDPV DE JX275266_PV2_VDPV
+JX275108_PV2_VDPV tagcaaccctacctcagtcgaattggattgggtgatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275108_PV2_VDPV AC JX275108_PV2_VDPV
+#=GS JX275108_PV2_VDPV DE JX275108_PV2_VDPV
+JX275164_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275164_PV2_VDPV AC JX275164_PV2_VDPV
+#=GS JX275164_PV2_VDPV DE JX275164_PV2_VDPV
+JX275135_PV2_VDPV tagtgaccctacatcagtcgaattggattgggttatactgttgtgggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275135_PV2_VDPV AC JX275135_PV2_VDPV
+#=GS JX275135_PV2_VDPV DE JX275135_PV2_VDPV
+JX275136_PV2_VDPV tagtaaccctacatcagtcgaattggattgggttatactgttataggggtaa-atttttctttaattcgag----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275136_PV2_VDPV AC JX275136_PV2_VDPV
+#=GS JX275136_PV2_VDPV DE JX275136_PV2_VDPV
+JX275111_PV2_VDPV tagtaaccttacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttccttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275111_PV2_VDPV AC JX275111_PV2_VDPV
+#=GS JX275111_PV2_VDPV DE JX275111_PV2_VDPV
+JX274994_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtgatactgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS JX274994_PV2_VDPV AC JX274994_PV2_VDPV
+#=GS JX274994_PV2_VDPV DE JX274994_PV2_VDPV
+JX275246_PV2_VDPV tagcaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggagg--------------------------------------------------------------------------------------------------------------------a
+#=GS JX275246_PV2_VDPV AC JX275246_PV2_VDPV
+#=GS JX275246_PV2_VDPV DE JX275246_PV2_VDPV
+HM107832_PV2_VDPV tagcaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS HM107832_PV2_VDPV AC HM107832_PV2_VDPV
+#=GS HM107832_PV2_VDPV DE HM107832_PV2_VDPV
+JX275368_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaaaatttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275368_PV2_VDPV AC JX275368_PV2_VDPV
+#=GS JX275368_PV2_VDPV DE JX275368_PV2_VDPV
+JX275333_PV2_VDPV tagtaaccttacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275333_PV2_VDPV AC JX275333_PV2_VDPV
+#=GS JX275333_PV2_VDPV DE JX275333_PV2_VDPV
+JX275085_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcgggg---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275085_PV2_VDPV AC JX275085_PV2_VDPV
+#=GS JX275085_PV2_VDPV DE JX275085_PV2_VDPV
+MT432119_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-attttcctttaattcg------------------------------------------------------------------------------------------------------------------------g
+#=GS MT432119_PV2_VDPV AC MT432119_PV2_VDPV
+#=GS MT432119_PV2_VDPV DE MT432119_PV2_VDPV
+JX275337_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatgctgttgtgggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275337_PV2_VDPV AC JX275337_PV2_VDPV
+#=GS JX275337_PV2_VDPV DE JX275337_PV2_VDPV
+JX275271_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatgctgttgtaggggtaa-attttttcttaattcggga---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275271_PV2_VDPV AC JX275271_PV2_VDPV
+#=GS JX275271_PV2_VDPV DE JX275271_PV2_VDPV
+JX275212_PV2_VDPV tagtaaccctacttcagtcggattggattgggttatactgtcgtaggggtaa-atttttctttaattcgggga--------------------------------------------------------------------------------------------------------------------a
+#=GS JX275212_PV2_VDPV AC JX275212_PV2_VDPV
+#=GS JX275212_PV2_VDPV DE JX275212_PV2_VDPV
+JX275344_PV2_VDPV tagcaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcgggg---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275344_PV2_VDPV AC JX275344_PV2_VDPV
+#=GS JX275344_PV2_VDPV DE JX275344_PV2_VDPV
+JX275159_PV2_VDPV tagtaaccctacatcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------g
+#=GS JX275159_PV2_VDPV AC JX275159_PV2_VDPV
+#=GS JX275159_PV2_VDPV DE JX275159_PV2_VDPV
+JX275030_PV2_VDPV tagtaaccctacctcagccgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275030_PV2_VDPV AC JX275030_PV2_VDPV
+#=GS JX275030_PV2_VDPV DE JX275030_PV2_VDPV
+JX275211_PV2_VDPV tagcaaccctacctcagtcgaattggattgggttatgctgttgtaggggtaa-atttttctttaattcgggg---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275211_PV2_VDPV AC JX275211_PV2_VDPV
+#=GS JX275211_PV2_VDPV DE JX275211_PV2_VDPV
+KJ419276_PV2_VDPV tagaaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS KJ419276_PV2_VDPV AC KJ419276_PV2_VDPV
+#=GS KJ419276_PV2_VDPV DE KJ419276_PV2_VDPV
+JX275362_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgtcgtaggggtga-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275362_PV2_VDPV AC JX275362_PV2_VDPV
+#=GS JX275362_PV2_VDPV DE JX275362_PV2_VDPV
+JX275381_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggagaaag-----------------------------------------------------------------------------------------------------------------a
+#=GS JX275381_PV2_VDPV AC JX275381_PV2_VDPV
+#=GS JX275381_PV2_VDPV DE JX275381_PV2_VDPV
+AM084225_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS AM084225_PV2_VDPV AC AM084225_PV2_VDPV
+#=GS AM084225_PV2_VDPV DE AM084225_PV2_VDPV
+JX275221_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggaga--------------------------------------------------------------------------------------------------------------------a
+#=GS JX275221_PV2_VDPV AC JX275221_PV2_VDPV
+#=GS JX275221_PV2_VDPV DE JX275221_PV2_VDPV
+JX275196_PV2_VDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------g
+#=GS JX275196_PV2_VDPV AC JX275196_PV2_VDPV
+#=GS JX275196_PV2_VDPV DE JX275196_PV2_VDPV
+JX275032_PV2_VDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttagttcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275032_PV2_VDPV AC JX275032_PV2_VDPV
+#=GS JX275032_PV2_VDPV DE JX275032_PV2_VDPV
+JX275031_PV2_VDPV tagtaaccctgcctcagtcgaattggattgggtgatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275031_PV2_VDPV AC JX275031_PV2_VDPV
+#=GS JX275031_PV2_VDPV DE JX275031_PV2_VDPV
+JX275073_PV2_VDPV tagtaaccctacttcagtcgaattggattgggtgatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS JX275073_PV2_VDPV AC JX275073_PV2_VDPV
+#=GS JX275073_PV2_VDPV DE JX275073_PV2_VDPV
+JX275334_PV2_VDPV tagtaaccctgcctcagtcgagttggattgggttatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------a
+#=GS JX275334_PV2_VDPV AC JX275334_PV2_VDPV
+#=GS JX275334_PV2_VDPV DE JX275334_PV2_VDPV
+AY177685_PV2_iVDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS AY177685_PV2_iVDPV AC AY177685_PV2_iVDPV
+#=GS AY177685_PV2_iVDPV DE AY177685_PV2_iVDPV
+EU566940_PV2_iVDPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS EU566940_PV2_iVDPV AC EU566940_PV2_iVDPV
+#=GS EU566940_PV2_iVDPV DE EU566940_PV2_iVDPV
+EU566943_PV2_iVDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-ttttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS EU566943_PV2_iVDPV AC EU566943_PV2_iVDPV
+#=GS EU566943_PV2_iVDPV DE EU566943_PV2_iVDPV
+AY184220_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS AY184220_PV2_Sabin-like AC AY184220_PV2_Sabin-like
+#=GS AY184220_PV2_Sabin-like DE AY184220_PV2_Sabin-like
+AY278552_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS AY278552_PV2_Sabin-like AC AY278552_PV2_Sabin-like
+#=GS AY278552_PV2_Sabin-like DE AY278552_PV2_Sabin-like
+DD214222_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS DD214222_PV2_Sabin-like AC DD214222_PV2_Sabin-like
+#=GS DD214222_PV2_Sabin-like DE DD214222_PV2_Sabin-like
+DQ890385_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS DQ890385_PV2_Sabin-like AC DQ890385_PV2_Sabin-like
+#=GS DQ890385_PV2_Sabin-like DE DQ890385_PV2_Sabin-like
+FJ460224_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggagaaaaa---------------------------------------------------------------------------------------------------------------aa
+#=GS FJ460224_PV2_Sabin-like AC FJ460224_PV2_Sabin-like
+#=GS FJ460224_PV2_Sabin-like DE FJ460224_PV2_Sabin-like
+FJ460225_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaat---------------------------------------------------------------------------------------------------------------------------t
+#=GS FJ460225_PV2_Sabin-like AC FJ460225_PV2_Sabin-like
+#=GS FJ460225_PV2_Sabin-like DE FJ460225_PV2_Sabin-like
+FJ898290_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS FJ898290_PV2_Sabin-like AC FJ898290_PV2_Sabin-like
+#=GS FJ898290_PV2_Sabin-like DE FJ898290_PV2_Sabin-like
+KM433732_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctataattcgg-----------------------------------------------------------------------------------------------------------------------g
+#=GS KM433732_PV2_Sabin-like AC KM433732_PV2_Sabin-like
+#=GS KM433732_PV2_Sabin-like DE KM433732_PV2_Sabin-like
+KU598885_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS KU598885_PV2_Sabin-like AC KU598885_PV2_Sabin-like
+#=GS KU598885_PV2_Sabin-like DE KU598885_PV2_Sabin-like
+LY501110_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaaaaaaaaaaaaaa-----------------------------------------------------------------------------------------aaaaaaaaaaaaaaa
+#=GS LY501110_PV2_Sabin-like AC LY501110_PV2_Sabin-like
+#=GS LY501110_PV2_Sabin-like DE LY501110_PV2_Sabin-like
+MG212434_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggaggg-------------------------------------------------------------------------------------------------------------------g
+#=GS MG212434_PV2_Sabin-like AC MG212434_PV2_Sabin-like
+#=GS MG212434_PV2_Sabin-like DE MG212434_PV2_Sabin-like
+MG212440_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------g
+#=GS MG212440_PV2_Sabin-like AC MG212440_PV2_Sabin-like
+#=GS MG212440_PV2_Sabin-like DE MG212440_PV2_Sabin-like
+MG212446_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggaggaaaa----------------------------------------------------------------------------------------------------------------g
+#=GS MG212446_PV2_Sabin-like AC MG212446_PV2_Sabin-like
+#=GS MG212446_PV2_Sabin-like DE MG212446_PV2_Sabin-like
+MG212450_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggagg--------------------------------------------------------------------------------------------------------------------g
+#=GS MG212450_PV2_Sabin-like AC MG212450_PV2_Sabin-like
+#=GS MG212450_PV2_Sabin-like DE MG212450_PV2_Sabin-like
+MG212452_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggagagtagtggg-------------------------------------------------------------------------------------------------gaaaga----gt
+#=GS MG212452_PV2_Sabin-like AC MG212452_PV2_Sabin-like
+#=GS MG212452_PV2_Sabin-like DE MG212452_PV2_Sabin-like
+MG212454_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggagcggagtggg-------------------------------------------------------------------------------------------------gaaagagt-ttg
+#=GS MG212454_PV2_Sabin-like AC MG212454_PV2_Sabin-like
+#=GS MG212454_PV2_Sabin-like DE MG212454_PV2_Sabin-like
+MG212455_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggagcggagtgag-------------------------------------------------------------------------------------------------gaaaga----gt
+#=GS MG212455_PV2_Sabin-like AC MG212455_PV2_Sabin-like
+#=GS MG212455_PV2_Sabin-like DE MG212455_PV2_Sabin-like
+MG212456_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggagaggagtggg-------------------------------------------------------------------------------------------------gaaaga----gt
+#=GS MG212456_PV2_Sabin-like AC MG212456_PV2_Sabin-like
+#=GS MG212456_PV2_Sabin-like DE MG212456_PV2_Sabin-like
+MG212457_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggagaggagtgcg-------------------------------------------------------------------------------------------------gaaagagt-ctg
+#=GS MG212457_PV2_Sabin-like AC MG212457_PV2_Sabin-like
+#=GS MG212457_PV2_Sabin-like DE MG212457_PV2_Sabin-like
+MG212459_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggagaggagtggg-------------------------------------------------------------------------------------------------gaaaga----gt
+#=GS MG212459_PV2_Sabin-like AC MG212459_PV2_Sabin-like
+#=GS MG212459_PV2_Sabin-like DE MG212459_PV2_Sabin-like
+MG212462_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggagag-------------------------------------------------------------------------------------------------------------------g
+#=GS MG212462_PV2_Sabin-like AC MG212462_PV2_Sabin-like
+#=GS MG212462_PV2_Sabin-like DE MG212462_PV2_Sabin-like
+MG212463_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaggagtggg-------------------------------------------------------------------------------------------------gaaaga----gt
+#=GS MG212463_PV2_Sabin-like AC MG212463_PV2_Sabin-like
+#=GS MG212463_PV2_Sabin-like DE MG212463_PV2_Sabin-like
+MG212471_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggaggggagtggg-------------------------------------------------------------------------------------------------gaaaga----gt
+#=GS MG212471_PV2_Sabin-like AC MG212471_PV2_Sabin-like
+#=GS MG212471_PV2_Sabin-like DE MG212471_PV2_Sabin-like
+MG212473_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaggagtggg-------------------------------------------------------------------------------------------------gaaagagt-ctg
+#=GS MG212473_PV2_Sabin-like AC MG212473_PV2_Sabin-like
+#=GS MG212473_PV2_Sabin-like DE MG212473_PV2_Sabin-like
+MG212475_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggagaggagtggg-------------------------------------------------------------------------------------------------caagga---ctc
+#=GS MG212475_PV2_Sabin-like AC MG212475_PV2_Sabin-like
+#=GS MG212475_PV2_Sabin-like DE MG212475_PV2_Sabin-like
+MG212480_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggaggggagtggg-------------------------------------------------------------------------------------------------gaaagagt-ctg
+#=GS MG212480_PV2_Sabin-like AC MG212480_PV2_Sabin-like
+#=GS MG212480_PV2_Sabin-like DE MG212480_PV2_Sabin-like
+MG212484_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcggaggggagtggg-------------------------------------------------------------------------------------------------gaaacagt-ctg
+#=GS MG212484_PV2_Sabin-like AC MG212484_PV2_Sabin-like
+#=GS MG212484_PV2_Sabin-like DE MG212484_PV2_Sabin-like
+MG212486_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggagaggagtggg-------------------------------------------------------------------------------------------------gaaagagtaaaa
+#=GS MG212486_PV2_Sabin-like AC MG212486_PV2_Sabin-like
+#=GS MG212486_PV2_Sabin-like DE MG212486_PV2_Sabin-like
+MG212487_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggagagaaaaaaa-------------------------------------------------------------------------------------------------aaaaaaaaaaaa
+#=GS MG212487_PV2_Sabin-like AC MG212487_PV2_Sabin-like
+#=GS MG212487_PV2_Sabin-like DE MG212487_PV2_Sabin-like
+MG212488_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggagg------------------------------------------------------------------------------------------------------------------a
+#=GS MG212488_PV2_Sabin-like AC MG212488_PV2_Sabin-like
+#=GS MG212488_PV2_Sabin-like DE MG212488_PV2_Sabin-like
+MG212490_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggagaaaaaaaaa-------------------------------------------------------------------------------------------------aaaaaaaaaaaa
+#=GS MG212490_PV2_Sabin-like AC MG212490_PV2_Sabin-like
+#=GS MG212490_PV2_Sabin-like DE MG212490_PV2_Sabin-like
+MG571845_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggtggtatcct---------------------------------------------------------------------------------------------------------ccag
+#=GS MG571845_PV2_Sabin-like AC MG571845_PV2_Sabin-like
+#=GS MG571845_PV2_Sabin-like DE MG571845_PV2_Sabin-like
+MN384438_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatgctgttgtagggg--a-att---cttttattt------------------------------------------------------------------------------------------------------------------------tt
+#=GS MN384438_PV2_Sabin-like AC MN384438_PV2_Sabin-like
+#=GS MN384438_PV2_Sabin-like DE MN384438_PV2_Sabin-like
+MT957179_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaaatttcct------------------------------------------------------------------------------------------------------ccccvdg
+#=GS MT957179_PV2_Sabin-like AC MT957179_PV2_Sabin-like
+#=GS MT957179_PV2_Sabin-like DE MT957179_PV2_Sabin-like
+MT957189_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggcatat----------------------------------------------------------------------------------------------------------cctccag
+#=GS MT957189_PV2_Sabin-like AC MT957189_PV2_Sabin-like
+#=GS MT957189_PV2_Sabin-like DE MT957189_PV2_Sabin-like
+MT957192_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaawttatcctccwkwrrsw-----rwmwyttayccct---acagcagtatgacc---------caatccaattcgactgaggtagggtt-----------actaaaatgagtcaagcc
+#=GS MT957192_PV2_Sabin-like AC MT957192_PV2_Sabin-like
+#=GS MT957192_PV2_Sabin-like DE MT957192_PV2_Sabin-like
+MT957195_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaaattatcctccagggggtttttataaacygactagtsaamcgaccatgaggctgrcattykkaratmcytatggaayaatytaacarmwtsyaasagatgttamagacagtgyarkt
+#=GS MT957195_PV2_Sabin-like AC MT957195_PV2_Sabin-like
+#=GS MT957195_PV2_Sabin-like DE MT957195_PV2_Sabin-like
+MT957197_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaaattatcc------------------------------------------------------------------------------------------------------yccagcc
+#=GS MT957197_PV2_Sabin-like AC MT957197_PV2_Sabin-like
+#=GS MT957197_PV2_Sabin-like DE MT957197_PV2_Sabin-like
+MT957199_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaaaatatyctccmg------------------ttcct-------ccat-------cyrk----yaatgccaatgaag------gagattc----------------atgaatcaatta
+#=GS MT957199_PV2_Sabin-like AC MT957199_PV2_Sabin-like
+#=GS MT957199_PV2_Sabin-like DE MT957199_PV2_Sabin-like
+MT957201_PV2_Sabin-like t---aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggggaatat----------------------------------------------------------------------------------------------------------atcctcc
+#=GS MT957201_PV2_Sabin-like AC MT957201_PV2_Sabin-like
+#=GS MT957201_PV2_Sabin-like DE MT957201_PV2_Sabin-like
+ON596430_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggttatgctgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS ON596430_PV2_Sabin-like AC ON596430_PV2_Sabin-like
+#=GS ON596430_PV2_Sabin-like DE ON596430_PV2_Sabin-like
+ON596438_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatactgctgtaggggtaa-atttttctttaattcg------------------------------------------------------------------------------------------------------------------------g
+#=GS ON596438_PV2_Sabin-like AC ON596438_PV2_Sabin-like
+#=GS ON596438_PV2_Sabin-like DE ON596438_PV2_Sabin-like
+OR129534_PV2_Sabin-like tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctt-------------------------------------------------------------------------------------------------------------------------------t
+#=GS OR129534_PV2_Sabin-like AC OR129534_PV2_Sabin-like
+#=GS OR129534_PV2_Sabin-like DE OR129534_PV2_Sabin-like
+AY238473_PV2_wild tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------g
+#=GS AY238473_PV2_wild AC AY238473_PV2_wild
+#=GS AY238473_PV2_wild DE AY238473_PV2_wild
+CS406482_PV2_wild t---aaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS CS406482_PV2_wild AC CS406482_PV2_wild
+#=GS CS406482_PV2_wild DE CS406482_PV2_wild
+DD214217_PV2_wild t---aaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggag---------------------------------------------------------------------------------------------------------------------g
+#=GS DD214217_PV2_wild AC DD214217_PV2_wild
+#=GS DD214217_PV2_wild DE DD214217_PV2_wild
+LY501105_PV2_wild t---aaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcggagaaaaaaaaaaaaaa-------------------------aaaaaaaaaaaaa-----------aaa--------aaaaaaaaaaaaa-----------aaaaaaaaaaaaaaaaaaaa
+#=GS LY501105_PV2_wild AC LY501105_PV2_wild
+#=GS LY501105_PV2_wild DE LY501105_PV2_wild
+PP068135_PV2_wild tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS PP068135_PV2_wild AC PP068135_PV2_wild
+#=GS PP068135_PV2_wild DE PP068135_PV2_wild
+MN654096_PV2_nOPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS MN654096_PV2_nOPV AC MN654096_PV2_nOPV
+#=GS MN654096_PV2_nOPV DE MN654096_PV2_nOPV
+PX000269_PV2_nOPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-attttcctttaattcgg-----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000269_PV2_nOPV AC PX000269_PV2_nOPV
+#=GS PX000269_PV2_nOPV DE PX000269_PV2_nOPV
+PX000273_PV2_nOPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-attttcctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000273_PV2_nOPV AC PX000273_PV2_nOPV
+#=GS PX000273_PV2_nOPV DE PX000273_PV2_nOPV
+PX000274_PV2_nOPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctt-------------------------------------------------------------------------------------------------------------------------------t
+#=GS PX000274_PV2_nOPV AC PX000274_PV2_nOPV
+#=GS PX000274_PV2_nOPV DE PX000274_PV2_nOPV
+PX000281_PV2_nOPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcg------------------------------------------------------------------------------------------------------------------------g
+#=GS PX000281_PV2_nOPV AC PX000281_PV2_nOPV
+#=GS PX000281_PV2_nOPV DE PX000281_PV2_nOPV
+PX000297_PV2_nOPV tagtaaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa-atttttctttaat---------------------------------------------------------------------------------------------------------------------------t
+#=GS PX000297_PV2_nOPV AC PX000297_PV2_nOPV
+#=GS PX000297_PV2_nOPV DE PX000297_PV2_nOPV
+PX000310_PV2_nOPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaatt--------------------------------------------------------------------------------------------------------------------------c
+#=GS PX000310_PV2_nOPV AC PX000310_PV2_nOPV
+#=GS PX000310_PV2_nOPV DE PX000310_PV2_nOPV
+MZ150564_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggtcatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS MZ150564_PV2_cVDPV AC MZ150564_PV2_cVDPV
+#=GS MZ150564_PV2_cVDPV DE MZ150564_PV2_cVDPV
+PQ059262_PV2_cVDPV tagcaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS PQ059262_PV2_cVDPV AC PQ059262_PV2_cVDPV
+#=GS PQ059262_PV2_cVDPV DE PQ059262_PV2_cVDPV
+PQ059264_PV2_cVDPV tagcaactctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS PQ059264_PV2_cVDPV AC PQ059264_PV2_cVDPV
+#=GS PQ059264_PV2_cVDPV DE PQ059264_PV2_cVDPV
+PQ059265_PV2_cVDPV tagcaactctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS PQ059265_PV2_cVDPV AC PQ059265_PV2_cVDPV
+#=GS PQ059265_PV2_cVDPV DE PQ059265_PV2_cVDPV
+PQ059267_PV2_cVDPV tagcaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaatccggt----------------------------------------------------------------------------------------------------------------------g
+#=GS PQ059267_PV2_cVDPV AC PQ059267_PV2_cVDPV
+#=GS PQ059267_PV2_cVDPV DE PQ059267_PV2_cVDPV
+PX000254_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcgg-----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000254_PV2_cVDPV AC PX000254_PV2_cVDPV
+#=GS PX000254_PV2_cVDPV DE PX000254_PV2_cVDPV
+PX000275_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggttacactgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000275_PV2_cVDPV AC PX000275_PV2_cVDPV
+#=GS PX000275_PV2_cVDPV DE PX000275_PV2_cVDPV
+PX000282_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggtcatactgctgtgggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000282_PV2_cVDPV AC PX000282_PV2_cVDPV
+#=GS PX000282_PV2_cVDPV DE PX000282_PV2_cVDPV
+PX000283_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000283_PV2_cVDPV AC PX000283_PV2_cVDPV
+#=GS PX000283_PV2_cVDPV DE PX000283_PV2_cVDPV
+PX000286_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-attttcctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000286_PV2_cVDPV AC PX000286_PV2_cVDPV
+#=GS PX000286_PV2_cVDPV DE PX000286_PV2_cVDPV
+PX000288_PV2_cVDPV tagtaaccccacctcagtcgaattggattgggttatactgttgtgggggtaa-attttcctt-------------------------------------------------------------------------------------------------------------------------------t
+#=GS PX000288_PV2_cVDPV AC PX000288_PV2_cVDPV
+#=GS PX000288_PV2_cVDPV DE PX000288_PV2_cVDPV
+PX000303_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-attttcctttaattcg------------------------------------------------------------------------------------------------------------------------g
+#=GS PX000303_PV2_cVDPV AC PX000303_PV2_cVDPV
+#=GS PX000303_PV2_cVDPV DE PX000303_PV2_cVDPV
+PX000307_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggtaatgctgttgtaggggtaa-atttctttttaatttcg-----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000307_PV2_cVDPV AC PX000307_PV2_cVDPV
+#=GS PX000307_PV2_cVDPV DE PX000307_PV2_cVDPV
+PX000311_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggttatgctgttgtaggggtaa-attttcctttaattcggg----------------------------------------------------------------------------------------------------------------------g
+#=GS PX000311_PV2_cVDPV AC PX000311_PV2_cVDPV
+#=GS PX000311_PV2_cVDPV DE PX000311_PV2_cVDPV
+PX725671_PV2_cVDPV tagtaaccctacctcagtcgaattggattgggttatactgttgtaggggtaa-atttttctttaattcgga----------------------------------------------------------------------------------------------------------------------g
+#=GS PX725671_PV2_cVDPV AC PX725671_PV2_cVDPV
+#=GS PX725671_PV2_cVDPV DE PX725671_PV2_cVDPV
+#=GC RF t...aaccctacctcagtcgaattggattgggtcatgctgttgtaggggtaa.atttttctttaattcggg......................................................................................................................g
+#=GC SS_cons ......(((((((((((((......)))))))..........))))))..............................................................................................................................................
+//

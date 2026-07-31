@@ -74,12 +74,12 @@ breakdowns from metadata, with no aligner installed. The populations are **not**
 see [`reproducibility.md`](reproducibility.md) for the measured gap and why closing it is the point,
 not a defect. The native toolchain (`mafft`, Infernal) is declared once in `pixi.toml`, pinned twice
 (statically via conda-meta, dynamically via each binary's own self-report) in
-`registry/toolchain.json`, and checked by `evgc alignment-toolchain`. The four NCR covariance models
-the structural block needs are committed as inputs-of-record under `registry/alignment_seeds/` and
-hash-gated by `evgc alignment-verify-seeds`, so a routine build needs no compiler and no network; the
-full from-scratch rebuild path (`scripts/setup_mxscarna.sh`) exists behind a file-presence gate and
-is not expected to run even on a fresh clone. None of this yet produces an alignment file — that is
-staged-delivery item 7, below.
+`registry/toolchain.json`, and checked by `evgc alignment-toolchain`. The ten NCR covariance models
+the structural block needs (four genus-wide, six per-serotype Sabin-anchored) are committed as
+inputs-of-record under `registry/alignment_seeds/` and hash-gated by `evgc alignment-verify-seeds`,
+so a routine build needs no compiler and no network; the full from-scratch rebuild path
+(`scripts/setup_mxscarna.sh`) exists behind a file-presence gate and is not expected to run even on
+a fresh clone. None of this yet produces an alignment file — that is staged-delivery item 7, below.
 
 ## Public commands
 

@@ -1,8 +1,9 @@
 """The committed NCR covariance-model core: hashed, scrubbed, and functionally verified.
 
-`registry/alignment_seeds/` holds four Infernal `.cm` files (POLIO and NPEV, 5' and 3' NCR) plus
-the seed alignment each was built from, copied from MAD-VDPV's own "reproducer core" so a routine
-alignment build needs only `mafft` + Infernal — no network, no compiler, no `mafft-xinsi`.
+`registry/alignment_seeds/` holds ten Infernal `.cm` files — four genus-wide, anchor-free models
+(POLIO and NPEV, 5' and 3' NCR) and six per-serotype, Sabin-anchored models (PV1/PV2/PV3, 5' and 3'
+NCR) — plus the seed alignment each was built from, copied from MAD-VDPV's own "reproducer core" so
+a routine alignment build needs only `mafft` + Infernal — no network, no compiler, no `mafft-xinsi`.
 
 Two things this file must prove that a casual copy would not: the files are the *right* models
 (their match-column count equals the shipped artifacts' block widths, independent of the source
@@ -27,13 +28,26 @@ from enterovirus_genbank_curated.contracts import ContractError
 SEED_DIR = "registry/alignment_seeds"
 
 # name -> (match_columns, population, seed), cross-checked against seed_provenance.json and against
-# the shipped artifacts' block_widths / rows_with_{5,3}ncr (final/alignments/*.provenance.json).
-EXPECTED_CM = {
+# the shipped artifacts' block_widths / rows_with_{5,3}ncr (final/alignments/*.provenance.json) for
+# the four genus-wide models. The six per-serotype models' population/seed counts are upstream's
+# own historical build numbers (see seed_provenance.json's population_note) rather than a
+# shipped-artifact cross-check, since there is no equivalent shipped provenance file to compare
+# the per-serotype production population against.
+GENUS_WIDE_CM = {
     "polio_ncr_5p.cm": (746, 2036, 80),
     "polio_ncr_3p.cm": (70, 1902, 100),
     "npev_ncr_5p.cm": (738, 2198, 83),
     "npev_ncr_3p.cm": (87, 1536, 115),
 }
+PER_SEROTYPE_CM = {
+    "pv1_ncr_5p.cm": (742, 469, 163),
+    "pv1_ncr_3p.cm": (69, 413, 85),
+    "pv2_ncr_5p.cm": (747, 1288, 185),
+    "pv2_ncr_3p.cm": (68, 1249, 134),
+    "pv3_ncr_5p.cm": (742, 380, 163),
+    "pv3_ncr_3p.cm": (69, 348, 88),
+}
+EXPECTED_CM = {**GENUS_WIDE_CM, **PER_SEROTYPE_CM}
 
 REQUIRES_ENV = pytest.mark.skipif(
     not (Path(__file__).resolve().parents[1] / ".pixi/envs/align/bin/cmalign").exists(),
@@ -119,15 +133,24 @@ def test_npev_cms_are_the_ones_ev_unified_reuses(seed_provenance: dict) -> None:
     """Matches the shipped `EV_unified.provenance.json`'s `cm_reused` field: EV builds no CM of its
     own and reuses NPEV's, which is why there is no `ev_ncr_*.cm` in this directory."""
     assert "EV_unified" in seed_provenance["reused_by"]
-    seed_dir_names = {"npev_ncr_5p.cm", "npev_ncr_3p.cm", "polio_ncr_5p.cm", "polio_ncr_3p.cm"}
-    assert set(EXPECTED_CM) == seed_dir_names
+    genus_wide_names = {"npev_ncr_5p.cm", "npev_ncr_3p.cm", "polio_ncr_5p.cm", "polio_ncr_3p.cm"}
+    assert set(GENUS_WIDE_CM) == genus_wide_names
+
+
+def test_per_serotype_cms_are_built_hand_the_genus_wide_are_not(seed_provenance: dict) -> None:
+    for key in GENUS_WIDE_CM:
+        artifact_key = key.removesuffix(".cm")
+        assert seed_provenance["artifacts"][artifact_key]["cmbuild_hand"] is False
+    for key in PER_SEROTYPE_CM:
+        artifact_key = key.removesuffix(".cm")
+        assert seed_provenance["artifacts"][artifact_key]["cmbuild_hand"] is True
 
 
 # --- align.seeds.verify_seeds: the function evgc alignment-verify-seeds actually runs -----------
 
 
 def test_verify_seeds_passes_against_the_real_directory(repository_root: Path) -> None:
-    assert verify_seeds(repository_root) == 12  # 4 .cm + 4 .sto + 4 _aln.fa
+    assert verify_seeds(repository_root) == 30  # 10 .cm + 10 .sto + 10 _aln.fa
 
 
 def test_verify_seeds_fails_when_the_directory_is_absent(tmp_path: Path) -> None:

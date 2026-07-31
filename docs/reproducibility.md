@@ -301,9 +301,11 @@ lie, together they are not.
 
 **The NCR covariance-model core is committed, not rebuilt.** `mafft-xinsi` does not work from a bare
 bioconda install — bioconda's `mafft` package omits the `mxscarnamod` helper binary — so building a
-covariance model from scratch additionally needs a compiler and a network fetch
+genus-wide covariance model from scratch additionally needs a compiler and a network fetch
 (`scripts/setup_mxscarna.sh`, pinned by sha256, not expected to run even on a fresh clone). Per
-Mike's decision, the four models the NCR structural block needs (`POLIO`/`NPEV` × 5′/3′) are
+Mike's decision, the ten models the NCR structural block needs — four genus-wide, anchor-free
+models (`POLIO`/`NPEV` × 5′/3′) and six per-serotype, Sabin-anchored models (`PV1`/`PV2`/`PV3` ×
+5′/3′, built `cmbuild --hand` against each serotype's own Sabin reference genome coordinates) — are
 committed as inputs-of-record under `registry/alignment_seeds/` instead, so a routine build needs
 only `mafft` + Infernal's `cmalign`. `evgc alignment-verify-seeds` re-hashes them and cross-checks
 each model's match-column count against its recorded provenance, with no native toolchain required.

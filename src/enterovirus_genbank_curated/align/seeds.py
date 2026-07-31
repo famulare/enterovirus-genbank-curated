@@ -1,6 +1,6 @@
 """Verify the committed NCR covariance-model core, with no native toolchain required.
 
-`registry/alignment_seeds/` holds four Infernal `.cm` files plus their seed alignments, committed as
+`registry/alignment_seeds/` holds ten Infernal `.cm` files plus their seed alignments, committed as
 inputs-of-record so a routine alignment build never needs `mafft-xinsi`, `RNAalifold`, or a
 compiler. This module is the cheap half of that promise: it re-hashes every file and cross-checks
 each `.cm`'s match-column count against `seed_provenance.json`, in pure Python, so a swapped or
