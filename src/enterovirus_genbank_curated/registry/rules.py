@@ -72,7 +72,7 @@ RULE_FIELD_ORDER = (
     "status",
 )
 ACTIVE_RULE_STATUS = "active"
-EXPECTED_RULE_COUNT = 33
+EXPECTED_RULE_COUNT = 35
 # How many of those carry the baseline's own rule_version and so appear in the frozen
 # `final/audit/rules.tsv.gz` view. The rest are the rewrite's own, on real semver.
 BASELINE_VIEW_RULE_COUNT = 28
@@ -109,6 +109,9 @@ class RuleImplementation:
     required_parameters: frozenset[str]
     declared_bases: frozenset[str]
     fn: Callable[..., Any]
+    # Canonical fields this body emits, when it emits more than the catalog's own `field_name`.
+    # R-DATE-RANGE-1 is the case that forced it: one rule, two columns. Empty means single-field.
+    fields: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -132,7 +135,9 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.epi.sample_origin_v241": (
         "superseded by R-ORIGIN-2; retained for the frozen 2.4.1 rule view"
     ),
-    "derive.epi.surveillance_stream": "not yet written; increment 5",
+    "derive.epi.surveillance_stream_v241": (
+        "superseded by R-SURVEILLANCE-2; retained for the frozen 2.4.1 rule view"
+    ),
     "derive.epi.specimen_type_v241": (
         "superseded by R-SPECIMEN-2; retained for the frozen 2.4.1 rule view"
     ),
@@ -142,10 +147,8 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.dates.collection_date_precision_v241": (
         "superseded by R-DATE-PRECISION-2; retained for the frozen 2.4.1 rule view"
     ),
-    "derive.dates.collection_year_bounds": (
-        "the derivation is settled (interval endpoints, blank unless precision is range, verified "
-        "against all 121 shipped range rows) but R-DATE-RANGE-1 covers two canonical fields and "
-        "derive/apply.py projects one field per rule"
+    "derive.dates.collection_year_bounds_v241": (
+        "superseded by R-DATE-RANGE-2; retained for the frozen 2.4.1 rule view"
     ),
     "derive.engineered.engineered_or_construct": (
         "the shipped values are superseded by the re-adjudication; the rewrite is increment 8"
@@ -175,9 +178,18 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
 
 
 def rule_implementation(
-    key: str, *, parameters: Iterable[str], evidence_bases: Iterable[str]
+    key: str,
+    *,
+    parameters: Iterable[str],
+    evidence_bases: Iterable[str],
+    fields: Iterable[str] = (),
 ) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
-    """Register a rule body under a stable key. Duplicate keys fail at import."""
+    """Register a rule body under a stable key. Duplicate keys fail at import.
+
+    `fields` is for a rule projecting more than one canonical column. Such a body returns a mapping
+    of field to outcome rather than a single outcome, and `derive/apply.py` requires the keys to
+    equal the declared set, so a rule cannot quietly start writing an undeclared column.
+    """
 
     def decorate(fn: Callable[..., Any]) -> Callable[..., Any]:
         if key in RULE_IMPLEMENTATIONS:
@@ -187,6 +199,7 @@ def rule_implementation(
             required_parameters=frozenset(parameters),
             declared_bases=frozenset(evidence_bases),
             fn=fn,
+            fields=tuple(fields),
         )
         return fn
 
@@ -350,14 +363,30 @@ def bind_rules(
                     f"{key} requires exactly {sorted(required)}"
                 )
 
-        if spec.status == ACTIVE_RULE_STATUS and spec.field_name in CANONICAL_COLUMNS:
-            other = by_canonical_field.get(spec.field_name)
+        covered = (
+            implementation.fields
+            if implementation is not None and implementation.fields
+            else (spec.field_name,)
+        )
+        if (
+            implementation is not None
+            and implementation.fields
+            and spec.field_name not in implementation.fields
+        ):
+            raise ContractError(
+                f"{spec.rule_id}: the catalog names field {spec.field_name!r} but {key} declares "
+                f"it emits {list(implementation.fields)}, which does not include it"
+            )
+        for field in covered:
+            if spec.status != ACTIVE_RULE_STATUS or field not in CANONICAL_COLUMNS:
+                continue
+            other = by_canonical_field.get(field)
             if other is not None:
                 raise ContractError(
-                    f"{spec.field_name} has two active rules, {other} and {spec.rule_id}; the "
-                    f"shipped provenance has exactly one winning rule per canonical field"
+                    f"{field} has two active rules, {other} and {spec.rule_id}; the shipped "
+                    f"provenance has exactly one winning rule per canonical field"
                 )
-            by_canonical_field[spec.field_name] = spec.rule_id
+            by_canonical_field[field] = spec.rule_id
 
         bound[spec.rule_id] = BoundRule(
             spec=spec,

@@ -79,9 +79,9 @@
     "rule_version": "2.4.1",
     "field_name": "surveillance_stream",
     "description": "Project the curated sampling_frame.",
-    "implementation": "derive.epi.surveillance_stream",
+    "implementation": "derive.epi.surveillance_stream_v241",
     "parameters": {},
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-SPECIMEN-1",
@@ -132,11 +132,11 @@
     "rule_version": "2.4.1",
     "field_name": "collection_year_earliest",
     "description": "For an interval /collection_date, the exact endpoint years, populated IFF collection_date_precision == 'range' and blank on every other row. collection_date carries the midpoint (floor of the mean of the endpoints), so the point estimate is usable without string parsing while the true bounds stay recoverable. Upstream producer: build_curated_genbank_metadata.parse_date_range / range_midpoint_year.",
-    "implementation": "derive.dates.collection_year_bounds",
+    "implementation": "derive.dates.collection_year_bounds_v241",
     "parameters": {
       "populated_when_precision_is": "range"
     },
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-CONSTRUCT-1",
@@ -408,6 +408,36 @@
         "non_human": "non-human"
       },
       "outside_scope_value": "unknown"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-SURVEILLANCE-2",
+    "rule_version": "1.0.0",
+    "field_name": "surveillance_stream",
+    "description": "Derive surveillance_stream from the GenBank /environmental_sample flag and /isolation_source text, replacing R-SURVEILLANCE-1's projection of a curated sampling_frame no declared input carries. An active sampling_frame decision wins outright. Otherwise, and whatever the virus group, the environmental flag or a match on 'sewage|wastewater|waste water|effluent|water\\b|environmental' gives environmental; a match on 'healthy|close contact|contact of|community' gives healthy/community and is tested first, because a healthy contact of a case mentions both; a match on '\\bafp\\b|acute flaccid|paralysis|paralytic|patient|case of|meningitis|gastroenteritis' gives AFP/clinical. Everything else is left unresolved rather than defaulted, including the 2,823 poliovirus records that deposit neither a host nor an isolation source: the release spreads those across all seven of its values, so no rule can separate them and answering anyway would reproduce a majority and call it derivation. A non-poliovirus record with no such text projects not_applicable, since the field was curated for poliovirus only.",
+    "implementation": "derive.epi.surveillance_stream",
+    "parameters": {
+      "streams": {
+        "environmental": "environmental",
+        "healthy_community": "healthy/community",
+        "afp_clinical": "AFP/clinical",
+        "environmental_pattern": "sewage|wastewater|waste water|effluent|water\\b|environmental",
+        "healthy_pattern": "healthy|close contact|contact of|community",
+        "clinical_pattern": "\\bafp\\b|acute flaccid|paralysis|paralytic|patient|case of|meningitis|gastroenteritis"
+      },
+      "outside_scope_value": "not_applicable"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-DATE-RANGE-2",
+    "rule_version": "1.0.0",
+    "field_name": "collection_year_earliest",
+    "description": "For an interval /collection_date, the exact endpoint years, populated IFF collection_date_precision == 'range' and blank on every other row — one rule projecting two canonical columns, collection_year_earliest and collection_year_latest, exactly as R-DATE-RANGE-1 did. collection_date carries the midpoint (floor of the mean of the endpoints), so the point estimate is usable without string parsing while the true bounds stay recoverable. On a non-range row the value is blank but source_value still records the year the record does have, which is the release's own convention. This supersedes R-DATE-RANGE-1, whose derivation was already reachable from raw/ but which the projection layer could not express while it emitted one field per rule.",
+    "implementation": "derive.dates.collection_year_bounds",
+    "parameters": {
+      "populated_when_precision_is": "range"
     },
     "status": "active"
   }

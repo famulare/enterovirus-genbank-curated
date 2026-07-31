@@ -57,3 +57,18 @@ def load_active_decisions(ledger_path: Path) -> dict[str, dict[str, str]]:
             )
         fields[row["field_name"]] = row["new_value"]
     return decisions
+
+
+def load_ledger_rows(ledger_path: Path) -> list[dict[str, str]]:
+    """Every ledger row, in file order, whatever its status.
+
+    Deliberately not filtered. `curate/apply.py` has to account for retired and superseded rows too:
+    "the curator withdrew this" is an outcome, and dropping those rows here would make them
+    indistinguishable from rows the build silently failed to apply.
+    """
+    try:
+        handle = ledger_path.open("r", encoding="utf-8", newline="")
+    except OSError as exc:
+        raise ContractError(f"cannot read decision ledger {ledger_path}: {exc}") from exc
+    with handle:
+        return list(csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL))

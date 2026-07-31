@@ -287,7 +287,11 @@ UNRESOLVED_SPECIMEN_ROWS = 12677
 # `sample_origin` rows R-ORIGIN-2 declines, over the built carve: poliovirus records that
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
 # itself undecided and so cannot be scoped either way.
-UNRESOLVED_ORIGIN_ROWS = 4582
+UNRESOLVED_ORIGIN_ROWS = 3693
+# `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
+# context at all — including the 2,823 poliovirus records the release spreads across all seven of
+# its values — plus 1,288 whose partition is undecided and so cannot be scoped either way.
+UNRESOLVED_STREAM_ROWS = 8630
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -320,10 +324,18 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "source_value": "d248b53f82e488c2",
         "evidence_basis": "7e6522502070b4fb",
     },
+    "collection_year_earliest": {"source_value": "5cee506fac0fac17"},
+    "collection_year_latest": {"source_value": "5cee506fac0fac17"},
     "locality": {"evidence_basis": "8c042f23e8b20cd4"},
+    "surveillance_stream": {
+        "final_value": "882f2bb66d1a407b",
+        "source_value": "6cd27e18d13b5cd9",
+        "manual_override": "7f1c4a18e070b024",
+    },
     "sample_origin": {
-        "final_value": "2e915e4fd4f6f397",
-        "source_value": "8753f4cb19e1dccb",
+        "final_value": "81505b557e961fee",
+        "source_value": "15a97bb84bbd17ae",
+        "manual_override": "74441f560e198627",
     },
     "specimen_type": {
         "final_value": "a8aa1248a8e83d19",
@@ -364,25 +376,80 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "manual_override": 0,
     },
     "sample_origin": {
-        # Only four, and each is explicable. JX181922.1 and OR538735.1 are records the ledger calls
-        # non-poliovirus that the release nonetheless gave a curated origin, where R-ORIGIN-2 scopes
-        # them out. JX538031.1 deposits `/host=nonhuman primate` and the release calls it `human`,
-        # which is simply wrong. MK719554.1 is the authorized correction: `/host=Homo sapiens`
-        # against a shipped `unknown`.
-        "final_value": 4,
-        "winning_rule_id": 19702,
-        "evidence_basis": 19702,
+        # 11,767 = 11,617 records whose `/host` names a human and which the release calls `unknown`
+        #          + 149 whose `/host` names something non-human, also shipped `unknown`
+        #          + 1 (`JX538031.1`) deposited as `/host=nonhuman primate` and shipped as `human`.
+        # The release only curated origin for poliovirus, so `unknown` outside it means "not looked
+        # at" rather than "looked at and undetermined". Curator decision 2026-07-30: where GenBank
+        # states a host, read it — declining would assert non-determination about stated data.
+        "final_value": 11767,
+        "winning_rule_id": 20591,
+        "evidence_basis": 20591,
         # The rule records the input it read — the host, the specimen text, or the partition it
         # scoped by — where the release recorded the curated `origin_class` it projected. The 242
         # agreeing rows are where the host string already was the origin, plus the ledger overrides.
-        "source_value": 19460,
+        "source_value": 20487,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
         "source_field": 0,
-        # Exact: TRUE on precisely the records an active `origin_class` decision resolves. A text
-        # rule overriding the ledger shows up here, which is how the omission was caught.
+        # 138 = the redundant `origin_class` decisions retired on 2026-07-30. The release's
+        #       provenance says a human touched those cells; the rewrite no longer has an override
+        #       there, because the rule derives the same value from `/host`. The *value* is
+        #       unchanged — which is what `applied_unchanged` established before they were retired —
+        #       so this delta is the honest consequence of retiring redundant curation, not a
+        #       regression. A text rule silently overriding a live decision would also appear here,
+        #       which is how that omission was caught in the first place.
+        "manual_override": 138,
+    },
+    "collection_year_earliest": {
+        # The cleanest result in the rewrite: `final_value` and `evidence_basis` both match the
+        # release on all 24,284 rows, so the endpoint derivation and the basis assignment are
+        # exactly what shipped. Only the superseding rule id differs everywhere, plus `source_value`
+        # on the 1,763 archival-date records where the release had a year and precision is now `NA`.
+        "final_value": 0,
+        "evidence_basis": 0,
+        "winning_rule_id": 24284,
+        "source_value": 1763,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "source_field": 0,
         "manual_override": 0,
+    },
+    "collection_year_latest": {
+        "final_value": 0,
+        "evidence_basis": 0,
+        "winning_rule_id": 24284,
+        "source_value": 1763,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "source_field": 0,
+        "manual_override": 0,
+    },
+    "surveillance_stream": {
+        # 3,487 = 3,315 non-poliovirus records where the rule reads the record's own text and the
+        #         release said `not_applicable`, never having curated non-polio: 2,287
+        #         environmental, 917 AFP/clinical, 111 healthy/community
+        #       + 92 poliovirus records whose text names BOTH a healthy contact and a poliomyelitis
+        #         patient. The release says AFP/clinical; pattern order picks healthy/community.
+        #         Whether a contact sampled during an AFP investigation belongs to AFP surveillance
+        #         or to the community is a real question about the surveillance system, so this is a
+        #         declared disagreement awaiting that call rather than a settled one.
+        #       + 78 poliovirus records the release left `not_applicable`, `AFP/clinical` or
+        #         `unknown` where the text names an environmental or clinical context outright.
+        "final_value": 3487,
+        "winning_rule_id": 15654,
+        "evidence_basis": 15654,
+        "source_value": 15334,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "source_field": 0,
+        # 24 = the redundant `sampling_frame` decisions retired on 2026-07-30, same reasoning as
+        #      `sample_origin`'s 138: the value is unchanged, the override is gone.
+        "manual_override": 24,
     },
     "specimen_type": {
         # One record: GQ331952.1 deposits `/isolation_source=groundwater` and ships `stool`.

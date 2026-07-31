@@ -77,28 +77,48 @@ def project_field(bound: BoundRule, views: Sequence[RecordView]) -> list[dict[st
 
     rows: list[dict[str, str]] = []
     for view in views:
-        outcome = implementation.fn(parameters, view)
-        if not isinstance(outcome, RuleOutcome):
-            raise ContractError(
-                f"{bound.spec.rule_id} returned {type(outcome).__name__}, not a RuleOutcome"
+        produced = implementation.fn(parameters, view)
+        # A rule covering several canonical columns returns a mapping. R-DATE-RANGE covers two, and
+        # requiring the keys to equal the declared set is what stops a rule writing an undeclared
+        # column — the same reason `evidence_basis` is checked against `declared_bases` below.
+        if implementation.fields:
+            if not isinstance(produced, Mapping):
+                raise ContractError(
+                    f"{bound.spec.rule_id} declares {list(implementation.fields)} but returned "
+                    f"{type(produced).__name__}, not a mapping of field to RuleOutcome"
+                )
+            if set(produced) != set(implementation.fields):
+                raise ContractError(
+                    f"{bound.spec.rule_id} returned fields {sorted(produced)}, not the declared "
+                    f"{sorted(implementation.fields)}"
+                )
+            emitted = [(field, produced[field]) for field in implementation.fields]
+        else:
+            emitted = [(bound.spec.field_name, produced)]
+
+        for canonical_field, outcome in emitted:
+            if not isinstance(outcome, RuleOutcome):
+                raise ContractError(
+                    f"{bound.spec.rule_id} returned {type(outcome).__name__}, not a RuleOutcome"
+                )
+            if outcome.evidence_basis not in implementation.declared_bases:
+                raise ContractError(
+                    f"{bound.spec.rule_id} emitted evidence_basis {outcome.evidence_basis!r}, "
+                    f"which it does not declare; declared: "
+                    f"{sorted(implementation.declared_bases)}"
+                )
+            rows.append(
+                {
+                    "accession": view.accession,
+                    "version": view.version,
+                    "canonical_field": canonical_field,
+                    "final_value": outcome.value,
+                    "source_field": outcome.source_field,
+                    "source_value": outcome.source_value,
+                    "winning_rule_id": bound.spec.rule_id,
+                    "evidence_basis": outcome.evidence_basis,
+                    "manual_override": OVERRIDE if outcome.manual_override else NO_OVERRIDE,
+                    "unresolved_reason": outcome.unresolved_reason,
+                }
             )
-        if outcome.evidence_basis not in implementation.declared_bases:
-            raise ContractError(
-                f"{bound.spec.rule_id} emitted evidence_basis {outcome.evidence_basis!r}, which it "
-                f"does not declare; declared: {sorted(implementation.declared_bases)}"
-            )
-        rows.append(
-            {
-                "accession": view.accession,
-                "version": view.version,
-                "canonical_field": bound.spec.field_name,
-                "final_value": outcome.value,
-                "source_field": outcome.source_field,
-                "source_value": outcome.source_value,
-                "winning_rule_id": bound.spec.rule_id,
-                "evidence_basis": outcome.evidence_basis,
-                "manual_override": OVERRIDE if outcome.manual_override else NO_OVERRIDE,
-                "unresolved_reason": outcome.unresolved_reason,
-            }
-        )
     return rows

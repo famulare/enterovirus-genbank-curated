@@ -36,10 +36,19 @@ from enterovirus_genbank_curated.contracts import (
     validate_parity_spec,
     verify_raw_input,
 )
+from enterovirus_genbank_curated.curate.apply import (
+    DecisionApplication,
+    apply_decisions,
+    assert_every_decision_is_accounted_for,
+    project_without_decisions,
+)
 from enterovirus_genbank_curated.curate.queue import build_queue
 from enterovirus_genbank_curated.derive.apply import build_record_views, project_field
 from enterovirus_genbank_curated.derive.metadata import transport_metadata
-from enterovirus_genbank_curated.export.audit import write_projection_provenance
+from enterovirus_genbank_curated.export.audit import (
+    write_decision_applications,
+    write_projection_provenance,
+)
 from enterovirus_genbank_curated.export.metadata import write_metadata_transport
 from enterovirus_genbank_curated.export.queue import write_curation_queue
 from enterovirus_genbank_curated.export.source import (
@@ -50,6 +59,7 @@ from enterovirus_genbank_curated.genbank.parse import parse_source_tables
 from enterovirus_genbank_curated.registry.decisions import (
     load_active_decisions,
     load_excluded_accessions,
+    load_ledger_rows,
 )
 from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 from enterovirus_genbank_curated.registry.rules import (
@@ -168,6 +178,8 @@ def build_source_layer(
 class MetadataBuildResult:
     rows: list[dict[str, str]]
     provenance: list[dict[str, str]]
+    applications: list[DecisionApplication]
+    application_tally: dict[str, int]
     row_counts: dict[str, int]
     output_dir: Path
 
@@ -199,9 +211,10 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         (row["version"] for row in transport.rows),
         load_active_decisions(ledger_path),
     )
+    bound = bind_rules(catalog)
     provenance = [
         row
-        for rule in bind_rules(catalog).values()
+        for rule in bound.values()
         if rule.implementation is not None
         for row in project_field(rule, views)
     ]
@@ -216,6 +229,19 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # curator.
     queue = build_queue(provenance)
 
+    # What became of every recorded decision, measured against a counterfactual projection with the
+    # ledger withheld. Without that second projection, "this decision changed something" is an
+    # assumption; with it, `applied_unchanged` also surfaces curation a rule has made redundant.
+    ledger_rows = load_ledger_rows(ledger_path)
+    applications = apply_decisions(
+        ledger=ledger_rows,
+        provenance=provenance,
+        counterfactual=project_without_decisions(list(bound.values()), views),
+        corpus_accessions=frozenset(row["accession"] for row in tables["records"]),
+        carved_versions={row["accession"]: row["version"] for row in transport.rows},
+    )
+    application_tally = assert_every_decision_is_accounted_for(ledger_rows, applications)
+
     row_counts = {
         "source_records": len(tables["records"]),
         "transported": len(transport.rows),
@@ -225,14 +251,18 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         "dates_not_applicable": not_applicable_dates,
         "localities_without_geography": locality_bases.get("no_geography_deposited", 0),
         "curation_queue_groups": len(queue),
+        "decision_applications": len(applications),
         "curation_queue_records": sum(len(group.versions) for group in queue),
     }
     write_metadata_transport(output_dir, transport.rows, row_counts, provenance)
     write_projection_provenance(output_dir, provenance)
     write_curation_queue(output_dir, queue)
+    write_decision_applications(output_dir, applications)
     return MetadataBuildResult(
         rows=transport.rows,
         provenance=provenance,
+        applications=applications,
+        application_tally=application_tally,
         row_counts=row_counts,
         output_dir=output_dir,
     )

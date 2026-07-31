@@ -41,12 +41,19 @@ naming: three the release calls `vaccine` on a `/host=Homo sapiens` deposit — 
 fact belongs in `poliovirus_classification`, which already records it — and one `/host=nonhuman
 primate` the release calls `human`, which is simply wrong.
 
-The rule is **partition-scoped**, which is load-bearing rather than tidy. `sample_origin` was
-curated for poliovirus only, so a non-poliovirus record projects `unknown` under its own basis, and
-a record whose membership is *undecided* declines rather than being scoped either way. That scoping
-removes 23 of the 34 defects an unscoped draft had: the `/isolation_source=opv` records are
-`Enterovirus C`, whose membership no organism name can settle, so no epi rule should have been asked
-about them at all.
+**A deposited `/host` is read whatever the virus group** (curator decision, 2026-07-30). The
+partition scope exists because the *curated master* covered poliovirus only, which is a fact about
+the upstream process rather than about the record; where GenBank states a host, declining to read
+it would assert non-determination about data that is right there. This is the largest single
+correction in the rewrite: **11,767 records** differ from the release on `sample_origin`, 11,617 of
+them a stated human host the release calls `unknown`.
+
+The scope still applies when no host was deposited, and there it is load-bearing rather than tidy.
+The specimen-text fallback was calibrated on poliovirus and there is no evidence it carries to a
+population it was never measured against, so a non-poliovirus record with no host projects `unknown`
+under its own basis and a record whose membership is *undecided* declines. That scoping removes 23
+of the 34 defects an unscoped draft had: the `/isolation_source=opv` records are `Enterovirus C`,
+whose membership no organism name settles, so no epi rule should have been asked about them at all.
 
 Note what `unknown` is *not* doing here. It carries both "never curated outside poliovirus" and
 "curated but undetermined", and unlike the `locality` basis that is not a conflation to fix in the
@@ -187,6 +194,23 @@ def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
             manual_override=True,
         )
 
+    # A deposited `/host` answers the question outright, whatever the virus group. Curator decision,
+    # 2026-07-30: the partition scope exists because the *curated master* covered poliovirus only,
+    # which is a fact about the upstream process rather than about the record. Where GenBank states
+    # a host, declining to read it asserts non-determination about something the data does state.
+    origins = parameters["origins"]
+    host = view.qualifier(HOST_QUALIFIER).strip().lower()
+    if host:
+        human = re.search(parameters["human_host_pattern"], host) is not None
+        return RuleOutcome(
+            value=origins["human"] if human else origins["non_human"],
+            evidence_basis=BASIS_HOST_SPECIES,
+            source_field=ORIGIN_SOURCE_FIELD,
+            source_value=host,
+        )
+
+    # With no host the scope matters again: the specimen-text fallback was calibrated on poliovirus
+    # and there is no evidence it carries to a population it was never measured against.
     partition = resolved_partition(view)
     if not partition:
         return RuleOutcome(
@@ -204,17 +228,6 @@ def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
             source_value=partition,
         )
 
-    origins = parameters["origins"]
-    host = view.qualifier(HOST_QUALIFIER).strip().lower()
-    if host:
-        human = re.search(parameters["human_host_pattern"], host) is not None
-        return RuleOutcome(
-            value=origins["human"] if human else origins["non_human"],
-            evidence_basis=BASIS_HOST_SPECIES,
-            source_field=ORIGIN_SOURCE_FIELD,
-            source_value=host,
-        )
-
     specimen = view.qualifier(ISOLATION_SOURCE_QUALIFIER).strip().lower()
     if specimen and re.search(parameters["human_specimen_pattern"], specimen):
         return RuleOutcome(
@@ -229,4 +242,89 @@ def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
         source_field=ORIGIN_SOURCE_FIELD,
         source_value=specimen,
         unresolved_reason=UNRESOLVED_NO_ORIGIN_EVIDENCE,
+    )
+
+
+ENVIRONMENTAL_FLAG_QUALIFIER = "environmental_sample"
+STREAM_SOURCE_FIELD = "sampling_frame"
+LEDGER_STREAM_FIELD = "sampling_frame"
+
+BASIS_SPECIMEN_CONTEXT = "specimen_context"
+UNRESOLVED_NO_STREAM_EVIDENCE = "no_surveillance_context_in_record"
+
+
+@rule_implementation(
+    "derive.epi.surveillance_stream",
+    parameters=("streams", "outside_scope_value"),
+    evidence_bases=(BASIS_SPECIMEN_CONTEXT, BASIS_OUTSIDE_POLIOVIRUS),
+)
+def surveillance_stream(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
+    """Which surveillance system produced the sample, and mostly a refusal to say.
+
+    This is the column where declining matters most, and where the release is least recoverable. The
+    largest input group — 2,823 poliovirus records depositing neither a `/host` nor an
+    `/isolation_source` — is spread across **all seven** shipped values: 2,236 `AFP/clinical`, 225
+    `unknown`, 114 `environmental`, 105 `vaccine/reference`, 91 `engineered/lab`, 38
+    `not_applicable`, 14 `healthy/community`. Nothing in the record separates them. The
+    discriminating evidence is the paper, and a rule answering anyway would be reproducing the
+    release's majority and calling it derivation.
+
+    Curator decision, 2026-07-30: decline where the record does not say. So this resolves only the
+    three cases the text carries — an environmental sample, a healthy-contact sample, and an
+    explicitly clinical or paralytic case — and leaves the rest to the queue.
+    """
+    streams = parameters["streams"]
+    asserted = view.decisions.get(LEDGER_STREAM_FIELD)
+    if asserted:
+        return RuleOutcome(
+            value=asserted,
+            evidence_basis=BASIS_SPECIMEN_CONTEXT,
+            source_field=STREAM_SOURCE_FIELD,
+            source_value=asserted,
+            manual_override=True,
+        )
+
+    specimen = view.qualifier(ISOLATION_SOURCE_QUALIFIER).strip().lower()
+    # As for `/host` in R-ORIGIN-2: where the record states the context, read it whatever the group.
+    if view.qualifier(ENVIRONMENTAL_FLAG_QUALIFIER).strip() or re.search(
+        streams["environmental_pattern"], specimen
+    ):
+        stream = streams["environmental"]
+    elif re.search(streams["healthy_pattern"], specimen):
+        stream = streams["healthy_community"]
+    elif re.search(streams["clinical_pattern"], specimen):
+        stream = streams["afp_clinical"]
+    else:
+        stream = ""
+
+    if stream:
+        return RuleOutcome(
+            value=stream,
+            evidence_basis=BASIS_SPECIMEN_CONTEXT,
+            source_field=STREAM_SOURCE_FIELD,
+            source_value=specimen,
+        )
+
+    partition = resolved_partition(view)
+    if not partition:
+        return RuleOutcome(
+            value="",
+            evidence_basis=BASIS_SPECIMEN_CONTEXT,
+            source_field=STREAM_SOURCE_FIELD,
+            source_value=view.record.get("organism_name", ""),
+            unresolved_reason=UNRESOLVED_FOLLOWS_PARTITION,
+        )
+    if partition != POLIOVIRUS:
+        return RuleOutcome(
+            value=parameters["outside_scope_value"],
+            evidence_basis=BASIS_OUTSIDE_POLIOVIRUS,
+            source_field=STREAM_SOURCE_FIELD,
+            source_value=partition,
+        )
+    return RuleOutcome(
+        value="",
+        evidence_basis=BASIS_SPECIMEN_CONTEXT,
+        source_field=STREAM_SOURCE_FIELD,
+        source_value=specimen,
+        unresolved_reason=UNRESOLVED_NO_STREAM_EVIDENCE,
     )
