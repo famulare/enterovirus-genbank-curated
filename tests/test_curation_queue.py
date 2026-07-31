@@ -40,14 +40,33 @@ from enterovirus_genbank_curated.derive.partition import (
 # record whose organism name states no type. That is the largest single population in the queue that
 # a *sequence* stage would clear rather than a curator — 685 `Enterovirus C` records alone — and it
 # is listed as curation work because until that stage exists a human is what resolves it.
-EXPECTED_QUEUE_WORK_ITEMS = 28496
+#
+# 28,563 when the membership rescue closed the carve gap, and the +67 is three terms:
+#   + 23 x 3  the rescued records join `specimen_type`, `virus_type` and `virus_group`, declining on
+#             all three for the same reason they were rescued — a patent deposit with no
+#             `/isolation_source` and an organism name that names nothing
+#   −  2      `engineered_or_construct` leaves the queue entirely: its only two items were
+#             `LY501105`/`LZ216100`, and the curator closed both on 2026-07-31
+# `surveillance_stream`, `sample_origin` and `poliovirus_classification` do not move, because the
+# rescued records decline on those *following the partition*, and partition-consequent declines are
+# excluded from the queue by the rule above.
+EXPECTED_QUEUE_WORK_ITEMS = 28563
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
 # One group, not two: both declined records deposit `division=PAT`, and the queue groups by the
 # input the rule examined, so the pair the curator left open arrives as one question. That is the
 # grouping working — an answer to it is one adjudication covering both.
-EXPECTED_QUEUE_GROUPS = 299
+#
+# 304 when the membership rescue landed: +6 −1. The 23 rescued records add **six** groups and not 23
+# questions, because they carry only three distinct organism names and each name is a group under
+# both `virus_group` and `virus_type` — `synthetic construct` (13 records), `unidentified` (8) and
+# `Homo sapiens` (2). The −1 is `engineered_or_construct` leaving the queue with its single group.
+#
+# 67 new declined cells arriving as 6 questions is the grouping earning its keep, and the questions
+# are the right ones: "is a `synthetic construct` patent deposit whose capsid is 2% from Sabin a
+# poliovirus, and what type is it" is one adjudication, not thirteen.
+EXPECTED_QUEUE_GROUPS = 304
 
 
 def declined(

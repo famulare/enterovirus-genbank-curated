@@ -259,42 +259,56 @@ def compare_metadata_to_release(
 # That second number is 414, and an earlier draft of this work mistook it for the size of the
 # problem — which is how a rule ends up scoring 98.3% by guessing.
 #
-# 1,832 = 1,765 records carrying an uninformative organism name in the shipped canonical table
-#         − 17 that are `SEQUENCE_RESCUED_INCLUSIONS` and so are not in the carve at all
+# 1,855 = 1,765 records carrying an uninformative organism name in the shipped canonical table
+#         − 2 that are `SEQUENCE_RESCUED_INCLUSIONS` and so are not in the carve at all
 #         − 15 carved ones the ledger's `is_poliovirus` decisions resolve
 #              (17 such decisions exist; 2 are on records literally named `Poliovirus 2`/`3`, which
 #               the name predicate already decides, so only 15 land on uninformative names)
 #         + 99 a review found were being guessed: 95 named `Human enterovirus`, the unqualified
-#           pre-2016 species name, and 4 named for a strain rather than a type.
-UNRESOLVED_PARTITION_ROWS = 1832
+#           pre-2016 species name, and 4 named for a strain rather than a type
+#         + 8 the membership rescue admits and the release excludes (`UNDECLARED_EXCLUSIONS` less
+#           AF326751.2, which the genus predicate already reached).
+#
+# The whole +23 of the membership rescue lands here, and that is the expected shape rather than a
+# surprise: a record is rescued *because* its organism name is `unidentified`, `synthetic construct`
+# or `Homo sapiens`, which is exactly the name the partition rule cannot decide from. The sequence
+# settles membership in the carve; it does not write the column — R-PARTITION-2 reads the name.
+UNRESOLVED_PARTITION_ROWS = 1855
 # `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: those where no keyword matches
-# `/isolation_source` and 4 where two categories match, naming two specimens rather than one. One of
-# the 12,680 is AF326751.2, which the release excludes, so 12,683 of the 24,284 shared rows decline.
-UNRESOLVED_SPECIMEN_ROWS = 12677
+# `/isolation_source` and 4 where two categories match, naming two specimens rather than one. All 23
+# rescued records decline — patent deposits carry no `/isolation_source` — so this moved with them.
+UNRESOLVED_SPECIMEN_ROWS = 12700
 # `sample_origin` rows R-ORIGIN-2 declines, over the built carve: poliovirus records that
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
-# itself undecided and so cannot be scoped either way.
-UNRESOLVED_ORIGIN_ROWS = 3693
+# itself undecided and so cannot be scoped either way. 19 of the 23 rescued records decline; the
+# other four carry an active `origin_class` decision (E01570, E01572 vaccine; HV932178 human;
+# MA400487 non-human).
+UNRESOLVED_ORIGIN_ROWS = 3712
 # `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
-# its values — plus 1,288 whose partition is undecided and so cannot be scoped either way.
-UNRESOLVED_STREAM_ROWS = 8630
-# `engineered_or_construct` rows R-CONSTRUCT-2 declines: `LY501105` and `LZ216100`, the CAVA
-# cold-adaptation pair Appendix B of the re-adjudication records as open in either direction. The
-# rule declines rather than emitting the structural FALSE, because a FALSE here would assert a
-# decision the curator explicitly withheld.
-UNRESOLVED_ENGINEERED_ROWS = 2
-# `virus_type` rows R-TYPE-2 declines: 2,156 whose organism name states no type — species-level
+# its values — plus those whose partition is undecided and so cannot be scoped either way. 20 of the
+# 23 rescued records decline; E01570, E01572 and HV932178 carry an active `sampling_frame` decision.
+UNRESOLVED_STREAM_ROWS = 8650
+# `engineered_or_construct` now declines on nothing. It declined on `LY501105` and `LZ216100`, the
+# CAVA cold-adaptation pair Appendix B of the re-adjudication recorded as open in either direction,
+# and the curator closed both FALSE on 2026-07-31 on the precedent already set inside patent
+# WO2006042156 — a parental deposit is FALSE, only the constructed product is TRUE. The rule still
+# declines rather than emitting a structural FALSE where no decision exists; there is simply no
+# such record left. Kept as a named zero so the next one to appear fails this gate rather than
+# passing.
+UNRESOLVED_ENGINEERED_ROWS = 0
+# `virus_type` rows R-TYPE-2 declines: 2,179 whose organism name states no type — species-level
 # names like `Enterovirus C`, the pre-2016 bare numbering (`Enterovirus 19`), simian species outside
 # A-to-D scheme (`Enterovirus J115`), and the chimera label `Enterovirus coxsackiepol` the release
 # types PV2 — plus 37 where an active decision records the type as `unknown`, which is a curator
-# stating that it is undetermined.
-UNRESOLVED_TYPE_ROWS = 2193
-# `poliovirus_classification` rows R-CLASS-2 declines: 1,832 whose virus group is itself undecided,
+# stating that it is undetermined. All 23 rescued records land in the first group, for the same
+# reason they land in `UNRESOLVED_PARTITION_ROWS`.
+UNRESOLVED_TYPE_ROWS = 2216
+# `poliovirus_classification` rows R-CLASS-2 declines: 1,855 whose virus group is itself undecided,
 # 1,557 poliovirus records with under 300 nt of VP1 to measure divergence over, 33 with no serotype
 # in the organism name to pick a Sabin reference with, and 3 whose active decision asserts a value
 # outside the declared controlled vocabulary.
-UNRESOLVED_CLASSIFICATION_ROWS = 3425
+UNRESOLVED_CLASSIFICATION_ROWS = 3448
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -318,18 +332,18 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
     "collection_date": {
         "final_value": "efaafa9a6e33ff00",
         "source_field": "7f98063eac4f572e",
-        "source_value": "fc9f7ef2a78df8bd",
-        "evidence_basis": "26f98ff5bbd3f6a2",
+        "source_value": "171e028f3ca04e10",
+        "evidence_basis": "449acc9d84a00427",
     },
     "collection_date_precision": {
-        "final_value": "b044d2c0f1dd8b35",
-        "source_field": "24fdd1bf1b32ca05",
-        "source_value": "d248b53f82e488c2",
-        "evidence_basis": "7e6522502070b4fb",
+        "final_value": "93b7f613e38ce617",
+        "source_field": "9265ff07c59488ae",
+        "source_value": "8c64f2ad822223f8",
+        "evidence_basis": "8a4eb7836f50af41",
     },
     "collection_year_earliest": {"source_value": "5cee506fac0fac17"},
     "collection_year_latest": {"source_value": "5cee506fac0fac17"},
-    "locality": {"evidence_basis": "8c042f23e8b20cd4"},
+    "locality": {"evidence_basis": "082c3e6e214b1f23"},
     "surveillance_stream": {
         "final_value": "882f2bb66d1a407b",
         "source_value": "6cd27e18d13b5cd9",
@@ -345,10 +359,10 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "source_value": "39eefccaaa5b443e",
     },
     "engineered_or_construct": {
-        "final_value": "c1db063e162523f3",
-        "source_field": "b84e06c600e82ef1",
-        "source_value": "6237fe2e63654ad6",
-        "manual_override": "0322a79c5c21729f",
+        "final_value": "b7dd84ece7a24f6e",
+        "source_field": "0552a7efb840e965",
+        "source_value": "aff5c1164d62f3ed",
+        "manual_override": "d5c76536de115407",
     },
     "virus_type": {
         "final_value": "3ded0ff32a906ad7",
@@ -366,29 +380,33 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
     "collection_date": {
         # 1,761 = the 1,764 dateless records 2.4.1 gave a year recovered from outside GenBank, now
         #         emitting blank − 3 whose year an active `collection_year_curated` decision
-        #         supplies. The 2,805 the release also left blank already agree.
+        #         supplies. The 2,805 the release also left blank already agree. Unmoved by the
+        #         membership rescue: all 15 newly-compared rows ship blank in the release too.
         "final_value": 1761,
         # Every row: a superseding rule has a different id by construction.
-        "winning_rule_id": 24284,
-        # All 4,549 dateless rows move to `no_date_deposited`, and their `source_value` moves with
-        # it. `source_field` moves on only the 1,761 whose value also moved, because the release
+        "winning_rule_id": 24299,
+        # All 4,564 dateless rows move to `no_date_deposited`, and their `source_value` moves with
+        # it — 4,549 as before plus the 15 rescued rows, none of which deposited a date either.
+        # `source_field` moves on only the 1,761 whose value also moved, because the release
         # already recorded the other 2,805 against `collection_date_precision`.
-        "evidence_basis": 4549,
+        "evidence_basis": 4564,
         "source_field": 1761,
-        "source_value": 4549,
+        "source_value": 4564,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
         "manual_override": 0,
     },
     "collection_date_precision": {
-        # 4,549 = 4,569 records that deposited no date − 17 outside the carve − 3 a ledger decision
-        #         resolves to `year`, which the release also calls `year`.
-        "final_value": 4549,
-        "winning_rule_id": 24284,
-        "evidence_basis": 4549,
-        "source_field": 4549,
-        "source_value": 4549,
+        # 4,564 = 4,569 records that deposited no date − 2 outside the carve − 3 a ledger decision
+        #         resolves to `year`, which the release also calls `year`. The gap term is 2 rather
+        #         than 17 because `SEQUENCE_RESCUED_INCLUSIONS` shrank to that; the other 15 are now
+        #         carved, compared, and dateless, which is why every column here moves by 15.
+        "final_value": 4564,
+        "winning_rule_id": 24299,
+        "evidence_basis": 4564,
+        "source_field": 4564,
+        "source_value": 4564,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
@@ -402,8 +420,11 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # at" rather than "looked at and undetermined". Curator decision 2026-07-30: where GenBank
         # states a host, read it — declining would assert non-determination about stated data.
         "final_value": 11767,
-        "winning_rule_id": 20591,
-        "evidence_basis": 20591,
+        # 20,595 = 20,591 + the 4 rescued records that resolve an origin at all (E01570 and E01572
+        #          `vaccine`, HV932178 `human`, MA400487 `non-human`, each from an active
+        #          `origin_class` decision). The other 19 decline and so are never compared.
+        "winning_rule_id": 20595,
+        "evidence_basis": 20595,
         # The rule records the input it read — the host, the specimen text, or the partition it
         # scoped by — where the release recorded the curated `origin_class` it projected. The 242
         # agreeing rows are where the host string already was the origin, plus the ledger overrides.
@@ -428,7 +449,7 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # on the 1,763 archival-date records where the release had a year and precision is now `NA`.
         "final_value": 0,
         "evidence_basis": 0,
-        "winning_rule_id": 24284,
+        "winning_rule_id": 24299,
         "source_value": 1763,
         "accession": 0,
         "version": 0,
@@ -439,7 +460,7 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
     "collection_year_latest": {
         "final_value": 0,
         "evidence_basis": 0,
-        "winning_rule_id": 24284,
+        "winning_rule_id": 24299,
         "source_value": 1763,
         "accession": 0,
         "version": 0,
@@ -459,8 +480,10 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         #       + 78 poliovirus records the release left `not_applicable`, `AFP/clinical` or
         #         `unknown` where the text names an environmental or clinical context outright.
         "final_value": 3487,
-        "winning_rule_id": 15654,
-        "evidence_basis": 15654,
+        # 15,657 = 15,654 + the 3 rescued records carrying an active `sampling_frame` decision
+        #          (E01570, E01572, HV932178). The other 20 decline and are never compared.
+        "winning_rule_id": 15657,
+        "evidence_basis": 15657,
         "source_value": 15334,
         "accession": 0,
         "version": 0,
@@ -502,30 +525,42 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
     # made them TRUE tested the database division code. The report's own headline caveat is that 468
     # of the flips carry no per-record judgement, and it stands here unchanged.
     "engineered_or_construct": {
-        "final_value": 500,
+        # 511 = 500 + 11, and both new terms are the *same* defect this delta already declares.
+        #       9 are rescued patent-division records the release marked TRUE because 2.4.1's
+        #       predicate read the division code as free text (E00766-9, E01570, E01572, HV932178,
+        #       PE314016, PH149759); R-CONSTRUCT-2 finds no structural synthetic signal in any of
+        #       them. The other 2 are `LY501105`/`LZ216100`, which this rule declined until the
+        #       curator closed them FALSE on 2026-07-31 against a shipped TRUE.
+        "final_value": 511,
         # Every compared row differs on both, necessarily: R-CONSTRUCT-2 is a different rule with a
-        # different set of branches than the `canonical_projection` the release recorded.
-        "winning_rule_id": 24282,
-        "evidence_basis": 24282,
+        # different set of branches than the `canonical_projection` the release recorded. 24,299
+        # rather than 24,282 because the 15 rescued rows are compared and the CAVA pair no longer
+        # declines.
+        "winning_rule_id": 24299,
+        "evidence_basis": 24299,
         # The release named the curated column as its own source. R-CONSTRUCT-2 names the
-        # structured field it actually read — `division` for the 24,254 with no synthetic signal,
-        # the digest for the 6 promoted across byte-identical twins, the ledger field for the 24
+        # structured field it actually read — `division` for those with no synthetic signal, the
+        # digest for the ones promoted across byte-identical twins, the ledger field for the
         # curated rows.
-        "source_field": 24258,
-        "source_value": 24260,
-        # 8, and both halves are worth naming.
+        "source_field": 24272,
+        "source_value": 24276,
+        # 10, and every part is worth naming.
         #
         # Four stop being overrides: `AJ512791`, `AJ512792`, `DD214215`, `DD214221`, whose ledger
         # rows this pass retires per Appendix B Q8 and Q4.
         #
-        # Four gain one — and two of those are a live D2-class defect in the release. `CS406436` and
+        # Six gain one — and four of those are a live D2-class defect in the release. `CS406436` and
         # `CS406482` carry an **active FALSE** `engineered_or_construct` decision and the release
         # ships them **TRUE**, with `manual_override=FALSE`: the ledger says one thing, the shipped
         # column says the other, and nothing recorded the contradiction. The `\\bPAT\\b` predicate
-        # simply outvoted the curation. The other two are `CS406483` (the FALSE row corrected to
-        # TRUE here) and `PU749298` (the row added here), which agree on the value and differ only
-        # in recording that a decision is what reached it.
-        "manual_override": 8,
+        # simply outvoted the curation. `LY501105`/`LZ216100`, added 2026-07-31, are the same shape
+        # by design: the curator resolved them FALSE on exactly the CS406436/CS406482 precedent,
+        # against a shipped TRUE.
+        #
+        # The other two are `CS406483` (the FALSE row corrected to TRUE here) and `PU749298` (the
+        # row added here), which agree on the value and differ only in recording that a decision is
+        # what reached it.
+        "manual_override": 10,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
@@ -604,12 +639,13 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # No value moves: every blank stays blank and every non-blank was already correct. The whole
         # correction is in the branch label, which is exactly why per-column declaration matters.
         "final_value": 0,
-        "winning_rule_id": 24284,
-        # 19,018 = 16,987 records depositing a country and no region (now `no_admin1_deposited`)
+        "winning_rule_id": 24299,
+        # 19,033 = 16,987 records depositing a country and no region (now `no_admin1_deposited`)
         #          + 2,048 depositing no geo_loc_name at all (now `no_geography_deposited`),
-        #          both of which 2.4.1 called `duplicate_of_admin1_suppressed`, less the 17 of those
-        #          outside the carve. Measured, not arithmetic on the raw canonical counts.
-        "evidence_basis": 19018,
+        #          both of which 2.4.1 called `duplicate_of_admin1_suppressed`, less the 2 of those
+        #          outside the carve. Measured, not arithmetic on the raw canonical counts. All 15
+        #          rescued rows are patent deposits with no geography, so all 15 land here.
+        "evidence_basis": 19033,
         "source_field": 0,
         "source_value": 0,
         "accession": 0,

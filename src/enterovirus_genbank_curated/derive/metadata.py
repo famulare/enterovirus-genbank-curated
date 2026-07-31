@@ -15,6 +15,11 @@ projection row because there is no projection: the value is the source value.
 Thirteen of the fourteen now have a rule here. `sequence_scope` is the one that does not, and
 `PENDING_COLUMNS` says why.
 
+The row *set* is also decided here, by `transport_metadata`'s three inclusion predicates. The third
+of them — membership rescue by capsid amino-acid distance — is measured in `derive/evidence.py` and
+passed in, so the carve decision stays in this one place while the measurement that feeds it lives
+with the other sequence work.
+
 Two things this module must not do, both of them boundary 1 in `docs/pipeline.md`:
 
 * read anything under `final/` — the shipped release is the comparison target, never an input;
@@ -75,57 +80,51 @@ PENDING_COLUMNS = {
     ),
 }
 
-# The shipped carve includes these seventeen records; this transport cannot. All are patent-division
-# deposits whose organism is `unidentified`, `Homo sapiens` or `synthetic construct`, so the genus
-# predicate below rejects them, and they were recovered upstream by capsid amino-acid distance to a
-# poliovirus reference (R-MEMBERSHIP-AA-1). Eight name polio in their DEFINITION, but nine do not,
-# so no text rule recovers the set — it needs the sequence stage.
+# The two records the shipped carve includes and this transport still does not, down from seventeen.
 #
-# Curator disposition, 2026-07-30: these records **belong** in the carve. So this is a gap to close
-# by implementing the membership rule, not a set to carve-exclude — dropping them would remove real
-# poliovirus sequence from the release.
+# The other fifteen are now reached by the third inclusion predicate — `R-MEMBERSHIP-AA-1`, measured
+# in `derive/evidence.measure_membership_rescue` and threaded in as `rescued` below. These two are
+# what the declared rule leaves genuinely undecided, and the honest reading is that both are patent
+# transcription artifacts rather than real divergence:
 #
-# **Measured 2026-07-31, and the answer is 10 of the 17.** `derive/evidence.py` now provides the
-# frame this needs, so the capsid amino-acid p-distance was computed for all seventeen against Sabin
-# 1/2/3 in the polyprotein reading frame, and scored against R-MEMBERSHIP-AA-1's own published
-# parameters — below 8.0% with at least 50 codons rescues, 15.0% or above confirms not-poliovirus:
+#   E00765  14.89% capsid AA over 235 codons — its siblings E00766 and E00767 are the same patent's
+#           Sabin-1 VP1/VP2 fragments at 0.59% and 0.24%
+#   E01571   9.22% capsid AA over 879 codons — its siblings E01570 and E01572 are the same patent's
+#           Sabin-1 and Sabin-3 clones at 0.23% and 0.46%
 #
-#   rescued, below 8%:  E00766 0.59% | E00767 0.24% | E00768 0.81% | E00769 1.52% | E01570 0.23%
-#                       E01572 0.46% | HV932178 1.48% | MA400487 2.68% | PE314016 3.29%
-#                       PH149759 3.29%   (224-881 codons compared)
-#   inside the band, undecided by the declared rule:  E00765 14.89% (235 codons)
-#                                                     E01571  9.22% (879 codons)
-#   no capsid overlap at all:  JA792237 JA792238 JA792249 JA792250 JA792251 — 70 nt each, patent
-#                              oligos that do not reach the capsid, so no AA distance exists to
-#                              measure and no threshold applies
+# Both sit in R-MEMBERSHIP-AA-1's 8-15% band, which the catalog defines as neither a rescue nor a
+# confirmed exclusion, and §5.4 of `docs/engineered-full-population-readjudication.md` raises the
+# same question for E01571. Moving the threshold to catch them would be fitting a published
+# parameter to two records, so they stay declared here instead: rescuing them needs a curator
+# decision about the patent text, not a different number.
+SEQUENCE_RESCUED_INCLUSIONS = frozenset({"E00765.1", "E01571.1"})
+
+# The converse gap. AF326751.2 (Simian agent 5 strain B165) carries `Enterovirus` in its GenBank
+# lineage, so the genus predicate includes it, but the release ships it as `non_ev_other` with no
+# exclusion reason and it has no row in `registry/decisions.tsv`.
 #
-# Two things that measurement settles. E01571's 9.22% is the artifact question §5.4 of
-# `docs/engineered-full-population-readjudication.md` raises: its siblings E01570 and E01572 sit at
-# 0.23% and 0.46%,
-# and all three are 1980s JPO transcriptions of Sabin cDNA clones, so a real 9% capsid divergence is
-# far less likely than transcription error in the patent text. And the five 70-nt oligos are not a
-# membership question at all — they are byte-identical twins of records already in the carve, which
-# is how `derive/engineered.py` reaches them.
+# The other eight arrived with the membership predicate, and every one of them is a release
+# inconsistency rather than a rule that over-reaches. Six are byte-identical to a record the release
+# *does* carve, which is the same basis the release itself used to include JA792237-251 and
+# PE314016/PH149759 — the digest is shared, so the membership claim cannot differ:
 #
-# Closing the gap is therefore a carve change, not a measurement problem: `transport_metadata` would
-# take a second inclusion predicate over sequence evidence. It is not done here because it moves
-# every declared count and witness digest in `oracle/parity.py` at once, and release 3.0.0 was
-# already stamped and green. The remaining seven stay a declared gap and shrink to seven, not zero.
-SEQUENCE_RESCUED_INCLUSIONS = frozenset(
+#   A08076.1   = A01868.1        HW505760.1 = FB743426.1   HW505761.1 = FB743427.1
+#   HW505772.1 = FB743423.1      HW505773.1 = FB743424.1   HW505774.1 = FB743425.1
+#
+# The remaining two, A06086.1 and A06087.1, are `synthetic construct` patent deposits defined as
+# "Synthetic ADN fragment inducing anti-poliovirus antibody formation", sitting 2.32% and 2.10% from
+# Sabin 1 in capsid amino acid over 302 and 381 codons. That is poliovirus capsid by any threshold
+# the catalog declares.
+#
+# All nine are recorded rather than resolved: including them is what the declared inputs support,
+# and the release's basis for excluding them is not in any input this pipeline can read.
+UNDECLARED_EXCLUSIONS = frozenset(
     {
-        "E00765.1", "E00766.1", "E00767.1", "E00768.1", "E00769.1",
-        "E01570.1", "E01571.1", "E01572.1",
-        "HV932178.1",
-        "JA792237.1", "JA792238.1", "JA792249.1", "JA792250.1", "JA792251.1",
-        "MA400487.1", "PE314016.1", "PH149759.1",
+        "AF326751.2",
+        "A06086.1", "A06087.1", "A08076.1",
+        "HW505760.1", "HW505761.1", "HW505772.1", "HW505773.1", "HW505774.1",
     }
 )
-
-# The converse gap, and a smaller one. AF326751.2 (Simian agent 5 strain B165) carries `Enterovirus`
-# in its GenBank lineage, so the genus predicate includes it, but the release ships it as
-# `non_ev_other` with no exclusion reason and it has no row in `registry/decisions.tsv`. The call is
-# real but its basis is not in any declared input, so it is recorded rather than guessed at.
-UNDECLARED_EXCLUSIONS = frozenset({"AF326751.2"})
 
 
 def _lineage_taxa(tables: dict[str, list[dict[str, str]]]) -> dict[str, set[str]]:
@@ -173,17 +172,29 @@ class MetadataTransportResult:
     rows: list[dict[str, str]]
     excluded_by_ledger: int
     excluded_as_non_enterovirus: int
+    included_by_membership_rescue: int
 
 
 def transport_metadata(
-    tables: dict[str, list[dict[str, str]]], excluded_accessions: frozenset[str]
+    tables: dict[str, list[dict[str, str]]],
+    excluded_accessions: frozenset[str],
+    rescued_versions: frozenset[str] = frozenset(),
 ) -> MetadataTransportResult:
     """Carve the canonical row set and fill every transportable column for it.
 
-    Inclusion is two closed predicates over declared inputs: the GenBank lineage must name the
-    `Enterovirus` genus, and the ledger must not actively exclude the accession. Nothing else is
-    consulted, so the rows this produces are exactly what the declared inputs support — see
-    `SEQUENCE_RESCUED_INCLUSIONS` for the seventeen the shipped carve reaches and this does not.
+    Inclusion is three closed predicates over declared inputs, in this order:
+
+    1. the ledger must not actively exclude the accession — a curator exclusion outranks any
+       sequence evidence, so it is checked before anything is measured;
+    2. the GenBank lineage names the `Enterovirus` genus; or
+    3. `rescued_versions` names the record, which is `R-MEMBERSHIP-AA-1` reaching a record whose
+       organism is `unidentified`, `Homo sapiens` or `synthetic construct` but whose sequence is
+       poliovirus. Computed in `derive/evidence.measure_membership_rescue` and passed in rather than
+       measured here, so this module does not import the sequence stage.
+
+    Nothing else is consulted, so the rows this produces are exactly what the declared inputs
+    support — see `SEQUENCE_RESCUED_INCLUSIONS` for the two the shipped carve reaches and this does
+    not, and `UNDECLARED_EXCLUSIONS` for the nine the other way round.
     """
     lineage = _lineage_taxa(tables)
     qualifiers = _source_qualifiers(tables)
@@ -192,14 +203,17 @@ def transport_metadata(
     rows: list[dict[str, str]] = []
     by_ledger = 0
     non_enterovirus = 0
+    rescued_rows = 0
     for record in tables["records"]:
         record_id = record["record_id"]
         if record["accession"] in excluded_accessions:
             by_ledger += 1
             continue
         if ENTEROVIRUS_GENUS_TAXON not in lineage.get(record_id, set()):
-            non_enterovirus += 1
-            continue
+            if record["version"] not in rescued_versions:
+                non_enterovirus += 1
+                continue
+            rescued_rows += 1
 
         row = {column: record[source] for column, source in RECORD_COLUMNS.items()}
         for column, qualifier in QUALIFIER_COLUMNS.items():
@@ -215,4 +229,5 @@ def transport_metadata(
         rows=rows,
         excluded_by_ledger=by_ledger,
         excluded_as_non_enterovirus=non_enterovirus,
+        included_by_membership_rescue=rescued_rows,
     )

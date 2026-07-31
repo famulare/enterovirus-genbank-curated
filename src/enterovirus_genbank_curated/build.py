@@ -44,10 +44,14 @@ from enterovirus_genbank_curated.curate.apply import (
 )
 from enterovirus_genbank_curated.curate.queue import build_queue
 from enterovirus_genbank_curated.derive.apply import build_record_views, project_field
-from enterovirus_genbank_curated.derive.evidence import measure_sequence_evidence
+from enterovirus_genbank_curated.derive.evidence import (
+    measure_membership_rescue,
+    measure_sequence_evidence,
+)
 from enterovirus_genbank_curated.derive.metadata import transport_metadata
 from enterovirus_genbank_curated.export.audit import (
     write_decision_applications,
+    write_membership_rescue,
     write_projection_provenance,
 )
 from enterovirus_genbank_curated.export.canonical import (
@@ -80,6 +84,10 @@ from enterovirus_genbank_curated.validation.invariants import (
 )
 
 IMMUTABLE_DIRS = ("final", "raw")
+
+# The rule whose parameters decide carve membership for records the GenBank lineage rejects. Looked
+# up in the catalog rather than hardcoded here, so its thresholds stay declared data.
+MEMBERSHIP_RULE_ID = "R-MEMBERSHIP-AA-1"
 
 
 @dataclass(frozen=True)
@@ -204,20 +212,25 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     excluded = load_excluded_accessions(ledger_path)
 
     tables = parse_authenticated_source(repository_root)
-    transport = transport_metadata(tables, excluded)
 
-    # Provenance for every canonical field whose rule is implemented, over the carved rows only. The
-    # value and its provenance row come from the same `RuleOutcome`, so a canonical value without a
-    # provenance row is not expressible — boundary 5 held structurally rather than by convention.
     load_rule_implementations()
     rule_contract = load_rule_contract(repository_root / RULES_SCHEMA_PATH)
     catalog = load_rule_catalog(repository_root / RULES_CATALOG_PATH, rule_contract)
 
-    # Sequence evidence, computed once and handed to the rules that need it. Reading the flat file a
-    # second time is the cost of keeping `records` at its shipped twelve columns — see
+    # Sequences are read before the carve, because the carve now depends on them: R-MEMBERSHIP-AA-1
+    # decides membership for the records whose GenBank lineage does not name the genus. Reading the
+    # flat file a second time is the cost of keeping `records` at its shipped twelve columns — see
     # `genbank/parse.read_sequences`.
     with extracted_flat_file(repository_root) as flat_file:
         sequences = read_sequences(flat_file)
+
+    membership = next(spec for spec in catalog if spec.rule_id == MEMBERSHIP_RULE_ID)
+    rescued = measure_membership_rescue(tables, sequences, excluded, membership.parameters)
+    transport = transport_metadata(tables, excluded, frozenset(rescued))
+
+    # Provenance for every canonical field whose rule is implemented, over the carved rows only. The
+    # value and its provenance row come from the same `RuleOutcome`, so a canonical value without a
+    # provenance row is not expressible — boundary 5 held structurally rather than by convention.
     evidence = measure_sequence_evidence(tables, sequences, transport.rows)
 
     views = build_record_views(
@@ -262,6 +275,7 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         "transported": len(transport.rows),
         "excluded_by_ledger": transport.excluded_by_ledger,
         "excluded_as_non_enterovirus": transport.excluded_as_non_enterovirus,
+        "included_by_membership_rescue": transport.included_by_membership_rescue,
         "provenance_rows": len(provenance),
         "dates_not_applicable": not_applicable_dates,
         "localities_without_geography": locality_bases.get("no_geography_deposited", 0),
@@ -280,6 +294,7 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     write_projection_provenance(output_dir, provenance)
     write_curation_queue(output_dir, queue)
     write_decision_applications(output_dir, applications)
+    write_membership_rescue(output_dir, rescued, tables["records"])
 
     # Last, because the file manifest hashes everything above it. A build that failed before here
     # leaves artifacts with no manifest, which is the right way round: an unstamped directory is

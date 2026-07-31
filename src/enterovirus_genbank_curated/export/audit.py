@@ -10,11 +10,12 @@ deliberately not in the view, because the view has to reproduce a frozen artifac
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 
 from enterovirus_genbank_curated.contracts import BASELINE_RELEASE
 from enterovirus_genbank_curated.curate.apply import APPLICATION_COLUMNS, DecisionApplication
+from enterovirus_genbank_curated.derive.evidence import MEMBERSHIP_COLUMNS, MembershipRescue
 from enterovirus_genbank_curated.export.source import write_tsv
 from enterovirus_genbank_curated.registry.rules import RuleSpec
 
@@ -79,3 +80,35 @@ def write_decision_applications(output_dir: Path, applications: list[DecisionApp
         APPLICATION_COLUMNS,
         [application.as_row() for application in applications],
     )
+
+
+MEMBERSHIP_RESCUE_RELATIVE = "audit/membership_rescue.tsv"
+
+
+def write_membership_rescue(
+    output_dir: Path,
+    rescued: Mapping[str, MembershipRescue],
+    records: Iterable[Mapping[str, str]],
+) -> int:
+    """One row per record admitted to the carve despite its GenBank lineage.
+
+    Written uncompressed and small on purpose: this is the artifact a reviewer opens to ask "why is
+    a `synthetic construct` record in a poliovirus table", and every row carries the distance and
+    codon count, or the twin's version, that answers it.
+    """
+    organism = {record["version"]: record["organism_name"] for record in records}
+    rows = [
+        {
+            "accession": rescue.version.rsplit(".", 1)[0],
+            "version": rescue.version,
+            "organism_name": organism.get(rescue.version, ""),
+            "membership_basis": rescue.basis,
+            "reference_serotype": rescue.reference_serotype,
+            "reference_version": rescue.reference_version,
+            "capsid_aa_distance_pct": rescue.distance_pct,
+            "capsid_codons_compared": rescue.compared_codons,
+            "byte_identical_twin": rescue.twin_version,
+        }
+        for rescue in sorted(rescued.values(), key=lambda rescue: rescue.version)
+    ]
+    return write_tsv(output_dir / MEMBERSHIP_RESCUE_RELATIVE, MEMBERSHIP_COLUMNS, rows)

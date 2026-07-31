@@ -64,8 +64,24 @@ ENGINEERED_READJUDICATION_ADDITIONS = {
     ("PU749298", "engineered_or_construct", "TRUE"),
 }
 
+# The CAVA cold-adaptation pair, decided 2026-07-31. Appendix B of the same re-adjudication left
+# these two open in either direction, and the curator resolved them FALSE on the precedent already
+# set inside patent WO2006042156: a parental deposit is FALSE (CS406436, CS406482) and only the
+# constructed product is TRUE (CS406483). LY501105/LZ216100 are the CAVA patent's parental controls
+# on that reading and LY501107/LZ216102 its cold-adapted products.
+#
+# These are the rows R-CONSTRUCT-2 was declining, so `UNRESOLVED_ENGINEERED_ROWS` goes to zero with
+# them.
+CAVA_PARENTAL_ADDITIONS = {
+    ("LY501105", "engineered_or_construct", "FALSE"),
+    ("LZ216100", "engineered_or_construct", "FALSE"),
+}
+
 LEDGER_ONLY_ADDITIONS = (
-    D2_ADDITIONS | SUPERSEDED_CARRY_FORWARD_ADDITIONS | ENGINEERED_READJUDICATION_ADDITIONS
+    D2_ADDITIONS
+    | SUPERSEDED_CARRY_FORWARD_ADDITIONS
+    | ENGINEERED_READJUDICATION_ADDITIONS
+    | CAVA_PARENTAL_ADDITIONS
 )
 
 # The locked VDPV/wild reconciliation allowlist, migrated 2026-07-30 by
@@ -102,6 +118,7 @@ EXPECTED_STATUS = {
         - RULE_REDUNDANT_RETIREMENTS
         - ADJUDICATION_RETIREMENTS
         + ENGINEERED_READJUDICATION_NET_ACTIVE
+        + len(CAVA_PARENTAL_ADDITIONS)
     ),
     "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
     "superseded": 10,
@@ -137,7 +154,9 @@ def test_ledger_satisfies_its_own_contract(
     repository_root: Path, decision_contract: DecisionContract
 ) -> None:
     summary = validate_decision_ledger(repository_root / LEDGER, decision_contract)
-    assert summary.rows == 3164 + len(ENGINEERED_READJUDICATION_ADDITIONS)
+    assert summary.rows == 3164 + len(ENGINEERED_READJUDICATION_ADDITIONS) + len(
+        CAVA_PARENTAL_ADDITIONS
+    )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
 
@@ -573,10 +592,14 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     assert sources["curator_adjudication_2026-07-29"] == len(D2_ADDITIONS) + len(
         ENGINEERED_READJUDICATION_ADDITIONS
     )
-    assert set(sources) == registries | {"curator_adjudication_2026-07-29"}
+    assert sources["curator_adjudication_2026-07-31"] == len(CAVA_PARENTAL_ADDITIONS)
+    assert set(sources) == registries | {
+        "curator_adjudication_2026-07-29",
+        "curator_adjudication_2026-07-31",
+    }
 
     for row in ledger:
-        if row["source_artifact"] == "curator_adjudication_2026-07-29":
+        if row["source_artifact"].startswith("curator_adjudication_"):
             assert row["field_name"] == "engineered_or_construct"
             # `active` for four of the five. The fifth is CS406483's FALSE, superseded on 2026-07-31
             # by the TRUE assertion the same adjudication's Q2 answer requires — so the adjudication

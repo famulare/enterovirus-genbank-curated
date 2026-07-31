@@ -1,4 +1,4 @@
-"""Sequence evidence: the Sabin reference frame, and VP1 divergence measured against it.
+"""Sequence evidence: the Sabin reference frame, and the distances measured against it.
 
 Every column left pending in this pipeline was pending for the same reason — no stage compared a
 record's sequence to a reference. This is that stage, and it needs no aligner binary and no
@@ -15,6 +15,21 @@ rather than an input — boundary 1, unchanged.
 
 The only difference from the shipped table is the last three nucleotides of `3D`, where the table
 includes the stop codon and the `mat_peptide` feature does not. Nothing here reads `3D`.
+
+The capsid interval comes from the same features: VP4's start to VP1's end, the four structural
+peptides being contiguous. VP4's start also fixes the polyprotein reading frame, and it equals the
+`polyprotein` CDS start on all three references (743, 748, 743), so the phase is read off the
+`mat_peptide` features rather than joining a second feature key to get it.
+
+## Two distances, because they answer two different questions
+
+`compare_vp1` measures **nucleotide** divergence over VP1, which is what the WHO classification
+thresholds are defined on. `compare_capsid_aa` measures **amino-acid** p-distance over the capsid,
+which is what membership is decided on, and the difference is not stylistic. Synonymous sites
+saturate: a 1980s patent transcription of a Sabin cDNA clone can sit 20% away in nucleotide with its
+protein essentially unchanged, and 20% nt is exactly where the `wild` threshold lives. On the
+protein those same records sit at 0.2-3%. Nucleotide distance would read them as unrelated;
+amino-acid distance reads them as what they are.
 
 ## Why k-mer diagonals instead of an alignment
 
@@ -60,8 +75,11 @@ import collections
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from enterovirus_genbank_curated.derive.metadata import ENTEROVIRUS_GENUS_TAXON
+
 SABIN_REFERENCES = {"PV1": "AY184219.1", "PV2": "AY184220.1", "PV3": "AY184221.1"}
 VP1_PRODUCT = "VP1"
+VP4_PRODUCT = "VP4"
 MAT_PEPTIDE = "mat_peptide"
 PRODUCT_QUALIFIER = "product"
 
@@ -85,6 +103,28 @@ IMPLAUSIBLE_DIVERGENCE_PCT = 40.0
 
 _COMPLEMENT = str.maketrans("ACGTacgtNn", "TGCAtgcaNn")
 
+# The standard genetic code, for translating the polyprotein reading frame. A codon containing an
+# ambiguity character is absent here and is skipped rather than guessed at, so an `N` reduces the
+# number of codons compared instead of counting as a difference.
+CODON_TABLE = {
+    "TTT": "F", "TTC": "F", "TTA": "L", "TTG": "L",
+    "CTT": "L", "CTC": "L", "CTA": "L", "CTG": "L",
+    "ATT": "I", "ATC": "I", "ATA": "I", "ATG": "M",
+    "GTT": "V", "GTC": "V", "GTA": "V", "GTG": "V",
+    "TCT": "S", "TCC": "S", "TCA": "S", "TCG": "S",
+    "CCT": "P", "CCC": "P", "CCA": "P", "CCG": "P",
+    "ACT": "T", "ACC": "T", "ACA": "T", "ACG": "T",
+    "GCT": "A", "GCC": "A", "GCA": "A", "GCG": "A",
+    "TAT": "Y", "TAC": "Y", "TAA": "*", "TAG": "*",
+    "CAT": "H", "CAC": "H", "CAA": "Q", "CAG": "Q",
+    "AAT": "N", "AAC": "N", "AAA": "K", "AAG": "K",
+    "GAT": "D", "GAC": "D", "GAA": "E", "GAG": "E",
+    "TGT": "C", "TGC": "C", "TGA": "*", "TGG": "W",
+    "CGT": "R", "CGC": "R", "CGA": "R", "CGG": "R",
+    "AGT": "S", "AGC": "S", "AGA": "R", "AGG": "R",
+    "GGT": "G", "GGC": "G", "GGA": "G", "GGG": "G",
+}
+
 
 def reverse_complement(sequence: str) -> str:
     return sequence.translate(_COMPLEMENT)[::-1]
@@ -92,18 +132,24 @@ def reverse_complement(sequence: str) -> str:
 
 @dataclass(frozen=True)
 class ReferenceFrame:
-    """One Sabin reference: its sequence, its VP1 interval, and its seed index."""
+    """One Sabin reference: its sequence, its VP1 and capsid intervals, and its seed index."""
 
     serotype: str
     version: str
     sequence: str
     vp1_start: int  # 0-based, inclusive
     vp1_end: int  # 0-based, exclusive
+    capsid_start: int  # 0-based, inclusive; VP4 start, which is also the polyprotein CDS start
     index: Mapping[str, tuple[int, ...]]
 
     @property
     def vp1_length(self) -> int:
         return self.vp1_end - self.vp1_start
+
+    @property
+    def capsid_end(self) -> int:
+        """The capsid is VP4-VP2-VP3-VP1 contiguously, so it ends where VP1 does."""
+        return self.vp1_end
 
 
 def _seed_index(sequence: str) -> dict[str, tuple[int, ...]]:
@@ -146,27 +192,52 @@ def build_reference_frames(
         if version not in record_id or version not in sequences:
             raise ValueError(f"{serotype} reference {version} is not in the corpus")
         sequence = sequences[version].upper()
-        vp1 = [
-            span[feature_id]
+        peptides = {
+            product.get(feature_id, "").strip(): span[feature_id]
             for feature_id in features_by_record.get(record_id[version], ())
             if feature_key.get(feature_id) == MAT_PEPTIDE
-            and product.get(feature_id, "").strip().endswith(VP1_PRODUCT)
-        ]
+        }
+        vp1 = [interval for name, interval in peptides.items() if name.endswith(VP1_PRODUCT)]
+        vp4 = [interval for name, interval in peptides.items() if name.endswith(VP4_PRODUCT)]
         if len(vp1) != 1:
             raise ValueError(
                 f"{version} carries {len(vp1)} VP1 mat_peptide features, not exactly one; the "
                 f"reference frame cannot be derived from it"
             )
+        if len(vp4) != 1:
+            raise ValueError(
+                f"{version} carries {len(vp4)} VP4 mat_peptide features, not exactly one; the "
+                f"capsid reading frame cannot be derived from it"
+            )
         start, end = vp1[0]
+        # VP4 begins the polyprotein, so its start is both the capsid start and the reading frame's
+        # phase. Measured against the three references: VP4's start equals the `polyprotein` CDS
+        # start in all three (743, 748, 743), so this reads the frame off the same features the VP1
+        # interval comes from rather than joining a second feature key to get it.
+        capsid_start = vp4[0][0]
         frames[serotype] = ReferenceFrame(
             serotype=serotype,
             version=version,
             sequence=sequence,
             vp1_start=start - 1,
             vp1_end=end,
+            capsid_start=capsid_start - 1,
             index=_seed_index(sequence),
         )
     return frames
+
+
+def _best_diagonal(frame: ReferenceFrame, candidate: str, lo: int, hi: int) -> int | None:
+    """The offset with most exact-seed support inside `[lo, hi)`, or None below the anchor floor."""
+    votes: collections.Counter[int] = collections.Counter()
+    for offset in range(max(0, len(candidate) - SEED + 1)):
+        for found in frame.index.get(candidate[offset : offset + SEED], ()):
+            if lo <= found < hi:
+                votes[found - offset] += 1
+    if not votes:
+        return None
+    diagonal, anchors = votes.most_common(1)[0]
+    return diagonal if anchors >= MIN_DIAGONAL_ANCHORS else None
 
 
 @dataclass(frozen=True)
@@ -189,15 +260,8 @@ def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
     """
     best: Vp1Comparison | None = None
     for strand, candidate in (("+", sequence.upper()), ("-", reverse_complement(sequence.upper()))):
-        votes: collections.Counter[int] = collections.Counter()
-        for offset in range(max(0, len(candidate) - SEED + 1)):
-            for found in frame.index.get(candidate[offset : offset + SEED], ()):
-                if frame.vp1_start <= found < frame.vp1_end:
-                    votes[found - offset] += 1
-        if not votes:
-            continue
-        diagonal, anchors = votes.most_common(1)[0]
-        if anchors < MIN_DIAGONAL_ANCHORS:
+        diagonal = _best_diagonal(frame, candidate, frame.vp1_start, frame.vp1_end)
+        if diagonal is None:
             continue
         first = max(frame.vp1_start, diagonal)
         last = min(frame.vp1_end, len(frame.sequence), len(candidate) + diagonal)
@@ -219,6 +283,177 @@ def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
             strand=strand,
         )
     return best
+
+
+@dataclass(frozen=True)
+class CapsidComparison:
+    """Capsid amino-acid p-distance of one record from one Sabin reference."""
+
+    serotype: str
+    reference_version: str
+    distance_pct: float
+    compared_codons: int
+    strand: str
+
+
+def compare_capsid_aa(frame: ReferenceFrame, sequence: str) -> CapsidComparison | None:
+    """Amino-acid p-distance over the capsid, translated in the reference's own reading frame.
+
+    Amino acids rather than nucleotides, because this is a *membership* question and not a distance
+    within poliovirus. Synonymous sites saturate: a patent-era cDNA clone re-transcribed with a
+    different codon bias can sit 20% away in nucleotide while its protein is unchanged, and 20% nt
+    is exactly where the wild threshold lives. The protein keeps the signal where the third position
+    has stopped carrying one.
+
+    The reading frame is the reference's, taken from `capsid_start`, so both codons are read in the
+    same phase and no frame has to be guessed for the query. Codons containing an ambiguity
+    character are skipped by `CODON_TABLE`, which shrinks the denominator rather than inventing a
+    difference.
+    """
+    best: CapsidComparison | None = None
+    for strand, candidate in (("+", sequence.upper()), ("-", reverse_complement(sequence.upper()))):
+        diagonal = _best_diagonal(frame, candidate, frame.capsid_start, frame.capsid_end)
+        if diagonal is None:
+            continue
+        first = max(frame.capsid_start, diagonal)
+        last = min(frame.capsid_end, len(frame.sequence), len(candidate) + diagonal)
+        # Advance to the next codon boundary *of the reference frame*, so position `first` is read
+        # in the same phase the polyprotein is translated in.
+        start = first + (-(first - frame.capsid_start)) % 3
+        same = compared = 0
+        for position in range(start, last - 2, 3):
+            reference_aa = CODON_TABLE.get(frame.sequence[position : position + 3])
+            query_aa = CODON_TABLE.get(candidate[position - diagonal : position - diagonal + 3])
+            if reference_aa is None or query_aa is None:
+                continue
+            compared += 1
+            same += reference_aa == query_aa
+        if compared == 0:
+            continue
+        distance = (compared - same) / compared * 100
+        if distance > IMPLAUSIBLE_DIVERGENCE_PCT:
+            continue
+        # Nearest reference wins, and the tie-break is codon count. Ordering by codon count first
+        # picked the *wrong* serotype on E00768: PV1 covered 371 codons at 22.9% and PV2 covered 370
+        # at 0.81%, so one extra codon outranked a 22-point difference in distance.
+        if best is None or (distance, -compared) < (best.distance_pct, -best.compared_codons):
+            best = CapsidComparison(
+                serotype=frame.serotype,
+                reference_version=frame.version,
+                distance_pct=distance,
+                compared_codons=compared,
+                strand=strand,
+            )
+    return best
+
+
+MEMBERSHIP_BY_BYTES = "byte_identical_to_a_carved_enterovirus_record"
+MEMBERSHIP_BY_CAPSID_AA = "capsid_aa_distance_below_rescue_threshold"
+
+MEMBERSHIP_COLUMNS = (
+    "accession",
+    "version",
+    "organism_name",
+    "membership_basis",
+    "reference_serotype",
+    "reference_version",
+    "capsid_aa_distance_pct",
+    "capsid_codons_compared",
+    "byte_identical_twin",
+)
+
+
+@dataclass(frozen=True)
+class MembershipRescue:
+    """Why one record outside the Enterovirus lineage nonetheless belongs in the carve."""
+
+    version: str
+    basis: str
+    reference_serotype: str = ""
+    reference_version: str = ""
+    distance_pct: str = ""
+    compared_codons: str = ""
+    twin_version: str = ""
+
+
+def measure_membership_rescue(
+    tables: Mapping[str, list[dict[str, str]]],
+    sequences: Mapping[str, str],
+    excluded_accessions: frozenset[str],
+    parameters: Mapping[str, str],
+) -> dict[str, MembershipRescue]:
+    """R-MEMBERSHIP-AA-1 over every record the lineage predicate rejects.
+
+    Two bases, checked in that order because the first is exact and the second is a measurement:
+
+    1. **Byte identity.** A record whose sequence digest matches a record the lineage predicate
+       accepts is the same sequence, and membership is a property of the sequence. This needs no
+       threshold. It is also the only basis that reaches the five 70-nt patent oligos, which do not
+       overlap the capsid at all and so have no amino-acid distance to measure.
+    2. **Capsid amino-acid p-distance** below the catalog's `rescue_below_pct` over at least
+       `min_codons_compared` codons.
+
+    Scoped to the records the lineage predicate *rejects*, so this can only ever add rows. A record
+    the ledger actively excludes is not reconsidered: an exclusion decision is a curator overriding
+    the sequence, and re-including it here would silently reverse them.
+    """
+    rescue_below = float(parameters["rescue_below_pct"])
+    min_codons = int(parameters["min_codons_compared"])
+
+    lineage = {}
+    for row in tables["record_taxonomy"]:
+        lineage.setdefault(row["record_id"], set()).add(row["taxon_name"])
+
+    carved: set[str] = set()
+    candidates: list[dict[str, str]] = []
+    for record in tables["records"]:
+        if record["accession"] in excluded_accessions:
+            continue
+        if ENTEROVIRUS_GENUS_TAXON in lineage.get(record["record_id"], set()):
+            carved.add(record["sequence_sha256"])
+        else:
+            candidates.append(record)
+
+    twin_of: dict[str, str] = {}
+    for record in tables["records"]:
+        if record["accession"] in excluded_accessions:
+            continue
+        if ENTEROVIRUS_GENUS_TAXON in lineage.get(record["record_id"], set()):
+            twin_of.setdefault(record["sequence_sha256"], record["version"])
+
+    frames = build_reference_frames(tables, sequences)
+    rescued: dict[str, MembershipRescue] = {}
+    for record in candidates:
+        version = record["version"]
+        if record["sequence_sha256"] in carved:
+            rescued[version] = MembershipRescue(
+                version=version,
+                basis=MEMBERSHIP_BY_BYTES,
+                twin_version=twin_of[record["sequence_sha256"]],
+            )
+            continue
+        sequence = sequences.get(version)
+        if sequence is None:
+            continue
+        calls = [
+            call
+            for call in (compare_capsid_aa(frame, sequence) for frame in frames.values())
+            if call
+        ]
+        if not calls:
+            continue
+        best = min(calls, key=lambda call: (call.distance_pct, -call.compared_codons))
+        if best.compared_codons < min_codons or best.distance_pct >= rescue_below:
+            continue
+        rescued[version] = MembershipRescue(
+            version=version,
+            basis=MEMBERSHIP_BY_CAPSID_AA,
+            reference_serotype=best.serotype,
+            reference_version=best.reference_version,
+            distance_pct=f"{best.distance_pct:.3f}",
+            compared_codons=str(best.compared_codons),
+        )
+    return rescued
 
 
 EVIDENCE_COLUMNS = (

@@ -5,19 +5,30 @@ build citable in the same way — a build manifest naming its inputs and its cov
 manifest hashing every artifact — so a consumer can tell one build from another without diffing
 gigabytes.
 
-## The version is 3.0.0, and the major bump is not optional
+## The version is 3.1.0, and why the row set moving is still a minor bump
 
-Three properties of this release are incompatible with 2.4.1 for anyone reading the columns:
+Release 3.0.0 was the major one. Three properties of it are incompatible with 2.4.1 for anyone
+reading the columns, and all three still hold here:
 
-* `engineered_or_construct` moves TRUE to FALSE on 500 records, because 2.4.1's predicate matched
+* `engineered_or_construct` moves TRUE to FALSE on 511 records, because 2.4.1's predicate matched
   the database division code as free text and reported where a sequence was deposited;
 * `sequence_scope` is **empty**, where 2.4.1 filled all 24,301 rows;
 * about 3,400 `poliovirus_classification` cells and 2,200 `virus_type` cells are blank-because-
   undetermined, where 2.4.1 filled them from inputs this pipeline does not have.
 
-A consumer who assumed a minor bump preserved column semantics would be wrong on all three. Hence
-3.0.0 rather than 2.5.0, and hence `completeness` in the manifest states the gaps in the artifact
-itself rather than only in prose here.
+3.1.0 adds one thing: `R-MEMBERSHIP-AA-1` now decides carve membership for records whose GenBank
+lineage does not name the `Enterovirus` genus, so the row set is 24,308 rather than 24,285. That is
+23 rows *added* and none removed, and no column semantics change — a consumer's existing queries
+return the same answers for the same accessions. Hence a minor bump.
+
+The 23 are the honest consequence of measuring rather than assuming. 15 of them are records 2.4.1
+carves and 3.0.0 could not reach, which was 3.0.0's largest declared gap. The other 8 are records
+2.4.1 does *not* carve and the declared rule says it should: six are byte-identical to a record the
+release already carves, and two are poliovirus capsid by the catalog's own amino-acid threshold.
+`derive/metadata.UNDECLARED_EXCLUSIONS` names all eight and `audit/membership_rescue.tsv` shows the
+distance or the twin that admitted each one.
+
+Two records remain outside: `E00765.1` and `E01571.1`, which sit in the rule's undecided 8-15% band.
 
 ## Why the manifest names hashes rather than a git sha
 
@@ -57,7 +68,7 @@ from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPO
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
-RELEASE_VERSION = "3.0.0"
+RELEASE_VERSION = "3.1.0"
 SCHEMA_VERSION = "2.4.1"
 BASELINE_RELEASE = "2.4.1"
 

@@ -1,0 +1,24 @@
+accession	version	organism_name	membership_basis	reference_serotype	reference_version	capsid_aa_distance_pct	capsid_codons_compared	byte_identical_twin
+A06086	A06086.1	synthetic construct	capsid_aa_distance_below_rescue_threshold	PV1	AY184219.1	2.318	302	
+A06087	A06087.1	synthetic construct	capsid_aa_distance_below_rescue_threshold	PV1	AY184219.1	2.100	381	
+A08076	A08076.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					A01868.1
+E00766	E00766.1	unidentified	capsid_aa_distance_below_rescue_threshold	PV1	AY184219.1	0.593	337	
+E00767	E00767.1	unidentified	capsid_aa_distance_below_rescue_threshold	PV1	AY184219.1	0.239	418	
+E00768	E00768.1	unidentified	capsid_aa_distance_below_rescue_threshold	PV2	AY184220.1	0.811	370	
+E00769	E00769.1	unidentified	capsid_aa_distance_below_rescue_threshold	PV3	AY184221.1	1.524	328	
+E01570	E01570.1	Homo sapiens	capsid_aa_distance_below_rescue_threshold	PV1	AY184219.1	0.227	881	
+E01572	E01572.1	Homo sapiens	capsid_aa_distance_below_rescue_threshold	PV3	AY184221.1	0.456	878	
+HV932178	HV932178.1	unidentified	byte_identical_to_a_carved_enterovirus_record					DD214216.1
+HW505760	HW505760.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743426.1
+HW505761	HW505761.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743427.1
+HW505772	HW505772.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743423.1
+HW505773	HW505773.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743424.1
+HW505774	HW505774.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743425.1
+JA792237	JA792237.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743426.1
+JA792238	JA792238.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743427.1
+JA792249	JA792249.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743423.1
+JA792250	JA792250.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743424.1
+JA792251	JA792251.1	synthetic construct	byte_identical_to_a_carved_enterovirus_record					FB743425.1
+MA400487	MA400487.1	unidentified	capsid_aa_distance_below_rescue_threshold	PV1	AY184219.1	2.679	224	
+PE314016	PE314016.1	unidentified	byte_identical_to_a_carved_enterovirus_record					AF111984.2
+PH149759	PH149759.1	unidentified	byte_identical_to_a_carved_enterovirus_record					AF111984.2

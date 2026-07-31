@@ -386,19 +386,24 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # migration constants, because neither generator produces them and bumping a generator's pin to
     # absorb a hand-landed row is exactly the drift this test exists to catch.
     readjudication = 2
+    # Two more the same day, and counted apart for the same reason: `LY501105`/`LZ216100`
+    # `engineered_or_construct=FALSE`, the CAVA cold-adaptation pair Appendix B left open in either
+    # direction and the curator resolved on the WO2006042156 parental-deposit precedent.
+    cava_parental = 2
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)
         + carried
         + reconciled
         + readjudication
+        + cava_parental
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
         f"{mig.EXPECTED_BASELINE_DECISIONS} baseline + {len(mig.D2_ACCESSIONS)} D2 additions + "
         f"{carried} carried-forward supersessions + {reconciled} reconciliation-allowlist rows + "
-        f"{readjudication} re-adjudication rows = {expected}. Bumping one without the others is "
-        f"the drift the pin exists to catch."
+        f"{readjudication} re-adjudication rows + {cava_parental} CAVA parental rows = {expected}. "
+        f"Bumping one without the others is the drift the pin exists to catch."
     )
 
 

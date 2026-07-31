@@ -39,6 +39,12 @@ from enterovirus_genbank_curated.oracle.parity import (
 )
 from enterovirus_genbank_curated.registry.decisions import load_excluded_accessions
 
+# Records the build carves and the release also ships, so the only ones a cell-by-cell comparison
+# can cover. 24,299 = 24,308 built − the 9 in `UNDECLARED_EXCLUSIONS`, and equally 24,301 shipped
+# − the 2 in `SEQUENCE_RESCUED_INCLUSIONS`. Both readings must give the same number, which is what
+# the two row-set assertions below establish independently of this constant.
+SHARED_ROWS = 24299
+
 
 @pytest.mark.parametrize(
     ("value", "expected"),
@@ -108,7 +114,7 @@ def test_only_active_ledger_rows_exclude_a_record(tmp_path: Path) -> None:
 @pytest.mark.slow
 def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path) -> None:
     parity, provenance = verify_metadata_parity(repository_root)
-    assert parity.compared_rows == 24284
+    assert parity.compared_rows == SHARED_ROWS
     assert len(parity.compared_columns) == 13
     assert set(parity.absent_from_build) == SEQUENCE_RESCUED_INCLUSIONS
     assert set(parity.absent_from_release) == UNDECLARED_EXCLUSIONS
@@ -133,62 +139,88 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "virus_group",
         "virus_type",
     )
-    # Per field, how many of the 24,284 shared records the rule resolves. Spelled out rather than
-    # computed, because the declined counts below are over the 24,285 *built* rows: AF326751.2
-    # deposits no `/isolation_source`, so its specimen_type decline is counted there but is not a
-    # shared row. That one-record difference is exactly the kind of thing a single total would hide.
+    # Per field, how many of the 24,299 shared records the rule resolves. Spelled out rather than
+    # computed, because the declined counts below are over the 24,308 *built* rows: the nine records
+    # in `UNDECLARED_EXCLUSIONS` are built and not shipped, so a decline on one of them is counted
+    # there and is not a shared row. That difference is exactly the kind of thing a single total
+    # would hide, and it is why each field carries its own correction term.
+    #
+    # `ALL_NINE` and `EIGHT_OF_NINE` are the only two shapes that occur, and the split is one
+    # record: AF326751.2 is the sole undeclared exclusion whose organism name decides a partition
+    # (`Enterovirus betacoxsackie` — a species, so non-poliovirus), which resolves `virus_group`,
+    # `curation_status` and everything scoped by them. The other eight are the membership rescues,
+    # whose organism names decide nothing.
+    ALL_NINE = len(UNDECLARED_EXCLUSIONS)
+    EIGHT_OF_NINE = ALL_NINE - 1
     resolved_per_field = {
-        "locality": 24284,
-        "collection_date": 24284,
-        "collection_date_precision": 24284,
+        "locality": SHARED_ROWS,
+        "collection_date": SHARED_ROWS,
+        "collection_date_precision": SHARED_ROWS,
         # One rule projects both, and neither ever declines: a non-range row is a real blank, not an
         # absence. Their values and bases match the release on every row.
-        "collection_year_earliest": 24284,
-        "collection_year_latest": 24284,
-        "virus_group": 24284 - UNRESOLVED_PARTITION_ROWS,
-        "curation_status": 24284 - UNRESOLVED_PARTITION_ROWS,
-        "specimen_type": 24284 - (UNRESOLVED_SPECIMEN_ROWS - 1),
-        # No -1 here, unlike specimen_type: AF326751.2 has no host, but its organism decides a
-        # non-polio partition, which scopes sample_origin out to `unknown` — a resolved value.
-        "sample_origin": 24284 - UNRESOLVED_ORIGIN_ROWS,
-        "surveillance_stream": 24284 - UNRESOLVED_STREAM_ROWS,
-        # The only rule that declines because a *curator* left the question open rather than because
-        # the record is silent: R-CONSTRUCT-2 will not turn "not adjudicated" into FALSE.
-        "engineered_or_construct": 24284 - UNRESOLVED_ENGINEERED_ROWS,
-        # Both declines land on shared rows, so no -1 correction: AF326751.2's organism is
-        # `Enterovirus betacoxsackie`, which states no type, and it declines outside the shared set.
-        "virus_type": 24284 - (UNRESOLVED_TYPE_ROWS - 1),
-        # AF326751.2 resolves here — its organism decides a non-poliovirus partition, and outside
-        # poliovirus the column is blank by determination rather than declined — so no -1.
-        "poliovirus_classification": 24284 - UNRESOLVED_CLASSIFICATION_ROWS,
+        "collection_year_earliest": SHARED_ROWS,
+        "collection_year_latest": SHARED_ROWS,
+        "virus_group": SHARED_ROWS - (UNRESOLVED_PARTITION_ROWS - EIGHT_OF_NINE),
+        "curation_status": SHARED_ROWS - (UNRESOLVED_PARTITION_ROWS - EIGHT_OF_NINE),
+        # All nine: none deposits an `/isolation_source`, AF326751.2 included.
+        "specimen_type": SHARED_ROWS - (UNRESOLVED_SPECIMEN_ROWS - ALL_NINE),
+        "sample_origin": SHARED_ROWS - (UNRESOLVED_ORIGIN_ROWS - EIGHT_OF_NINE),
+        "surveillance_stream": SHARED_ROWS - (UNRESOLVED_STREAM_ROWS - EIGHT_OF_NINE),
+        # R-CONSTRUCT-2 declines on nothing now. It declined on the two records a curator had left
+        # open rather than on any record that is silent, and both were closed on 2026-07-31 — so
+        # this is the one field whose correction term is structurally zero.
+        "engineered_or_construct": SHARED_ROWS - UNRESOLVED_ENGINEERED_ROWS,
+        # All nine again: AF326751.2's organism states a species and no type, and the eight rescued
+        # records are `unidentified` or `synthetic construct`.
+        "virus_type": SHARED_ROWS - (UNRESOLVED_TYPE_ROWS - ALL_NINE),
+        "poliovirus_classification": (
+            SHARED_ROWS - (UNRESOLVED_CLASSIFICATION_ROWS - EIGHT_OF_NINE)
+        ),
     }
     assert set(resolved_per_field) == set(provenance.fields)
     assert provenance.compared_rows == sum(resolved_per_field.values())
     assert sum(provenance.basis_counts.values()) == provenance.compared_rows
-    # Counted as (version, field) keys. The seventeen records the carve cannot reach are missing one
-    # row per projected field, since the release has a row for all six.
+    # Counted as (version, field) keys. The two records the carve still cannot reach are missing one
+    # row per projected field, since the release has a row for all thirteen.
     assert provenance.absent_from_build == len(SEQUENCE_RESCUED_INCLUSIONS) * len(
         provenance.fields
     )
-    # The converse is not symmetric, and the asymmetry is the point: AF326751.2 contributes only the
-    # rows its rules *resolve*, and a declined row is not compared at all, so it cannot be counted
-    # as a missing comparison. Two of the twelve fields decline on it: `specimen_type`, because it
-    # deposits no `/isolation_source`, and `virus_type`, because its organism `Enterovirus
-    # betacoxsackie` names a species and no type.
-    assert len(UNDECLARED_EXCLUSIONS) == 1
-    assert provenance.absent_from_release == len(provenance.fields) - 2
+    # The converse is not symmetric, and the asymmetry is the point: a record the release excludes
+    # contributes only the rows its rules *resolve*, and a declined row is not compared at all, so
+    # it cannot be counted as a missing comparison. So this is not 9 x 13.
+    #
+    # 59 = 9 records x the 6 fields that never decline (both dates, both years, locality,
+    #      engineered_or_construct) = 54, plus AF326751.2 alone resolving virus_group,
+    #      curation_status, sample_origin, surveillance_stream and poliovirus_classification = 5.
+    #      `specimen_type` and `virus_type` decline on all nine and so contribute nothing.
+    assert len(UNDECLARED_EXCLUSIONS) == 9
+    never_declines = {
+        "collection_date",
+        "collection_date_precision",
+        "collection_year_earliest",
+        "collection_year_latest",
+        "locality",
+        "engineered_or_construct",
+    }
+    assert provenance.absent_from_release == len(UNDECLARED_EXCLUSIONS) * len(never_declines) + 5
 
     # Both partition columns decline on the same population, and never on a different one.
+    #
+    # `engineered_or_construct` is absent rather than present at zero, because the tally counts up
+    # from nothing and a field that never declines never creates its key. Asserted both ways: the
+    # key must be missing *and* the declared constant must be the zero that explains why, so a rule
+    # that quietly starts declining again cannot slip in as a new key nobody pinned.
     assert provenance.unresolved_by_field == {
         "virus_group": UNRESOLVED_PARTITION_ROWS,
         "curation_status": UNRESOLVED_PARTITION_ROWS,
         "specimen_type": UNRESOLVED_SPECIMEN_ROWS,
         "sample_origin": UNRESOLVED_ORIGIN_ROWS,
         "surveillance_stream": UNRESOLVED_STREAM_ROWS,
-        "engineered_or_construct": UNRESOLVED_ENGINEERED_ROWS,
         "virus_type": UNRESOLVED_TYPE_ROWS,
         "poliovirus_classification": UNRESOLVED_CLASSIFICATION_ROWS,
     }
+    assert UNRESOLVED_ENGINEERED_ROWS == 0
+    assert "engineered_or_construct" not in provenance.unresolved_by_field
 
     # The two date columns deliberately differ from the release, by exactly the declared amount.
     # A delta that cannot be stated as a number is not a declared delta.

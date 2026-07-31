@@ -59,14 +59,24 @@ from enterovirus_genbank_curated.curate.apply import (
 # `field_not_projected` is deliberately absent rather than pinned at zero.
 # `assert_every_decision_is_accounted_for` tallies only statuses that occur, and a key pinned to 0
 # would silently pass if the status stopped being computed at all.
+# Re-pinned when the membership rescue closed the carve gap, and the movement is the best evidence
+# yet that the carve was wrong rather than merely incomplete. `subject_outside_carve` falls 18 -> 6:
+# twelve decisions were being recorded as asserting about a record the build did not carve, and all
+# twelve are on records the rescue now admits. A curator had already stated an `origin_class`, a
+# `sampling_frame` or a classification for them; the ledger knew they were poliovirus deposits while
+# the carve did not. Those twelve land as 11 `applied_filled_unresolved` and 1 `applied_changed`.
+#
+# The remaining +2 on `applied_filled_unresolved` is the CAVA pair, `LY501105`/`LZ216100`.
+# R-CONSTRUCT-2 declined on both until 2026-07-31, so their new FALSE rows fill a cell that was
+# unresolved — the queue-and-ledger loop closing on the two records that were the queue's point.
 EXPECTED_TALLY = {
-    "applied_filled_unresolved": 2627,
+    "applied_filled_unresolved": 2640,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,
-    "applied_changed": 30,
+    "applied_changed": 31,
     "applied_unchanged": 24,
-    "subject_outside_carve": 18,
+    "subject_outside_carve": 6,
     "not_in_force_superseded": 10,
 }
 

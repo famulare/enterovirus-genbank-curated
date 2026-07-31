@@ -96,8 +96,8 @@ into `final/` or `raw/`, which are immutable.
 **Canonical metadata regenerates in part, and the part is precisely stated:**
 
 ```bash
-evgc parity-metadata                          # 24,284 rows: 13 transported columns + 12 projected
-evgc build-metadata --output release/3.0.0    # write the whole dataset, manifests included
+evgc parity-metadata                          # 24,299 rows: 13 transported columns + 12 projected
+evgc build-metadata --output release/3.1.0    # write the whole dataset, manifests included
 ```
 
 From `raw/` and `registry/` alone this carves the canonical row set and fills **25 of the 26
@@ -134,32 +134,50 @@ before those parameters were read, every `Sabin-like` record in the release sits
 on it.
 
 Three properties matter as much as the coverage. A rule that cannot decide from declared inputs
-**declines** rather than guessing — 12,677 records whose `/isolation_source` carries no specimen
-keyword, 3,425 whose classification no sequence or ledger row settles, 2,193 whose organism name
-states no type, 1,832 whose organism name cannot settle poliovirus membership — and every declined
+**declines** rather than guessing — 12,700 records whose `/isolation_source` carries no specimen
+keyword, 3,448 whose classification no sequence or ledger row settles, 2,216 whose organism name
+states no type, 1,855 whose organism name cannot settle poliovirus membership — and every declined
 cell becomes one row in a curation queue, grouped by the input the rule could not decide from, so
-that 28,496 declined cells reduce to 299 curator questions. The build cannot read `final/` at all:
+that 28,563 declined cells reduce to 304 curator questions. The build cannot read `final/` at all:
 the undeclared-input guard refuses it, so a rule cannot quietly reproduce the answer it is being
 compared against. And a blank cell is never a claim — `audit/projection_provenance.tsv.gz` carries
 `unresolved_reason` per cell, and `audit/build_manifest.json` states per column how many cells are
 filled, how many are blank and how many were declined.
 
 Every curation decision also gets a recorded outcome. `audit/decision_applications.tsv.gz` says what
-became of each of the 3,166 ledger rows — applied and changed something, applied and made no
+became of each of the 3,168 ledger rows — applied and changed something, applied and made no
 difference, filled a cell a rule declined, withdrawn, or reaching no canonical column — and a decision
 with *no* row is a build failure. That is the D2 lesson as an artifact: the failure it prevents is an
 assertion sitting in the ledger for two releases while the pipeline quietly recomputed the value. As
 of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
 canonical column now reaches a rule that projects it.
 
-### Release 3.0.0
+### Release 3.1.0
 
-`release/3.0.0/` is the first dataset this pipeline produces end to end from public inputs. It is a
-**major** version rather than a minor one because three things are incompatible with 2.4.1 for anyone
-reading the columns: `engineered_or_construct` flips TRUE to FALSE on 500 records (2.4.1's predicate
+`release/3.1.0/` is the dataset this pipeline produces end to end from public inputs. 3.0.0 was the
+**major** break: `engineered_or_construct` flips TRUE to FALSE on 511 records (2.4.1's predicate
 matched the database division code as free text, so it largely reported *where* a sequence was
 deposited); `sequence_scope` is empty; and several thousand cells are blank-because-undetermined where
 2.4.1 filled them from inputs this pipeline does not have.
+
+3.1.0 closes 3.0.0's largest declared gap. `R-MEMBERSHIP-AA-1` now decides carve membership for
+records whose GenBank lineage does not name the `Enterovirus` genus, by capsid **amino-acid**
+p-distance to Sabin in the polyprotein reading frame — amino acids and not nucleotides because the
+records in question are 1980s patent transcriptions of Sabin cDNA whose synonymous sites have
+saturated, sitting ~20% away in nucleotide (right where the `wild` threshold lives) and 0.2-3% away
+on the protein. The row set goes 24,285 -> 24,308: 23 added, none removed, no column semantics
+changed, so a minor bump.
+
+Fifteen of the 23 are records 2.4.1 carves and 3.0.0 could not reach. The other **eight are records
+2.4.1 does not carve and the declared rule says it should** — six are byte-identical to a record the
+release already carves (the same basis the release itself used to include `JA792237`-`251`), and two
+are poliovirus capsid at 2.1% and 2.3% AA. `audit/membership_rescue.tsv` gives the distance, codon
+count, or twin accession that admitted each one.
+
+That the ledger already knew is the strongest evidence the old carve was wrong rather than merely
+incomplete: `subject_outside_carve` in `audit/decision_applications.tsv.gz` falls from 18 to 6,
+because twelve curator decisions had been asserting an origin, a sampling frame or a classification
+about records the build was not carving.
 
 It carries no wall-clock timestamp. `audit/build_manifest.json` identifies the build by the hashes of
 its four determinants — the frozen archive, the decision ledger, the rule catalog, and the code — so
@@ -167,10 +185,11 @@ the same inputs produce the same bytes tomorrow, and a difference between two bu
 determinant moved.
 
 **What is still not true:** `final/audit/`, `final/dictionaries/` and `final/alignments/` are not
-regenerated, and seventeen records the shipped carve reaches are not in this one — patent-division
-deposits whose organism is `unidentified`, `Homo sapiens` or `synthetic construct`, recovered upstream
-by capsid amino-acid distance. The curator's disposition is that they belong, so that is a gap to
-close by implementing the membership rule, not a set to exclude.
+regenerated, and two records the shipped carve reaches are not in this one — `E00765.1` and
+`E01571.1`, which land in R-MEMBERSHIP-AA-1's undecided 8-15% band. Both look like patent
+transcription artifacts (their same-patent siblings sit at 0.2-0.6%), but moving a published
+threshold to catch two records would be fitting the parameter to the answer, so they stay a declared
+gap awaiting a curator decision about the patent text.
 
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the
