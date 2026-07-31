@@ -149,3 +149,41 @@ def test_render_names_every_artifact_it_reports(repository_root: Path) -> None:
     text = shape.render(report)
     assert "## PV3_unified" in text
     assert "vs 2.4.1" in text
+
+
+# --- translation QC ------------------------------------------------------------------------------
+
+
+def test_translation_qc_ignores_fragments_and_counts_internal_stops() -> None:
+    """Only near-complete CDS blocks say anything about frame, so a mostly-gap row must not be
+    counted at all — otherwise every fragment would look like a frame failure."""
+    widths = {"5ncr": 2, "cds": 9, "3ncr": 1}
+    rows = {
+        # ATG GCC TAA -> "MA*": a clean terminal stop, in frame.
+        "CLEAN": "NN" + "ATGGCCTAA" + "N",
+        # ATG TAA GCC -> "M*A": an internal stop.
+        "STOP": "NN" + "ATGTAAGCC" + "N",
+        # Mostly gaps: a fragment, excluded from the metric entirely.
+        "FRAGMENT": "NN" + "ATG------" + "N",
+    }
+    qc = shape._translation_qc(rows, widths)
+    assert qc["near_complete_rows"] == 2
+    assert qc["no_internal_stop"] == 1
+    assert [o["accession"] for o in qc["with_internal_stop"]] == ["STOP"]
+
+
+@pytest.mark.skipif(not BUILT.is_file(), reason="PV3_unified has not been built in this tree")
+def test_the_real_anchored_build_translates_cleanly(repository_root: Path) -> None:
+    """The check the structural gate cannot make: that the codon frame is actually right. A
+    reference-frame projection whose frame was off by one would still pass every width and alphabet
+    check while producing nonsense protein."""
+    from enterovirus_genbank_curated.validation import alignment as gate
+
+    artifact = gate.load_artifact(repository_root / "derived/alignments", "PV3_unified")
+    qc = shape._translation_qc(artifact.rows, artifact.block_widths)
+    assert qc["near_complete_rows"] > 100, "too few complete genomes to say anything"
+    clean_fraction = qc["no_internal_stop"] / qc["near_complete_rows"]
+    assert clean_fraction > 0.95, (
+        f"only {clean_fraction:.1%} of near-complete CDS blocks translate without an internal "
+        f"stop: {qc['with_internal_stop'][:8]}"
+    )

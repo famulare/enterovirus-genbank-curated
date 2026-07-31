@@ -28,7 +28,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 
-from enterovirus_genbank_curated.align import contract
+from enterovirus_genbank_curated.align import contract, segment
 from enterovirus_genbank_curated.align import population as population_module
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.oracle.parity import SHIPPED_RECORD_DISPOSITION
@@ -180,6 +180,7 @@ def shape_of(
             reasons[f"{row['block']}:{row['absence_reason']}"] += 1
 
     occupancy = sorted(len(r) - r.count("-") for r in rows.values())
+    translation = _translation_qc(rows, artifact.block_widths)
 
     def percentile(fraction: float) -> int:
         if not occupancy:
@@ -195,6 +196,7 @@ def shape_of(
         "tiers": dict(sorted(Counter(by_accession[a].tier for a in rows).items())),
         "families": dict(sorted(Counter(by_accession[a].family for a in rows).items())),
         "types": dict(sorted(Counter(by_accession[a].type_sort_key for a in rows).items())),
+        "cds_translation": translation,
         "residue_occupancy": {
             "min": occupancy[0] if occupancy else 0,
             "p10": percentile(0.10),
@@ -202,6 +204,43 @@ def shape_of(
             "p90": percentile(0.90),
             "max": occupancy[-1] if occupancy else 0,
         },
+    }
+
+
+def _translation_qc(rows: dict[str, str], block_widths: dict[str, int]) -> dict:
+    """Do the near-complete CDS blocks actually translate?
+
+    The structural gate checks widths and alphabets; only translation tells you the codon frame is
+    *right*. Restricted to rows whose CDS block is at least 99% occupied, since a fragment's partial
+    block says nothing about frame.
+
+    Measured on the first real `PV1_unified` build: 403 of 407 such rows carry no internal stop, and
+    three of the four exceptions are `FV537075`-`FV537077` — the bisulfite-converted Mahoney strings
+    this repository has already adjudicated as not being poliovirus genomes at all. A C-to-T
+    converted genome *should* fail to translate, so the aligner is right about them, and this metric
+    surfacing them is the check working rather than failing.
+    """
+    width_cds = block_widths.get("cds", 0)
+    offset = block_widths.get("5ncr", 0)
+    if not width_cds:
+        return {"near_complete_rows": 0, "no_internal_stop": 0, "with_internal_stop": []}
+
+    clean = 0
+    offenders: list[dict[str, int | str]] = []
+    for accession in sorted(rows):
+        block = rows[accession][offset : offset + width_cds]
+        if block.count("-") / width_cds >= 0.01:
+            continue
+        aa = segment.translate(block.replace("-", "N"))
+        internal = aa[:-1].count("*")
+        if internal:
+            offenders.append({"accession": accession, "internal_stops": internal})
+        else:
+            clean += 1
+    return {
+        "near_complete_rows": clean + len(offenders),
+        "no_internal_stop": clean,
+        "with_internal_stop": offenders,
     }
 
 
@@ -249,6 +288,16 @@ def render(report: dict) -> str:
         lines.append(f"- blocks present: {shape['blocks_present']}")
         if shape["absence_reasons"]:
             lines.append(f"- absences: {shape['absence_reasons']}")
+        translation = shape["cds_translation"]
+        if translation["near_complete_rows"]:
+            offenders = translation["with_internal_stop"]
+            lines.append(
+                f"- CDS translation: {translation['no_internal_stop']} of "
+                f"{translation['near_complete_rows']} near-complete rows have no internal stop"
+                + (
+                    f"; exceptions {[o['accession'] for o in offenders]}" if offenders else ""
+                )
+            )
         occupancy = shape["residue_occupancy"]
         lines.append(
             f"- residue occupancy: median {occupancy['median']}, p10 {occupancy['p10']}, "
