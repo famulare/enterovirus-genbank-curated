@@ -19,9 +19,11 @@ doing the spawning and the release reading. That is the intended arrangement, no
 
 from __future__ import annotations
 
+import hashlib
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -262,15 +264,15 @@ def compare_metadata_to_release(
 #         − 15 carved ones the ledger's `is_poliovirus` decisions resolve
 #              (17 such decisions exist; 2 are on records literally named `Poliovirus 2`/`3`, which
 #               the name predicate already decides, so only 15 land on uninformative names).
-UNRESOLVED_PARTITION_ROWS = 1733
+UNRESOLVED_PARTITION_ROWS = 1832
 # `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: 12,680 where no keyword matches
 # `/isolation_source` and 4 where two categories match, naming two specimens rather than one. One of
 # the 12,680 is AF326751.2, which the release excludes, so 12,683 of the 24,284 shared rows decline.
-UNRESOLVED_SPECIMEN_ROWS = 12684
+UNRESOLVED_SPECIMEN_ROWS = 12677
 # `sample_origin` rows R-ORIGIN-2 declines, over the built carve: poliovirus records that
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
 # itself undecided and so cannot be scoped either way.
-UNRESOLVED_ORIGIN_ROWS = 4483
+UNRESOLVED_ORIGIN_ROWS = 4582
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -288,6 +290,32 @@ PARTITION_FIELDS = ("virus_group", "curation_status")
 # let a real regression in `source_field` or `manual_override` pass unnoticed on a superseded field.
 # Every column is declared, including the zeros, so the shape of a break is legible and a new
 # disagreement in an unexpected column fails.
+# Which records disagree, not merely how many. Populated per column that needs it — a column whose
+# declared count already equals every compared row does not, because "all of them" is an identity.
+SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
+    "collection_date": {
+        "final_value": "efaafa9a6e33ff00",
+        "source_field": "7f98063eac4f572e",
+        "source_value": "fc9f7ef2a78df8bd",
+        "evidence_basis": "26f98ff5bbd3f6a2",
+    },
+    "collection_date_precision": {
+        "final_value": "b044d2c0f1dd8b35",
+        "source_field": "24fdd1bf1b32ca05",
+        "source_value": "d248b53f82e488c2",
+        "evidence_basis": "7e6522502070b4fb",
+    },
+    "locality": {"evidence_basis": "8c042f23e8b20cd4"},
+    "sample_origin": {
+        "final_value": "2e915e4fd4f6f397",
+        "source_value": "8753f4cb19e1dccb",
+    },
+    "specimen_type": {
+        "final_value": "a8aa1248a8e83d19",
+        "source_value": "39eefccaaa5b443e",
+    },
+}
+
 SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
     "collection_date": {
         # 1,761 = the 1,764 dateless records 2.4.1 gave a year recovered from outside GenBank, now
@@ -327,12 +355,12 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # which is simply wrong. MK719554.1 is the authorized correction: `/host=Homo sapiens`
         # against a shipped `unknown`.
         "final_value": 4,
-        "winning_rule_id": 19801,
-        "evidence_basis": 19801,
+        "winning_rule_id": 19702,
+        "evidence_basis": 19702,
         # The rule records the input it read — the host, the specimen text, or the partition it
         # scoped by — where the release recorded the curated `origin_class` it projected. The 242
         # agreeing rows are where the host string already was the origin, plus the ledger overrides.
-        "source_value": 19559,
+        "source_value": 19460,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
@@ -346,8 +374,8 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # Groundwater is not stool, so this is left as a declared disagreement rather than
         # pattern-matched around — see `derive/epi.py`.
         "final_value": 1,
-        "winning_rule_id": 11601,
-        "evidence_basis": 11601,
+        "winning_rule_id": 11608,
+        "evidence_basis": 11608,
         # 9,536 = every resolved row whose raw `/isolation_source` differs from the curated category
         #         the release recorded. R-SPECIMEN-2 records what it actually read ("throat swab"),
         #         where the release recorded the curated field it projected ("respiratory"). The
@@ -388,6 +416,12 @@ class ProvenanceParityResult:
     absent_from_release: int
     unresolved_by_field: dict[str, int]
     superseded_deltas: dict[str, dict[str, int]]
+
+
+def witness_digest(triples: Iterable[str]) -> str:
+    """A stable fingerprint of *which* records disagree, and how, for a superseded column."""
+    joined = "\n".join(sorted(triples))
+    return hashlib.sha256(joined.encode("utf-8")).hexdigest()[:16]
 
 
 def compare_provenance_to_release(
@@ -449,6 +483,7 @@ def compare_provenance_to_release(
 
     differences: list[str] = []
     superseded_deltas: dict[str, dict[str, int]] = {}
+    superseded_witnesses: dict[str, dict[str, list[str]]] = {}
     for row in resolved:
         key = (row["version"], row["canonical_field"])
         want = shipped.get(key)
@@ -457,9 +492,13 @@ def compare_provenance_to_release(
         field = row["canonical_field"]
         if field in SUPERSEDED_FIELD_DELTAS:
             per_column = superseded_deltas.setdefault(field, dict.fromkeys(PROVENANCE_COLUMNS, 0))
+            witness = superseded_witnesses.setdefault(field, {})
             for column in PROVENANCE_COLUMNS:
                 if row[column] != want[index[column]]:
                     per_column[column] += 1
+                    witness.setdefault(column, []).append(
+                        f"{row['version']}|{row[column]}|{want[index[column]]}"
+                    )
             continue
         for column in PROVENANCE_COLUMNS:
             if row[column] != want[index[column]]:
@@ -494,6 +533,21 @@ def compare_provenance_to_release(
                 f"{field} disagrees with the release differently than declared — {detail}. A "
                 f"deliberate delta has changed shape and needs re-adjudicating."
             )
+
+        # A count alone lets one record be fixed while another regresses, keeping the total the
+        # same and the gate green — demonstrated, not hypothetical. So the *identity* of the
+        # disagreeing set is declared too: one hash per column over sorted version|built|shipped.
+        # Columns whose declared count equals every compared row need no hash: "all of them" is
+        # already an identity, and `SUPERSEDED_FIELD_WITNESSES` omits them for that reason.
+        declared_witnesses = SUPERSEDED_FIELD_WITNESSES.get(field, {})
+        for column, digest in declared_witnesses.items():
+            actual_digest = witness_digest(superseded_witnesses.get(field, {}).get(column, []))
+            if actual_digest != digest:
+                raise ContractError(
+                    f"{field}.{column} disagrees with the release on a different set of records "
+                    f"than declared, even though the count still matches: witness {actual_digest} "
+                    f"is not the declared {digest}. A substitution has been made."
+                )
 
     # Counted over compared rows only, so the reported branch tallies sum to `compared_rows` rather
     # than silently including rows that have no shipped counterpart.

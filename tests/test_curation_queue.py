@@ -6,29 +6,31 @@ note nobody acts on and the rewrite just ships a permanently emptier table than 
 
 from __future__ import annotations
 
+import csv
 from pathlib import Path
 
 import pytest
 
 from enterovirus_genbank_curated.build import build_metadata_layer
 from enterovirus_genbank_curated.curate.queue import (
+    REGISTRY_FIELD_FOR_CANONICAL,
     RESOLUTION_DECISION,
     RESOLUTION_RULE_PARAMETER,
     build_queue,
     queue_id,
 )
+from enterovirus_genbank_curated.derive.epi import UNRESOLVED_NO_SOURCE
 from enterovirus_genbank_curated.derive.partition import (
     UNRESOLVED_FOLLOWS_PARTITION,
     UNRESOLVED_UNINFORMATIVE,
 )
 
-# Summed across fields, so a record needing two decisions counts twice — this is a measure of work,
-# not of records. 12,684 specimen_type + 4,483 sample_origin + 1,733 partition = 18,900 declined
-# cells, less the 1,626 sample_origin declines that are themselves consequences of an undecided
-# partition. `curation_status` declines on the same 1,733 as `virus_group` and is absent for that
-# same reason: it follows the partition rather than needing a decision of its own.
-EXPECTED_QUEUE_WORK_ITEMS = 17274
-EXPECTED_QUEUE_GROUPS = 181
+# Summed across fields, so a record needing two decisions counts twice — a measure of work, not of
+# records. `curation_status` declines on the same records as `virus_group` and is absent because it
+# follows the partition rather than needing a decision of its own; sample_origin declines that are
+# themselves consequences of an undecided partition are excluded for the same reason.
+EXPECTED_QUEUE_WORK_ITEMS = 17366
+EXPECTED_QUEUE_GROUPS = 186
 
 
 def declined(
@@ -135,3 +137,29 @@ def test_the_real_build_produces_the_expected_queue(repository_root: Path, tmp_p
     result = build_metadata_layer(repository_root, tmp_path)
     assert result.row_counts["curation_queue_records"] == EXPECTED_QUEUE_WORK_ITEMS
     assert result.row_counts["curation_queue_groups"] == EXPECTED_QUEUE_GROUPS
+
+
+def test_a_blank_input_is_not_advised_as_a_rule_change() -> None:
+    """The queue's biggest group shares only the *absence* of an input.
+
+    ~10,000 records deposit no `/isolation_source`. No pattern change can resolve a record with no
+    text to match, so advising `rule_parameter` there was wrong on most of the queue — and it also
+    falsified the claim that resolving one group resolves every record in it.
+    """
+    (group,) = build_queue(
+        [declined("specimen_type", "R-SPECIMEN-2", UNRESOLVED_NO_SOURCE, "", "A.1")]
+    )
+    assert group.suggested_resolution_kind == RESOLUTION_DECISION
+
+
+def test_every_registry_field_target_is_a_real_ledger_field(repository_root: Path) -> None:
+    """A target that is not a ledger `field_name` sends the curator's decision nowhere.
+
+    Nothing checked this, and the map is the queue's whole answer to the D2 failure.
+    """
+    with (repository_root / "registry/decisions.tsv").open(encoding="utf-8", newline="") as handle:
+        known = {row["field_name"] for row in csv.DictReader(handle, delimiter="\t")}
+    for canonical, registry_field in REGISTRY_FIELD_FOR_CANONICAL.items():
+        assert registry_field in known, (
+            f"{canonical} -> {registry_field} is not a field_name any ledger row uses"
+        )

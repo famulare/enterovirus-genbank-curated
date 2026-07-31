@@ -6,9 +6,16 @@ just produces a permanently emptier table than the release.
 
 ## Grouped by input, not listed by record
 
-14,417 declined rows collapse into 150 groups, because records decline for the *same* reason: every
-record whose `/isolation_source` is `conjunctival swab` is one decision, not 462. The queue is keyed
-on the input the rule examined, so a curator resolving one group resolves every record in it.
+Declined rows collapse into a few hundred groups, because records decline for the *same* reason:
+every record whose `/isolation_source` is `conjunctival swab` is one decision, not 462. The queue is
+keyed on the input the rule examined, so a curator resolving one group resolves every record in it —
+**as long as that input is non-empty**.
+
+The exception is load-bearing and was wrong first time round. The largest group is ~10,000 records
+that deposited no `/isolation_source` at all, sharing only the *absence* of an input. One decision
+cannot resolve those and no pattern change can either, so a blank input gets its own
+`unresolved_reason` and is kept out of `RULE_PARAMETER_REASONS`. Advising a rule change there was
+wrong on most of the queue.
 
 `queue_id` is `Q-` plus twelve hex characters of a SHA-256 over `rule_id | canonical_field |
 group_key`. Content-derived rather than sequential, so re-running the build does not renumber an
@@ -57,16 +64,17 @@ RESOLUTION_DECISION = "decision"
 RESOLUTION_RULE_PARAMETER = "rule_parameter"
 
 # Canonical column -> the ledger `field_name` a resolution must use. Absent means the two names
-# coincide. Wrong or missing here and a curator's decision lands where nothing reads it.
+# coincide; wrong or missing and a curator's decision lands where nothing reads it.
+#
+# Only fields that can actually reach the queue are listed. An entry for a field whose declines are
+# structurally impossible — `curation_status`, whose declines `CONSEQUENTIAL_REASONS` guarantees are
+# never queued — would document how to file a resolution this file guarantees will never be asked
+# for. Add a field when its rule lands, not before. `tests/test_curation_queue.py` checks every
+# target against the ledger's real `field_name` vocabulary.
 REGISTRY_FIELD_FOR_CANONICAL = {
     "sample_origin": "origin_class",
-    "surveillance_stream": "sampling_frame",
-    "collection_date": "collection_year_curated",
-    "collection_date_precision": "collection_year_curated",
+    "specimen_type": "specimen_type",
     "virus_group": "is_poliovirus",
-    "curation_status": "is_poliovirus",
-    "poliovirus_classification": "classification",
-    "virus_type": "serotype",
 }
 
 # Which unresolved reasons a *rule parameter* would fix, rather than a per-record decision. A

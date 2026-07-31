@@ -11,6 +11,8 @@ of its retired or superseded rows is an exclusion.
 from __future__ import annotations
 
 import csv
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -22,11 +24,14 @@ from enterovirus_genbank_curated.derive.metadata import (
     UNDECLARED_EXCLUSIONS,
 )
 from enterovirus_genbank_curated.oracle.parity import (
+    GUARD_PASS_MARKER,
     SUPERSEDED_FIELD_DELTAS,
+    SUPERSEDED_FIELD_WITNESSES,
     UNRESOLVED_ORIGIN_ROWS,
     UNRESOLVED_PARTITION_ROWS,
     UNRESOLVED_SPECIMEN_ROWS,
     verify_metadata_parity,
+    witness_digest,
 )
 from enterovirus_genbank_curated.registry.decisions import load_excluded_accessions
 
@@ -156,3 +161,54 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
     # The two date columns deliberately differ from the release, by exactly the declared amount.
     # A delta that cannot be stated as a number is not a declared delta.
     assert provenance.superseded_deltas == SUPERSEDED_FIELD_DELTAS
+
+
+def test_the_witness_gate_catches_a_substituted_disagreement() -> None:
+    """A per-column *count* lets one record be fixed while another regresses.
+
+    A review demonstrated it: pattern-matching `GQ331952.1` around to the shipped value while
+    regressing `AB162759.1` kept `specimen_type`'s `final_value` delta at 1 and `parity-metadata`
+    reported PASS, with the release now disagreeing on a different record than the one declared. The
+    declared witness is what closes that, so this test substitutes one triple for another and
+    requires the digest to move.
+    """
+    declared = ["GQ331952.1|environmental|stool"]
+    substituted = ["AB162759.1|environmental|stool"]
+    assert witness_digest(declared) != witness_digest(substituted)
+    # Order must not matter, or a reordered build would look like a substitution.
+    pair = ["A.1|x|y", "B.1|p|q"]
+    assert witness_digest(pair) == witness_digest(list(reversed(pair)))
+
+
+def test_every_declared_witness_names_a_column_with_a_declared_count() -> None:
+    """A witness for an undeclared column would be compared against nothing."""
+    for field, columns in SUPERSEDED_FIELD_WITNESSES.items():
+        assert field in SUPERSEDED_FIELD_DELTAS
+        for column, digest in columns.items():
+            assert SUPERSEDED_FIELD_DELTAS[field][column] > 0, (
+                f"{field}.{column} declares a witness but a zero count"
+            )
+            assert len(digest) == 16
+
+
+@pytest.mark.slow
+def test_the_guarded_parity_verb_actually_runs(repository_root: Path) -> None:
+    """`parity-metadata --guard-inputs` was dead for its whole existence and nothing noticed.
+
+    The reader demanded the nine release columns while the writer wrote ten, so the guarded path
+    raised on every run. Only the unguarded path was exercised — it keeps rows in memory and never
+    reads the artifact back, so it could not see the mismatch. Shelling out is the only way to cover
+    this: the guard installs an audit hook that cannot be uninstalled, so it needs its own process.
+    """
+    result = subprocess.run(
+        [
+            sys.executable, "-m", "enterovirus_genbank_curated.cli", "parity-metadata",
+            "--repository-root", str(repository_root), "--guard-inputs",
+        ],
+        capture_output=True, text=True, cwd=repository_root, timeout=1800, check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "metadata parity: PASS" in result.stdout
+    assert "provenance parity: PASS" in result.stdout
+    # The build ran in a guarded child, and the parent requires that child to have said so.
+    assert GUARD_PASS_MARKER in result.stdout

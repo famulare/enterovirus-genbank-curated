@@ -102,10 +102,3 @@ def project_field(bound: BoundRule, views: Sequence[RecordView]) -> list[dict[st
             }
         )
     return rows
-
-
-def coverage_by_field(rows: Iterable[dict[str, str]]) -> dict[str, int]:
-    counts: dict[str, int] = {}
-    for row in rows:
-        counts[row["canonical_field"]] = counts.get(row["canonical_field"], 0) + 1
-    return counts
