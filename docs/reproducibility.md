@@ -286,6 +286,21 @@ reference genome length — 7,441 / 7,439 / 7,432, matching the shipped `n_sabin
 the reference row projected onto its own frame equals its genome byte-for-byte, and `#=GC RF` *is*
 that genome. Confirmed on real builds, not asserted.
 
+**The rebuild reproduces upstream's own intermediate counts, which is the port-fidelity evidence
+that does not depend on the shipped bytes.** Three independent agreements, none of them arranged:
+
+- `POLIO_unified`'s `cmalign` populations come out at **2,036** sequences on the 5' side and
+  **1,902** on the 3' — exactly the `population` figures recorded in the committed covariance
+  models' own provenance, which were measured by the upstream build years earlier from a different
+  codebase. The population filter is a rewrite, not a port, so agreeing to the record on both sides
+  is evidence the filter means the same thing.
+- **7** records are excluded from that 3' population as oversized, which is exactly the
+  500–1,571 nt mis-segmented-CDS cluster upstream documented when it introduced the ceiling.
+- The row-set deltas against the shipped artifacts land on the numbers the plan derived from
+  metadata alone, before any alignment existed: **+98/−2** for `POLIO_unified`, **+715/−20** for
+  `PV1_unified`, **+270/−2** for `PV3_unified`, with every dropped row attributed to a declared
+  reason.
+
 **Sequencing is per artifact; threading is per tool. Both were measured, and I had one backwards.**
 A first build attempt fanned the six artifacts out concurrently, reached roughly 50 GB and froze the
 machine. No single step is anywhere near that: pinned to one CPU, the MAFFT seed peaks at 0.10 GB,
