@@ -255,6 +255,47 @@ def _interpreter_roots() -> tuple[str, ...]:
     return _roots(*candidates)
 
 
+@dataclass(frozen=True)
+class _PathRules:
+    """The immutable/frozen/read-root/write-root decisions, shared by both guards.
+
+    Extracted rather than duplicated on purpose. A second copy of `IMMUTABLE_DIRS`, `FROZEN_DIRS`
+    and the root-computation logic is the exact failure this module exists to prevent: the tables
+    *are* the specification, and a specification with two copies has none. `align/sandbox_exec.py`
+    computes its own `_PathRules` from the same function for exactly this reason — its path
+    decisions (what counts as `final/`, what counts as frozen, what counts as scratch) must never
+    drift from this module's, even though its *exec* decisions are different.
+    """
+
+    read_roots: tuple[str, ...]
+    write_roots: tuple[str, ...]
+    immutable: tuple[str, ...]
+    frozen: tuple[str, ...]
+    read_refused: tuple[str, ...]
+
+
+def _path_rule_set(
+    root: Path, scratch: str, *, extra_read_roots: tuple[Path, ...] = ()
+) -> _PathRules:
+    return _PathRules(
+        read_roots=_roots(root, scratch, *extra_read_roots) + _interpreter_roots(),
+        write_roots=_roots(root, scratch),
+        immutable=_roots(*[root / name for name in IMMUTABLE_DIRS]),
+        frozen=_roots(*[root / name for name in FROZEN_DIRS]),
+        read_refused=_roots(*[root / name for name in READ_REFUSED_DIRS]),
+    )
+
+
+def _mutation_problem(path: str, rules: _PathRules) -> str:
+    if _within(path, rules.frozen):
+        return f"refusing to mutate a frozen inputs-of-record tree: {_describe(path)}"
+    if _within(path, rules.immutable):
+        return f"refusing to write into an immutable release tree: {_describe(path)}"
+    if not _within(path, rules.write_roots):
+        return f"write outside the clone and the scratch directory: {_describe(path)}"
+    return ""
+
+
 def install_input_guard(
     repository_root: Path, *, extra_read_roots: tuple[Path, ...] = ()
 ) -> InputGuard:
@@ -274,26 +315,13 @@ def install_input_guard(
             f"outside $HOME, or unset it."
         )
 
-    read_roots = _roots(root, scratch, *extra_read_roots) + _interpreter_roots()
-    write_roots = _roots(root, scratch)
-    immutable = _roots(*[root / name for name in IMMUTABLE_DIRS])
-    frozen = _roots(*[root / name for name in FROZEN_DIRS])
-    read_refused = _roots(*[root / name for name in READ_REFUSED_DIRS])
+    rules = _path_rule_set(root, scratch, extra_read_roots=extra_read_roots)
 
     guard = InputGuard(
         repository_root=root,
-        allowed_read_roots=read_roots,
-        allowed_write_roots=write_roots,
+        allowed_read_roots=rules.read_roots,
+        allowed_write_roots=rules.write_roots,
     )
-
-    def mutation_problem(path: str) -> str:
-        if _within(path, frozen):
-            return f"refusing to mutate a frozen inputs-of-record tree: {_describe(path)}"
-        if _within(path, immutable):
-            return f"refusing to write into an immutable release tree: {_describe(path)}"
-        if not _within(path, guard.allowed_write_roots):
-            return f"write outside the clone and the scratch directory: {_describe(path)}"
-        return ""
 
     # Thread-local, not per-instance. A single shared flag was set for the whole process while the
     # hook worked, so any *other* thread doing I/O inside that window was skipped entirely — one
@@ -330,7 +358,7 @@ def install_input_guard(
                     path = _as_path_str(args[index])
                     if path is None:
                         continue
-                    trouble = mutation_problem(path)
+                    trouble = _mutation_problem(path, rules)
                     if trouble:
                         found.append(f"{event} would mutate an undeclared path: {trouble}")
                 for message in found:
@@ -354,17 +382,19 @@ def install_input_guard(
                 isinstance(flags, int) and bool(flags & _WRITE_FLAGS)
             )
             problem = ""
-            if _within(path, frozen):
+            if _within(path, rules.frozen):
                 problem = (
                     f"the frozen legacy registries are carried for provenance and read by nothing; "
                     f"the build may not open them: {_describe(path)}"
                 )
-            elif not writing and _within(path, read_refused):
+            elif not writing and _within(path, rules.read_refused):
                 problem = (
                     f"the shipped release is a comparison target, never a pipeline input; the "
                     f"build may not read it: {_describe(path)}"
                 )
-            elif os.path.isdir(path) and (_within(path, immutable) or _within(path, frozen)):
+            elif os.path.isdir(path) and (
+                _within(path, rules.immutable) or _within(path, rules.frozen)
+            ):
                 # A directory descriptor is the one thing that gets a caller *past* every check in
                 # this hook: `openat`-style calls take `dir_fd=` plus a bare relative name, and the
                 # audit event carries neither, so the guard judges `CWD/name` while the kernel acts
@@ -379,13 +409,13 @@ def install_input_guard(
                     f"refusing to open a directory inside a protected tree, because a directory "
                     f"descriptor bypasses every path check this guard makes: {_describe(path)}"
                 )
-            elif writing and _within(path, immutable):
+            elif writing and _within(path, rules.immutable):
                 problem = (
                     f"refusing to write into an immutable release tree: {_describe(path)}"
                 )
-            elif writing and not _within(path, guard.allowed_write_roots):
+            elif writing and not _within(path, rules.write_roots):
                 problem = f"write outside the clone and the scratch directory: {_describe(path)}"
-            elif not _within(path, guard.allowed_read_roots):
+            elif not _within(path, rules.read_roots):
                 problem = f"read of an undeclared path outside the clone: {_describe(path)}"
             if problem:
                 guard.record(problem)

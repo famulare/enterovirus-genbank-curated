@@ -248,6 +248,34 @@ each model's match-column count against its recorded provenance, with no native 
 `EV_unified` builds no covariance model of its own; it reuses `NPEV_unified`'s, matching the shipped
 `EV_unified.provenance.json`'s `cm_reused` field.
 
+**Running `mafft`/`cmalign` needs a second, weaker guard, by design.** `sandbox.ESCAPE_EVENTS`
+refuses every way of starting a child process, on the stated grounds that a child is unguarded and
+could read anything — which means the alignment stage genuinely cannot run under
+`install_input_guard`. `sandbox_exec.install_tool_guard` is the honest resolution: a second,
+differently-named mechanism, sharing every path decision with the first guard via
+`sandbox._path_rule_set` (so `final/`, `raw/` and `registry/legacy/` stay exactly as protected),
+but permitting exactly one call shape — the single `subprocess.run` `align.runner.run_tool` makes —
+inside a one-shot armed window, with an exact-key child environment, a scratch-only cwd, a
+basename-only argv, and a resolved-binary allowlist. Its own module docstring carries a full
+"what this does and does not prove" account in the same voice as this section's; the headline
+limit is the same one this guard has always had for children: the child itself is starved, not
+audited, once it starts.
+
+One design correction is worth recording because it was found by measuring, not by reading code.
+An earlier draft keyed the binary allowlist on the `_posixsubprocess.fork_exec` audit event, which
+carries the fully `PATH`-resolved candidate list — verified against CPython 3.14. Run against
+CPython **3.12.13**, the version this repository is actually pinned to, that event **never fires**
+for a `subprocess.run` call. Had that shipped, the allowlist check it depended on would have never
+executed on the one interpreter this repository uses, passing every test written against 3.14 while
+doing nothing in production. The fix resolves the executable against `PATH` in Python instead,
+inside the one event (`subprocess.Popen`) that both versions do raise.
+
+A second gap, also found only by running the falsification battery rather than by reading the
+guard's own code: an early version of the hook had no branch for the `open` event at all, so a
+plain `Path.write_text()` into `final/` or `Path.read_bytes()` from `registry/legacy/` passed
+silently — those never go through `MUTATION_EVENTS`, only through `open`. Two tests that planted
+exactly those two calls caught it before anything else did.
+
 **Byte parity with the shipped alignments is not a goal, and is not achievable even by porting
 upstream's code unchanged.** Upstream's own history records a gap-parameter change (`--lop -24`,
 adopted to stop short addon fragments being shredded) that landed in code but was never used to

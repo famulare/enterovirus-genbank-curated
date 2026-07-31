@@ -243,6 +243,17 @@ def test_a_subprocess_cannot_be_used_to_escape(repository_root: Path) -> None:
     assert_blocked(run_guarded(repository_root, body), "escape the guard")
 
 
+def test_a_real_aligner_binary_is_still_refused(repository_root: Path) -> None:
+    """The regression this refactor exists to rule out: `_path_rule_set` must not have widened
+    anything for the tool-exec guard's benefit. A real `mafft` invocation is refused exactly like
+    any other subprocess, by an absolute path this time rather than a bare name on PATH."""
+    mafft = repository_root / ".pixi" / "envs" / "align" / "bin" / "mafft"
+    if not mafft.is_file():
+        pytest.skip("pixi align environment is not installed")
+    body = f"import subprocess; subprocess.run([{str(mafft)!r}, '--version'])"
+    assert_blocked(run_guarded(repository_root, body), "escape the guard")
+
+
 # Until 2026-07-29 only `subprocess.Popen` was covered, so the three cases below all ran a child
 # process that read whatever it liked while the guard reported a clean build. `os.system` is the
 # shortest way to shell out to an aligner, which is exactly what the next pipeline stage needs.
