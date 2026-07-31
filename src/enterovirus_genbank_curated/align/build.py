@@ -19,8 +19,29 @@ by convention. Here it is satisfied by construction: `build_all` loops, `build_o
 `run_tool` before the next, and the thread count is a declared argument rather than a machine
 property. There is deliberately no parallel option to pass.
 
-That is also why `cmalign --cpu` is pinned in `align.structural` — an unpinned worker count is both
-a determinism hole and a memory multiplier, and the table above shows the second effect directly.
+That is also why `cmalign --cpu` is pinned in `align.structural` rather than left to Infernal: an
+unpinned worker count is a determinism hole, since the number of workers would be a property of the
+machine rather than of the declaration.
+
+## Threads are not the memory problem, and one thread is a trap
+
+The first version of this module defaulted to one thread, reasoning from the 50 GB freeze. That
+conflated two different things and cost hours. Measured on the real `POLIO_unified` pass-2 input
+(8,736 profile rows plus 1,250 fragments):
+
+| threads | `pairlocalalign` CPU | RSS | outcome |
+|---|---|---|---|
+| 1 | 97% (one core) | 58 MB | still in MAFFT's all-to-all stage after 90 minutes |
+| 8 | 770% (eight cores) | 582 MB | the same stage saturating eight cores |
+
+MAFFT's `--addfragments` builds a guide tree with an all-to-all pairwise stage over the *combined*
+set, which is the dominant cost of a large build and is threaded. Pinning one thread does not reduce
+peak memory in any way that matters — 58 MB against 582 MB, both negligible — it only serialises
+the one stage that parallelises, turning a half-hour build into an all-day one.
+
+So the rule is per-*artifact* sequencing, not per-core starvation: one artifact at a time, and
+inside it as many threads as declared. Upstream reached the same setting (`min(8, cpu_count)`); the
+count is a literal here because a declared parameter should not depend on the host.
 
 ## One guard per process, not one per artifact
 
@@ -68,8 +89,11 @@ from enterovirus_genbank_curated.export import alignment as export_alignment
 # Generous per-tool ceiling. The point is to fail rather than hang forever on a pathological input;
 # the measured `mafft --add` extrapolation for the largest artifact is well inside this.
 DEFAULT_TIMEOUT_S = 6 * 60 * 60
-# One thread by default, and the default is the recommendation — see the module docstring.
-DEFAULT_THREADS = 1
+# Eight, and measured rather than guessed — see "Threads are not the memory problem" below. A
+# literal constant, never `os.cpu_count()`: the thread count is a declared parameter recorded in
+# provenance, and deriving it from the machine would make an artifact's inputs depend on where it
+# was built.
+DEFAULT_THREADS = 8
 
 # Within one artifact's band: the CDS stage, then the two NCR sides.
 _STEP_CODON = 0

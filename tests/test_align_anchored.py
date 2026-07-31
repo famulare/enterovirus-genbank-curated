@@ -407,3 +407,32 @@ def test_the_hand_adjudicated_guard_bypass_is_declared_and_narrow() -> None:
     for spec in contract.ARTIFACTS.values():
         if spec.anchor is not None:
             assert spec.anchor.pdist_guard_bypass == frozenset({"OR538733"})
+
+
+# --- the declared thread count -------------------------------------------------------------------
+
+
+def test_the_thread_count_is_a_literal_constant_not_derived_from_the_host() -> None:
+    """A declared parameter must not depend on where the build ran. Measured cost of getting this
+    wrong: defaulting to one thread left MAFFT's all-to-all stage on a single core and turned a
+    half-hour build into an all-day one, because that stage is threaded and its memory is
+    negligible either way (58 MB against 582 MB)."""
+    import ast
+    from pathlib import Path as _Path
+
+    from enterovirus_genbank_curated.align import build as align_build
+
+    assert align_build.DEFAULT_THREADS == 8
+
+    source = (
+        _Path(align_build.__file__).read_text(encoding="utf-8")
+    )
+    tree = ast.parse(source)
+    calls = [
+        node
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "cpu_count"
+    ]
+    assert not calls, "the thread count must be a literal, never os.cpu_count()"
