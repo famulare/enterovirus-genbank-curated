@@ -55,7 +55,18 @@ SUPERSEDED_CARRY_FORWARD_ADDITIONS = {
     ("JC013129", "classification", "engineered/lab"),
     ("JC013129", "origin_class", "non-human"),
 }
-LEDGER_ONLY_ADDITIONS = D2_ADDITIONS | SUPERSEDED_CARRY_FORWARD_ADDITIONS
+# The two rows landed on 2026-07-31 when `docs/engineered-full-population-readjudication.md`'s
+# remediation was applied alongside R-CONSTRUCT-2. CS406483's TRUE replaces its own superseded FALSE
+# (`decision_id` hashes `new_value`, so a corrected value is a new row); PU749298's is the byte-
+# identical twin, which the report found had no row at all. Both trace to the curator's Q2 answer.
+ENGINEERED_READJUDICATION_ADDITIONS = {
+    ("CS406483", "engineered_or_construct", "TRUE"),
+    ("PU749298", "engineered_or_construct", "TRUE"),
+}
+
+LEDGER_ONLY_ADDITIONS = (
+    D2_ADDITIONS | SUPERSEDED_CARRY_FORWARD_ADDITIONS | ENGINEERED_READJUDICATION_ADDITIONS
+)
 
 # The locked VDPV/wild reconciliation allowlist, migrated 2026-07-30 by
 # `scripts/migrate_vdpv_reconciliation.py`. These are not enumerated as 243 literal tuples; they are
@@ -73,10 +84,27 @@ CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 # decision replaced them. That is a second meaning for `retired` and the reason the invariant below
 # had to be split.
 RULE_REDUNDANT_RETIREMENTS = 162
+
+# A third meaning for `retired`, landed 2026-07-31: an adjudication overturned the assertion. Four
+# rows, all `engineered_or_construct` TRUEs — `AJ512791`/`AJ512792` (Appendix B Q8, a wild PV1
+# contaminant is not engineered) and `DD214215`/`DD214221` (Q4, a defective-interfering particle is
+# not engineered). Unlike the 162 these have no successor and no rule deriving the same value: the
+# value itself is now different, which is why they are counted apart.
+ADJUDICATION_RETIREMENTS = 4
+
+# Two rows added the same day, and one status move: CS406483's FALSE becomes `superseded` by the
+# TRUE that replaces it, so `active` gains 2 and loses 1.
+ENGINEERED_READJUDICATION_NET_ACTIVE = len(ENGINEERED_READJUDICATION_ADDITIONS) - 1
 EXPECTED_STATUS = {
-    "active": 2895 + EXPECTED_VDPV_ROWS - RULE_REDUNDANT_RETIREMENTS,
-    "retired": 17 + RULE_REDUNDANT_RETIREMENTS,
-    "superseded": 9,
+    "active": (
+        2895
+        + EXPECTED_VDPV_ROWS
+        - RULE_REDUNDANT_RETIREMENTS
+        - ADJUDICATION_RETIREMENTS
+        + ENGINEERED_READJUDICATION_NET_ACTIVE
+    ),
+    "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
+    "superseded": 10,
 }
 
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
@@ -109,7 +137,7 @@ def test_ledger_satisfies_its_own_contract(
     repository_root: Path, decision_contract: DecisionContract
 ) -> None:
     summary = validate_decision_ledger(repository_root / LEDGER, decision_contract)
-    assert summary.rows == 3164
+    assert summary.rows == 3164 + len(ENGINEERED_READJUDICATION_ADDITIONS)
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
 
@@ -230,8 +258,8 @@ def test_retired_rows_agree_with_the_decision_that_governs_them(
             f"({row['new_value']!r} vs {governing[key]!r}) — that is a conflict, not redundancy"
         )
 
-    # Both populations pinned, so a row cannot drift from one meaning to the other unnoticed.
-    assert superseded_by_a_rule == RULE_REDUNDANT_RETIREMENTS
+    # All three populations pinned, so a row cannot drift from one meaning to another unnoticed.
+    assert superseded_by_a_rule == RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS
     assert superseded_by_a_decision == 17
 
 
@@ -251,9 +279,19 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     ]
     carried = [r for r in superseded if r["new_value"] == "iVDPV"]
     jc013129 = [r for r in superseded if r["subject_key"] == "JC013129"]
-    assert len(d2) + len(carried) + len(jc013129) == len(superseded), (
+    # Fourth cause, 2026-07-31: the re-adjudication reversed a value rather than retiring it. One
+    # row. It is a supersession and not a retirement precisely because the check above would call a
+    # retired row disagreeing with its active successor a buried conflict — which it would be.
+    reversed_value = [
+        r for r in superseded if r["field_name"] == "engineered_or_construct"
+    ]
+    assert len(d2) + len(carried) + len(jc013129) + len(reversed_value) == len(superseded), (
         "an unexplained supersession class appeared"
     )
+    assert {r["subject_key"] for r in reversed_value} == {"CS406483"}
+    for row in reversed_value:
+        assert row["new_value"] == "FALSE"
+        assert "rules out" in row["notes"], "a supersession must record why it was overturned"
 
     assert {r["subject_key"] for r in d2} == {"CS406436", "CS406482", "CS406483"}
     for row in d2:
@@ -519,7 +557,7 @@ def test_ledger_text_uses_typographic_quotes(ledger: list[dict[str, str]]) -> No
 
 
 def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]]) -> None:
-    """Eleven migrated registries, plus the adjudication that authored the three new rows.
+    """Eleven migrated registries, plus the adjudication that authored the five new rows.
 
     An earlier version asserted "10 sources, all .csv", which forced the D2 additions to claim
     `manual_review_overrides.csv` — a file that does not record them. A test should not make the
@@ -532,12 +570,16 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     registries = {s for s in sources if s.endswith(".csv")}
     assert len(registries) == 11
     assert sources[VDPV_SOURCE] == EXPECTED_VDPV_ROWS
-    assert sources["curator_adjudication_2026-07-29"] == len(D2_ADDITIONS)
+    assert sources["curator_adjudication_2026-07-29"] == len(D2_ADDITIONS) + len(
+        ENGINEERED_READJUDICATION_ADDITIONS
+    )
     assert set(sources) == registries | {"curator_adjudication_2026-07-29"}
 
     for row in ledger:
         if row["source_artifact"] == "curator_adjudication_2026-07-29":
             assert row["field_name"] == "engineered_or_construct"
-            assert row["status"] == "active"
-            # A supersession note on an active row would reintroduce the confusion this avoids.
-            assert not row["notes"].startswith("superseded")
+            # `active` for four of the five. The fifth is CS406483's FALSE, superseded on 2026-07-31
+            # by the TRUE assertion the same adjudication's Q2 answer requires — so the adjudication
+            # now authors both sides of one reversal, and the note has to say which side it is.
+            assert row["status"] in {"active", "superseded"}
+            assert row["notes"].startswith("superseded") == (row["status"] == "superseded")

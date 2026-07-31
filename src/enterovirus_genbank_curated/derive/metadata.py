@@ -73,10 +73,6 @@ PENDING_COLUMNS = {
     "collection_date_precision": "projects the curated collection_date_precision",
     "collection_year_earliest": "needs the curated date-range parse",
     "collection_year_latest": "needs the curated date-range parse",
-    "engineered_or_construct": (
-        "the GenBank division predicate reproduces 506 of 543 TRUE values; the other 37 are "
-        "upstream text and curator calls, only 15 of which are in registry/decisions.tsv"
-    ),
 }
 
 # The shipped carve includes these seventeen records; this transport cannot. All are patent-division

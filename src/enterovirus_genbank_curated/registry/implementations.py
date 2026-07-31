@@ -16,6 +16,7 @@ from importlib import import_module
 # Modules holding `@rule_implementation`-decorated functions, relative to the package root.
 IMPLEMENTATION_MODULES = (
     "derive.dates",
+    "derive.engineered",
     "derive.epi",
     "derive.geo",
     "derive.partition",

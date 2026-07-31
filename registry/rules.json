@@ -143,9 +143,9 @@
     "rule_version": "2.4.1",
     "field_name": "engineered_or_construct",
     "description": "Project the reviewed engineered/construct boolean.",
-    "implementation": "derive.engineered.engineered_or_construct",
+    "implementation": "derive.engineered.engineered_or_construct_v241",
     "parameters": {},
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-GEO-LOCALITY-1",
@@ -439,6 +439,15 @@
     "parameters": {
       "populated_when_precision_is": "range"
     },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-CONSTRUCT-2",
+    "rule_version": "1.0.0",
+    "field_name": "engineered_or_construct",
+    "description": "Decide engineered_or_construct from structured GenBank fields, replacing R-CONSTRUCT-1's projection of a curated boolean whose upstream predicate was one case-insensitive regex from a list of eighteen matched against a blob of twenty concatenated fields that included the database division code as free text, the paper titles and the author list. That predicate contained \\bPAT\\b, so all 862 patent-division source records matched and the 506 of them in the carve all ship TRUE: the column reported where a sequence was deposited rather than what it is. The curator's settled criterion (2026-07-29) is that someone deliberately produced this specific genotype for a stated purpose, by physical assembly or by directed selection under an applied selective pressure, and that patent re-deposit, spontaneous defective-interfering particles and ordinary lab-stock or passage-lineage variants are not engineered. An active engineered_or_construct decision in the ledger wins outright. Otherwise the structured signal is division == SYN or organism_name exactly equal to 'synthetic construct', NCBI's controlled name for taxid 32630, which every one of the 105 records matching /synthetic/i on that field carries verbatim. The signal is then promoted across every source record sharing the same sequence_sha256, because organism_name is depositor metadata and is demonstrably inconsistent across byte-identical deposits: the same 70 nt is 'synthetic construct' in JA792237 and 'Enterovirus C' in FB743426, so a rule reading only its own row gives one genotype two answers. There is no metadata-completeness veto; R-CONSTRUCT-1's veto fired on any parseable /collection_date, which would silently make a genuine construct FALSE for carrying a collection date. LY501105 and LZ216100 are unresolved rather than FALSE, because the curator recorded that pair as open in either direction and a structural FALSE would assert a decision that was explicitly withheld.",
+    "implementation": "derive.engineered.engineered_or_construct",
+    "parameters": {},
     "status": "active"
   }
 ]

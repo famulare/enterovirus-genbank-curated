@@ -279,6 +279,11 @@ UNRESOLVED_ORIGIN_ROWS = 3693
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
 # its values — plus 1,288 whose partition is undecided and so cannot be scoped either way.
 UNRESOLVED_STREAM_ROWS = 8630
+# `engineered_or_construct` rows R-CONSTRUCT-2 declines: `LY501105` and `LZ216100`, the CAVA
+# cold-adaptation pair Appendix B of the re-adjudication records as open in either direction. The
+# rule declines rather than emitting the structural FALSE, because a FALSE here would assert a
+# decision the curator explicitly withheld.
+UNRESOLVED_ENGINEERED_ROWS = 2
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -327,6 +332,12 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
     "specimen_type": {
         "final_value": "a8aa1248a8e83d19",
         "source_value": "39eefccaaa5b443e",
+    },
+    "engineered_or_construct": {
+        "final_value": "c1db063e162523f3",
+        "source_field": "b84e06c600e82ef1",
+        "source_value": "6237fe2e63654ad6",
+        "manual_override": "0322a79c5c21729f",
     },
 }
 
@@ -455,6 +466,48 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "canonical_field": 0,
         "source_field": 0,
         "manual_override": 0,
+    },
+    # The largest deliberate delta in the rewrite, and the one with the most evidence behind it.
+    # 500 = every record whose shipped TRUE the re-adjudication overturns. All 500 move TRUE ->
+    #       FALSE and none move the other way, which is the check that matters: the new rule creates
+    #       no TRUE the release did not already carry, it only removes ones the `\\bPAT\\b` bug
+    #       invented. 498 of the 500 are patent-division deposits flagged for *where* they were
+    #       deposited; the
+    #       other 2 are `AJ512791`/`AJ512792`, whose ledger rows Appendix B Q8 retires.
+    #
+    # A 500-row flip against a shipped column needs saying plainly: this is not parity drift, it is
+    # `docs/engineered-full-population-readjudication.md` landing. That report adjudicated 58 of the
+    # 543 records shipping TRUE per-record; the rest flip mechanically because the predicate that
+    # made them TRUE tested the database division code. The report's own headline caveat is that 468
+    # of the flips carry no per-record judgement, and it stands here unchanged.
+    "engineered_or_construct": {
+        "final_value": 500,
+        # Every compared row differs on both, necessarily: R-CONSTRUCT-2 is a different rule with a
+        # different set of branches than the `canonical_projection` the release recorded.
+        "winning_rule_id": 24282,
+        "evidence_basis": 24282,
+        # The release named the curated column as its own source. R-CONSTRUCT-2 names the
+        # structured field it actually read — `division` for the 24,254 with no synthetic signal,
+        # the digest for the 6 promoted across byte-identical twins, the ledger field for the 24
+        # curated rows.
+        "source_field": 24258,
+        "source_value": 24260,
+        # 8, and both halves are worth naming.
+        #
+        # Four stop being overrides: `AJ512791`, `AJ512792`, `DD214215`, `DD214221`, whose ledger
+        # rows this pass retires per Appendix B Q8 and Q4.
+        #
+        # Four gain one — and two of those are a live D2-class defect in the release. `CS406436` and
+        # `CS406482` carry an **active FALSE** `engineered_or_construct` decision and the release
+        # ships them **TRUE**, with `manual_override=FALSE`: the ledger says one thing, the shipped
+        # column says the other, and nothing recorded the contradiction. The `\\bPAT\\b` predicate
+        # simply outvoted the curation. The other two are `CS406483` (the FALSE row corrected to
+        # TRUE here) and `PU749298` (the row added here), which agree on the value and differ only
+        # in recording that a decision is what reached it.
+        "manual_override": 8,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
     },
     "locality": {
         # No value moves: every blank stays blank and every non-blank was already correct. The whole

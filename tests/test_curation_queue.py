@@ -29,8 +29,17 @@ from enterovirus_genbank_curated.derive.partition import (
 # records. `curation_status` declines on the same records as `virus_group` and is absent because it
 # follows the partition rather than needing a decision of its own; sample_origin declines that are
 # themselves consequences of an undecided partition are excluded for the same reason.
-EXPECTED_QUEUE_WORK_ITEMS = 24708
-EXPECTED_QUEUE_GROUPS = 239
+#
+# 24,710 since 2026-07-31: R-CONSTRUCT-2 declines on `LY501105` and `LZ216100`, the one pair the
+# `engineered_or_construct` re-adjudication left open in either direction. Those two are the only
+# queue items in the whole build that exist because a *curator* withheld a decision rather than
+# because a record is silent, and they are the shape the queue is for — a rule refusing to invent
+# an answer the adjudication explicitly declined to give.
+EXPECTED_QUEUE_WORK_ITEMS = 24710
+# One group, not two: both declined records deposit `division=PAT`, and the queue groups by the
+# input the rule examined, so the pair the curator left open arrives as one question. That is the
+# grouping working — an answer to it is one adjudication covering both.
+EXPECTED_QUEUE_GROUPS = 240
 
 
 def declined(

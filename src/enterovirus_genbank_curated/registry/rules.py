@@ -72,7 +72,10 @@ RULE_FIELD_ORDER = (
     "status",
 )
 ACTIVE_RULE_STATUS = "active"
-EXPECTED_RULE_COUNT = 35
+# 35 published by release 2.4.1, plus every rule the rewrite adds. The `-2` rules carry real semver
+# and are excluded from the frozen 2.4.1 view by `export/audit.py`, so this count and the shipped
+# `rules.tsv.gz` row count are deliberately different numbers.
+EXPECTED_RULE_COUNT = 36
 # How many of those carry the baseline's own rule_version and so appear in the frozen
 # `final/audit/rules.tsv.gz` view. The rest are the rewrite's own, on real semver.
 BASELINE_VIEW_RULE_COUNT = 28
@@ -150,8 +153,8 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.dates.collection_year_bounds_v241": (
         "superseded by R-DATE-RANGE-2; retained for the frozen 2.4.1 rule view"
     ),
-    "derive.engineered.engineered_or_construct": (
-        "the shipped values are superseded by the re-adjudication; the rewrite is increment 8"
+    "derive.engineered.engineered_or_construct_v241": (
+        "superseded by R-CONSTRUCT-2; retained for the frozen 2.4.1 rule view"
     ),
     "derive.carve.canonical_inclusion": (
         "the carve predicate exists in derive/metadata.py but is not yet a bound rule"

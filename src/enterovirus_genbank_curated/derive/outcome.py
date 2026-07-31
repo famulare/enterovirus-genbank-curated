@@ -27,6 +27,12 @@ class RecordView:
     `qualifiers` holds the first value of each qualifier on the record's `source` feature — the same
     "first source feature that carries it wins" rule the transport uses, which matters because five
     records in the corpus have two `source` features.
+
+    `byte_identical` holds every *source* record sharing this record's `sequence_sha256`, itself
+    included, carved or not. A rule needs it when the property it decides belongs to the genotype
+    rather than to the deposit: `organism_name` is depositor metadata, and the same 70 nt deposited
+    in two patents carries `synthetic construct` in one and `Enterovirus C` in the other, so a rule
+    reading only its own row assigns two different answers to one sequence.
     """
 
     version: str
@@ -34,6 +40,7 @@ class RecordView:
     record: Mapping[str, str]
     qualifiers: Mapping[str, str]
     decisions: Mapping[str, str]
+    byte_identical: tuple[Mapping[str, str], ...] = ()
 
     def qualifier(self, name: str) -> str:
         return self.qualifiers.get(name, "")

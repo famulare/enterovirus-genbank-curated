@@ -39,15 +39,26 @@ from enterovirus_genbank_curated.curate.apply import (
 # the release says a human touched those cells and the rewrite no longer claims one did.
 #
 # A non-zero value here means new redundant curation has appeared and is worth a look.
+# Re-pinned 2026-07-31, when R-CONSTRUCT-2 made `engineered_or_construct` a projected column. The
+# 27 `engineered_or_construct` decisions stop being `field_not_projected` (2,209 -> 2,182) and land
+# where they actually fall: 11 more `applied_changed`, and 13 `applied_unchanged` — a new status in
+# this tally, and the interesting one. `applied_unchanged` means the structured rule reaches the
+# same value the decision asserts, so those 13 rows are curation the rule made redundant, exactly as
+# the counterfactual projection exists to reveal. They are left in the ledger rather than retired:
+# a rule agreeing with a curator today is not a reason to discard the curator's evidence.
+#
+# `not_in_force_retired` 179 -> 183 and `not_in_force_superseded` 9 -> 10 are the re-adjudication's
+# own remediation — four TRUE assertions withdrawn, one FALSE reversed.
 EXPECTED_TALLY = {
-    "field_not_projected": 2209,
+    "field_not_projected": 2182,
     "applied_filled_unresolved": 458,
     "applied_exclusion": 173,
-    "not_in_force_retired": 179,
+    "not_in_force_retired": 183,
     "no_canonical_field": 123,
     "subject_outside_carve": 18,
-    "applied_changed": 17,
-    "not_in_force_superseded": 9,
+    "applied_changed": 28,
+    "applied_unchanged": 13,
+    "not_in_force_superseded": 10,
 }
 
 

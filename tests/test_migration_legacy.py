@@ -380,14 +380,25 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         rows = list(csv.DictReader(handle, delimiter="\t"))
     carried = len(mig.SUPERSEDED_CARRY_FORWARD)
     reconciled = vdpv.EXPECTED_SOURCE_ROWS
+    # Landed 2026-07-31 outside either migration: the two `engineered_or_construct` TRUE rows the
+    # re-adjudication's remediation requires (`CS406483`, correcting its own superseded FALSE, and
+    # `PU749298`, which had no row at all). Named as its own term rather than folded into one of the
+    # migration constants, because neither generator produces them and bumping a generator's pin to
+    # absorb a hand-landed row is exactly the drift this test exists to catch.
+    readjudication = 2
     expected = (
-        mig.EXPECTED_BASELINE_DECISIONS + len(mig.D2_ACCESSIONS) + carried + reconciled
+        mig.EXPECTED_BASELINE_DECISIONS
+        + len(mig.D2_ACCESSIONS)
+        + carried
+        + reconciled
+        + readjudication
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
         f"{mig.EXPECTED_BASELINE_DECISIONS} baseline + {len(mig.D2_ACCESSIONS)} D2 additions + "
-        f"{carried} carried-forward supersessions + {reconciled} reconciliation-allowlist rows = "
-        f"{expected}. Bumping one without the others is the drift the pin exists to catch."
+        f"{carried} carried-forward supersessions + {reconciled} reconciliation-allowlist rows + "
+        f"{readjudication} re-adjudication rows = {expected}. Bumping one without the others is "
+        f"the drift the pin exists to catch."
     )
 
 
@@ -403,10 +414,18 @@ def test_the_shipped_ledger_carries_the_current_d2_evidence(
     with (repository_root / "registry/decisions.tsv").open(encoding="utf-8") as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
 
+    # Narrowed on 2026-07-31. The re-adjudication landed two further rows under the same
+    # `source_artifact` — the curator's answers really are their source — so "every row from that
+    # adjudication" is no longer the same set as "every row this generator wrote". The generator's
+    # rows are the FALSE assertions on the D2 accessions; the additions are TRUE and are checked in
+    # `tests/test_decision_ledger.py` instead. Widening the filter would let a generator regression
+    # hide behind a hand-landed row.
     added = [
         row for row in rows
         if row["source_artifact"] == mig.D2_SOURCE
         and row["field_name"] == "engineered_or_construct"
+        and row["new_value"] == "FALSE"
+        and row["subject_key"] in mig.D2_ACCESSIONS
     ]
     assert len(added) == len(mig.D2_ACCESSIONS), added
     for row in added:
@@ -414,11 +433,21 @@ def test_the_shipped_ledger_carries_the_current_d2_evidence(
             f"{row['subject_key']}: the shipped evidence_reference is not the current "
             f"D2_EVIDENCE. Regenerate the ledger, or revert the constant."
         )
-        assert row["notes"] == mig.D2_ADDED_NOTE, row["subject_key"]
+        # `notes` is the one field a later pass may legitimately rewrite, and one did: CS406483's
+        # FALSE was superseded on 2026-07-31, so its note now records that rather than the
+        # generator's. `evidence_reference` above is checked unconditionally because the
+        # *measurement* does not change when the conclusion is revisited — 6 nt from MEF1 is 6 nt.
+        if row["status"] == "superseded":
+            assert row["subject_key"] == "CS406483", row["subject_key"]
+            assert row["notes"].startswith("superseded 2026-07-31 by"), row["subject_key"]
+        else:
+            assert row["notes"] == mig.D2_ADDED_NOTE, row["subject_key"]
 
     superseded = [
         row for row in rows
-        if row["subject_key"] in mig.D2_ACCESSIONS and row["status"] == "superseded"
+        if row["subject_key"] in mig.D2_ACCESSIONS
+        and row["status"] == "superseded"
+        and row["field_name"] == "classification"
     ]
     assert len(superseded) == len(mig.D2_ACCESSIONS), superseded
     for row in superseded:

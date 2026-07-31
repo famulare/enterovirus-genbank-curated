@@ -280,15 +280,27 @@ EXPECTED_KNOWN_SPLIT_COUNT = 12
 # re-adjudication found that pair genuinely engineered (a unique AgeI site), so its active FALSE row
 # needs correcting rather than extending to its twin.
 #
-# `DD214221` is a fourth instance nobody had recorded, and it was invisible to the differential
+# `DD214221` was a fourth instance nobody had recorded, and it was invisible to the differential
 # formulation this check replaced: an active TRUE assertion whose byte-identical twin `X00595`
-# (Sabin 2, shipping FALSE) has no row at all. Same defect shape as D2 with the polarity reversed.
+# (Sabin 2, shipping FALSE) had no row at all. Same defect shape as D2 with the polarity reversed.
+#
+# **Two of the four closed on 2026-07-31**, when the re-adjudication's remediation landed with
+# R-CONSTRUCT-2, and they closed in the two different ways available:
+#
+# * `DD214221` — the assertion was **withdrawn**. Appendix B Q4 decides a defective-interfering
+#   particle is not engineered, so its TRUE row is retired and the group has no assertion to be
+#   partial about. `X00595` needed no row.
+# * `CS406483` — the assertion was **completed**. Q2 keeps it engineered, so the FALSE row is
+#   superseded by a TRUE one and its byte-identical twin `PU749298` gained the matching row it never
+#   had. The group is now spoken for in full.
+#
+# `CS406436` and `CS406482` remain, and they are the live D2 defect in its original form: both carry
+# an active FALSE row while the release ships them TRUE. Nothing here can close that — the shipped
+# column is the thing that disagrees, and this repository does not write it.
 KNOWN_LEDGER_INCOHERENT_GROUPS: frozenset[tuple[str, ...]] = frozenset(
     {
         ("CS406436",),
         ("CS406482",),
-        ("CS406483",),
-        ("DD214221",),
     }
 )
 

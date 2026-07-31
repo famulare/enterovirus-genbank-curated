@@ -27,6 +27,7 @@ from enterovirus_genbank_curated.oracle.parity import (
     GUARD_PASS_MARKER,
     SUPERSEDED_FIELD_DELTAS,
     SUPERSEDED_FIELD_WITNESSES,
+    UNRESOLVED_ENGINEERED_ROWS,
     UNRESOLVED_ORIGIN_ROWS,
     UNRESOLVED_PARTITION_ROWS,
     UNRESOLVED_SPECIMEN_ROWS,
@@ -121,6 +122,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "collection_year_earliest",
         "collection_year_latest",
         "curation_status",
+        "engineered_or_construct",
         "locality",
         "sample_origin",
         "specimen_type",
@@ -146,6 +148,9 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         # non-polio partition, which scopes sample_origin out to `unknown` — a resolved value.
         "sample_origin": 24284 - UNRESOLVED_ORIGIN_ROWS,
         "surveillance_stream": 24284 - UNRESOLVED_STREAM_ROWS,
+        # The only rule that declines because a *curator* left the question open rather than because
+        # the record is silent: R-CONSTRUCT-2 will not turn "not adjudicated" into FALSE.
+        "engineered_or_construct": 24284 - UNRESOLVED_ENGINEERED_ROWS,
     }
     assert set(resolved_per_field) == set(provenance.fields)
     assert provenance.compared_rows == sum(resolved_per_field.values())
@@ -168,6 +173,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "specimen_type": UNRESOLVED_SPECIMEN_ROWS,
         "sample_origin": UNRESOLVED_ORIGIN_ROWS,
         "surveillance_stream": UNRESOLVED_STREAM_ROWS,
+        "engineered_or_construct": UNRESOLVED_ENGINEERED_ROWS,
     }
 
     # The two date columns deliberately differ from the release, by exactly the declared amount.

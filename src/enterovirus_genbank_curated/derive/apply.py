@@ -51,6 +51,12 @@ def build_record_views(
             row["qualifier_name"], row["qualifier_value"]
         )
 
+    # Grouped over the *whole* corpus rather than the carve, because "these are the same bytes" is a
+    # fact about the sequence and does not stop being true when one of the twins is carved out.
+    by_digest: dict[str, list[dict[str, str]]] = {}
+    for record in tables["records"]:
+        by_digest.setdefault(record["sequence_sha256"], []).append(record)
+
     ledger = decisions or {}
     return [
         RecordView(
@@ -59,6 +65,7 @@ def build_record_views(
             record=record,
             qualifiers=qualifiers.get(record["version"], {}),
             decisions=ledger.get(record["accession"], {}),
+            byte_identical=tuple(by_digest[record["sequence_sha256"]]),
         )
         for record in tables["records"]
         if record["version"] in wanted
