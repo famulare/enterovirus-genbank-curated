@@ -23,6 +23,7 @@ from enterovirus_genbank_curated.derive.metadata import (
 )
 from enterovirus_genbank_curated.oracle.parity import (
     SUPERSEDED_FIELD_DELTAS,
+    UNRESOLVED_ORIGIN_ROWS,
     UNRESOLVED_PARTITION_ROWS,
     UNRESOLVED_SPECIMEN_ROWS,
     verify_metadata_parity,
@@ -113,6 +114,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "collection_date_precision",
         "curation_status",
         "locality",
+        "sample_origin",
         "specimen_type",
         "virus_group",
     )
@@ -127,6 +129,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "virus_group": 24284 - UNRESOLVED_PARTITION_ROWS,
         "curation_status": 24284 - UNRESOLVED_PARTITION_ROWS,
         "specimen_type": 24284 - (UNRESOLVED_SPECIMEN_ROWS - 1),
+        "sample_origin": 24284 - UNRESOLVED_ORIGIN_ROWS,
     }
     assert set(resolved_per_field) == set(provenance.fields)
     assert provenance.compared_rows == sum(resolved_per_field.values())
@@ -147,6 +150,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "virus_group": UNRESOLVED_PARTITION_ROWS,
         "curation_status": UNRESOLVED_PARTITION_ROWS,
         "specimen_type": UNRESOLVED_SPECIMEN_ROWS,
+        "sample_origin": UNRESOLVED_ORIGIN_ROWS,
     }
 
     # The two date columns deliberately differ from the release, by exactly the declared amount.

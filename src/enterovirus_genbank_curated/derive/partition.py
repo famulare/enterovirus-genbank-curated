@@ -97,6 +97,16 @@ def _membership(view: RecordView) -> tuple[str, bool]:
     return NON_POLIO_ENTEROVIRUS, False
 
 
+def resolved_partition(view: RecordView) -> str:
+    """The partition, or `""` when nothing determines it — for rules that are scoped by it.
+
+    Public because the epi rules are partition-scoped: `sample_origin` is curated for poliovirus and
+    out of scope elsewhere, and a record whose membership is undecided cannot be scoped either way.
+    """
+    partition, _ = _membership(view)
+    return partition
+
+
 @rule_implementation(
     "derive.partition.virus_group",
     parameters=("groups",),

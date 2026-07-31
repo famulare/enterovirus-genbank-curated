@@ -70,9 +70,9 @@
     "rule_version": "2.4.1",
     "field_name": "sample_origin",
     "description": "Project the curated origin_class.",
-    "implementation": "derive.epi.sample_origin",
+    "implementation": "derive.epi.sample_origin_v241",
     "parameters": {},
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-SURVEILLANCE-1",
@@ -391,6 +391,23 @@
         "CNS": "\\bcsf\\b|cerebrospinal",
         "serum": "serum|blood|plasma"
       }
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-ORIGIN-2",
+    "rule_version": "1.0.0",
+    "field_name": "sample_origin",
+    "description": "Derive sample_origin from the GenBank /host qualifier, falling back to human-specimen keywords in /isolation_source, replacing R-ORIGIN-1's projection of a curated origin_class that no declared input carries. Partition-scoped: sample_origin was curated for poliovirus only, so a non-poliovirus record projects unknown and a record whose membership is undecided is left unresolved rather than scoped either way. Within poliovirus, /host is authoritative when present -- a host matching 'homo sapiens|\\bhuman\\b' gives human and any other named host gives non-human, because a human host means a human-origin sample. Only when no host was deposited does the specimen text stand in, matching 'stool|faeces|faecal|feces|fecal|sewage|wastewater|waste water|water|throat|nasal|nasopharyn|oropharyn|\\bcsf\\b|cerebrospinal|serum|blood|patient|\\bafp\\b|acute flaccid|paralysis|paralytic|meningitis|gastroenteritis' for human; otherwise unresolved. The release is not a function of these inputs -- /host=Homo sapiens alone ships 3,177 human, 55 unknown and 3 vaccine -- so 228 records are a declared correction, including one /host=nonhuman primate the release calls human.",
+    "implementation": "derive.epi.sample_origin",
+    "parameters": {
+      "human_host_pattern": "homo sapiens|\\bhuman\\b",
+      "human_specimen_pattern": "stool|faeces|faecal|feces|fecal|sewage|wastewater|waste water|water|throat|nasal|nasopharyn|oropharyn|\\bcsf\\b|cerebrospinal|serum|blood|patient|\\bafp\\b|acute flaccid|paralysis|paralytic|meningitis|gastroenteritis",
+      "origins": {
+        "human": "human",
+        "non_human": "non-human"
+      },
+      "outside_scope_value": "unknown"
     },
     "status": "active"
   }

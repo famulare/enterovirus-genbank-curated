@@ -547,12 +547,22 @@ curator's call rather than a keyword's.
 keeps them apart — non-polio gets `not_applicable` — so the two columns are inconsistent with each
 other about the same records.
 
-**Two decisions needed before either column can be derived**, both curator calls, neither guessable:
+**Answered 2026-07-30.** A human host means a human-origin sample; an OPV-derived isolate is `human`
+if it came from a person, with the vaccine-derived fact staying in `poliovirus_classification` where it
+already lives. R-ORIGIN-2 implements that: 19,801 of 24,284 resolved, **4** disagreements, and
+`manual_override` exact.
 
-1. For a record whose only geography-of-origin evidence is `/host=Homo sapiens`, is `sample_origin`
-   `human` or `unknown`? The release says both.
-2. What is the `sample_origin` of an OPV-derived isolate — `vaccine`, `human`, or `unknown`?
+Two things fell out of implementing it that were not visible from the ceiling analysis. Scoping the
+rule by partition removed 23 of the 34 apparent defects on its own — the `/isolation_source=opv`
+records are `Enterovirus C`, whose membership no organism name settles, so no epi rule should have been
+asked about them. And the release's `unknown` origins turn out to concentrate in records whose
+*membership* is also uncertain, which is coherent rather than arbitrary: the upstream was conservative
+about origin exactly where it was unsure what the virus was.
 
-Until those are answered, `sample_origin` and `surveillance_stream` stay pending rather than shipping
-a rule with 34 known defects. `derive/epi.py` records the ceiling measurements and the warning that
-`definition` must not be used as a feature.
+`surveillance_stream` is still pending (ceiling 93.5% on generalizing features).
+
+**Still open:** whether non-poliovirus records should keep `sample_origin=unknown`. R-ORIGIN-2 scopes
+them out because the field was curated for poliovirus only, but GenBank states a `/host` for many of
+them, so a scoped-out `unknown` is arguably asserting non-determination about something the data does
+state. Extending the rule there would move ~10,000 records, which is a larger scientific change than
+anything else in the rewrite so far and was not the question asked.

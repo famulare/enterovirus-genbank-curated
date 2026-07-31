@@ -22,10 +22,13 @@ from enterovirus_genbank_curated.derive.partition import (
     UNRESOLVED_UNINFORMATIVE,
 )
 
-# 12,684 specimen_type declines + 1,733 partition declines. `curation_status` declines on the same
-# 1,733 and is deliberately absent: it follows `virus_group` rather than needing its own decision.
-EXPECTED_QUEUE_RECORDS = 14417
-EXPECTED_QUEUE_GROUPS = 148
+# Summed across fields, so a record needing two decisions counts twice — this is a measure of work,
+# not of records. 12,684 specimen_type + 4,483 sample_origin + 1,733 partition = 18,900 declined
+# cells, less the 1,626 sample_origin declines that are themselves consequences of an undecided
+# partition. `curation_status` declines on the same 1,733 as `virus_group` and is absent for that
+# same reason: it follows the partition rather than needing a decision of its own.
+EXPECTED_QUEUE_WORK_ITEMS = 17274
+EXPECTED_QUEUE_GROUPS = 181
 
 
 def declined(
@@ -130,5 +133,5 @@ def test_groups_come_out_in_a_stable_order() -> None:
 def test_the_real_build_produces_the_expected_queue(repository_root: Path, tmp_path: Path) -> None:
     """Pinned so the queue cannot silently grow or shrink between builds."""
     result = build_metadata_layer(repository_root, tmp_path)
-    assert result.row_counts["curation_queue_records"] == EXPECTED_QUEUE_RECORDS
+    assert result.row_counts["curation_queue_records"] == EXPECTED_QUEUE_WORK_ITEMS
     assert result.row_counts["curation_queue_groups"] == EXPECTED_QUEUE_GROUPS

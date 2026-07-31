@@ -267,6 +267,10 @@ UNRESOLVED_PARTITION_ROWS = 1733
 # `/isolation_source` and 4 where two categories match, naming two specimens rather than one. One of
 # the 12,680 is AF326751.2, which the release excludes, so 12,683 of the 24,284 shared rows decline.
 UNRESOLVED_SPECIMEN_ROWS = 12684
+# `sample_origin` rows R-ORIGIN-2 declines, over the built carve: poliovirus records that
+# deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
+# itself undecided and so cannot be scoped either way.
+UNRESOLVED_ORIGIN_ROWS = 4483
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -314,6 +318,27 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
+        "manual_override": 0,
+    },
+    "sample_origin": {
+        # Only four, and each is explicable. JX181922.1 and OR538735.1 are records the ledger calls
+        # non-poliovirus that the release nonetheless gave a curated origin, where R-ORIGIN-2 scopes
+        # them out. JX538031.1 deposits `/host=nonhuman primate` and the release calls it `human`,
+        # which is simply wrong. MK719554.1 is the authorized correction: `/host=Homo sapiens`
+        # against a shipped `unknown`.
+        "final_value": 4,
+        "winning_rule_id": 19801,
+        "evidence_basis": 19801,
+        # The rule records the input it read — the host, the specimen text, or the partition it
+        # scoped by — where the release recorded the curated `origin_class` it projected. The 242
+        # agreeing rows are where the host string already was the origin, plus the ledger overrides.
+        "source_value": 19559,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "source_field": 0,
+        # Exact: TRUE on precisely the records an active `origin_class` decision resolves. A text
+        # rule overriding the ledger shows up here, which is how the omission was caught.
         "manual_override": 0,
     },
     "specimen_type": {
