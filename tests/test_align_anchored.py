@@ -320,18 +320,21 @@ def test_the_sabin_reference_row_recovers_its_own_cds_exactly(
     assert block.reference_row.startswith("ATG")
 
 
-def test_a_five_prime_utr_only_fragment_projects_to_an_all_gap_cds_block(
+def test_a_five_prime_utr_only_fragment_is_absent_from_the_cds_block(
     repository_root: Path, pv1: population_module.AlignmentPopulation
 ) -> None:
     """`A37539` is 628 nt and aligns to reference 1..628, wholly inside the 5'UTR (CDS starts 743).
-    An all-gap CDS row is the correct answer, not a failure — it gets its real block from the 5'NCR
-    cmalign, and the coverage sidecar records the CDS absence."""
+    It has no CDS residues at all, so it is *absent* from `aligned_nt` rather than present as an
+    all-gap row — otherwise the coverage sidecar could not distinguish "no data here" from "covered
+    and entirely deleted". It still appears in `rows`, so the audit trail is complete, and
+    `align.stitch` pads its stitched row identically either way."""
     block = anchored.build_anchored_cds_block(
         _slice(pv1, ["A37539", "AY184219"]), repository_root
     )
-    row = block.aligned_nt["A37539"]
-    assert len(row) == block.width_nt
-    assert set(row) == {"-"}
+    assert "A37539" not in block.aligned_nt
+    audited = {row.accession: row for row in block.rows}
+    assert set(audited["A37539"].cds_row) == {"-"}
+    assert len(audited["A37539"].cds_row) == block.width_nt
 
 
 def test_every_row_is_the_declared_fixed_width(
@@ -339,9 +342,14 @@ def test_every_row_is_the_declared_fixed_width(
 ) -> None:
     accessions = [r.accession for r in pv1.records[:12]] + ["AY184219"]
     block = anchored.build_anchored_cds_block(_slice(pv1, accessions), repository_root)
-    assert set(block.aligned_nt) == set(accessions)
+    # Every record is audited; only those with CDS residues are published as rows.
+    assert {row.accession for row in block.rows} == set(accessions)
+    assert set(block.aligned_nt) <= set(accessions)
     for row in block.aligned_nt.values():
         assert len(row) == block.width_nt
+        assert row.count("-") < len(row)
+    for audited in block.rows:
+        assert len(audited.cds_row) == block.width_nt
 
 
 def test_build_refuses_a_population_with_no_anchor_spec(

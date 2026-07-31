@@ -656,7 +656,15 @@ def build_anchored_cds_block(
         )
         row = project(alignment, oriented, cds_start0, cds_end0)
         non_multiple, misphased = _gap_audit(row, alignment, cds_start0, cds_end0)
-        aligned_nt[record.accession] = row
+        # Only rows that actually carry a residue enter `aligned_nt`. A record whose alignment lands
+        # wholly outside the CDS span — a 5'UTR-only fragment, say — projects to an all-gap row, and
+        # publishing that as a *present* block would make "absent" indistinguishable from "covered
+        # but entirely deleted" in the coverage sidecar. It still gets an all-gap span in the
+        # stitched row (`align.stitch` pads it identically), so the alignment bytes are unchanged;
+        # what changes is that the sidecar now says the block is absent, with a reason. Every record
+        # stays in `rows` regardless, so the audit trail is complete.
+        if row.count(GAP) < len(row):
+            aligned_nt[record.accession] = row
         rows.append(
             AnchoredRow(
                 accession=record.accession, strand=strand, method=alignment.method,

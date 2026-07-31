@@ -55,6 +55,9 @@ BLOCKS = (BLOCK_5NCR, BLOCK_CDS, BLOCK_3NCR)
 # A record whose segmentation succeeded via inference has no NCR at all by design — not a
 # failure, and not one of align.segment's own ABSENCE_* reasons (those are for method == "none").
 REASON_INFERRED_NO_NCR = "inferred_no_ncr"
+# The record has coding sequence, but none of it lands inside the reference CDS span — an anchored
+# stack outcome (a 5'UTR-only fragment, typically), not a segmentation failure.
+REASON_NO_CDS_OVERLAP = "no_cds_overlap"
 
 
 @dataclass(frozen=True)
@@ -93,6 +96,13 @@ def _majority_rf(rows: list[str], width: int) -> str:
         counts = Counter(row[i] for row in rows if row[i] != GAP)
         columns.append(counts.most_common(1)[0][0] if counts else GAP_RF)
     return "".join(columns)
+
+
+def _cds_absence_reason(segmentation: Segmentation) -> str:
+    if segmentation.method == "none":
+        assert segmentation.absence_reason is not None
+        return segmentation.absence_reason
+    return REASON_NO_CDS_OVERLAP
 
 
 def _ncr_absence_reason(
@@ -201,7 +211,7 @@ def stitch(
         coverage.append(
             _coverage_row(
                 record, BLOCK_CDS, row_cds, width_cds, len(segmentation.orf_nt),
-                None if row_cds is not None else segmentation.absence_reason,
+                None if row_cds is not None else _cds_absence_reason(segmentation),
             )
         )
         coverage.append(

@@ -47,8 +47,18 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from enterovirus_genbank_curated import sandbox_exec
-from enterovirus_genbank_curated.align import anchored, codon, contract, segment, stitch, structural
+from enterovirus_genbank_curated.align import (
+    anchored,
+    codon,
+    contract,
+    segment,
+    stitch,
+    structural,
+)
 from enterovirus_genbank_curated.align import population as population_module
+from enterovirus_genbank_curated.align import (
+    provenance as provenance_module,
+)
 from enterovirus_genbank_curated.align import scratch as scratch_module
 from enterovirus_genbank_curated.align import toolchain as toolchain_module
 from enterovirus_genbank_curated.align.stitch import StitchedAlignment
@@ -143,9 +153,14 @@ def build_one(
         population, segmentations, cds_block, five_prime, three_prime, cds_rf=cds_rf
     )
     paths = export_alignment.write_alignment(output_dir, spec, stitched)
-    return BuildResult(
-        name=name, stitched=stitched, paths=paths, seconds=time.monotonic() - started
+    seconds = time.monotonic() - started
+    document = provenance_module.build_provenance(
+        repository_root, population, stitched, paths,
+        tool_identity=provenance_module.tool_identity(context.toolchain),
+        threads=threads, seconds=seconds,
     )
+    paths["provenance"] = provenance_module.write_provenance(output_dir, name, document)
+    return BuildResult(name=name, stitched=stitched, paths=paths, seconds=seconds)
 
 
 def build_all(

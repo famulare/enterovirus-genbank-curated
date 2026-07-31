@@ -144,6 +144,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--threads", type=int, default=align_build.DEFAULT_THREADS,
         help=f"threads per tool invocation (default {align_build.DEFAULT_THREADS})",
     )
+
+    alignment_verify = subparsers.add_parser(
+        "alignment-verify",
+        help="check built alignments against metadata-derived populations; needs no aligner",
+    )
+    alignment_verify.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_verify.add_argument("--output-dir", type=Path, required=True)
+    alignment_verify.add_argument(
+        "--artifact", action="append", dest="artifacts", metavar="NAME",
+        help="restrict to one alignment; repeatable. Default: all six.",
+    )
     return parser
 
 
@@ -323,6 +334,21 @@ def main(argv: list[str] | None = None) -> int:
                 threads=args.threads, on_event=report,
             )
             print(f"alignment build: PASS ({len(results)} artifact(s) written)")
+            return 0
+        if args.command == "alignment-verify":
+            from enterovirus_genbank_curated.validation import alignment as validate_alignment
+
+            names = tuple(args.artifacts) if args.artifacts else None
+            report = validate_alignment.verify(root, args.output_dir.resolve(), names)
+            if not report.passed:
+                for failure in report.failures:
+                    print(f"  {failure}", file=sys.stderr)
+                print(
+                    f"alignment verify: FAIL ({len(report.failures)} of {report.checks} checks)",
+                    file=sys.stderr,
+                )
+                return 1
+            print(f"alignment verify: PASS ({report.checks} checks)")
             return 0
     except ContractError as exc:
         print(f"contract validation failed: {exc}", file=sys.stderr)
