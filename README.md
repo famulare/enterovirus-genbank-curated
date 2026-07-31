@@ -105,9 +105,10 @@ From `raw/` and `registry/` alone this carves the canonical row set and fills tw
 isolate/strain/host, parsed country/admin1/locality, BioSample — where the canonical value **is** the
 GenBank value. Every cell equals the shipped cell, in the same row order.
 
-*Six projected fields*, each produced with its own machine-readable provenance row naming the rule
+*Seven projected fields*, each produced with its own machine-readable provenance row naming the rule
 that decided it and which branch of that rule fired: `locality`, `virus_group`, `curation_status`,
-`collection_date`, `collection_date_precision`, `specimen_type`. Three of these deliberately **differ**
+`collection_date`, `collection_date_precision`, `specimen_type`, `sample_origin`. Four of these
+deliberately **differ**
 from the release, because the shipped value asserted a determination that was never made; each break
 retires a weak guarantee, states a stronger one enforced against the build's own output, and pins the
 difference as an exact count that fails if it moves. See
@@ -121,12 +122,16 @@ rule could not decide from so that 17,366 declined cells reduce to 186 curator d
 And the build cannot read `final/` at all: the undeclared-input guard refuses it, so a rule cannot
 quietly reproduce the answer it is being compared against.
 
-**What is not yet true:** twelve canonical columns are still unwritten — `sequence_scope`,
-`virus_type`, `poliovirus_classification`, `sample_origin`, `surveillance_stream`, the
-`collection_year_*` pair, `engineered_or_construct` — along with `final/audit/`,
-`final/dictionaries/` and `final/alignments/`. Most need a sequence-comparison stage that does not
-exist here yet; `sample_origin` needs two curator decisions first, because the release's own values
-are not a function of its declared inputs (see `docs/review-backlog.md` B53).
+Every curation decision also gets a recorded outcome. `audit/decision_applications.tsv.gz` says what
+became of each of the 3,164 ledger rows — applied and changed something, applied and made no
+difference, filled a cell a rule declined, withdrawn, or reaching no canonical column — and a decision
+with *no* row is a build failure. That is the D2 lesson as an artifact: the failure it prevents is an
+assertion sitting in the ledger for two releases while the pipeline quietly recomputed the value.
+
+**What is not yet true:** seven canonical columns are still unwritten — `sequence_scope`,
+`virus_type`, `poliovirus_classification`, `surveillance_stream`, the `collection_year_*` pair, and
+`engineered_or_construct` — along with `final/audit/`, `final/dictionaries/` and `final/alignments/`.
+Most need a sequence-comparison stage that does not exist here yet.
 
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the
