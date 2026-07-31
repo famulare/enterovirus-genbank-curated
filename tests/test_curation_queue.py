@@ -40,11 +40,14 @@ from enterovirus_genbank_curated.derive.partition import (
 # record whose organism name states no type. That is the largest single population in the queue that
 # a *sequence* stage would clear rather than a curator — 685 `Enterovirus C` records alone — and it
 # is listed as curation work because until that stage exists a human is what resolves it.
-EXPECTED_QUEUE_WORK_ITEMS = 26903
+EXPECTED_QUEUE_WORK_ITEMS = 28496
+# 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
+# records whose virus group is undecided and so already in the queue under `virus_group`. A record
+# needing two decisions counts twice here on purpose — this is a measure of work, not of records.
 # One group, not two: both declined records deposit `division=PAT`, and the queue groups by the
 # input the rule examined, so the pair the curator left open arrives as one question. That is the
 # grouping working — an answer to it is one adjudication covering both.
-EXPECTED_QUEUE_GROUPS = 285
+EXPECTED_QUEUE_GROUPS = 299
 
 
 def declined(

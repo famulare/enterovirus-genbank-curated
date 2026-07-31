@@ -44,6 +44,7 @@ from enterovirus_genbank_curated.curate.apply import (
 )
 from enterovirus_genbank_curated.curate.queue import build_queue
 from enterovirus_genbank_curated.derive.apply import build_record_views, project_field
+from enterovirus_genbank_curated.derive.evidence import measure_sequence_evidence
 from enterovirus_genbank_curated.derive.metadata import transport_metadata
 from enterovirus_genbank_curated.export.audit import (
     write_decision_applications,
@@ -210,10 +211,19 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     load_rule_implementations()
     rule_contract = load_rule_contract(repository_root / RULES_SCHEMA_PATH)
     catalog = load_rule_catalog(repository_root / RULES_CATALOG_PATH, rule_contract)
+
+    # Sequence evidence, computed once and handed to the rules that need it. Reading the flat file a
+    # second time is the cost of keeping `records` at its shipped twelve columns — see
+    # `genbank/parse.read_sequences`.
+    with extracted_flat_file(repository_root) as flat_file:
+        sequences = read_sequences(flat_file)
+    evidence = measure_sequence_evidence(tables, sequences, transport.rows)
+
     views = build_record_views(
         tables,
         (row["version"] for row in transport.rows),
         load_active_decisions(ledger_path),
+        evidence,
     )
     bound = bind_rules(catalog)
     provenance = [
@@ -262,9 +272,8 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # record. This is the artifact a consumer wants; the transport and provenance beside it are how
     # the artifact is checked.
     canonical = assemble_canonical_rows(transport.rows, provenance)
-    with extracted_flat_file(repository_root) as flat_file:
-        canonical_counts = write_canonical_table(output_dir, canonical, read_sequences(flat_file))
-    row_counts.update(canonical_counts)
+    row_counts.update(write_canonical_table(output_dir, canonical, sequences))
+    row_counts["vp1_measured"] = len(evidence)
 
     write_metadata_transport(output_dir, transport.rows, row_counts, provenance)
     write_projection_provenance(output_dir, provenance)

@@ -63,7 +63,6 @@ PENDING_COLUMNS = {
         "needs dataset_partition; poliovirus membership is sequence-adjudicated for 417 records "
         "whose organism name is generic (R-MEMBERSHIP-AA-1)"
     ),
-    "poliovirus_classification": "needs classification_reconciled, a sequence/text reconciliation",
     "curation_status": "follows virus_group",
     "sample_origin": "projects the curated origin_class, held only in the curated master",
     "surveillance_stream": "projects the curated sampling_frame, held only in the curated master",

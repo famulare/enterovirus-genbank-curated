@@ -49,20 +49,24 @@ from enterovirus_genbank_curated.curate.apply import (
 #
 # `not_in_force_retired` 179 -> 183 and `not_in_force_superseded` 9 -> 10 are the re-adjudication's
 # own remediation — four TRUE assertions withdrawn, one FALSE reversed.
-# Re-pinned again the same day, when R-TYPE-2 made `virus_type` projected. The 143 `serotype`,
-# `confirmed_serotype` and `corrected_type` decisions move out of `field_not_projected`
-# (2,182 -> 2,042) and mostly land in `applied_filled_unresolved` (458 -> 585): a curated serotype
-# on a record whose organism name states none. That is the queue-and-ledger loop working in the
-# direction it was built for — the rule declines, and curation already holds the answer.
+# Re-pinned when R-CLASS-2 landed, and `field_not_projected` is **0** for the first time. That is
+# the whole exercise in one number: every ledger field this repo maps to a canonical column now
+# reaches a rule that projects it, so no decision is left asserting into a column nothing computes.
+# The 2,209 that used to sit there are mostly `applied_filled_unresolved` now (458 -> 2,627): a
+# curated classification or serotype on a record whose sequence or organism name does not settle it,
+# which is the queue-and-ledger loop closing in the direction it was built for.
+#
+# `field_not_projected` is deliberately absent rather than pinned at zero.
+# `assert_every_decision_is_accounted_for` tallies only statuses that occur, and a key pinned to 0
+# would silently pass if the status stopped being computed at all.
 EXPECTED_TALLY = {
-    "field_not_projected": 2042,
-    "applied_filled_unresolved": 585,
+    "applied_filled_unresolved": 2627,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,
-    "subject_outside_carve": 18,
     "applied_changed": 30,
     "applied_unchanged": 24,
+    "subject_outside_carve": 18,
     "not_in_force_superseded": 10,
 }
 

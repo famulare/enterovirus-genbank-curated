@@ -14,7 +14,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping, Sequence
 
 from enterovirus_genbank_curated.contracts import ContractError
-from enterovirus_genbank_curated.derive.outcome import RecordView, RuleOutcome
+from enterovirus_genbank_curated.derive.outcome import NO_EVIDENCE, RecordView, RuleOutcome
 from enterovirus_genbank_curated.registry.rules import BoundRule
 
 NO_OVERRIDE = "FALSE"
@@ -26,6 +26,7 @@ def build_record_views(
     tables: dict[str, list[dict[str, str]]],
     versions: Iterable[str],
     decisions: Mapping[str, Mapping[str, str]] | None = None,
+    evidence: Mapping[str, Mapping[str, str]] | None = None,
 ) -> list[RecordView]:
     """One view per requested version, in the corpus order the parser emitted.
 
@@ -58,6 +59,7 @@ def build_record_views(
         by_digest.setdefault(record["sequence_sha256"], []).append(record)
 
     ledger = decisions or {}
+    measured = evidence or {}
     return [
         RecordView(
             version=record["version"],
@@ -66,6 +68,7 @@ def build_record_views(
             qualifiers=qualifiers.get(record["version"], {}),
             decisions=ledger.get(record["accession"], {}),
             byte_identical=tuple(by_digest[record["sequence_sha256"]]),
+            evidence=measured.get(record["version"], NO_EVIDENCE),
         )
         for record in tables["records"]
         if record["version"] in wanted

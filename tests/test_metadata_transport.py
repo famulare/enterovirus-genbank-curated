@@ -27,6 +27,7 @@ from enterovirus_genbank_curated.oracle.parity import (
     GUARD_PASS_MARKER,
     SUPERSEDED_FIELD_DELTAS,
     SUPERSEDED_FIELD_WITNESSES,
+    UNRESOLVED_CLASSIFICATION_ROWS,
     UNRESOLVED_ENGINEERED_ROWS,
     UNRESOLVED_ORIGIN_ROWS,
     UNRESOLVED_PARTITION_ROWS,
@@ -125,6 +126,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "curation_status",
         "engineered_or_construct",
         "locality",
+        "poliovirus_classification",
         "sample_origin",
         "specimen_type",
         "surveillance_stream",
@@ -156,6 +158,9 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         # Both declines land on shared rows, so no -1 correction: AF326751.2's organism is
         # `Enterovirus betacoxsackie`, which states no type, and it declines outside the shared set.
         "virus_type": 24284 - (UNRESOLVED_TYPE_ROWS - 1),
+        # AF326751.2 resolves here — its organism decides a non-poliovirus partition, and outside
+        # poliovirus the column is blank by determination rather than declined — so no -1.
+        "poliovirus_classification": 24284 - UNRESOLVED_CLASSIFICATION_ROWS,
     }
     assert set(resolved_per_field) == set(provenance.fields)
     assert provenance.compared_rows == sum(resolved_per_field.values())
@@ -182,6 +187,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "surveillance_stream": UNRESOLVED_STREAM_ROWS,
         "engineered_or_construct": UNRESOLVED_ENGINEERED_ROWS,
         "virus_type": UNRESOLVED_TYPE_ROWS,
+        "poliovirus_classification": UNRESOLVED_CLASSIFICATION_ROWS,
     }
 
     # The two date columns deliberately differ from the release, by exactly the declared amount.

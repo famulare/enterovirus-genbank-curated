@@ -290,6 +290,11 @@ UNRESOLVED_ENGINEERED_ROWS = 2
 # types PV2 — plus 37 where an active decision records the type as `unknown`, which is a curator
 # stating that it is undetermined.
 UNRESOLVED_TYPE_ROWS = 2193
+# `poliovirus_classification` rows R-CLASS-2 declines: 1,832 whose virus group is itself undecided,
+# 1,557 poliovirus records with under 300 nt of VP1 to measure divergence over, 33 with no serotype
+# in the organism name to pick a Sabin reference with, and 3 whose active decision asserts a value
+# outside the declared controlled vocabulary.
+UNRESOLVED_CLASSIFICATION_ROWS = 3425
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -349,6 +354,11 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "final_value": "3ded0ff32a906ad7",
         "source_field": "5c3cae6ee684912d",
         "source_value": "3ecf43454058cfeb",
+    },
+    "poliovirus_classification": {
+        "final_value": "2f3109db557bd43b",
+        "source_value": "149a62cb6d0e0fea",
+        "manual_override": "8b68cdaac2368907",
     },
 }
 
@@ -554,6 +564,41 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # Zero, and it is the one column that had to be zero: every row R-TYPE-2 reaches through the
         # ledger is a row the release also marked as overridden, including the five it then blanked.
         "manual_override": 0,
+    },
+    # 413 of 20,859 move, and 348 of those are one declared coarsening rather than a disagreement
+    # about any record: 302 `cVDPV` and 46 `iVDPV` become the bare `VDPV`. Circulating versus
+    # immunodeficient is an epidemiological attribution, no property of the sequence carries it, and
+    # it is not in the record either — only 283 of the release's 1,767 `cVDPV` records name `cVDPV`
+    # anywhere in their definition, strain or isolate. `VDPV` is true of every record in the band,
+    # so the rule reports the band and leaves the refinement to the ledger or the queue.
+    #
+    # Of the remaining 65: about 40 sit at a threshold (13 `wild` -> `VDPV`, 11 `Sabin-like` ->
+    # `VDPV`, 4 `wild` -> `Sabin-like`, 4 `iVDPV` -> `wild` and a scatter of ones and twos), 11 are
+    # `Sabin` -> `Sabin-like` where the release distinguishes the vaccine strain itself from its
+    # descendants and divergence alone cannot, and about 14 are classes the sequence does not reach
+    # at all — `chimera`, `engineered/lab`, `vaccine` — which the release took from text this rule
+    # does not read.
+    #
+    # An earlier draft disagreed on 73 further records, every one a `Sabin-like` record called
+    # `wild` at 73-74% divergence, which is the unrelated-sequence expectation rather than a
+    # measurement. Those records do not overlap VP1 at all and one chance 12-mer was winning the
+    # diagonal vote. `MIN_DIAGONAL_ANCHORS` closed it; 2 of the 73 remain.
+    "poliovirus_classification": {
+        "final_value": 413,
+        "winning_rule_id": 20859,
+        "evidence_basis": 20859,
+        # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
+        # field or `vp1_divergence_pct`. The 1,781 agreeing on `source_value` are the curated rows,
+        # where both record the asserted value itself.
+        "source_field": 20859,
+        "source_value": 19078,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        # 243 = the locked VDPV/wild reconciliation allowlist migrated on 2026-07-30. Those rows now
+        # reach the column as decisions, where the release recorded them as `group_B_sequence_tier`
+        # with no override flag — the value is the same and the attribution is not.
+        "manual_override": 243,
     },
     "locality": {
         # No value moves: every blank stays blank and every non-blank was already correct. The whole

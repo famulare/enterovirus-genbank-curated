@@ -48,9 +48,9 @@
     "rule_version": "2.4.1",
     "field_name": "poliovirus_classification",
     "description": "Use classification_reconciled for poliovirus; blank outside poliovirus.",
-    "implementation": "derive.classification.poliovirus_classification",
+    "implementation": "derive.classification.poliovirus_classification_v241",
     "parameters": {},
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-STATUS-1",
@@ -457,6 +457,41 @@
     "description": "Read the enterovirus type out of the NCBI organism name, replacing R-TYPE-1's projection of a curated enterovirus_type or serotype. R-TYPE-1 recorded name_derived as the basis for 12,792 of its rows, and that basis is the whole method: of the 223 distinct organism names on those rows, 220 map to exactly one type, and the three that do not are the bare species names Enterovirus A, Enterovirus B and Enterovirus C, which state no type at all. An active corrected_type, confirmed_serotype or serotype decision wins outright, in that order, normalized through the same parser because the ledger holds a bare 1, 2 or 3 or an organism-style name rather than a canonical value; a curated value of unknown is unresolved, since it records that the type is undetermined. Otherwise the patterns are, case-insensitively: poliovirus followed by one of 123 with no digit after it gives PV plus that digit; coxsackievirus followed by a or b and a number gives CV, the letter and the number; echovirus followed by an optional e and a number gives E plus the number; enterovirus followed by a species letter a to d and a number gives EV- plus both; rhinovirus followed by a to c and a number gives RV- plus both. Text after the number is not part of the type, so Human coxsackievirus A20a is CVA20 and rhinovirus A1B is RV-A1. Four names in the corpus are traps the anchoring exists for: Human poliovirus 30/ROU/2008 is PV2 and not PV3 because the 30 is an isolate number; Enterovirus 6 and Enterovirus 103 carry no species letter and so no type; Enterovirus J115 and Simian enterovirus SV46 belong to a simian species outside the A-to-D human scheme; and Human rhinovirus 1A is digits-then-letter, the old serial numbering, not a species and number. A name stating no type is unresolved rather than blank, because the release's blanks conflate a name that says nothing with a type it recovered from the sequence, which is a stage this pipeline does not have. Enterovirus coxsackiepol declines for the same reason: the release types those 82 records PV2, and the name is a chimera label containing no serotype.",
     "implementation": "derive.typing.virus_type",
     "parameters": {},
+    "status": "active"
+  },
+  {
+    "rule_id": "R-CLASS-2",
+    "rule_version": "1.0.0",
+    "field_name": "poliovirus_classification",
+    "description": "Classify poliovirus by VP1 nucleotide divergence from the matching Sabin reference, replacing R-CLASS-1's projection of the curated classification_reconciled field. The thresholds are not fitted here: they are the release's own published parameters, R-TIER-SABINLIKE-1 and R-TIER-WILD-1, restated as percentages. Below 1.0 percent divergence is Sabin-like for PV1 and PV3 and below 0.6 percent for PV2; at or above 15.0 percent is wild; the band between is vaccine-derived. Measured against the shipped column before those parameters were read, every Sabin-like record sits below 1 percent, every wild record above 18 percent, and the VDPV family fills the middle, so the published thresholds are recovered from the data rather than imposed on it. Outside poliovirus the column is blank by determination, since the vocabulary is poliovirus-specific and the release ships blank for all 14,217 non-poliovirus rows; a record whose membership is undecided is unresolved instead. An active verified_classification or classification decision wins outright. Divergence cannot distinguish cVDPV from iVDPV from a bare VDPV, because that distinction is epidemiological and no property of the sequence carries it; nor is it in the record, since only 283 of the 1,767 cVDPV records and 29 of the 203 iVDPV records name the refinement in their definition, strain or isolate. Where the record does name one it is used, and otherwise the bare VDPV is emitted, which is true of every record in the band. A record with no serotype in its organism name has no reference to be measured against and is unresolved, as is one with less than 300 nt of VP1 compared. The shipped vocabulary value unresolved is never emitted: a cell this pipeline cannot decide is an unresolved cell carrying its reason, not a value. The controlled vocabulary is declared here rather than read from final/dictionaries/controlled_vocabularies.tsv, which is a comparison target and not an input, and it is: Sabin, Sabin-like, VDPV, VDPV-n, cVDPV, cVDPV-n, chimera, defective-interfering particle, engineered/lab, iVDPV, nOPV, nOPV-L, recombinant/lab, reference/lab, unresolved, vaccine, wild. A decision is authority over the value but not a licence to write anything into a controlled column, so a curated value outside that list is unresolved rather than shipped. Three active rows fail it and the release masked all three by projecting the reconciled field instead of the ledger: iVPDV, a transposition of iVDPV; engineered, where the vocabulary has only engineered/lab; and CHAT, the Koprowski strain name, which is a strain and not a classification tier.",
+    "implementation": "derive.classification.poliovirus_classification",
+    "parameters": {
+      "sabin_like_threshold_pct": {
+        "1": "1.0",
+        "2": "0.6",
+        "3": "1.0"
+      },
+      "wild_threshold_pct": "15.0",
+      "controlled_values": [
+        "Sabin",
+        "Sabin-like",
+        "VDPV",
+        "VDPV-n",
+        "cVDPV",
+        "cVDPV-n",
+        "chimera",
+        "defective-interfering particle",
+        "engineered/lab",
+        "iVDPV",
+        "nOPV",
+        "nOPV-L",
+        "recombinant/lab",
+        "reference/lab",
+        "unresolved",
+        "vaccine",
+        "wild"
+      ]
+    },
     "status": "active"
   }
 ]

@@ -75,7 +75,7 @@ ACTIVE_RULE_STATUS = "active"
 # 35 published by release 2.4.1, plus every rule the rewrite adds. The `-2` rules carry real semver
 # and are excluded from the frozen 2.4.1 view by `export/audit.py`, so this count and the shipped
 # `rules.tsv.gz` row count are deliberately different numbers.
-EXPECTED_RULE_COUNT = 37
+EXPECTED_RULE_COUNT = 38
 # How many of those carry the baseline's own rule_version and so appear in the frozen
 # `final/audit/rules.tsv.gz` view. The rest are the rewrite's own, on real semver.
 BASELINE_VIEW_RULE_COUNT = 28
@@ -133,8 +133,8 @@ PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.typing.virus_type_v241": (
         "superseded by R-TYPE-2; retained for the frozen 2.4.1 rule view"
     ),
-    "derive.classification.poliovirus_classification": (
-        "needs classification_reconciled: text classification plus the sequence tier"
+    "derive.classification.poliovirus_classification_v241": (
+        "superseded by R-CLASS-2; retained for the frozen 2.4.1 rule view"
     ),
     "derive.classification.reconcile_aa_band": "needs capsid AA p-distance",
     "derive.epi.sample_origin_v241": (
