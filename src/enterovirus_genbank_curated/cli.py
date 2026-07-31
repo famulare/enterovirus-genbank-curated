@@ -155,6 +155,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--artifact", action="append", dest="artifacts", metavar="NAME",
         help="restrict to one alignment; repeatable. Default: all six.",
     )
+
+    alignment_shape = subparsers.add_parser(
+        "alignment-shape",
+        help="write the shape report and the declared delta against 2.4.1; needs no aligner",
+    )
+    alignment_shape.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_shape.add_argument("--output-dir", type=Path, required=True)
+    alignment_shape.add_argument(
+        "--artifact", action="append", dest="artifacts", metavar="NAME",
+        help="restrict to one alignment; repeatable. Default: all six.",
+    )
     return parser
 
 
@@ -349,6 +360,16 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 return 1
             print(f"alignment verify: PASS ({report.checks} checks)")
+            return 0
+        if args.command == "alignment-shape":
+            from enterovirus_genbank_curated.align import shape as align_shape
+
+            names = tuple(args.artifacts) if args.artifacts else None
+            output_dir = args.output_dir.resolve()
+            report = align_shape.build_report(root, output_dir, names)
+            json_path, md_path = align_shape.write_report(output_dir, report)
+            print(align_shape.render(report))
+            print(f"wrote {json_path.name} and {md_path.name}")
             return 0
     except ContractError as exc:
         print(f"contract validation failed: {exc}", file=sys.stderr)

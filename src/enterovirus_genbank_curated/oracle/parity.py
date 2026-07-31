@@ -65,6 +65,10 @@ GUARD_PASS_MARKER = "undeclared-input guard: PASS"
 # already owns; `SHIPPED_CANONICAL_METADATA` above is that path for the canonical metadata table.
 SHIPPED_CANONICAL_FASTA = "final/canonical/sequences.fasta.gz"
 SHIPPED_SEQUENCE_EVIDENCE = "final/audit/sequence_evidence.tsv.gz"
+# The curation ledger's per-record disposition. Read by `align.shape` so a shipped alignment row
+# absent from a rebuild can be attributed to a deliberate carve exclusion rather than merely
+# observed to be missing from canonical.
+SHIPPED_RECORD_DISPOSITION = "final/audit/record_disposition.tsv.gz"
 SHIPPED_SOURCE_FEATURES = "final/source/normalized_tsv/features.tsv.gz"
 SHIPPED_SOURCE_FEATURE_PARTS = "final/source/normalized_tsv/feature_location_parts.tsv.gz"
 SHIPPED_SOURCE_FEATURE_QUALIFIERS = "final/source/normalized_tsv/feature_qualifiers.tsv.gz"
