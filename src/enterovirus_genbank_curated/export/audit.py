@@ -12,8 +12,8 @@ deliberately not in the view, because the view has to reproduce a frozen artifac
 
 **Two have a shipped counterpart and cover less of it, so they carry their own names.** A partial
 table under a frozen table's filename would be read as that table, and no `notes` column undoes a
-filename. `PROVENANCE_RELATIVE` and `VP1_DIVERGENCE_RELATIVE` each declare what they do cover at the
-point the name is chosen.
+filename. `PROVENANCE_RELATIVE` and `CLASSIFICATION_DIVERGENCE_RELATIVE` each declare what they do
+cover at the point the name is chosen.
 
 **Two have no shipped counterpart at all.** `APPLICATIONS_RELATIVE` and
 `MEMBERSHIP_RESCUE_RELATIVE` are the rewrite's own audit trail — what became of each curator
@@ -136,18 +136,20 @@ def write_membership_rescue(
 # and codon count, a VP1/capsid agreement flag, a CDS frameshift flag, recombinant junction and
 # breakpoint, Sabin-segment divergence, and an independent enterovirus type call.
 #
-# `measure_sequence_evidence` produces exactly one of those measurements, VP1 nucleotide divergence,
-# over the 7,728 carved records whose organism name names a serotype to pick a reference with.
-# `accession` and `version` are the only two column names the two tables have in common, so this is
-# not a projection of the shipped table the way the rule view is a projection of `rules.tsv.gz`; it
-# is a different, smaller measurement that answers one of the shipped table's questions. Under the
-# shipped name it would promise nineteen columns of evidence it does not have, over three times the
-# records it reaches.
-VP1_DIVERGENCE_RELATIVE = "audit/vp1_divergence.tsv.gz"
+# `measure_sequence_evidence` produces exactly one of those measurements, Sabin-facing nucleotide
+# divergence (VP1-first, whole-capsid fallback — a `basis` column names which, per row), over the
+# carved records whose organism name names a serotype to pick a reference with. `accession` and
+# `version` are the only two column names the two tables have in common, so this is not a projection
+# of the shipped table the way the rule view is a projection of `rules.tsv.gz`; it is a different,
+# smaller measurement that answers one of the shipped table's questions. Under the shipped name it
+# would promise nineteen columns of evidence it does not have, over most of the records it reaches.
+CLASSIFICATION_DIVERGENCE_RELATIVE = "audit/classification_divergence.tsv.gz"
 
 
-def write_vp1_divergence(output_dir: Path, measured: Mapping[str, Mapping[str, str]]) -> int:
-    """The VP1 measurement R-CLASS-2 decided from, in the carve's own row order.
+def write_classification_divergence(
+    output_dir: Path, measured: Mapping[str, Mapping[str, str]]
+) -> int:
+    """The divergence measurement R-CLASS-2 decided from, in the carve's own row order.
 
     Written because the rule's *input* was being thrown away. `poliovirus_classification` is decided
     by comparing this divergence to the thresholds the catalog publishes, and the canonical table
@@ -163,4 +165,4 @@ def write_vp1_divergence(output_dir: Path, measured: Mapping[str, Mapping[str, s
         {"accession": version.rsplit(".", 1)[0], "version": version, **fields}
         for version, fields in measured.items()
     ]
-    return write_tsv(output_dir / VP1_DIVERGENCE_RELATIVE, EVIDENCE_COLUMNS, rows)
+    return write_tsv(output_dir / CLASSIFICATION_DIVERGENCE_RELATIVE, EVIDENCE_COLUMNS, rows)

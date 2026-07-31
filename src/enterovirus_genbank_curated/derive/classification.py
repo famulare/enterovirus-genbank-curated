@@ -44,6 +44,15 @@ claim about transmission that this pipeline has no input for.
 A record whose definition or strain *does* name the refinement gets it, since that is the depositor
 stating it.
 
+## VP1-first, capsid-fallback
+
+1,911 carved, name-serotyped records have no usable VP1: too short, or VP1 not deposited at all.
+`derive/evidence.py` falls back to the whole capsid (VP4-VP2-VP3-VP1) for these, the same fallback
+MAD-VDPV's own pipeline takes, over the same thresholds — a longer region to ask the same question,
+not a different one. This rule does not know or care which basis answered it; `view.evidence[
+EVIDENCE_BASIS]` is carried into `source_value` for the audit trail, and nowhere else, because the
+threshold logic below is identical either way.
+
 ## Order of precedence, and where it declines
 
 1. Outside poliovirus the column is **blank by determination**, not declined — the vocabulary is
@@ -51,8 +60,10 @@ stating it.
 2. An undecided partition declines: nothing can be said until membership is settled.
 3. An active `verified_classification` or `classification` decision wins outright.
 4. A refinement named in the record's own text wins over the bare band.
-5. Otherwise the VP1 band, if at least 300 nt of VP1 was compared.
-6. Otherwise decline — no serotype in the organism name to pick a reference with, or too little VP1.
+5. Otherwise the divergence band, VP1 if at least 300 nt of VP1 was compared, else the capsid
+   fallback if it clears its own guards (`derive/evidence.compare_capsid_nt`).
+6. Otherwise decline — no serotype in the organism name to pick a reference with, or too little
+   usable sequence by either basis.
 
 `unresolved` is a value in the shipped vocabulary and this rule never emits it. A cell the pipeline
 cannot decide is an unresolved *cell*, carrying its reason into the provenance table and the
@@ -76,9 +87,10 @@ DEFINITION_FIELD = "definition"
 STRAIN_QUALIFIER = "strain"
 ISOLATE_QUALIFIER = "isolate"
 
-EVIDENCE_DIVERGENCE = "vp1_divergence_pct"
-EVIDENCE_COMPARED = "vp1_compared_nt"
-EVIDENCE_REFERENCE = "vp1_reference_version"
+EVIDENCE_DIVERGENCE = "divergence_pct"
+EVIDENCE_COMPARED = "compared_nt"
+EVIDENCE_REFERENCE = "reference_version"
+EVIDENCE_BASIS = "basis"
 
 LEDGER_VERIFIED = "verified_classification"
 LEDGER_CLASSIFICATION = "classification"
@@ -97,7 +109,11 @@ BASIS_WILD = "vp1_divergence_at_or_above_wild_threshold"
 
 UNRESOLVED_FOLLOWS_PARTITION = "follows_unresolved_virus_group"
 UNRESOLVED_NO_SEROTYPE = "no_serotype_in_organism_name_to_choose_a_reference"
-UNRESOLVED_TOO_LITTLE_VP1 = "too_little_vp1_compared_to_measure_divergence"
+# Covers both a VP1 measurement that never reached MIN_VP1_NT and a capsid fallback that either
+# could not reach MIN_CAPSID_NT or failed the homogeneity guard — one reason, matching the existing
+# grain of this rule's other reasons: `compare_vp1` already collapses several distinct failures
+# (no diagonal, too short, implausible) into the one outcome of returning `None`.
+UNRESOLVED_INSUFFICIENT_SEQUENCE = "too_little_sequence_compared_to_measure_divergence"
 UNRESOLVED_UNCONTROLLED_VALUE = "curated_value_outside_the_controlled_vocabulary"
 
 # Refinements a depositor may state outright. Longest-first, so `cVDPV` is not read as `VDPV`.
@@ -201,19 +217,22 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
     compared = view.evidence.get(EVIDENCE_COMPARED, "")
     divergence = view.evidence.get(EVIDENCE_DIVERGENCE, "")
     reference = view.evidence.get(EVIDENCE_REFERENCE, "")
+    basis = view.evidence.get(EVIDENCE_BASIS, "")
     if not compared or not divergence:
         return RuleOutcome(
             value="",
             evidence_basis=BASIS_SABIN_LIKE,
             source_field=EVIDENCE_COMPARED,
             source_value=compared,
-            unresolved_reason=UNRESOLVED_TOO_LITTLE_VP1,
+            unresolved_reason=UNRESOLVED_INSUFFICIENT_SEQUENCE,
         )
 
     measured = Decimal(divergence)
     sabin_like_ceiling = Decimal(str(parameters["sabin_like_threshold_pct"][serotype[-1]]))
     wild_floor = Decimal(str(parameters["wild_threshold_pct"]))
-    evidence = f"{divergence}% over {compared} nt vs {reference}"
+    # `basis` is VP1 on almost every row and P1_capsid only on the fallback ones, so it is worth
+    # naming in the audit trail even though the threshold logic below never reads it.
+    evidence = f"{divergence}% over {compared} nt of {basis} vs {reference}"
 
     if measured < sabin_like_ceiling:
         return RuleOutcome(

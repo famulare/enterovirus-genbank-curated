@@ -61,7 +61,12 @@ from enterovirus_genbank_curated.derive.partition import (
 #          only the reason does, and the reason is what decides whether it is queued.
 # `poliovirus_classification` does not move: it sheds 259 declines, but all 259 were
 # partition-consequent and so were never queued in the first place.
-EXPECTED_QUEUE_WORK_ITEMS = 28392
+#
+# 28,244 when the capsid (P1) nucleotide fallback landed: 148 records that were declining
+# `poliovirus_classification` for want of usable sequence now resolve, and that is the whole
+# movement — every other field's declines are untouched by a rule that only ever *fills* a cell VP1
+# could not reach.
+EXPECTED_QUEUE_WORK_ITEMS = 28244
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -83,6 +88,11 @@ EXPECTED_QUEUE_WORK_ITEMS = 28392
 # because every record that was in them carries a curated classification. The `Homo sapiens` and
 # `unidentified` groups survive — the entailment reaches 2 records in each and the membership rescue
 # left others behind.
+#
+# Still 302 after the capsid fallback: the 148 newly-resolved records all shared the single
+# `too_little_sequence_compared_to_measure_divergence`, no-source-value group under
+# `poliovirus_classification`, which had 1,557 records in it before and has 1,409 now — one group
+# shrinking, not a group disappearing or a new one appearing.
 EXPECTED_QUEUE_GROUPS = 302
 
 

@@ -1,15 +1,15 @@
 {
-  "release_version": "3.2.0",
+  "release_version": "3.3.0",
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "1cd5190e9bef86e9467c0bfb3cb50f9b4b5a5db214dfe9f01a81586f89922159",
+  "code_sha256": "997e29b6e20de229fb448a05ca875596a4bcb11181398ff42db0c755ab886bef",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
     "decisions_sha256": "2e9f7d2353c94896c1a4df3be58de6a09af9d5173063a31dede177e2446f48e3",
-    "rules_sha256": "1bf6f2f6dd5eb66a76e321f44cf8ef6a4fc4bbe37f464949854f6c94b022be44"
+    "rules_sha256": "c260c4aaf571e501ecaece72dfcdf2c26dcc39e695ff4caf79d8d8a42888d214"
   },
   "row_counts": {
     "source_records": 25727,
@@ -22,11 +22,11 @@
     "localities_without_geography": 2055,
     "curation_queue_groups": 302,
     "decision_applications": 3190,
-    "curation_queue_records": 28392,
+    "curation_queue_records": 28244,
     "canonical_rows": 24308,
     "vouched_rows": 9929,
     "rules_in_baseline_view": 28,
-    "vp1_divergence_rows": 7728
+    "classification_divergence_rows": 7887
   },
   "decision_applications": {
     "no_canonical_field": 123,
@@ -47,7 +47,7 @@
     ],
     "columns_with_declined_cells": {
       "curation_status": 1596,
-      "poliovirus_classification": 3189,
+      "poliovirus_classification": 3041,
       "sample_origin": 3682,
       "specimen_type": 12700,
       "surveillance_stream": 8650,
@@ -120,9 +120,9 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 8336,
-      "blank": 15972,
-      "declined": 3189,
+      "filled": 8484,
+      "blank": 15824,
+      "declined": 3041,
       "rules": [
         "R-CLASS-2"
       ]

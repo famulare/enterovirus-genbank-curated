@@ -310,15 +310,23 @@ UNRESOLVED_ENGINEERED_ROWS = 0
 # reason they land in `UNRESOLVED_PARTITION_ROWS`.
 UNRESOLVED_TYPE_ROWS = 2216
 # `poliovirus_classification` rows R-CLASS-2 declines: 1,596 whose virus group is itself undecided,
-# 1,557 poliovirus records with under 300 nt of VP1 to measure divergence over, 33 with no serotype
-# in the organism name to pick a Sabin reference with, and 3 whose active decision asserts a value
-# outside the declared controlled vocabulary.
+# 1,409 poliovirus records with too little usable sequence by either basis to measure divergence
+# over, 33 with no serotype in the organism name to pick a Sabin reference with, and 3 whose active
+# decision asserts a value outside the declared controlled vocabulary.
 #
-# Down 259 from 3,448, and every one of those 259 is a curated call the previous order threw away:
-# the partition declined on an uninformative organism name, this rule declined for "following" it,
-# and the `classification` decision stating cVDPV or wild was never read. A rule declining because a
-# *weaker* signal was silent is the failure mode; see derive/partition.py.
-UNRESOLVED_CLASSIFICATION_ROWS = 3189
+# Down 259 from 3,448 when a curated classification began entailing membership — every one of those
+# 259 is a curated call the previous order threw away: the partition declined on an uninformative
+# organism name, this rule declined for "following" it, and the `classification` decision stating
+# cVDPV or wild was never read. A rule declining because a *weaker* signal was silent is the failure
+# mode; see derive/partition.py.
+#
+# Down a further 148 from 3,189 when the capsid (P1) nucleotide fallback landed: of the 1,911
+# carved, name-serotyped records VP1 alone cannot reach, 159 clear the fallback's own guards, and
+# 11 of those already had an active ledger decision that would have resolved them regardless, so
+# only 148 newly resolve here. All 148 agree with the shipped classification wherever 2.4.1 has one
+# to compare against — the same measured floor and homogeneity guard `derive/evidence.py` documents,
+# applied to the real corpus rather than to the three records that motivated it.
+UNRESOLVED_CLASSIFICATION_ROWS = 3041
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -381,7 +389,7 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
     },
     "poliovirus_classification": {
         "final_value": "2f3109db557bd43b",
-        "source_value": "149a62cb6d0e0fea",
+        "source_value": "7720e667d51ae90c",
         "manual_override": "8b68cdaac2368907",
     },
 }
@@ -635,14 +643,17 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
     # diagonal vote. `MIN_DIAGONAL_ANCHORS` closed it; 2 of the 73 remain.
     "poliovirus_classification": {
         "final_value": 413,
-        # 21,118 = 20,859 + the 259 records the curated-classification entailment brings into scope.
-        "winning_rule_id": 21118,
-        "evidence_basis": 21118,
+        # 21,266 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
+        # capsid fallback newly resolves. All three additions are declines-turned-resolved, and none
+        # of the 148 touches `final_value` or `manual_override`: every one lands on the value 2.4.1
+        # already ships, so nothing here is a value reversal, only a growing comparable set.
+        "winning_rule_id": 21266,
+        "evidence_basis": 21266,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
-        # field or `vp1_divergence_pct`. The 1,781 agreeing on `source_value` are the curated rows,
+        # field or `divergence_pct`. The 1,781 agreeing on `source_value` are the curated rows,
         # where both record the asserted value itself.
-        "source_field": 21118,
-        "source_value": 19078,
+        "source_field": 21266,
+        "source_value": 19226,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,

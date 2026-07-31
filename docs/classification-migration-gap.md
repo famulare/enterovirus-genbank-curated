@@ -10,7 +10,7 @@ investigations, and 1,506 of the ledger's active rows already cite a PMID for ex
 **A coarsened value is a lost judgement, not a conservative one**, and this file names precisely
 which ones are still lost so they can be migrated rather than rediscovered.
 
-`docs/classification-migration-gap.tsv` is the machine-readable list — **all 2,159 differing
+`docs/classification-migration-gap.tsv` is the machine-readable list — **all 2,011 differing
 records**, one row each, with the value 2.4.1 ships, the value this pipeline emits, the
 `unresolved_reason` if it declined, and a category. Every row has a category; the count of
 uncategorised rows is asserted to be zero, because "we looked at the big buckets" is how a residue
@@ -20,15 +20,15 @@ An earlier version of this file covered only the 1,161 rows where 2.4.1 ships a 
 `wild`. That was the interesting subset, not the whole difference, and scoping a reconciliation to
 the interesting subset is how the remaining 998 would have gone unnoticed.
 
-## All 2,159, by category
+## All 2,011, by category
 
 | category | n | what it means |
 |---|---:|---|
-| `declined_too_little_vp1` | 1,557 | under 300 nt of VP1 to measure divergence over |
+| `declined_too_little_sequence` | 1,409 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over |
 | `coarsened_attribution_not_in_sequence` | 348 | `cVDPV`/`iVDPV` → `VDPV`: the epidemiology is not in the sequence |
 | `declined_membership_undecided` | 153 | organism name cannot settle poliovirus membership |
 | `declined_no_serotype_in_name` | 33 | no serotype in the organism name to pick a Sabin reference |
-| `sequence_band_disagrees_with_release` | 31 | both resolved, VP1 divergence lands in a different band |
+| `sequence_band_disagrees_with_release` | 31 | both resolved, divergence lands in a different band |
 | `shipped_class_outside_sequence_reach` | 24 | shipped `engineered/lab`, `chimera`, `vaccine`, `unresolved` — claims about construction or provenance, not distance |
 | `curated_refinement_vs_sequence_band` | 6 | shipped a refinement, we emit a band that is not `VDPV` |
 | `declined_ledger_value_out_of_vocabulary` | 3 | an active decision asserts a value outside the controlled list |
@@ -37,6 +37,31 @@ the interesting subset is how the remaining 998 would have gone unnoticed.
 
 The last two categories are worth noticing: on four records this pipeline is **more** specific than
 the release, not less. A reconciliation that only counted losses would have reported them as noise.
+
+### The capsid (P1) nucleotide fallback recovered 148 of these
+
+`declined_too_little_sequence` was 1,557 before `derive/evidence.compare_capsid_nt` landed — the
+same VP1-first / P1-fallback precedence MAD-VDPV's own `classify_sequence_tier.py` states outright,
+applied because 1,911 carved, name-serotyped records have no usable VP1 at all. Of those, 159 clear
+the fallback's own guards (300 nt minimum, and a homogeneity check described below), 11 already had
+an active ledger decision that would have resolved them regardless, and **148 newly resolve** —
+every one agreeing with the shipped classification wherever 2.4.1 has one to compare against.
+
+The fallback needed a guard `compare_vp1` does not, and three records found it before it shipped.
+VP1 in poliovirus has no indels relative to Sabin — a measured fact, and the reason an ungapped
+single-offset comparison is exact there — but that fact does not extend to VP4, VP2 or VP3. Two
+records (`AB162760.1`, `AB162761.1`) read >18 percentage points more divergent than MAD-VDPV's own
+alignment reports for the same accessions, with mismatches beginning at one exact position and
+running at the unrelated-sequence rate for the rest of the window; shifting the query by **one
+nucleotide** from that position on restores 98-100% identity. A real indel in a coding, actively
+replicating poliovirus genome must be a multiple of three to preserve the reading frame, so a 1-nt
+break is a single bad base call in the deposit, not biology — and the single fixed diagonal has no
+way to know it crossed one. `derive/evidence.py` splits the compared span into 150 nt chunks and
+declines the whole comparison unless every chunk of at least 30 compared positions sits within 15
+percentage points of the whole window's own divergence; measured over every record that reaches any
+capsid-nt comparison, the three broken windows sit at 21.5, 21.8 and 55.2 points of internal
+deviation and the next-highest genuine one sits at 8.1 — the floor sits in that gap, not fitted to
+the three cases that found it.
 
 ### Membership is fully understood, and it is a cleaner story
 
@@ -58,29 +83,31 @@ Nothing here should be migrated twice. Two mechanisms already carry curated clas
    for "following" the partition — throwing away a paper-based judgement because a *weaker* signal
    was silent. All 259 ship as `poliovirus`/`vouched` in 2.4.1.
 
-## The 1,161 where a curated refinement or `wild` is the thing lost
+## The 1,130 where a curated refinement or `wild` is the thing lost
 
 | 2.4.1 ships | this pipeline emits | why | n |
 |---|---|---|---:|
-| `wild` | *(blank)* | under 300 nt of VP1 to measure over | 781 |
+| `wild` | *(blank)* | too little usable sequence, by either basis, to measure over | 750 |
 | `cVDPV` | `VDPV` | transmission attribution is not in the sequence | 302 |
 | `iVDPV` | `VDPV` | immunodeficiency is not in the sequence | 46 |
-| `wild` | `VDPV` | VP1 divergence lands in the 1–15% band | 13 |
+| `wild` | `VDPV` | divergence lands in the 1–15% band | 13 |
 | `wild` | *(blank)* | partition undecided | 5 |
-| `wild` | `Sabin-like` | VP1 divergence under 1% | 4 |
-| `cVDPV` | *(blank)* | under 300 nt of VP1 | 4 |
-| `iVDPV` | `wild` | VP1 divergence at or above 15% | 4 |
-| `cVDPV` | `Sabin-like` | VP1 divergence under 1% | 2 |
+| `wild` | `Sabin-like` | divergence under 1% | 4 |
+| `cVDPV` | *(blank)* | too little usable sequence | 4 |
+| `iVDPV` | `wild` | divergence at or above 15% | 4 |
+| `cVDPV` | `Sabin-like` | divergence under 1% | 2 |
 
-Every one is a distinct accession, so 1,161 ledger rows would close this subset; the
-full 2,159 is in the TSV, and the categories above say which of them a ledger row is even
-the right instrument for.
+Every one is a distinct accession, so 1,130 ledger rows would close this subset; the
+full 2,011 is in the TSV, and the categories above say which of them a ledger row is even
+the right instrument for. The `wild -> (blank)` row fell from 781 to 750 with the capsid fallback —
+only 31 of the 148 newly-resolved records shipped `wild`; most of the rest shipped `Sabin-like` or a
+bare `VDPV`, which is why the fallback's headline number (148) and this table's movement (31) differ.
 
 ### Lowering the VP1 floor does not help — measured
 
 `MIN_VP1_NT = 300` is this pipeline's own measurement-quality floor, not a published parameter, so
-it was fair to ask whether relaxing it would recover the 785 blocked by it. Measured with the floor
-removed entirely:
+it was fair to ask whether relaxing it would recover the 785 blocked by it (as measured before the
+capsid fallback existed). Measured with the floor removed entirely:
 
 * **680 of the 785 have no VP1 overlap at all.** No threshold reaches them. They are 5′UTR, VP4/VP2
   or 3D fragments, and the question is not how confidently VP1 is measured but whether VP1 is
@@ -89,8 +116,10 @@ removed entirely:
   wrong** — 25 would ship `VDPV` and 8 `Sabin-like` against a shipped `wild`.
 
 69% is not a threshold, it is a coin weighted toward the answer. The floor stays at 300 and these
-records stay declined, which is the same reasoning that keeps `sequence_scope` pending rather than
-fitted to 86.7%.
+records stay declined by *lowering it*, which is the same reasoning that keeps `sequence_scope`
+pending rather than fitted to 86.7%. The capsid fallback above is a different move — not a lower bar
+on the same short window, but a longer window over more sequence, guarded against exactly the new
+failure mode a longer window introduces.
 
 ### The four that are a known, unfixable-by-sequence trap
 
@@ -111,7 +140,7 @@ git -C ../MAD-VDPV archive <release-build-commit> data/genbank/working \
   | tar -x -C /tmp/evgc-registries --strip-components=3
 ```
 
-What to look for once extracted: none of the 1,161 accessions carries a `classification` row in any
+What to look for once extracted: none of the 1,130 accessions carries a `classification` row in any
 of the twelve registries the current migration reads, so the calls live either in a registry file not
 yet in `SOURCES` or in a derived working table rather than a decision registry. Which of those it is
 determines whether this is a migration or a curation task, and it is the first thing to establish —
