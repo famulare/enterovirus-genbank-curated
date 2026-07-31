@@ -215,6 +215,11 @@ class AlignmentSpec:
     # Expected row count, measured from the shipped 2.4.1 canonical metadata. Recounted from
     # metadata by the tests rather than trusted, so this is a tripwire and not a source of truth.
     expected_rows: int
+    # The Stockholm `#=GF DE` line. Deliberately a field of its own rather than shared with any
+    # provenance-file description: the shipped unified `#=GF DE` and the shipped provenance
+    # `description` already differ from each other, so treating them as one field would be
+    # asserting a coincidence that does not hold.
+    description: str
     codon: CodonSpec = CodonSpec()
     # None for the anchored stack (PV1/PV2/PV3): their NCR comes from align.anchored, not cmalign.
     ncr: NcrSpec | None = None
@@ -247,6 +252,10 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,)),
         expected_rows=10_084,
+        description=(
+            "All-serotype poliovirus whole-genome multiple sequence alignment "
+            "(5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
+        ),
         ncr=POLIO_NCR,
     ),
     "NPEV_unified": AlignmentSpec(
@@ -254,6 +263,10 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         stack="unified",
         population=PopulationSpec(virus_groups=(NON_POLIO,)),
         expected_rows=14_217,
+        description=(
+            "Non-polio enterovirus whole-genome multiple sequence alignment "
+            "(5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
+        ),
         ncr=NPEV_NCR,
     ),
     "EV_unified": AlignmentSpec(
@@ -261,6 +274,10 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS, NON_POLIO)),
         expected_rows=24_301,
+        description=(
+            "All-enterovirus (poliovirus and non-polio) whole-genome multiple sequence "
+            "alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
+        ),
         ncr=EV_NCR,
     ),
     "PV1_unified": AlignmentSpec(
@@ -268,18 +285,27 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV1",)),
         expected_rows=4_427,
+        description=(
+            "Poliovirus serotype 1 whole-genome multiple sequence alignment, Sabin-anchored"
+        ),
     ),
     "PV2_unified": AlignmentSpec(
         name="PV2_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV2",)),
         expected_rows=3_939,
+        description=(
+            "Poliovirus serotype 2 whole-genome multiple sequence alignment, Sabin-anchored"
+        ),
     ),
     "PV3_unified": AlignmentSpec(
         name="PV3_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV3",)),
         expected_rows=1_693,
+        description=(
+            "Poliovirus serotype 3 whole-genome multiple sequence alignment, Sabin-anchored"
+        ),
     ),
 }
 

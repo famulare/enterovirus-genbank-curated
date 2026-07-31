@@ -197,7 +197,7 @@ def make_population(records, ncr):
     alignment_spec = contract.AlignmentSpec(
         name="TEST_unified", stack="unified",
         population=contract.PopulationSpec(virus_groups=(contract.POLIOVIRUS,)),
-        expected_rows=len(records), ncr=ncr,
+        expected_rows=len(records), description="test fixture", ncr=ncr,
     )
     return AlignmentPopulation(spec=alignment_spec, records=tuple(records))
 

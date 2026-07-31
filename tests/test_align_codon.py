@@ -50,7 +50,7 @@ def make_population(
     alignment_spec = contract.AlignmentSpec(
         name="TEST_unified", stack="unified",
         population=contract.PopulationSpec(virus_groups=(contract.POLIOVIRUS,)),
-        expected_rows=len(records), codon=spec,
+        expected_rows=len(records), description="test fixture", codon=spec,
     )
     return AlignmentPopulation(spec=alignment_spec, records=tuple(records))
 
@@ -195,7 +195,7 @@ def make_population(records, spec):
     alignment_spec = contract.AlignmentSpec(
         name="TEST_unified", stack="unified",
         population=contract.PopulationSpec(virus_groups=(contract.POLIOVIRUS,)),
-        expected_rows=len(records), codon=spec,
+        expected_rows=len(records), description="test fixture", codon=spec,
     )
     return AlignmentPopulation(spec=alignment_spec, records=tuple(records))
 
