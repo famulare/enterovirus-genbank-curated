@@ -286,6 +286,21 @@ reference genome length — 7,441 / 7,439 / 7,432, matching the shipped `n_sabin
 the reference row projected onto its own frame equals its genome byte-for-byte, and `#=GC RF` *is*
 that genome. Confirmed on real builds, not asserted.
 
+**Sequencing is per artifact; threading is per tool. Both were measured, and I had one backwards.**
+A first build attempt fanned the six artifacts out concurrently, reached roughly 50 GB and froze the
+machine. No single step is anywhere near that: pinned to one CPU, the MAFFT seed peaks at 0.10 GB,
+`mafft --add` at 0.34 GB over 4,040 rows, `cmalign` at 0.57 GB, and the anchored pairwise projection
+at 0.29 GB. So the fix was structural — `evgc alignment-build` has no `--parallel` option and builds
+strictly one artifact at a time.
+
+I then over-corrected and pinned one *thread*, which is a different axis and the wrong one. MAFFT's
+`--addfragments` builds its guide tree with an all-to-all pairwise stage over the combined set; that
+is the dominant cost of a large build, and it is threaded. On the real `POLIO_unified` pass-2 input
+the difference is 97% CPU and 58 MB at one thread — still unfinished after 90 minutes — against 770%
+CPU and 582 MB at eight. One thread bought no memory that mattered and gave up an eightfold speedup.
+The default is now eight, a literal constant rather than `os.cpu_count()`, because the thread count
+is recorded in provenance and a declared input should not depend on the host that built it.
+
 **What the rebuild is honest about.** The NCR blocks keep only `cmalign` match columns, so
 insert-column residues are discarded; the anchored CDS projection drops insertions relative to the
 reference for the same reason a fixed reference frame must. Both are lossy by construction and both
