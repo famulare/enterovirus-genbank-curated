@@ -5,7 +5,7 @@ build citable in the same way — a build manifest naming its inputs and its cov
 manifest hashing every artifact — so a consumer can tell one build from another without diffing
 gigabytes.
 
-## The version is 3.1.0, and why the row set moving is still a minor bump
+## The version is 3.2.0, and why three more rounds of additive fills are still a minor bump
 
 Release 3.0.0 was the major one. Three properties of it are incompatible with 2.4.1 for anyone
 reading the columns, and all three still hold here:
@@ -16,7 +16,7 @@ reading the columns, and all three still hold here:
 * about 3,400 `poliovirus_classification` cells and 2,200 `virus_type` cells are blank-because-
   undetermined, where 2.4.1 filled them from inputs this pipeline does not have.
 
-3.1.0 adds one thing: `R-MEMBERSHIP-AA-1` now decides carve membership for records whose GenBank
+3.1.0 added one thing: `R-MEMBERSHIP-AA-1` now decides carve membership for records whose GenBank
 lineage does not name the `Enterovirus` genus, so the row set is 24,308 rather than 24,285. That is
 23 rows *added* and none removed, and no column semantics change — a consumer's existing queries
 return the same answers for the same accessions. Hence a minor bump.
@@ -29,6 +29,27 @@ release already carves, and two are poliovirus capsid by the catalog's own amino
 distance or the twin that admitted each one.
 
 Two records remain outside: `E00765.1` and `E01571.1`, which sit in the rule's undecided 8-15% band.
+
+3.2.0 adds two more things, both additive in the same sense.
+
+**A curated classification now entails poliovirus membership.** A curator asserting
+`classification=cVDPV` has asserted a poliovirus, because that vocabulary is poliovirus-only —
+there is no non-polio reading of `cVDPV` or `nOPV-L`. The precedence check in `derive/partition.py`
+tested the organism name before the ledger, so 259 records whose organism name is `Enterovirus C`
+or `Enterovirus coxsackiepol` (the polio-*containing* species, hence uninformative on its own)
+declined `virus_group`, and then declined `poliovirus_classification` for "following" a partition
+that a paper-based judgement in the ledger had already settled. All 259 fill `virus_group`,
+`curation_status` and `poliovirus_classification`, all 259 land on the value 2.4.1 already ships,
+and none was filled before. `docs/classification-migration-gap.md` accounts for every one of the
+2,159 remaining differences from 2.4.1's `poliovirus_classification` by category — most of them
+epidemiological attribution (`cVDPV` vs `iVDPV` vs `wild`) that no property of a sequence carries,
+which is why this pipeline still ships `VDPV` or blank rather than guessing.
+
+**Two audit views the build could already produce are now written.** `audit/rules.tsv.gz`
+reproduces `final/audit/rules.tsv.gz` byte-for-byte, and `audit/vp1_divergence.tsv.gz` is the VP1
+divergence measurement R-CLASS-2 decides `poliovirus_classification` from — previously computed on
+every build and discarded once the verdict was recorded. Both are new files; no existing column or
+file changes shape.
 
 ## Why the manifest names hashes rather than a git sha
 
@@ -68,7 +89,7 @@ from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPO
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
-RELEASE_VERSION = "3.1.0"
+RELEASE_VERSION = "3.2.0"
 SCHEMA_VERSION = "2.4.1"
 BASELINE_RELEASE = "2.4.1"
 

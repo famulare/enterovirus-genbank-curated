@@ -97,7 +97,7 @@ into `final/` or `raw/`, which are immutable.
 
 ```bash
 evgc parity-metadata                          # 24,299 rows: 13 transported columns + 12 projected
-evgc build-metadata --output release/3.1.0    # write the whole dataset, manifests included
+evgc build-metadata --output release/3.2.0    # write the whole dataset, manifests included
 ```
 
 From `raw/` and `registry/` alone this carves the canonical row set and fills **25 of the 26
@@ -135,10 +135,10 @@ on it.
 
 Three properties matter as much as the coverage. A rule that cannot decide from declared inputs
 **declines** rather than guessing — 12,700 records whose `/isolation_source` carries no specimen
-keyword, 3,448 whose classification no sequence or ledger row settles, 2,216 whose organism name
-states no type, 1,855 whose organism name cannot settle poliovirus membership — and every declined
+keyword, 3,189 whose classification no sequence or ledger row settles, 2,216 whose organism name
+states no type, 1,596 whose organism name cannot settle poliovirus membership — and every declined
 cell becomes one row in a curation queue, grouped by the input the rule could not decide from, so
-that 28,563 declined cells reduce to 304 curator questions. The build cannot read `final/` at all:
+that 28,392 declined cells reduce to 302 curator questions. The build cannot read `final/` at all:
 the undeclared-input guard refuses it, so a rule cannot quietly reproduce the answer it is being
 compared against. And a blank cell is never a claim — `audit/projection_provenance.tsv.gz` carries
 `unresolved_reason` per cell, and `audit/build_manifest.json` states per column how many cells are
@@ -152,15 +152,15 @@ assertion sitting in the ledger for two releases while the pipeline quietly reco
 of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
 canonical column now reaches a rule that projects it.
 
-### Release 3.1.0
+### Release 3.2.0
 
-`release/3.1.0/` is the dataset this pipeline produces end to end from public inputs. 3.0.0 was the
+`release/3.2.0/` is the dataset this pipeline produces end to end from public inputs. 3.0.0 was the
 **major** break: `engineered_or_construct` flips TRUE to FALSE on 511 records (2.4.1's predicate
 matched the database division code as free text, so it largely reported *where* a sequence was
 deposited); `sequence_scope` is empty; and several thousand cells are blank-because-undetermined where
 2.4.1 filled them from inputs this pipeline does not have.
 
-3.1.0 closes 3.0.0's largest declared gap. `R-MEMBERSHIP-AA-1` now decides carve membership for
+3.1.0 closed 3.0.0's largest declared gap. `R-MEMBERSHIP-AA-1` now decides carve membership for
 records whose GenBank lineage does not name the `Enterovirus` genus, by capsid **amino-acid**
 p-distance to Sabin in the polyprotein reading frame — amino acids and not nucleotides because the
 records in question are 1980s patent transcriptions of Sabin cDNA whose synonymous sites have
@@ -179,10 +179,30 @@ incomplete: `subject_outside_carve` in `audit/decision_applications.tsv.gz` fall
 because twelve curator decisions had been asserting an origin, a sampling frame or a classification
 about records the build was not carving.
 
+3.2.0 adds two more things, both additive in the same sense as 3.1.0 — filling previously-blank
+cells and writing previously-omitted files, never changing a value another consumer already read.
+
+A curated `classification` decision now **entails poliovirus membership**, because the vocabulary it
+comes from — `cVDPV`, `nOPV-L`, `wild` — is poliovirus-only. The rule that checks membership was
+testing the organism name before the ledger, so 259 records named only `Enterovirus C` or
+`Enterovirus coxsackiepol` (the polio-*containing* species, hence uninformative alone) declined
+`virus_group`, and then declined `poliovirus_classification` for "following" a partition a
+paper-based ledger decision had already settled. All 259 land on the value 2.4.1 already ships.
+[`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
+one of the 2,159 remaining differences from 2.4.1's `poliovirus_classification` by category — mostly
+epidemiological attribution (`cVDPV` vs `iVDPV` vs `wild`) that no property of a sequence carries.
+
+Two audit views the build could already produce are now written: `audit/rules.tsv.gz`, which
+reproduces the shipped file byte-for-byte, and `audit/vp1_divergence.tsv.gz`, the VP1 divergence
+measurement `poliovirus_classification` was decided from and previously discarded after use.
+
 It carries no wall-clock timestamp. `audit/build_manifest.json` identifies the build by the hashes of
 its four determinants — the frozen archive, the decision ledger, the rule catalog, and the code — so
 the same inputs produce the same bytes tomorrow, and a difference between two builds points at which
-determinant moved.
+determinant moved. [`tests/test_release_integrity.py`](tests/test_release_integrity.py) re-checks
+those same four hashes against the committed release directory on every test run, so a code or
+registry change that lands without a matching rebuild fails immediately rather than shipping a
+release whose manifest describes a build that no longer exists.
 
 **What is still not true:** of `final/audit/` only `rules.tsv.gz` is regenerated; the rest of it,
 `final/dictionaries/` and `final/alignments/` are not. And two records the shipped carve reaches are

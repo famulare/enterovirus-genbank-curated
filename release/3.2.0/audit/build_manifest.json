@@ -1,9 +1,9 @@
 {
-  "release_version": "3.1.0",
+  "release_version": "3.2.0",
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "ea91b8bc4144b44722c95f11086774d48f8d8a6a50b4a4d3ff3204cc9defb234",
+  "code_sha256": "1cd5190e9bef86e9467c0bfb3cb50f9b4b5a5db214dfe9f01a81586f89922159",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
@@ -20,12 +20,13 @@
     "provenance_rows": 316004,
     "dates_not_applicable": 4573,
     "localities_without_geography": 2055,
-    "curation_queue_groups": 304,
+    "curation_queue_groups": 302,
     "decision_applications": 3190,
-    "curation_queue_records": 28563,
+    "curation_queue_records": 28392,
     "canonical_rows": 24308,
-    "vouched_rows": 9670,
-    "vp1_measured": 7728
+    "vouched_rows": 9929,
+    "rules_in_baseline_view": 28,
+    "vp1_divergence_rows": 7728
   },
   "decision_applications": {
     "no_canonical_field": 123,
@@ -45,12 +46,12 @@
       "sequence_scope"
     ],
     "columns_with_declined_cells": {
-      "curation_status": 1855,
-      "poliovirus_classification": 3448,
-      "sample_origin": 3712,
+      "curation_status": 1596,
+      "poliovirus_classification": 3189,
+      "sample_origin": 3682,
       "specimen_type": 12700,
       "surveillance_stream": 8650,
-      "virus_group": 1855,
+      "virus_group": 1596,
       "virus_type": 2216
     },
     "reading_a_blank_cell": "A blank is not a claim that the value is absent in nature. It is either a value a rule chose (a locality that would repeat admin1) or a cell no rule could decide. audit/projection_provenance.tsv.gz carries unresolved_reason per cell and curation/curation_queue.tsv groups the undecided ones into questions."
@@ -101,9 +102,9 @@
     },
     "virus_group": {
       "source": "projected",
-      "filled": 22453,
-      "blank": 1855,
-      "declined": 1855,
+      "filled": 22712,
+      "blank": 1596,
+      "declined": 1596,
       "rules": [
         "R-PARTITION-1"
       ]
@@ -119,18 +120,18 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 8077,
-      "blank": 16231,
-      "declined": 3448,
+      "filled": 8336,
+      "blank": 15972,
+      "declined": 3189,
       "rules": [
         "R-CLASS-2"
       ]
     },
     "curation_status": {
       "source": "projected",
-      "filled": 22453,
-      "blank": 1855,
-      "declined": 1855,
+      "filled": 22712,
+      "blank": 1596,
+      "declined": 1596,
       "rules": [
         "R-STATUS-1"
       ]
@@ -155,9 +156,9 @@
     },
     "sample_origin": {
       "source": "projected",
-      "filled": 20596,
-      "blank": 3712,
-      "declined": 3712,
+      "filled": 20626,
+      "blank": 3682,
+      "declined": 3682,
       "rules": [
         "R-ORIGIN-2"
       ]

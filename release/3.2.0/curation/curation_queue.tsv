@@ -3,7 +3,6 @@ Q-00edaaeebccc	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-02daaceaf546	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	case of meningitis	2	DQ264251.1 DQ264322.1	rule_parameter
 Q-042ddb8d4af0	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	faecal sample	1	AJ544513.1	decision
 Q-05e9e85744d2	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Human Enterovirus Pune6-03	1	AY942641.1	decision
-Q-06385474308b	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_determine_membership	Enterovirus coxsackiepol	82	PX000236.1 PX000237.1 PX000238.1	decision
 Q-07e3fa7560c1	poliovirus_classification	poliovirus_classification	R-CLASS-2	no_serotype_in_organism_name_to_choose_a_reference	Human poliovirus 78/ROU/2008	2	FR715541.1 FR715555.1	decision
 Q-0804a4cadfb6	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	1.4-year-old female patient with acute flaccid paralysis (AFP)	1	HM107832.1	rule_parameter
 Q-0838bd66920b	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Echovirus	4	MF993354.1 MF993355.1 MF993356.1	decision
@@ -38,7 +37,7 @@ Q-2627f56df8be	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Simia
 Q-26e476b9c2da	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	NS	1	MN246006.1	rule_parameter
 Q-27135099370f	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	enterovirus J1	1	AF326766.2	decision
 Q-286a2bc4f24d	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	whole cell lysate	14	DQ787783.1 DQ787784.1 DQ787785.1	rule_parameter
-Q-289bdbddf0ac	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_determine_membership	Enterovirus C	1647	AB205395.1 AB206718.1 AB207266.1	decision
+Q-289bdbddf0ac	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_determine_membership	Enterovirus C	1474	AB205395.1 AB206718.1 AB207266.1	decision
 Q-28dcb5c8cfa7	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	Shoket Treatment Plant	2	KJ013422.1 KP004232.1	rule_parameter
 Q-2ab336344f2e	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	central nervous system; brain	1	OP828752.1	decision
 Q-2add32f606e0	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	patient	3	AM084223.1 AM084224.1 AM084225.1	rule_parameter
@@ -184,7 +183,6 @@ Q-99d8550708f3	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-9a12a6c4adc7	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	TS	2	MN245991.1 MN246001.1	rule_parameter
 Q-9a7059a6cec3	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	case of acute respiratory infection	2	DQ264311.1 DQ264382.1	decision
 Q-9a8139371b1d	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	Ashdod Treatment Plant	1	KJ013441.1	rule_parameter
-Q-9b2de4bd51ec	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_determine_membership	Homo sapiens	2	E01570.1 E01572.1	decision
 Q-9b9110d5ada7	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	case of acute intestinal infection	16	DQ264261.1 DQ264272.1 DQ264280.1	decision
 Q-9bf8278b3803	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Simian enterovirus SV4	2	AF326759.2 NC_038309.1	decision
 Q-9cb3d580fd33	poliovirus_classification	poliovirus_classification	R-CLASS-2	no_serotype_in_organism_name_to_choose_a_reference	Enterovirus C	1	MK719554.1	decision
@@ -238,7 +236,7 @@ Q-c075d58a65ed	poliovirus_classification	poliovirus_classification	R-CLASS-2	no_
 Q-c11bb46d5380	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	colon	1	FN298942.1	rule_parameter
 Q-c13db4310ed2	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	NW	6	MN245989.1 MN245997.1 MN245998.1	rule_parameter
 Q-c1bf45ee5cce	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	ophthalmic sampling of female age 36 with hemorrhagic conjunctivitis	1	PQ867795.1	rule_parameter
-Q-c22a3c9f9705	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	human stool	27	AB781738.1 AB781739.1 AB781740.1	decision
+Q-c22a3c9f9705	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	human stool	91	AB781738.1 AB781739.1 AB781740.1	decision
 Q-c266c9da564a	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	tnuvot treatment plant	2	KJ013453.1 KP004237.1	decision
 Q-c42e8b6ba9dc	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	RD cell	8	KJ755189.1 KJ755190.1 KT277550.1	rule_parameter
 Q-c448fac4488d	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	rahat south treatment plant	1	KP004233.1	decision
@@ -264,7 +262,7 @@ Q-da4d69c9e12c	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_de
 Q-db57876e1da0	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus sp.	4	KX941077.1 KX941080.1 KX941094.1	decision
 Q-dcb17e9c6083	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	ayalon treatment plant	4	KJ013451.1 KJ013452.1 KJ013456.1	decision
 Q-dce7ae65a226	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	rahat north trunk line	1	KJ013448.1	decision
-Q-dcfe7bb4c712	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_determine_membership	unidentified	8	E00766.1 E00767.1 E00768.1	decision
+Q-dcfe7bb4c712	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_determine_membership	unidentified	6	E00766.1 E00767.1 E00768.1	decision
 Q-ddecabd0c6da	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	HFMD	15	MT588186.1 MT588187.1 MT588188.1	rule_parameter
 Q-df0a23e9da54	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	clinical	2	PV178345.1 PV178545.1	rule_parameter
 Q-e0970dd03969	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool	886	JN990977.1 JN990978.1 JQ906425.1	decision
@@ -275,7 +273,7 @@ Q-e4b9e857e727	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-e4d899a88ed4	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	l20b cell	10	FJ859183.1 FJ859184.1 FJ859185.1	decision
 Q-e4e1676b3cb6	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	be'er sheva treatment plant	18	KJ013419.1 KJ013423.1 KJ013426.1	decision
 Q-e8a546078151	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_determine_membership	Human Enterovirus Pune6-03	1	AY942641.1	decision
-Q-ea06b19be33f	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record		5758	A01868.1 A03852.1 A03999.1	decision
+Q-ea06b19be33f	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record		5782	A01868.1 A03852.1 A03999.1	decision
 Q-ea85481fbb79	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	rhabdomyosarcoma cell	131	MN845761.1 MN845762.1 MN845763.1	rule_parameter
 Q-eb68bef9664b	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool 1	1	EU684057.1	decision
 Q-ed715c29a9e5	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	case of enterovirus infection	2	DQ264282.1 DQ264353.1	rule_parameter
