@@ -43,17 +43,17 @@ primate` the release calls `human`, which is simply wrong.
 
 **A deposited `/host` is read whatever the virus group** (curator decision, 2026-07-30). The
 partition scope exists because the *curated master* covered poliovirus only, which is a fact about
-the upstream process rather than about the record; where GenBank states a host, declining to read it
-would assert non-determination about data that is right there. This is the largest single correction
-in the rewrite: **11,767 records** differ from the release on `sample_origin`, 11,617 of them a stated
-human host the release calls `unknown`.
+the upstream process rather than about the record; where GenBank states a host, declining to read
+it would assert non-determination about data that is right there. This is the largest single
+correction in the rewrite: **11,767 records** differ from the release on `sample_origin`, 11,617 of
+them a stated human host the release calls `unknown`.
 
 The scope still applies when no host was deposited, and there it is load-bearing rather than tidy.
 The specimen-text fallback was calibrated on poliovirus and there is no evidence it carries to a
 population it was never measured against, so a non-poliovirus record with no host projects `unknown`
-under its own basis and a record whose membership is *undecided* declines. That scoping removes 23 of
-the 34 defects an unscoped draft had: the `/isolation_source=opv` records are `Enterovirus C`, whose
-membership no organism name can settle, so no epi rule should have been asked about them at all.
+under its own basis and a record whose membership is *undecided* declines. That scoping removes 23
+of the 34 defects an unscoped draft had: the `/isolation_source=opv` records are `Enterovirus C`,
+whose membership no organism name settles, so no epi rule should have been asked about them at all.
 
 Note what `unknown` is *not* doing here. It carries both "never curated outside poliovirus" and
 "curated but undetermined", and unlike the `locality` basis that is not a conflation to fix in the
