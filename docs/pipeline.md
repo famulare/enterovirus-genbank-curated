@@ -88,10 +88,16 @@ the structural block needs (four genus-wide, six per-serotype Sabin-anchored) ar
 inputs-of-record under `registry/alignment_seeds/` and hash-gated by `evgc alignment-verify-seeds`,
 so a routine build needs no compiler and no network; the full from-scratch rebuild path
 (`scripts/setup_mxscarna.sh`) exists behind a file-presence gate and is not expected to run even on
-a fresh clone. `evgc alignment-build` then produces all six artifacts into `derived/alignments/`
-(strictly one at a time — concurrent aligner processes are what exhausted memory on a real machine),
-`evgc alignment-verify` gates them against metadata-derived populations with no aligner installed,
-and `evgc alignment-shape` writes the shape report and the declared delta against 2.4.1.
+a fresh clone. `evgc alignment-build` then produces artifacts into `derived/alignments/` (strictly
+one at a time — concurrent aligner processes are what exhausted memory on a real machine), `evgc
+alignment-verify` gates them against metadata-derived populations with no aligner installed, and
+`evgc alignment-shape` writes the shape report and the declared delta against 2.4.1.
+
+Five of the six declared populations are built and committed. `EV_unified`, the 24,301-row
+genus-wide artifact, has never been built, and the five that exist are not one parameter set —
+`POLIO_unified` and `NPEV_unified` carry MAFFT `--ep 0.5` while `PV1`/`PV2`/`PV3` predate that lever.
+Each artifact's `.provenance.json` records which. See
+[`derived/alignments/README.md`](../derived/alignments/README.md).
 
 ## Public commands
 

@@ -30,7 +30,7 @@ those files.
 
 | file | what it is |
 |---|---|
-| `<name>.sto.gz` | the alignment, Stockholm, one dialect for all six |
+| `<name>.sto.gz` | the alignment, Stockholm, one dialect for every artifact |
 | `<name>_aln.fasta.gz` | the same rows as FASTA — a faithful projection, checked as one |
 | `<name>.coverage.tsv.gz` | per record per block: present or absent, and why absent |
 | `<name>.provenance.json` | every count recomputed from the rows, plus tool identity and hashes |

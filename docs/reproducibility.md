@@ -276,13 +276,42 @@ shipped data.
 Because parity is byte-exact, this loss cannot be corrected without deliberately breaking the gate
 and cutting a new release. That is a real constraint, not an oversight.
 
+### The one column not written: `sequence_scope`
+
+`derive.metadata.PENDING_COLUMNS` holds exactly one entry, and that set shrinking from twelve to one
+is the measure of what the derivation stages delivered. `assert_every_column_is_accounted_for` uses it
+as the allowlist for a column blank on every row, so this is a *declared* absence — a column going
+blank without an entry is a build failure.
+
+It is not blocked on a missing stage. `derive/evidence.py` builds the Sabin 1/2/3 reference frame
+from the frozen archive's own `mat_peptide` features and reproduces the shipped
+`reference_region_coordinates.tsv` exactly. What does not follow is the column: fitted against every
+threshold combination, coverage geometry against Sabin VP1 agrees with the shipped `sequence_scope` on
+86.7% of poliovirus records, and the 13.3% are systematic rather than boundary errors — 745 records
+the release calls `other_fragment` have a complete VP1, capsid or genome. So the shipped column is
+not a function of Sabin-VP1 coverage alone, and a rule fitted to 86.7% would assert a wrong
+determination on the remaining 13.3% — on the order of thirteen hundred records.
+
+That is the same argument as the `virus_group` decline, applied to a column rather than a row set:
+scoring well against the oracle is not evidence the rule is right when the disagreements have
+structure. The column stays declared-pending until the determinant the release actually used is
+known. It is the clearest single item for a metadata pass to close, because the measurement that
+would settle it is already written — what is missing is the *definition*.
+
 ## The alignment layer
 
 `final/alignments/` was carved in from a private pipeline. **This repository now builds its own
-alignments natively** — `evgc alignment-build` produces all six artifacts from
-`final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft` and
-Infernal's `cmalign`. They are written to `derived/alignments/`, not `final/alignments/`, so 2.4.1's
-bytes stay immutable while the rebuild is reviewed; promotion into a release is a separate step.
+alignments natively** — `evgc alignment-build` produces them from `final/canonical/`,
+`final/source/` and the committed covariance-model core, using only `mafft` and Infernal's
+`cmalign`. They are written to `derived/alignments/`, not `final/alignments/`, so 2.4.1's bytes stay
+immutable while the rebuild is reviewed; promotion into a release is a separate step.
+
+Five of the six declared populations are built and committed, and not at one parameter set:
+`POLIO_unified` and `NPEV_unified` carry MAFFT `--ep 0.5`, `PV1`/`PV2`/`PV3` predate it, and
+`EV_unified` has never been built. So the row-set table below describes all six as *declared*, while
+`derived/alignments/` holds five as *built*. A uniform rebuild is pending, and it is cheap to run
+once the anchor question below is settled — there is no point building a sixth artifact against a
+row set the pipeline no longer produces.
 
 None of this is a parity claim on the shipped bytes, and it never can be: those bytes came from code
 that no longer exists in that form, built at an unrecorded thread count with accidental
