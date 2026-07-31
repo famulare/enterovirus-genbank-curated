@@ -12,6 +12,9 @@ those fourteen are the derived half, minus `locality`, whose projection is a clo
 one GenBank string (R-GEO-LOCALITY-1) and so transports. The remaining twelve columns carry no
 projection row because there is no projection: the value is the source value.
 
+Thirteen of the fourteen now have a rule here. `sequence_scope` is the one that does not, and
+`PENDING_COLUMNS` says why.
+
 Two things this module must not do, both of them boundary 1 in `docs/pipeline.md`:
 
 * read anything under `final/` — the shipped release is the comparison target, never an input;
@@ -55,22 +58,21 @@ TRANSPORTED_COLUMNS = (
     "biosample_accession",
 )
 
-# Why each remaining canonical column is out of reach from `raw/` + `registry/` alone. Every reason
-# here is an input that is absent from this clone, not an unwritten function.
+# The canonical columns no rule projects at all, and why. Everything else in `CANONICAL_COLUMNS` is
+# either transported here or projected by a rule in `registry/rules.json` — which is what this set
+# shrinking from twelve entries to one records.
+#
+# `assert_every_column_is_accounted_for` uses it as the allowlist for a column blank on every row,
+# so an entry here is a *declared* absence and a column going blank without one is a build failure.
 PENDING_COLUMNS = {
-    "sequence_scope": "needs record_type, derived by aligning against Sabin VP1 coordinates",
-    "virus_group": (
-        "needs dataset_partition; poliovirus membership is sequence-adjudicated for 417 records "
-        "whose organism name is generic (R-MEMBERSHIP-AA-1)"
+    "sequence_scope": (
+        "needs record_type. The sequence stage exists and measures coverage against the Sabin "
+        "frame, but coverage does not reproduce record_type: fitted against every threshold "
+        "combination it agrees on 86.7% of poliovirus records with systematic rather than boundary "
+        "errors — 745 "
+        "records the release calls other_fragment have a complete VP1, capsid or genome — so "
+        "record_type is not a function of coverage against Sabin VP1 alone. See derive/evidence.py."
     ),
-    "curation_status": "follows virus_group",
-    "sample_origin": "projects the curated origin_class, held only in the curated master",
-    "surveillance_stream": "projects the curated sampling_frame, held only in the curated master",
-    "specimen_type": "projects the curated specimen_type, held only in the curated master",
-    "collection_date": "precision-driven and curated-first; needs collection_date_curated",
-    "collection_date_precision": "projects the curated collection_date_precision",
-    "collection_year_earliest": "needs the curated date-range parse",
-    "collection_year_latest": "needs the curated date-range parse",
 }
 
 # The shipped carve includes these seventeen records; this transport cannot. All are patent-division

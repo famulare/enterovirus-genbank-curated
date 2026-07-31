@@ -56,6 +56,7 @@ from enterovirus_genbank_curated.export.canonical import (
 )
 from enterovirus_genbank_curated.export.metadata import write_metadata_transport
 from enterovirus_genbank_curated.export.queue import write_curation_queue
+from enterovirus_genbank_curated.export.release import write_release_manifests
 from enterovirus_genbank_curated.export.source import (
     write_source_relational,
     write_source_tsv,
@@ -279,6 +280,20 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     write_projection_provenance(output_dir, provenance)
     write_curation_queue(output_dir, queue)
     write_decision_applications(output_dir, applications)
+
+    # Last, because the file manifest hashes everything above it. A build that failed before here
+    # leaves artifacts with no manifest, which is the right way round: an unstamped directory is
+    # visibly not a release, where a manifest written first would describe a release that does not
+    # exist.
+    write_release_manifests(
+        output_dir,
+        repository_root,
+        rows=canonical,
+        provenance=provenance,
+        row_counts=row_counts,
+        application_tally=application_tally,
+        raw_input=validate_parity_spec(repository_root / PARITY_SPEC_PATH)["raw_input"],
+    )
     return MetadataBuildResult(
         rows=transport.rows,
         provenance=provenance,

@@ -96,42 +96,81 @@ into `final/` or `raw/`, which are immutable.
 **Canonical metadata regenerates in part, and the part is precisely stated:**
 
 ```bash
-evgc parity-metadata    # 24,284 rows: 13 transported columns + 6 projected fields
+evgc parity-metadata                          # 24,284 rows: 13 transported columns + 12 projected
+evgc build-metadata --output release/3.0.0    # write the whole dataset, manifests included
 ```
 
-From `raw/` and `registry/` alone this carves the canonical row set and fills two kinds of column.
+From `raw/` and `registry/` alone this carves the canonical row set and fills **25 of the 26
+canonical columns**.
 
 *Thirteen transported columns* — identity, sequence hash and length, taxid, organism,
 isolate/strain/host, parsed country/admin1/locality, BioSample — where the canonical value **is** the
 GenBank value. Every cell equals the shipped cell, in the same row order.
 
-*Seven projected fields*, each produced with its own machine-readable provenance row naming the rule
-that decided it and which branch of that rule fired: `locality`, `virus_group`, `curation_status`,
-`collection_date`, `collection_date_precision`, `specimen_type`, `sample_origin`. Four of these
-deliberately **differ**
-from the release, because the shipped value asserted a determination that was never made; each break
-retires a weak guarantee, states a stronger one enforced against the build's own output, and pins the
-difference as an exact count that fails if it moves. See
-[`docs/reproducibility.md`](docs/reproducibility.md).
+*Twelve projected columns*, each produced with a machine-readable provenance row naming the rule that
+decided it and which branch of that rule fired: `virus_group`, `curation_status`, `virus_type`,
+`poliovirus_classification`, `sample_origin`, `surveillance_stream`, `specimen_type`,
+`collection_date`, `collection_date_precision`, the `collection_year_*` pair, and
+`engineered_or_construct` — plus `locality`, which is both transported and projected. Several
+deliberately **differ** from the release, because the shipped value asserted a determination that was
+never made; each break retires a weak guarantee, states a stronger one enforced against the build's
+own output, and pins the difference as an exact count *and a witness hash over the disagreeing
+records*, so a substituted disagreement fails the gate even when the count does not move.
 
-Two properties matter as much as the coverage. A rule that cannot decide from declared inputs
-**declines** rather than guessing — 1,832 records whose organism name cannot settle poliovirus
-membership, 12,677 whose `/isolation_source` carries no specimen keyword, 4,582 with no evidence of
-sample origin — and every declined cell becomes one row in a curation queue, grouped by the input the
-rule could not decide from so that 17,366 declined cells reduce to 186 curator decisions.
-And the build cannot read `final/` at all: the undeclared-input guard refuses it, so a rule cannot
-quietly reproduce the answer it is being compared against.
+**One column is not written: `sequence_scope`.** The sequence stage that would produce it exists —
+`derive/evidence.py` builds the Sabin 1/2/3 reference frame from the frozen archive's own
+`mat_peptide` features, reproducing the shipped `reference_region_coordinates.tsv` exactly — and its
+coverage geometry does *not* reproduce the shipped column. Fitted against every threshold
+combination it agrees on 86.7% of poliovirus records, with systematic rather than boundary errors:
+745 records the release calls `other_fragment` have a complete VP1, capsid or genome. So
+`record_type` is not a function of coverage against Sabin VP1 alone, and fitting to 86.7% would
+assert a wrong determination on 1,332 records. It stays declared-pending instead.
+
+What that same stage *does* support is classification. `poliovirus_classification` is decided by VP1
+nucleotide divergence from the matching Sabin reference, using the thresholds the release already
+publishes in its own rule table — Sabin-like below 1% (0.6% for PV2), wild at or above 15%. Measured
+before those parameters were read, every `Sabin-like` record in the release sits below 1% and every
+`wild` record above 18%, so the published thresholds are recovered from the data rather than imposed
+on it.
+
+Three properties matter as much as the coverage. A rule that cannot decide from declared inputs
+**declines** rather than guessing — 12,677 records whose `/isolation_source` carries no specimen
+keyword, 3,425 whose classification no sequence or ledger row settles, 2,193 whose organism name
+states no type, 1,832 whose organism name cannot settle poliovirus membership — and every declined
+cell becomes one row in a curation queue, grouped by the input the rule could not decide from, so
+that 28,496 declined cells reduce to 299 curator questions. The build cannot read `final/` at all:
+the undeclared-input guard refuses it, so a rule cannot quietly reproduce the answer it is being
+compared against. And a blank cell is never a claim — `audit/projection_provenance.tsv.gz` carries
+`unresolved_reason` per cell, and `audit/build_manifest.json` states per column how many cells are
+filled, how many are blank and how many were declined.
 
 Every curation decision also gets a recorded outcome. `audit/decision_applications.tsv.gz` says what
-became of each of the 3,164 ledger rows — applied and changed something, applied and made no
+became of each of the 3,166 ledger rows — applied and changed something, applied and made no
 difference, filled a cell a rule declined, withdrawn, or reaching no canonical column — and a decision
 with *no* row is a build failure. That is the D2 lesson as an artifact: the failure it prevents is an
-assertion sitting in the ledger for two releases while the pipeline quietly recomputed the value.
+assertion sitting in the ledger for two releases while the pipeline quietly recomputed the value. As
+of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
+canonical column now reaches a rule that projects it.
 
-**What is not yet true:** seven canonical columns are still unwritten — `sequence_scope`,
-`virus_type`, `poliovirus_classification`, `surveillance_stream`, the `collection_year_*` pair, and
-`engineered_or_construct` — along with `final/audit/`, `final/dictionaries/` and `final/alignments/`.
-Most need a sequence-comparison stage that does not exist here yet.
+### Release 3.0.0
+
+`release/3.0.0/` is the first dataset this pipeline produces end to end from public inputs. It is a
+**major** version rather than a minor one because three things are incompatible with 2.4.1 for anyone
+reading the columns: `engineered_or_construct` flips TRUE to FALSE on 500 records (2.4.1's predicate
+matched the database division code as free text, so it largely reported *where* a sequence was
+deposited); `sequence_scope` is empty; and several thousand cells are blank-because-undetermined where
+2.4.1 filled them from inputs this pipeline does not have.
+
+It carries no wall-clock timestamp. `audit/build_manifest.json` identifies the build by the hashes of
+its four determinants — the frozen archive, the decision ledger, the rule catalog, and the code — so
+the same inputs produce the same bytes tomorrow, and a difference between two builds points at which
+determinant moved.
+
+**What is still not true:** `final/audit/`, `final/dictionaries/` and `final/alignments/` are not
+regenerated, and seventeen records the shipped carve reaches are not in this one — patent-division
+deposits whose organism is `unidentified`, `Homo sapiens` or `synthetic construct`, recovered upstream
+by capsid amino-acid distance. The curator's disposition is that they belong, so that is a gap to
+close by implementing the membership rule, not a set to exclude.
 
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the
