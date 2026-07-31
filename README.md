@@ -57,6 +57,13 @@ releases/2.4.1/       Immutable parity contract for the current release (release
                       and releases/2.3.0/ are retained as historical records, no longer
                       verified against the tree — see src/enterovirus_genbank_curated/
                       contracts.py's module docstring).
+release/3.2.0/        What this pipeline produces: the same canonical/audit/curation shape
+                      as final/, rebuilt from raw/ and registry/ alone. Singular release/
+                      holds outputs; plural releases/ holds the parity contracts an
+                      upstream release is checked against — the two are unrelated.
+derived/alignments/   Alignment artifacts this repository builds, kept beside the shipped
+                      ones while the rebuild is reviewed rather than promoted into a
+                      release. See derived/alignments/README.md.
 docs/                 Pipeline architecture and the reproducibility boundary.
 ```
 
@@ -211,10 +218,15 @@ Both look like patent transcription artifacts (their same-patent siblings sit at
 moving a published threshold to catch two records would be fitting the parameter to the answer, so
 they stay a declared gap awaiting a curator decision about the patent text.
 
-For `final/alignments/`, the groundwork is laid but no alignment file is produced yet:
-`evgc alignment-population` derives each of the six shipped alignments' row set from
-`final/canonical/` and `final/audit/` alone, and it is not the same population the shipped
-alignments carry — see [`docs/reproducibility.md`](docs/reproducibility.md) for the measured gap.
+For `final/alignments/`, the alignment layer now builds its own. `evgc alignment-build` writes
+Stockholm and FASTA artifacts to `derived/alignments/`, five of the six declared populations so far,
+and `evgc alignment-shape` reports each one's shape against the shipped 2.4.1 alignment. They are
+not byte-identical to the shipped files and cannot be. Two things are still true and worth stating
+plainly: the row set `evgc alignment-population` derives from `final/canonical/` and `final/audit/`
+is not the population the shipped alignments carry, and the whole alignment layer reads the frozen
+2.4.1 release rather than the release this pipeline now produces. See
+[`docs/reproducibility.md`](docs/reproducibility.md) for both measured gaps, and
+[`derived/alignments/README.md`](derived/alignments/README.md) for what the committed artifacts are.
 
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the

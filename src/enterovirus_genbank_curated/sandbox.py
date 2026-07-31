@@ -261,7 +261,7 @@ class _PathRules:
 
     Extracted rather than duplicated on purpose. A second copy of `IMMUTABLE_DIRS`, `FROZEN_DIRS`
     and the root-computation logic is the exact failure this module exists to prevent: the tables
-    *are* the specification, and a specification with two copies has none. `align/sandbox_exec.py`
+    *are* the specification, and a specification with two copies has none. `sandbox_exec.py`
     computes its own `_PathRules` from the same function for exactly this reason — its path
     decisions (what counts as `final/`, what counts as frozen, what counts as scratch) must never
     drift from this module's, even though its *exec* decisions are different.

@@ -3,7 +3,7 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "1cd5190e9bef86e9467c0bfb3cb50f9b4b5a5db214dfe9f01a81586f89922159",
+  "code_sha256": "b798247968f12d0a8507ba6995ec00e9f319bf9abed1dd81d4abf28bb3ff1a4f",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",

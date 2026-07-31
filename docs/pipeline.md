@@ -17,6 +17,10 @@ release remains the immutable parity oracle while the rewrite is developed — c
 `src/enterovirus_genbank_curated/contracts.py`'s `BASELINE_RELEASE`); 2.1.5 and 2.3.0 are retired,
 immutable prior baselines, no longer verified against the tree.
 
+The pipeline has since produced releases of its own, under `release/`: 3.0.0 (the whole dataset from
+public inputs alone), 3.1.0 (retired in place, see `tests/test_release_integrity.py`), and 3.2.0, the
+current one. They are outputs measured against the 2.4.1 oracle, not replacements for it.
+
 ## Non-negotiable boundaries
 
 1. Existing `final/` files are comparison targets, never pipeline inputs.
@@ -27,7 +31,10 @@ immutable prior baselines, no longer verified against the tree.
 4. Duplicate, conflicting, missing, or ambiguous inputs fail closed.
 5. Every canonical value must have machine-readable projection provenance.
 6. The current baseline release is never regenerated in place or overwritten; a new schema version
-   gets a new `releases/<version>/` and the prior baseline is retired, not rewritten.
+   gets a new `release/<version>/` output tree and a new `releases/<version>/` parity contract, and
+   the prior baseline is retired, not rewritten. The singular and plural directories are unrelated
+   despite the names: `release/<v>/` is what this pipeline produced, `releases/<v>/parity.json` is
+   the contract an upstream release is checked against.
 7. The parity oracle is re-derived from the shipped release on every CI run. Its hashes, counts,
    and raw-archive identity are recomputed, not taken on trust, so the oracle cannot be edited to
    accommodate a build that disagrees with it.
@@ -44,10 +51,10 @@ The intended package is `src/enterovirus_genbank_curated/` with these responsibi
 - `export`: write canonical, audit, dictionary, alignment, and manifest artifacts;
 - `validation`: enforce referential closure, parity, and determinism.
 
-`genbank`, `export`, `registry` and the transport half of `derive` exist. `derive/metadata.py`
-covers only the canonical columns whose value is a source value; the typing, classification and sequence-evidence
-half of that responsibility is still unwritten, and its module docstring states which columns are
-out of reach and why.
+All seven exist. `derive/metadata.py` covers the canonical columns whose value is a source value —
+13 of the 26 — and `derive/typing.py`, `derive/classification.py`, `derive/engineered.py` and
+`derive/evidence.py` cover the 12 that are computed. The 26th, `sequence_scope`, is the one column
+still unwritten (`derive.metadata.PENDING_COLUMNS`), so a release now fills 25 of 26.
 
 One package is not in that list because it is not part of the build: `oracle` is the only place
 permitted to read `final/` or `releases/`. Boundary 1 used to be enforced by care alone, with release
@@ -59,9 +66,11 @@ a release path literal or an `oracle` import under `derive/`, `curate/`, `export
 and the `parity-*` verbs build in a guarded child and compare in the unguarded parent.
 
 A second package is also not in that list, for the opposite reason: `align` derives alignment
-inputs *from* `final/` deliberately, because the pipeline stages that would produce them natively —
-`derive`, `curate`, and an eventual alignment-specific stage — do not exist yet. It is oracle-adjacent
-rather than a build module: free to read `final/` and import `oracle`, exempted from
+inputs *from* `final/` deliberately. That was originally because the stages producing them natively
+did not exist; now that they do, it is a pinning decision — the alignment layer is anchored to the
+2.4.1 release, and "The alignment layer's anchor" in `docs/reproducibility.md` measures what that
+costs. It is oracle-adjacent rather than a build module: free to read `final/` and import `oracle`,
+exempted from
 `test_module_boundaries.py`'s build-tree rule by name rather than by accident. `align/contract.py`
 carries one exception to its own exemption, by decision (2026-07-30): it may not redeclare a `final/`
 path itself, only import one already declared in `oracle.parity`, which a dedicated test enforces.
@@ -113,8 +122,9 @@ lets the gate run on every push while a build takes hours.
 
 `alignment-build` has no `--parallel` option, and that absence is load-bearing rather than an
 omission: no single step of a build needs more than about 0.7 GB, but running several concurrently
-reached roughly 50 GB and froze a real machine. Artifacts are built strictly one at a time, and
-`--threads` defaults to 1.
+reached roughly 50 GB and froze a real machine. Artifacts are built strictly one at a time.
+`--threads` defaults to 8, a measured literal rather than `os.cpu_count()`, because the thread count
+is a declared parameter recorded in provenance — see `align/runner.py`.
 
 Still planned, and not yet in any form:
 
@@ -124,11 +134,14 @@ evgc verify
 evgc parity --against releases/2.4.1
 ```
 
-`parity-metadata` is a cell-level check rather than a file hash, because the transport fills
-thirteen of the twenty-six canonical columns and its bytes are therefore legitimately not the
-release's bytes. What it claims is narrower and checkable: every cell it produces equals the shipped
-cell, for every record both agree belongs in the carve, in the same order. The 18-record row-set gap
-is declared in code, compared for equality, and invisible to the build — see
+`parity-metadata` is a cell-level check rather than a file hash, because a build's bytes are
+legitimately not the release's bytes: it now fills 25 of the 26 canonical columns, but with values
+derived rather than copied, and its carve is not the shipped carve. What it claims is narrower and
+checkable: every cell it produces equals the shipped cell, for every record both agree belongs in the
+carve, in the same order. Where it declines to agree it says so as a count rather than passing —
+`oracle/parity.py`'s `UNRESOLVED_*` constants and `SUPERSEDED_FIELD_DELTAS`. The row-set gap is
+declared in code, compared for equality, and invisible to the build; `R-MEMBERSHIP-AA-1` closed most
+of it, leaving two records, and the build now carves 24,308 rows against the shipped 24,301 — see
 [`reproducibility.md`](reproducibility.md).
 
 ## Staged delivery
@@ -138,22 +151,28 @@ is declared in code, compared for equality, and invisible to the build — see
 3. Raw verification and normalized GenBank source generation.
 4. Retirement — not replacement — of the two frozen legacy upstream stages. Investigating them
    showed there is nothing to rebuild: see below.
-5. Deterministic derivation and versioned rules. **Partly delivered:** the canonical metadata
-   transport (`evgc parity-metadata`) covers the thirteen columns that are source values, and
-   `registry/rules.json` now declares all 28 rules with their thresholds as data, regenerating the
-   shipped rule table byte-for-byte. `locality` is projected through the rule catalog with its
-   provenance row compared to the release on all nine columns. The sequence-derived and
-   curated-master columns remain.
-6. Decision application, disposition, and complete provenance.
-7. Dictionaries, references, and reproducible alignments. **Largely delivered:** all six
-   alignments are now built natively by this repository (`evgc alignment-build`) from
+5. Deterministic derivation and versioned rules. **Delivered:** the canonical metadata transport
+   (`evgc parity-metadata`) covers the 13 columns that are source values, the 12 computed columns are
+   derived by `derive/typing.py`, `derive/classification.py`, `derive/engineered.py` and
+   `derive/evidence.py`, and `registry/rules.json` declares all 28 rules with their thresholds as
+   data, regenerating the shipped rule table byte-for-byte. `locality` is projected through the rule
+   catalog with its provenance row compared to the release on all nine columns. Only `sequence_scope`
+   remains unwritten.
+6. Decision application, disposition, and complete provenance. **Delivered:** 3,190 decision
+   applications from a 3,168-row ledger, 316,004 provenance rows, and 28,392 declined cells
+   collapsed into 302 curation-queue groups.
+7. Dictionaries, references, and reproducible alignments. **Largely delivered:** the alignment
+   layer is built natively by this repository (`evgc alignment-build`) from
    `final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft`
    and `cmalign` — segmentation, the codon-aware CDS block, the Sabin-anchored CDS projection, the
    structural NCR block, stitching and the export writer all exist. `evgc alignment-verify` gates
    the result against metadata-derived populations and `evgc alignment-shape` states the declared
-   delta against 2.4.1, both without an aligner. Outputs land in `derived/alignments/`; promoting
-   them into `final/` alongside a new release, and the site rebuild that depends on it, is the
-   remaining work. Dictionaries and references are untouched.
+   delta against 2.4.1, both without an aligner. Outputs land in `derived/alignments/`, five of the
+   six declared populations so far and not at one uniform parameter set. Promoting them into a
+   release alongside the site rebuild that depends on it is the remaining work, and it needs the
+   anchor question in [`reproducibility.md`](reproducibility.md) answered first: `release/<version>/`
+   ships no `alignments/`, and the layer reads 2.4.1 rather than the release the pipeline produces.
+   Dictionaries and references are untouched.
 8. Full fresh-clone parity and deterministic rebuild gate.
 9. A new pipeline-native release; 2.1.5 remains historical and immutable.
 

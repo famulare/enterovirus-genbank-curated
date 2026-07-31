@@ -75,7 +75,6 @@ ACCESSION = "accession"
 VERSION = "version"
 SEQUENCE_SHA256 = "sequence_sha256"
 SEQUENCE_LENGTH_NT = "sequence_length_nt"
-SEQUENCE_SCOPE = "sequence_scope"
 VIRUS_GROUP = "virus_group"
 VIRUS_TYPE = "virus_type"
 

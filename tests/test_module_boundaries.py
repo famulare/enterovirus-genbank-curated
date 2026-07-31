@@ -33,11 +33,11 @@ ORACLE_PACKAGE = "enterovirus_genbank_curated.oracle"
 # being opened. Exempting the one assignment keeps the rule sharp rather than the whole module.
 RELEASE_PREFIX_EXEMPTION = 'RELEASE_PATH_PREFIX = "final/"'
 
-# `align/` is not a build tree: its charter is to derive alignment inputs from the shipped release
-# because the pipeline stages that would produce them natively (`derive`, `curate`, and an eventual
-# alignment-specific stage) do not exist yet — the same justification `oracle/` has for reading
-# `final/`, aimed at derivation rather than comparison. So `align/` is free to import the oracle and
-# free to read `final/` in general.
+# `align/` is not a build tree: its charter is to derive alignment inputs from the shipped 2.4.1
+# release — the same justification `oracle/` has for reading `final/`, aimed at derivation rather
+# than comparison. So `align/` is free to import the oracle and free to read `final/` in general.
+# (`derive`/`curate` do now produce a canonical table of their own; `align/` stays anchored to 2.4.1
+# for the reasons `align/__init__.py` records, not for want of a producer.)
 #
 # `align/contract.py` specifically is not, by decision (2026-07-30): every `final/` path the
 # alignment layer needs is declared once in `oracle.parity` and imported from there, so a canonical

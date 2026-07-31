@@ -1,8 +1,16 @@
 # Rebuilt alignments
 
-Six multiple-sequence alignments, built by this repository from `final/canonical/`, `final/source/`
-and the committed covariance-model core under `registry/alignment_seeds/`, using only `mafft` and
+Multiple-sequence alignments built by this repository from `final/canonical/`, `final/source/` and
+the committed covariance-model core under `registry/alignment_seeds/`, using only `mafft` and
 Infernal's `cmalign`.
+
+**Five of the six declared populations are committed here.** `align/contract.py` declares six;
+`EV_unified` — the 24,301-row genus-wide artifact — has not been built. And the five are not one
+uniform set: `POLIO_unified` and `NPEV_unified` were built with MAFFT `--ep 0.5`, while `PV1`,
+`PV2` and `PV3` predate that parameter and carry the old gap-extension default. Each artifact's
+`.provenance.json` records which, under `codon.gap_extend`, and the two later ones additionally
+carry a `parameter_departures.gap_extend` note. A uniform rebuild of all six is pending; these
+bytes are here to be compared against, not to be depended on.
 
 ```bash
 pixi run -e align evgc alignment-build  --output-dir derived/alignments

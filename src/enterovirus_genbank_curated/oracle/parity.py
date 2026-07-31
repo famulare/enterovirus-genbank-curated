@@ -58,11 +58,16 @@ GUARD_PASS_MARKER = "undeclared-input guard: PASS"
 
 # `final/` paths the alignment layer (`align/`) derives from, declared here rather than in
 # `align/contract.py` so that module has exactly one path to `final/canonical/sequence_metadata`
-# rather than two. `align/` reads the release for the same reason this module does — the stages
-# that would produce these inputs natively (`derive`, `curate`, and an eventual alignment-specific
-# stage) do not exist yet — so it is oracle-adjacent rather than a build module, and
-# `test_module_boundaries.py` does not constrain it. It still must not *redeclare* a path oracle
-# already owns; `SHIPPED_CANONICAL_METADATA` above is that path for the canonical metadata table.
+# rather than two. `align/` reads the release for the same reason this module does, so it is
+# oracle-adjacent rather than a build module, and `test_module_boundaries.py` does not constrain it.
+# It still must not *redeclare* a path oracle already owns; `SHIPPED_CANONICAL_METADATA` above is
+# that path for the canonical metadata table.
+#
+# Note that `align/` is pinned to 2.4.1 rather than waiting on stages that do not exist —
+# `derive/`+`curate/` now build a full canonical table. `SHIPPED_SEQUENCE_EVIDENCE` in particular
+# has no successor: `derive/evidence.py` deliberately writes a different, narrower schema, so the
+# tier predicate in `align/population.py` has no native producer. See `align/__init__.py` and
+# `docs/reproducibility.md`'s "The alignment layer's anchor".
 SHIPPED_CANONICAL_FASTA = "final/canonical/sequences.fasta.gz"
 SHIPPED_SEQUENCE_EVIDENCE = "final/audit/sequence_evidence.tsv.gz"
 # The curation ledger's per-record disposition. Read by `align.shape` so a shipped alignment row

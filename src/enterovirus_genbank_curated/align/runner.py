@@ -27,6 +27,20 @@ from enterovirus_genbank_curated.sandbox_exec import REQUIRED_CHILD_ENV_KEYS, To
 STDERR_NAME = "stderr.log"
 DISCARDED_STDOUT_NAME = "stdout.discarded"
 
+# Generous per-tool ceiling. The point is to fail rather than hang forever on a pathological input;
+# the measured `mafft --add` extrapolation for the largest artifact is well inside this.
+DEFAULT_TIMEOUT_S = 6 * 60 * 60
+# Eight, and measured rather than guessed — see "Threads are not the memory problem" in
+# `align/build.py`. A literal constant, never `os.cpu_count()`: the thread count is a declared
+# parameter recorded in provenance, and deriving it from the machine would make an artifact's inputs
+# depend on where it was built.
+DEFAULT_THREADS = 8
+# Both live here rather than in `align/build.py` because they are per-invocation parameters of this
+# boundary, and because `cli.py` needs the thread count for its `--threads` default. Reaching it
+# through `align.build` made `build_parser()` — which every `evgc` invocation runs — import the
+# whole alignment stack for one integer: 16 `align` modules instead of 4. Not a Biopython question
+# either way; `genbank/parse.py` imports that on every invocation regardless.
+
 
 class ToolRunError(ContractError):
     """A tool invocation was refused before running, or did not produce what it declared."""

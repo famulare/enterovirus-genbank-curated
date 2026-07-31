@@ -6,7 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from enterovirus_genbank_curated.align import build as align_build
+from enterovirus_genbank_curated.align.runner import DEFAULT_THREADS
 from enterovirus_genbank_curated.build import build_metadata_layer, build_source_layer
 from enterovirus_genbank_curated.contracts import (
     BASELINE_RELEASE,
@@ -141,8 +141,8 @@ def build_parser() -> argparse.ArgumentParser:
     # No --parallel, by design: concurrent aligner processes are what exhausted memory on a real
     # machine (see align/build.py). --threads is the one knob, and its default is 1.
     alignment_build.add_argument(
-        "--threads", type=int, default=align_build.DEFAULT_THREADS,
-        help=f"threads per tool invocation (default {align_build.DEFAULT_THREADS})",
+        "--threads", type=int, default=DEFAULT_THREADS,
+        help=f"threads per tool invocation (default {DEFAULT_THREADS})",
     )
 
     alignment_verify = subparsers.add_parser(
@@ -322,6 +322,8 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 0
         if args.command == "alignment-build":
+            from enterovirus_genbank_curated.align import build as align_build
+
             names = tuple(args.artifacts) if args.artifacts else None
 
             def report(stage: str, name: str, result=None) -> None:

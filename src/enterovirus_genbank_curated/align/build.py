@@ -95,18 +95,10 @@ from enterovirus_genbank_curated.align import (
 )
 from enterovirus_genbank_curated.align import scratch as scratch_module
 from enterovirus_genbank_curated.align import toolchain as toolchain_module
+from enterovirus_genbank_curated.align.runner import DEFAULT_THREADS, DEFAULT_TIMEOUT_S
 from enterovirus_genbank_curated.align.stitch import StitchedAlignment
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.export import alignment as export_alignment
-
-# Generous per-tool ceiling. The point is to fail rather than hang forever on a pathological input;
-# the measured `mafft --add` extrapolation for the largest artifact is well inside this.
-DEFAULT_TIMEOUT_S = 6 * 60 * 60
-# Eight, and measured rather than guessed — see "Threads are not the memory problem" below. A
-# literal constant, never `os.cpu_count()`: the thread count is a declared parameter recorded in
-# provenance, and deriving it from the machine would make an artifact's inputs depend on where it
-# was built.
-DEFAULT_THREADS = 8
 
 # Within one artifact's band: the CDS stage, then the two NCR sides.
 _STEP_CODON = 0

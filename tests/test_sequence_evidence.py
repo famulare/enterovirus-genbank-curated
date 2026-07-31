@@ -27,8 +27,8 @@ from enterovirus_genbank_curated.derive.classification import (
 )
 from enterovirus_genbank_curated.derive.evidence import EVIDENCE_COLUMNS
 from enterovirus_genbank_curated.export.audit import VP1_DIVERGENCE_RELATIVE, write_vp1_divergence
+from enterovirus_genbank_curated.oracle.parity import SHIPPED_SEQUENCE_EVIDENCE
 
-SHIPPED_SEQUENCE_EVIDENCE = "final/audit/sequence_evidence.tsv.gz"
 CLASSIFICATION_FIELD = "poliovirus_classification"
 
 # The only two columns the shipped table and this one have in common. Everything else about the two
