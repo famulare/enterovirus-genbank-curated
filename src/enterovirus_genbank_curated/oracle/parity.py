@@ -388,8 +388,11 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "source_value": "3ecf43454058cfeb",
     },
     "poliovirus_classification": {
-        "final_value": "2f3109db557bd43b",
-        "source_value": "7720e667d51ae90c",
+        # Re-witnessed when `_record_text` widened to `isolation_source`/`note` cut `final_value`
+        # from 413 to 169. The count and the digest both had to move: 248 records left the set and 4
+        # entered it, so a count-only pin would have been satisfied by the wrong 169.
+        "final_value": "870bb4f0b13630a0",
+        "source_value": "888d7245360cc5fc",
         "manual_override": "8b68cdaac2368907",
     },
 }
@@ -623,37 +626,58 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # ledger is a row the release also marked as overridden, including the five it then blanked.
         "manual_override": 0,
     },
-    # 413 of 20,859 move, and 348 of those are one declared coarsening rather than a disagreement
-    # about any record: 302 `cVDPV` and 46 `iVDPV` become the bare `VDPV`. Circulating versus
-    # immunodeficient is an epidemiological attribution, no property of the sequence carries it, and
-    # it is not in the record either — only 283 of the release's 1,767 `cVDPV` records name `cVDPV`
-    # anywhere in their definition, strain or isolate. `VDPV` is true of every record in the band,
-    # so the rule reports the band and leaves the refinement to the ledger or the queue.
+    # 169 of 20,859 move. This was 413 until `_record_text` was widened to read the two other
+    # record-level `source` qualifiers, `isolation_source` and `note`; 248 records carry the release's
+    # own refinement in one of those two fields and were being coarsened only because the rule was
+    # not looking at them. The largest single block was the Angola 2019-2020 cVDPV2 set, whose
+    # `note` reads `type: cVDPV2 VP1` on all 192 records.
     #
-    # Of the remaining 65: about 40 sit at a threshold (13 `wild` -> `VDPV`, 11 `Sabin-like` ->
-    # `VDPV`, 4 `wild` -> `Sabin-like`, 4 `iVDPV` -> `wild` and a scatter of ones and twos), 11 are
-    # `Sabin` -> `Sabin-like` where the release distinguishes the vaccine strain itself from its
-    # descendants and divergence alone cannot, and about 14 are classes the sequence does not reach
-    # at all — `chimera`, `engineered/lab`, `vaccine` — which the release took from text this rule
-    # does not read.
+    # What remains, stated per class rather than in aggregate:
+    #
+    # * **95 `cVDPV` -> `VDPV`** — the whole balance of the coarsening, and now exactly two
+    #   environmental studies: 27 Cameroon records (PMID 25542478) and 68 European wastewater records
+    #   (PMID 39850005 on 20 of them, the same study title on all 68). Neither set states circulation
+    #   in any record-level field; 27 of them say `genotype: OPV2-like`, which is Sabin-2 descent
+    #   with no circulation claim, and the other 68 are sewage. Circulation is a property of a
+    #   reconstructed transmission chain, so no single deposit's own text can carry it and the rule
+    #   correctly declines to infer it. These are the records an epidemiological-attribution override
+    #   has to carry, and the two PMIDs are the provenance it would cite.
+    # * **12 where this pipeline is FINER than the release** — 6 `VDPV` -> `iVDPV` on records whose
+    #   own `isolation_source` names an immunodeficient host, 5 `cVDPV` -> `cVDPV-n` where the
+    #   depositor wrote `Single recombinant cVDPV2-n`, and 1 `Sabin-like` -> `cVDPV`. A reconciliation
+    #   that only counted losses would have reported these as noise.
+    # * **~40 at a threshold** — 13 `wild` -> `VDPV`, 11 `Sabin-like` -> `VDPV`, 4 `wild` ->
+    #   `Sabin-like`, 4 `iVDPV` -> `wild`, and a scatter of ones and twos.
+    # * **12 `Sabin` -> `Sabin-like`/`VDPV`** — the release distinguishes the vaccine seed strain
+    #   itself from its descendants and divergence alone cannot. `X00595` is the clearest case: it is
+    #   Sabin 2, and it reads `VDPV` at 0.664% over 879 nt of VP1 against a 0.600% ceiling, which is
+    #   6 mismatches where the threshold allows 5.
+    # * **5 `vaccine`, 3 `engineered/lab`, 4 `chimera`** — the classes the band does not reach. The
+    #   first two the release took from text and a documented strain-family map; the `chimera` four it
+    #   computed, from recombinant-junction detection rather than from text, so that one is
+    #   reproducible here by a rule this pipeline has not implemented rather than by an override.
+    # * **1 `Sabin-like` -> `engineered/lab`** — `DQ205099`, where the vocabulary repair now ships the
+    #   engineered verdict the ledger always held.
     #
     # An earlier draft disagreed on 73 further records, every one a `Sabin-like` record called
     # `wild` at 73-74% divergence, which is the unrelated-sequence expectation rather than a
     # measurement. Those records do not overlap VP1 at all and one chance 12-mer was winning the
     # diagonal vote. `MIN_DIAGONAL_ANCHORS` closed it; 2 of the 73 remain.
     "poliovirus_classification": {
-        "final_value": 413,
-        # 21,266 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
-        # capsid fallback newly resolves. All three additions are declines-turned-resolved, and none
-        # of the 148 touches `final_value` or `manual_override`: every one lands on the value 2.4.1
-        # already ships, so nothing here is a value reversal, only a growing comparable set.
-        "winning_rule_id": 21266,
-        "evidence_basis": 21266,
+        "final_value": 169,
+        # 21,269 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
+        # capsid fallback newly resolves + 3 the vocabulary repairs newly resolve (`AJ416942`,
+        # `DQ205099`, `FJ517648`, whose ledger values were outside the controlled vocabulary and so
+        # were being declined). All are declines-turned-resolved, and none of the 148 touches
+        # `final_value` or `manual_override`: every one lands on the value 2.4.1 already ships, so
+        # nothing there is a value reversal, only a growing comparable set.
+        "winning_rule_id": 21269,
+        "evidence_basis": 21269,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
-        # field or `divergence_pct`. The 1,781 agreeing on `source_value` are the curated rows,
+        # field or `divergence_pct`. The 19,228 agreeing on `source_value` are the curated rows,
         # where both record the asserted value itself.
-        "source_field": 21266,
-        "source_value": 19226,
+        "source_field": 21269,
+        "source_value": 19228,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,

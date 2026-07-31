@@ -41,7 +41,6 @@ Q-289bdbddf0ac	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_de
 Q-28dcb5c8cfa7	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	Shoket Treatment Plant	2	KJ013422.1 KP004232.1	rule_parameter
 Q-2ab336344f2e	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	central nervous system; brain	1	OP828752.1	decision
 Q-2add32f606e0	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	patient	3	AM084223.1 AM084224.1 AM084225.1	rule_parameter
-Q-2ae08888347a	poliovirus_classification	poliovirus_classification	R-CLASS-2	curated_value_outside_the_controlled_vocabulary	iVPDV	1	FJ517648.1	decision
 Q-2b1a49f013f0	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	ophthalmic sampling offemale age 36 with hemorrhagic conjunctivitis	2	PQ867798.1 PQ867800.1	rule_parameter
 Q-2b98863497d2	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	corneal swab	42	AB901473.1 AB901474.1 AB901475.1	rule_parameter
 Q-2c6d8391f98e	virus_group	is_poliovirus	R-PARTITION-1	organism_name_does_not_determine_membership	Enterovirus sp.	4	KX941077.1 KX941080.1 KX941094.1	decision
@@ -60,7 +59,6 @@ Q-390a529dbaac	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enter
 Q-3c7b849278c0	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	patient with acute hemorrhagic conjunctivitis	4	EF581884.1 EF581885.1 EF581886.1	rule_parameter
 Q-3d615c27bbc1	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	Rahat South Treatment Plant	1	KP004233.1	rule_parameter
 Q-3e12977d1e8a	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	kidney	1	MN896917.1	rule_parameter
-Q-3e281567ce7a	poliovirus_classification	poliovirus_classification	R-CLASS-2	curated_value_outside_the_controlled_vocabulary	CHAT	1	AJ416942.1	decision
 Q-3ebf2672cf7b	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	RS	1	MN245984.1	rule_parameter
 Q-3ef4f3e24c92	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	clinical sample oropharyngeal mucosa	13	MK660465.1 MK660467.1 MK660468.1	decision
 Q-40ac2f2b4086	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	enterovirus J108	1	AF414372.2	decision
@@ -168,7 +166,6 @@ Q-8d8d40cdf27c	specimen_type	specimen_type	R-SPECIMEN-2	multiple_specimen_keywor
 Q-8dbe5cb95dac	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	VAPP case	14	DQ264248.1 DQ264262.1 DQ264278.1	rule_parameter
 Q-8fa26a431d3e	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	bronchoalveolar lavage	1	PP756379.1	rule_parameter
 Q-90392915f26c	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool specimen from immunodeficient infant	4	AJ699401.1 AJ699402.1 AJ783776.1	decision
-Q-91d87c74cd00	poliovirus_classification	poliovirus_classification	R-CLASS-2	curated_value_outside_the_controlled_vocabulary	engineered	1	DQ205099.1	decision
 Q-93a1f111adbf	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	healthy person	2	KU598889.1 KU598890.1	rule_parameter
 Q-93fe9cd0511a	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Human poliovirus 60/ROU/2008	2	FR715537.1 FR715551.1	decision
 Q-944133d90b23	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	healthy people	8	KC880378.1 KC880496.1 KC880502.1	rule_parameter

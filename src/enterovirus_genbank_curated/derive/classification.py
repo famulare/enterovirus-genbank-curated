@@ -73,7 +73,7 @@ curation queue; writing "unresolved" into the column would record a non-answer a
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from decimal import Decimal
 from typing import Any
 
@@ -86,6 +86,11 @@ ORGANISM_FIELD = "organism_name"
 DEFINITION_FIELD = "definition"
 STRAIN_QUALIFIER = "strain"
 ISOLATE_QUALIFIER = "isolate"
+# Both carried on the `source` feature, which is the only feature `derive/apply.py` collects
+# qualifiers from — so these are record-level statements by the depositor about this deposit, the
+# same standing as `strain` and `isolate` and not the same standing as a study title.
+ISOLATION_SOURCE_QUALIFIER = "isolation_source"
+NOTE_QUALIFIER = "note"
 
 EVIDENCE_DIVERGENCE = "divergence_pct"
 EVIDENCE_COMPARED = "compared_nt"
@@ -117,11 +122,25 @@ UNRESOLVED_INSUFFICIENT_SEQUENCE = "too_little_sequence_compared_to_measure_dive
 UNRESOLVED_UNCONTROLLED_VALUE = "curated_value_outside_the_controlled_vocabulary"
 
 # Refinements a depositor may state outright. Longest-first, so `cVDPV` is not read as `VDPV`.
+#
+# `iVDPV` matches an immunodeficient *host* as well as the token, because the refinement is a claim
+# about the host and a depositor who writes `isolation_source="... from an immunodeficient individual
+# who received OPV and developed paralysis"` has stated it as plainly as one who writes `iVDPV`. This
+# is the same record-level standard MAD-VDPV settled on: its own text miner gates `iVDPV` on
+# immunodeficiency evidence in record-level fields specifically, after a title-only match was found
+# stamping `iVDPV` onto a paper's wild comparators.
+#
+# `cVDPV` gets no matching widening, and the asymmetry is deliberate. Circulation is a claim about a
+# transmission chain reconstructed across isolates, so no single record's own text can establish it,
+# and there is no `cVDPV` equivalent of "immunodeficient individual" for a depositor to state. A
+# record that says `cVDPV` outright is honoured; nothing is inferred on its behalf.
+#
+# `aVDPV` was here and is deliberately gone. It is not in this column's controlled vocabulary, so
+# emitting it shipped a value the column does not declare — see `_stated_refinement`.
 _REFINEMENTS = (
     (re.compile(r"\bcvdpv[123]?-?n\b", re.IGNORECASE), "cVDPV-n"),
     (re.compile(r"\bcvdpv", re.IGNORECASE), "cVDPV"),
-    (re.compile(r"\bivdpv", re.IGNORECASE), "iVDPV"),
-    (re.compile(r"\bavdpv", re.IGNORECASE), "aVDPV"),
+    (re.compile(r"\bivdpv|immunodeficien|immunocompromised", re.IGNORECASE), "iVDPV"),
 )
 
 
@@ -131,14 +150,24 @@ def _record_text(view: RecordView) -> str:
             view.record.get(DEFINITION_FIELD, ""),
             view.qualifier(STRAIN_QUALIFIER),
             view.qualifier(ISOLATE_QUALIFIER),
+            view.qualifier(ISOLATION_SOURCE_QUALIFIER),
+            view.qualifier(NOTE_QUALIFIER),
         )
     )
 
 
-def _stated_refinement(text: str) -> str:
+def _stated_refinement(text: str, controlled_values: Collection[str]) -> str:
+    """The refinement the record states, or empty when it states none this column can carry.
+
+    The vocabulary check is applied here and not only on the ledger path. It used to guard the ledger
+    alone, so `aVDPV` — which the vocabulary does not contain — shipped on `PP481414` from the text
+    path while the identical string asserted by a decision would have been declined. One rule cannot
+    hold two standards for the same column, and the release ships `VDPV` there, which is true of
+    every record in the band.
+    """
     for pattern, value in _REFINEMENTS:
         if pattern.search(text):
-            return value
+            return value if value in controlled_values else ""
     return ""
 
 
@@ -248,7 +277,7 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
             source_field=EVIDENCE_DIVERGENCE,
             source_value=evidence,
         )
-    if stated := _stated_refinement(_record_text(view)):
+    if stated := _stated_refinement(_record_text(view), parameters["controlled_values"]):
         return RuleOutcome(
             value=stated,
             evidence_basis=BASIS_TEXT_REFINEMENT,

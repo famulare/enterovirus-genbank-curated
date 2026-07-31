@@ -77,11 +77,29 @@ CAVA_PARENTAL_ADDITIONS = {
     ("LZ216100", "engineered_or_construct", "FALSE"),
 }
 
+# Three rows landed 2026-07-31 to repair the only three active assertions whose value was outside
+# `poliovirus_classification`'s controlled vocabulary, which `derive.classification` was therefore
+# declining rather than shipping: `CHAT` (the Koprowski strain name, not a tier), a bare `engineered`
+# (the vocabulary has only `engineered/lab`), and `iVPDV` (a transposition of `iVDPV`). The release
+# masked all three by projecting a reconciled field instead of the ledger.
+#
+# Each is a *repair*, not a reversal: the verdict the curator recorded is carried forward and only
+# the token changes. They are nonetheless `superseded` rather than `retired`, because a retired row
+# whose value disagrees with its active successor is what
+# `test_retired_rows_agree_with_the_decision_that_governs_them` calls a buried conflict — the same
+# reasoning that put CS406483's reversal under `superseded`.
+VOCABULARY_REPAIR_ADDITIONS = {
+    ("AJ416942", "classification", "vaccine"),
+    ("DQ205099", "classification", "engineered/lab"),
+    ("FJ517648", "classification", "iVDPV"),
+}
+
 LEDGER_ONLY_ADDITIONS = (
     D2_ADDITIONS
     | SUPERSEDED_CARRY_FORWARD_ADDITIONS
     | ENGINEERED_READJUDICATION_ADDITIONS
     | CAVA_PARENTAL_ADDITIONS
+    | VOCABULARY_REPAIR_ADDITIONS
 )
 
 # The locked VDPV/wild reconciliation allowlist, migrated 2026-07-30 by
@@ -111,6 +129,10 @@ ADJUDICATION_RETIREMENTS = 4
 # Two rows added the same day, and one status move: CS406483's FALSE becomes `superseded` by the
 # TRUE that replaces it, so `active` gains 2 and loses 1.
 ENGINEERED_READJUDICATION_NET_ACTIVE = len(ENGINEERED_READJUDICATION_ADDITIONS) - 1
+# The vocabulary repairs are net-zero on `active`: each new row replaces one it supersedes, so the
+# three arrive and three leave. Stated as an explicit zero rather than omitted, because "this
+# addition does not move the active count" is the claim being made.
+VOCABULARY_REPAIR_NET_ACTIVE = len(VOCABULARY_REPAIR_ADDITIONS) - len(VOCABULARY_REPAIR_ADDITIONS)
 EXPECTED_STATUS = {
     "active": (
         2895
@@ -119,9 +141,10 @@ EXPECTED_STATUS = {
         - ADJUDICATION_RETIREMENTS
         + ENGINEERED_READJUDICATION_NET_ACTIVE
         + len(CAVA_PARENTAL_ADDITIONS)
+        + VOCABULARY_REPAIR_NET_ACTIVE
     ),
     "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
-    "superseded": 10,
+    "superseded": 10 + len(VOCABULARY_REPAIR_ADDITIONS),
 }
 
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
@@ -154,8 +177,12 @@ def test_ledger_satisfies_its_own_contract(
     repository_root: Path, decision_contract: DecisionContract
 ) -> None:
     summary = validate_decision_ledger(repository_root / LEDGER, decision_contract)
-    assert summary.rows == 3164 + len(ENGINEERED_READJUDICATION_ADDITIONS) + len(
-        CAVA_PARENTAL_ADDITIONS
+    assert (
+        summary.rows
+        == 3164
+        + len(ENGINEERED_READJUDICATION_ADDITIONS)
+        + len(CAVA_PARENTAL_ADDITIONS)
+        + len(VOCABULARY_REPAIR_ADDITIONS)
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -289,24 +316,47 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     curator revision preserved through the 2.3.0 resync that would otherwise have deleted them.
     JC013129's two rows are a curator revision preserved through the 2.4.1 resync, same shape. All
     three must record *why*, but they say different things and are not interchangeable.
+
+    The vocabulary repairs are partitioned out *first*: DQ205099's superseded row is also a
+    `classification=engineered`, so a D2 filter written on value alone would swallow it and report
+    four D2 subjects. Selecting by subject keeps the five classes disjoint.
     """
     superseded = [r for r in ledger if r["status"] == "superseded"]
+    # Fifth cause, 2026-07-31: the value was outside the controlled vocabulary and a repair replaced
+    # it. Distinguished from every class below by what it does NOT claim — no verdict was overturned,
+    # so the note must say the judgement is carried forward rather than name evidence against it.
+    repair_subjects = {subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS}
+    repaired_vocabulary = [r for r in superseded if r["subject_key"] in repair_subjects]
+    remainder = [r for r in superseded if r["subject_key"] not in repair_subjects]
     d2 = [
         r
-        for r in superseded
+        for r in remainder
         if r["field_name"] == "classification" and r["new_value"] == "engineered"
     ]
-    carried = [r for r in superseded if r["new_value"] == "iVDPV"]
-    jc013129 = [r for r in superseded if r["subject_key"] == "JC013129"]
+    carried = [r for r in remainder if r["new_value"] == "iVDPV"]
+    jc013129 = [r for r in remainder if r["subject_key"] == "JC013129"]
     # Fourth cause, 2026-07-31: the re-adjudication reversed a value rather than retiring it. One
     # row. It is a supersession and not a retirement precisely because the check above would call a
     # retired row disagreeing with its active successor a buried conflict — which it would be.
     reversed_value = [
-        r for r in superseded if r["field_name"] == "engineered_or_construct"
+        r for r in remainder if r["field_name"] == "engineered_or_construct"
     ]
-    assert len(d2) + len(carried) + len(jc013129) + len(reversed_value) == len(superseded), (
-        "an unexplained supersession class appeared"
-    )
+    assert len(d2) + len(carried) + len(jc013129) + len(reversed_value) + len(
+        repaired_vocabulary
+    ) == len(superseded), "an unexplained supersession class appeared"
+
+    assert {r["subject_key"] for r in repaired_vocabulary} == repair_subjects
+    for row in repaired_vocabulary:
+        assert row["field_name"] == "classification"
+        assert row["new_value"] in {"CHAT", "engineered", "iVPDV"}, (
+            "a repair supersedes an out-of-vocabulary value; this one was already valid"
+        )
+        assert "superseded 2026-07-31 by classification=" in row["notes"], (
+            "a repair must name the value that replaced it"
+        )
+        assert "unchanged" in row["notes"], (
+            "a vocabulary repair must record that the verdict was carried forward, not overturned"
+        )
     assert {r["subject_key"] for r in reversed_value} == {"CS406483"}
     for row in reversed_value:
         assert row["new_value"] == "FALSE"
@@ -592,15 +642,25 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     assert sources["curator_adjudication_2026-07-29"] == len(D2_ADDITIONS) + len(
         ENGINEERED_READJUDICATION_ADDITIONS
     )
-    assert sources["curator_adjudication_2026-07-31"] == len(CAVA_PARENTAL_ADDITIONS)
+    assert sources["curator_adjudication_2026-07-31"] == len(CAVA_PARENTAL_ADDITIONS) + len(
+        VOCABULARY_REPAIR_ADDITIONS
+    )
     assert set(sources) == registries | {
         "curator_adjudication_2026-07-29",
         "curator_adjudication_2026-07-31",
     }
 
+    repair_subjects = {subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS}
     for row in ledger:
         if row["source_artifact"].startswith("curator_adjudication_"):
-            assert row["field_name"] == "engineered_or_construct"
+            # `engineered_or_construct` for every adjudication row until 2026-07-31, when the
+            # vocabulary repairs made the adjudications author `classification` too. Named as two
+            # explicit populations rather than widened to "any field", so a third field arriving by
+            # accident still fails here.
+            if row["subject_key"] in repair_subjects:
+                assert row["field_name"] == "classification"
+            else:
+                assert row["field_name"] == "engineered_or_construct"
             # `active` for four of the five. The fifth is CS406483's FALSE, superseded on 2026-07-31
             # by the TRUE assertion the same adjudication's Q2 answer requires — so the adjudication
             # now authors both sides of one reversal, and the note has to say which side it is.

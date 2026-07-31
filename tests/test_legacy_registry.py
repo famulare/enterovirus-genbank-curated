@@ -200,12 +200,22 @@ def test_only_three_of_the_four_engineered_calls_are_patent_deposits(
     )
 
 
-def test_the_fourth_engineered_call_is_annotated_and_still_active(repository_root: Path) -> None:
+def test_the_fourth_engineered_call_is_annotated_and_its_verdict_survives(
+    repository_root: Path,
+) -> None:
     """The falsified rationale is marked in the ledger, and the verdict it justifies is untouched.
 
     Both halves matter. Without the note, the next reader measures 3 nt from Sabin 2 and re-raises
-    a resolved question. Without `active` + `engineered`, an annotation would have quietly become an
-    adjudication.
+    a resolved question. Without the engineered verdict surviving, an annotation would have quietly
+    become an adjudication.
+
+    The legacy row went `superseded` on 2026-07-31, and that is the reason this test no longer asks
+    for `active` on it. The value it carried, a bare `engineered`, is not in
+    `poliovirus_classification`'s controlled vocabulary, so `derive.classification` was declining the
+    record rather than shipping it — the annotation's own conclusion,
+    "engineered_or_construct=TRUE stands", was not reaching the output at all. The repair asserts
+    `engineered/lab`, the vocabulary's only engineered tier. Both halves are checked below: the
+    annotation still reads on the superseded row, and the verdict still governs from the active one.
     """
     ledger = ledger_rows(repository_root)
     rows = [
@@ -216,7 +226,7 @@ def test_the_fourth_engineered_call_is_annotated_and_still_active(repository_roo
     assert len(rows) == 1, f"expected one legacy row for DQ205099, got {len(rows)}"
     row = rows[0]
 
-    assert row["status"] == "active"
+    assert row["status"] == "superseded"
     assert row["new_value"] == "engineered"
     assert "codon-deoptimized Sabin2" in row["reason"], (
         "the curator's raw cell text must survive verbatim under D1; the note corrects it, the "
@@ -224,6 +234,16 @@ def test_the_fourth_engineered_call_is_annotated_and_still_active(repository_roo
     )
     for phrase in ("3 nt/7439", "VRL", "S2R9", "16537593", "engineered_or_construct=TRUE stands"):
         assert phrase in row["notes"], f"annotation lost {phrase!r}"
+
+    governing = [
+        r for r in ledger
+        if r["subject_key"] == "DQ205099" and r["field_name"] == "classification"
+        and r["status"] == "active"
+    ]
+    assert len(governing) == 1, "the repair must leave exactly one governing classification"
+    assert governing[0]["new_value"] == "engineered/lab", (
+        "the engineered verdict must survive the vocabulary repair, not be dropped by it"
+    )
 
 
 def test_the_stated_divergences_are_recomputable_from_the_shipped_sequences(
@@ -307,20 +327,30 @@ def test_the_stated_divergences_are_recomputable_from_the_shipped_sequences(
     assert called == ["A2616G", "A3303T", "T5640A"], called
 
 
-def test_dq205099_is_the_only_ledger_decision_for_its_subject(repository_root: Path) -> None:
+def test_no_registry_but_one_ever_had_an_opinion_on_dq205099(repository_root: Path) -> None:
     """Why it escaped D2, pinned as a fact rather than left as an anecdote.
 
-    D2 fired on a contradiction between two registries. DQ205099 has exactly one decision in the
-    whole ledger, so there was nothing to contradict it — "no reviewer objected" is the reason it
-    survived, not evidence that anyone checked it. If a second decision ever lands on this subject,
+    D2 fired on a contradiction between two registries. Exactly one registry ever asserted anything
+    about DQ205099, so there was nothing to contradict it — "no reviewer objected" is the reason it
+    survived, not evidence that anyone checked it. If a second *registry* ever lands on this subject,
     the annotation's framing needs revisiting and this test says so.
+
+    Scoped to registries on 2026-07-31, when the vocabulary repair added a second row. That row is
+    this project's own adjudication rewriting a value it already held, not an independent opinion
+    arriving from elsewhere, so counting it would have retired a live tripwire to accommodate a
+    change that does not threaten what the tripwire guards.
     """
-    subjects = [row for row in ledger_rows(repository_root) if row["subject_key"] == "DQ205099"]
-    assert len(subjects) == 1, (
-        f"DQ205099 now has {len(subjects)} decisions: "
-        f"{[(r['source_artifact'], r['field_name'], r['new_value']) for r in subjects]}. "
+    rows = [row for row in ledger_rows(repository_root) if row["subject_key"] == "DQ205099"]
+    from_registries = [r for r in rows if r["source_artifact"].endswith(".csv")]
+    assert len(from_registries) == 1, (
+        f"DQ205099 now has {len(from_registries)} registry decisions: "
+        f"{[(r['source_artifact'], r['field_name'], r['new_value']) for r in from_registries]}. "
         f"Re-read the DQ205099 annotation in scripts/migrate_legacy_registries.py before shipping."
     )
+    others = [r for r in rows if r not in from_registries]
+    assert [(r["source_artifact"], r["field_name"], r["new_value"]) for r in others] == [
+        ("curator_adjudication_2026-07-31", "classification", "engineered/lab")
+    ], "the only non-registry row on this subject must be the vocabulary repair"
 
 
 def test_the_guard_refuses_a_read_of_the_legacy_directory(repository_root: Path) -> None:
