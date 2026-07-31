@@ -52,6 +52,19 @@ the guard, the toolchain and the scratch tree are created **once** for a whole r
 through every artifact, and each artifact gets a disjoint band of run-directory indices
 (`_STEP_BAND` apart) so their scratch directories cannot collide inside the shared root.
 
+## A known limitation: interrupting a build orphans its aligner
+
+`run_tool` calls `subprocess.run`, which waits. If the *parent* is terminated — a `pkill`, a closed
+session — the aligner child is not reaped, and it keeps running to completion on work nobody will
+read. Observed directly: a `POLIO_unified` run killed at one point left its `mafft` burning a core
+for another hour before being noticed and killed by hand.
+
+This is a resource leak, not a correctness problem: the orphan writes only into its own scratch
+directory, which no later build reads, and the artifact it would have produced is never assembled.
+Fixing it properly means a signal handler that kills the active child, which touches the guarded
+exec boundary and is deliberately not being done in passing. If a build is interrupted, check for a
+surviving `pairlocalalign`/`cmalign` before starting another.
+
 ## What a build produces
 
 Three files per artifact, from `export.alignment`: the Stockholm alignment, its FASTA projection,
