@@ -83,8 +83,6 @@ CARRIED_SHA256 = {
         "4ea3962d441fed1b984f95bf63f8f5632c81260ecd50a1dfb2b699c5c2e37b01",
 }
 
-SITE_MANIFEST = "site/data/manifest.json"
-
 # Counts that make the completeness claim checkable rather than assertable. Each is re-derived in
 # test_the_carried_set_is_exactly_final_minus_the_manifest.
 EXPECTED_FINAL_FILES = 58
