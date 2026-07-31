@@ -23,8 +23,9 @@ records**, not 414; 414 is merely where the guess would have landed wrong. Sizin
 its disagreements rather than by its inputs is the mistake this docstring exists to prevent.
 
 Upstream resolved these by capsid amino-acid distance to a poliovirus reference (R-MEMBERSHIP-AA-1),
-which needs the sequence stage. Until then the ledger's `is_poliovirus` decisions resolve 17 of them
-and the rest are declined.
+which the sequence stage now implements for carve membership. Within the carve the ledger resolves
+them: 17 by an explicit `is_poliovirus` decision, and a further 259 because a curated
+*classification* entails membership — see `_membership`. The rest are declined.
 """
 
 from __future__ import annotations
@@ -87,12 +88,39 @@ UNINFORMATIVE_ORGANISMS = {
 LEDGER_MEMBERSHIP_FIELD = "is_poliovirus"
 LEDGER_MEMBERSHIP_VALUES = frozenset({"TRUE", "FALSE"})
 
+# Fields whose very presence entails poliovirus membership, because the column they project —
+# `poliovirus_classification` — has a poliovirus-only vocabulary. See `_membership`.
+LEDGER_CLASSIFICATION_FIELDS = ("verified_classification", "classification")
+
 
 def _membership(view: RecordView) -> tuple[str, bool]:
     """`(partition, came_from_a_decision)`, or `("", False)` when nothing determines it.
 
     The ledger is consulted first. A curator who has adjudicated membership has adjudicated it: a
     text predicate that overrode them would make the decision ornamental, which is the D2 failure.
+
+    ## A classification decision is a membership decision
+
+    `is_poliovirus` is not the only ledger field that settles this. A curator asserting
+    `classification=cVDPV` has asserted the record is a poliovirus, because the vocabulary that
+    value comes from is poliovirus-specific — there is no non-polio reading of `cVDPV`, `Sabin-like`
+    or `nOPV-L`. Not inferring it discarded 259 hard-won calls: their organism names are
+    `Enterovirus C` or `Enterovirus coxsackiepol`, which name the polio-*containing* species and so
+    are `UNINFORMATIVE_ORGANISMS`, and the earlier order declined the partition and then declined
+    `poliovirus_classification` for "following" it — throwing away the paper-based judgement on the
+    grounds that a weaker signal was silent.
+
+    Those 259 are the substance of it: 187 `cVDPV`, 28 `nOPV-L`, 17 `wild`, 11 `cVDPV-n`, 7 `Sabin`,
+    5 `engineered/lab`, 2 `Sabin-like`, 2 `VDPV-n`, each carrying a PMID or an adjudication document
+    in `evidence_reference`. The release ships all 259 as `poliovirus`/`vouched`, so this recovers
+    three columns at once and moves all three *toward* parity.
+
+    Falsified before it was relied on: of the 2,047 accessions carrying an active classification
+    decision, the release ships **2,047** as `virus_group=poliovirus` and none otherwise, and no
+    accession carries both a classification decision and `is_poliovirus=FALSE`. The entailment is
+    read off the field name rather than the value, so a malformed value cannot smuggle in a
+    membership claim the vocabulary would have rejected — `is_poliovirus` still outranks it, and
+    R-CLASS-2 still refuses to *emit* a value outside its controlled list.
     """
     asserted = view.decisions.get(LEDGER_MEMBERSHIP_FIELD)
     if asserted:
@@ -106,6 +134,16 @@ def _membership(view: RecordView) -> tuple[str, bool]:
                 f"{sorted(LEDGER_MEMBERSHIP_VALUES)}"
             )
         return (POLIOVIRUS if asserted == "TRUE" else NON_POLIO_ENTEROVIRUS), True
+
+    # `False`, not `True`, and the parity gate is what established that. Returning `True` marked
+    # `manual_override` on all 2,046 records carrying a classification decision, against a shipped
+    # `FALSE` on every one of them — 2,046 disagreements for a column the release says no human
+    # touched. It is right: membership here is *entailed* by the decision, not *stated* by it. The
+    # curator adjudicated the classification; nobody adjudicated the partition. This is the same
+    # distinction `curation_status` already draws for the vouching policy that follows from
+    # membership. `is_poliovirus` above still reports `True`, because that decision does state it.
+    if any(view.decisions.get(field) for field in LEDGER_CLASSIFICATION_FIELDS):
+        return POLIOVIRUS, False
 
     organism = view.record.get("organism_name", "")
     if any(fragment in organism.lower() for fragment in POLIO_NAME_FRAGMENTS):

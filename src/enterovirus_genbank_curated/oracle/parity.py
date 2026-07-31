@@ -267,13 +267,16 @@ def compare_metadata_to_release(
 #         + 99 a review found were being guessed: 95 named `Human enterovirus`, the unqualified
 #           pre-2016 species name, and 4 named for a strain rather than a type
 #         + 8 the membership rescue admits and the release excludes (`UNDECLARED_EXCLUSIONS` less
-#           AF326751.2, which the genus predicate already reached).
+#           AF326751.2, which the genus predicate already reached)
+#         − 259 whose partition a curated *classification* now entails: the value comes from a
+#           poliovirus-only vocabulary, so asserting it asserts membership. See derive/partition.py.
+#           All 259 ship as poliovirus/vouched in 2.4.1, so this moves three columns toward parity.
 #
 # The whole +23 of the membership rescue lands here, and that is the expected shape rather than a
 # surprise: a record is rescued *because* its organism name is `unidentified`, `synthetic construct`
 # or `Homo sapiens`, which is exactly the name the partition rule cannot decide from. The sequence
 # settles membership in the carve; it does not write the column — R-PARTITION-2 reads the name.
-UNRESOLVED_PARTITION_ROWS = 1855
+UNRESOLVED_PARTITION_ROWS = 1596
 # `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: those where no keyword matches
 # `/isolation_source` and 4 where two categories match, naming two specimens rather than one. All 23
 # rescued records decline — patent deposits carry no `/isolation_source` — so this moved with them.
@@ -282,8 +285,10 @@ UNRESOLVED_SPECIMEN_ROWS = 12700
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
 # itself undecided and so cannot be scoped either way. 19 of the 23 rescued records decline; the
 # other four carry an active `origin_class` decision (E01570, E01572 vaccine; HV932178 human;
-# MA400487 non-human).
-UNRESOLVED_ORIGIN_ROWS = 3712
+# MA400487 non-human). Down 30 from 3,712 when the curated-classification entailment landed: those
+# 30 records are now scoped as poliovirus and read their `/host`, 26 of them into the already-
+# declared `human` vs shipped `unknown` disagreement and 4 into agreement.
+UNRESOLVED_ORIGIN_ROWS = 3682
 # `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
 # its values — plus those whose partition is undecided and so cannot be scoped either way. 20 of the
@@ -304,11 +309,16 @@ UNRESOLVED_ENGINEERED_ROWS = 0
 # stating that it is undetermined. All 23 rescued records land in the first group, for the same
 # reason they land in `UNRESOLVED_PARTITION_ROWS`.
 UNRESOLVED_TYPE_ROWS = 2216
-# `poliovirus_classification` rows R-CLASS-2 declines: 1,855 whose virus group is itself undecided,
+# `poliovirus_classification` rows R-CLASS-2 declines: 1,596 whose virus group is itself undecided,
 # 1,557 poliovirus records with under 300 nt of VP1 to measure divergence over, 33 with no serotype
 # in the organism name to pick a Sabin reference with, and 3 whose active decision asserts a value
 # outside the declared controlled vocabulary.
-UNRESOLVED_CLASSIFICATION_ROWS = 3448
+#
+# Down 259 from 3,448, and every one of those 259 is a curated call the previous order threw away:
+# the partition declined on an uninformative organism name, this rule declined for "following" it,
+# and the `classification` decision stating cVDPV or wild was never read. A rule declining because a
+# *weaker* signal was silent is the failure mode; see derive/partition.py.
+UNRESOLVED_CLASSIFICATION_ROWS = 3189
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -350,8 +360,8 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "manual_override": "7f1c4a18e070b024",
     },
     "sample_origin": {
-        "final_value": "81505b557e961fee",
-        "source_value": "15a97bb84bbd17ae",
+        "final_value": "5e4032bf2e999dd8",
+        "source_value": "868400a414c83dad",
         "manual_override": "74441f560e198627",
     },
     "specimen_type": {
@@ -419,16 +429,21 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # The release only curated origin for poliovirus, so `unknown` outside it means "not looked
         # at" rather than "looked at and undetermined". Curator decision 2026-07-30: where GenBank
         # states a host, read it — declining would assert non-determination about stated data.
-        "final_value": 11767,
-        # 20,595 = 20,591 + the 4 rescued records that resolve an origin at all (E01570 and E01572
+        # 11,793 = the 11,767 above + 26 more of the same kind. The curated-classification
+        #          entailment scopes 30 previously-undecided records into poliovirus, so they now
+        #          read their `/host`: 26 land on `human` where the release ships `unknown` — the
+        #          very disagreement the 11,617 term declares — and 4 agree outright.
+        "final_value": 11793,
+        # 20,625 = 20,591 + the 4 rescued records that resolve an origin at all (E01570 and E01572
         #          `vaccine`, HV932178 `human`, MA400487 `non-human`, each from an active
-        #          `origin_class` decision). The other 19 decline and so are never compared.
-        "winning_rule_id": 20595,
-        "evidence_basis": 20595,
+        #          `origin_class` decision) + the 30 the entailment brings into scope. The other 19
+        #          rescued records decline and so are never compared.
+        "winning_rule_id": 20625,
+        "evidence_basis": 20625,
         # The rule records the input it read — the host, the specimen text, or the partition it
         # scoped by — where the release recorded the curated `origin_class` it projected. The 242
         # agreeing rows are where the host string already was the origin, plus the ledger overrides.
-        "source_value": 20487,
+        "source_value": 20517,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
@@ -620,12 +635,13 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
     # diagonal vote. `MIN_DIAGONAL_ANCHORS` closed it; 2 of the 73 remain.
     "poliovirus_classification": {
         "final_value": 413,
-        "winning_rule_id": 20859,
-        "evidence_basis": 20859,
+        # 21,118 = 20,859 + the 259 records the curated-classification entailment brings into scope.
+        "winning_rule_id": 21118,
+        "evidence_basis": 21118,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
         # field or `vp1_divergence_pct`. The 1,781 agreeing on `source_value` are the curated rows,
         # where both record the asserted value itself.
-        "source_field": 20859,
+        "source_field": 21118,
         "source_value": 19078,
         "accession": 0,
         "version": 0,

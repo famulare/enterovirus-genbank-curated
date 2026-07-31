@@ -50,7 +50,18 @@ from enterovirus_genbank_curated.derive.partition import (
 # `surveillance_stream`, `sample_origin` and `poliovirus_classification` do not move, because the
 # rescued records decline on those *following the partition*, and partition-consequent declines are
 # excluded from the queue by the rule above.
-EXPECTED_QUEUE_WORK_ITEMS = 28563
+#
+# 28,392 when a curated classification began entailing poliovirus membership, and the −171 is two
+# terms pulling opposite ways:
+#   − 259  `virus_group` stops declining on the records whose classification a curator has stated
+#   +  88  `surveillance_stream` *gains* work. Those 259 records were declining stream under
+#          `follows_unresolved_virus_group`, which the queue excludes as consequential; now that the
+#          partition is decided, 88 of them decline under `no_surveillance_context_in_record`
+#          instead, which is real work. The total stream declines do not move (8,650 either way) —
+#          only the reason does, and the reason is what decides whether it is queued.
+# `poliovirus_classification` does not move: it sheds 259 declines, but all 259 were
+# partition-consequent and so were never queued in the first place.
+EXPECTED_QUEUE_WORK_ITEMS = 28392
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -66,7 +77,13 @@ EXPECTED_QUEUE_WORK_ITEMS = 28563
 # 67 new declined cells arriving as 6 questions is the grouping earning its keep, and the questions
 # are the right ones: "is a `synthetic construct` patent deposit whose capsid is 2% from Sabin a
 # poliovirus, and what type is it" is one adjudication, not thirteen.
-EXPECTED_QUEUE_GROUPS = 304
+#
+# 302 when the entailment landed. Exactly two groups disappear, both under `virus_group`: the
+# `Enterovirus C` (173 records) and `Enterovirus coxsackiepol` (82) questions empty out completely,
+# because every record that was in them carries a curated classification. The `Homo sapiens` and
+# `unidentified` groups survive — the entailment reaches 2 records in each and the membership rescue
+# left others behind.
+EXPECTED_QUEUE_GROUPS = 302
 
 
 def declined(
