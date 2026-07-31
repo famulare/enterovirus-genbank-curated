@@ -362,3 +362,22 @@ def parse_source_tables(flat_file: Path | str) -> dict[str, list[dict[str, str]]
         raise FileNotFoundError(f"GenBank flat file not found: {path}")
     with path.open("r", encoding="utf-8", errors="strict") as handle:
         return parse_records(SeqIO.parse(handle, "genbank"))
+
+
+def read_sequences(flat_file: Path | str) -> dict[str, str]:
+    """`version -> uppercased nucleotide sequence`, for the canonical FASTA payload.
+
+    A second pass over the flat file rather than a thirteenth column on `records`. The normalized
+    source layer is byte-frozen against the shipped release, so adding a sequence column there would
+    break `parity-source` for the sake of avoiding one cheap re-read — and the sequences are only
+    needed by the canonical writer, not by the source tables.
+
+    Uppercased and hashed identically to `_record_rows`, so `sequence_sha256` in the metadata table
+    and the string written to the FASTA are the same bytes by construction.
+    """
+    sequences: dict[str, str] = {}
+    for record in SeqIO.parse(str(flat_file), "genbank"):
+        # `collapse(record.id)`, exactly as `_record_rows` derives `version`, so the FASTA keys and
+        # the metadata table's `version` cannot drift.
+        sequences[collapse(record.id)] = str(record.seq).upper()
+    return sequences

@@ -49,13 +49,17 @@ from enterovirus_genbank_curated.export.audit import (
     write_decision_applications,
     write_projection_provenance,
 )
+from enterovirus_genbank_curated.export.canonical import (
+    assemble_canonical_rows,
+    write_canonical_table,
+)
 from enterovirus_genbank_curated.export.metadata import write_metadata_transport
 from enterovirus_genbank_curated.export.queue import write_curation_queue
 from enterovirus_genbank_curated.export.source import (
     write_source_relational,
     write_source_tsv,
 )
-from enterovirus_genbank_curated.genbank.parse import parse_source_tables
+from enterovirus_genbank_curated.genbank.parse import parse_source_tables, read_sequences
 from enterovirus_genbank_curated.registry.decisions import (
     load_active_decisions,
     load_excluded_accessions,
@@ -254,6 +258,14 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         "decision_applications": len(applications),
         "curation_queue_records": sum(len(group.versions) for group in queue),
     }
+    # The canonical table itself: all 26 columns, transported plus projected, one row per carved
+    # record. This is the artifact a consumer wants; the transport and provenance beside it are how
+    # the artifact is checked.
+    canonical = assemble_canonical_rows(transport.rows, provenance)
+    with extracted_flat_file(repository_root) as flat_file:
+        canonical_counts = write_canonical_table(output_dir, canonical, read_sequences(flat_file))
+    row_counts.update(canonical_counts)
+
     write_metadata_transport(output_dir, transport.rows, row_counts, provenance)
     write_projection_provenance(output_dir, provenance)
     write_curation_queue(output_dir, queue)
