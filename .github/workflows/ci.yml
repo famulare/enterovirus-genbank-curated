@@ -48,10 +48,12 @@ jobs:
       # directly — `validate-contracts --skip-baseline-verification` costs milliseconds — rather than
       # a step that re-hashes all of final/ to reach conclusions pytest already reached.
       #
-      # The two alignment verbs follow that prescription rather than adding steps here:
-      # tests/test_alignment_cli.py calls `cli.main(["alignment-population"])` and
-      # `cli.main(["alignment-toolchain"])` directly, in the fast tier, which exercises both branches
-      # for the cost of the assertions themselves. The 1-to-1 population claim is checked there.
+      # The three alignment verbs follow that prescription rather than adding steps here:
+      # tests/test_alignment_cli.py calls `cli.main(["alignment-population"])`,
+      # `cli.main(["alignment-toolchain"])`, and `cli.main(["alignment-verify-seeds"])` directly, in
+      # the fast tier, which exercises all three branches for the cost of the assertions themselves.
+      # The 1-to-1 population claim and the committed covariance-model core are both checked there,
+      # and `alignment-verify-seeds` needs no native toolchain, matching `alignment-population`.
       #
       # The corpus tier: reparse all 25,727 records from raw/ and compare every source artifact
       # against the hashes the release manifest declares, plus the canonical metadata transport

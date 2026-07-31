@@ -21,6 +21,9 @@ from pathlib import Path
 
 import pytest
 
+from enterovirus_genbank_curated.align.seeds import verify_seeds
+from enterovirus_genbank_curated.contracts import ContractError
+
 SEED_DIR = "registry/alignment_seeds"
 
 # name -> (match_columns, population, seed), cross-checked against seed_provenance.json and against
@@ -118,6 +121,76 @@ def test_npev_cms_are_the_ones_ev_unified_reuses(seed_provenance: dict) -> None:
     assert "EV_unified" in seed_provenance["reused_by"]
     seed_dir_names = {"npev_ncr_5p.cm", "npev_ncr_3p.cm", "polio_ncr_5p.cm", "polio_ncr_3p.cm"}
     assert set(EXPECTED_CM) == seed_dir_names
+
+
+# --- align.seeds.verify_seeds: the function evgc alignment-verify-seeds actually runs -----------
+
+
+def test_verify_seeds_passes_against_the_real_directory(repository_root: Path) -> None:
+    assert verify_seeds(repository_root) == 12  # 4 .cm + 4 .sto + 4 _aln.fa
+
+
+def test_verify_seeds_fails_when_the_directory_is_absent(tmp_path: Path) -> None:
+    with pytest.raises(ContractError, match="does not exist"):
+        verify_seeds(tmp_path)
+
+
+def _copy_seed_dir(repository_root: Path, tmp_path: Path) -> Path:
+    import shutil
+
+    dest = tmp_path / "alignment_seeds"
+    shutil.copytree(repository_root / SEED_DIR, dest)
+    return dest
+
+
+def test_verify_seeds_fails_on_a_corrupted_file(repository_root: Path, tmp_path: Path) -> None:
+    seed_copy = _copy_seed_dir(repository_root, tmp_path)
+    (seed_copy / "polio_ncr_5p.cm").write_bytes(b"corrupted")
+    root = tmp_path
+    (root / "registry").mkdir(exist_ok=True)
+    seed_copy.rename(root / "registry" / "alignment_seeds")
+    with pytest.raises(ContractError, match="does not match"):
+        verify_seeds(root)
+
+
+def test_verify_seeds_fails_on_an_untracked_new_file(repository_root: Path, tmp_path: Path) -> None:
+    """Bidirectional at the function level too, not only in the file-listing test above."""
+    seed_copy = _copy_seed_dir(repository_root, tmp_path)
+    (seed_copy / "sneaked_in.cm").write_bytes(b"x")
+    root = tmp_path
+    (root / "registry").mkdir(exist_ok=True)
+    seed_copy.rename(root / "registry" / "alignment_seeds")
+    with pytest.raises(ContractError, match="disagree"):
+        verify_seeds(root)
+
+
+def test_verify_seeds_fails_when_a_hashed_file_is_missing(
+    repository_root: Path, tmp_path: Path
+) -> None:
+    seed_copy = _copy_seed_dir(repository_root, tmp_path)
+    (seed_copy / "polio_ncr_5p.cm").unlink()
+    root = tmp_path
+    (root / "registry").mkdir(exist_ok=True)
+    seed_copy.rename(root / "registry" / "alignment_seeds")
+    with pytest.raises(ContractError, match="disagree"):
+        verify_seeds(root)
+
+
+def test_verify_seeds_fails_when_a_cm_disagrees_with_provenance(
+    repository_root: Path, tmp_path: Path
+) -> None:
+    """A swapped .cm with a different match-column count must be caught even if its bytes are
+    otherwise well-formed and its hash was (implausibly) also updated to match."""
+    seed_copy = _copy_seed_dir(repository_root, tmp_path)
+    provenance_path = seed_copy / "seed_provenance.json"
+    provenance = json.loads(provenance_path.read_text())
+    provenance["artifacts"]["polio_ncr_5p"]["match_columns"] = 999
+    provenance_path.write_text(json.dumps(provenance))
+    root = tmp_path
+    (root / "registry").mkdir(exist_ok=True)
+    seed_copy.rename(root / "registry" / "alignment_seeds")
+    with pytest.raises(ContractError, match="CLEN is"):
+        verify_seeds(root)
 
 
 # --- functional check, needs the toolchain -------------------------------------------------------

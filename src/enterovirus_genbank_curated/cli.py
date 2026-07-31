@@ -117,6 +117,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--write-declaration", action="store_true",
         help="re-stamp registry/toolchain.json from the installed environment and the lock",
     )
+
+    alignment_verify_seeds = subparsers.add_parser(
+        "alignment-verify-seeds",
+        help="re-hash the committed NCR covariance-model core; needs no aligner",
+    )
+    alignment_verify_seeds.add_argument("--repository-root", type=Path, default=Path.cwd())
     return parser
 
 
@@ -254,6 +260,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"wrote {tc.TOOLCHAIN_DECLARATION}")
             tc.assert_declared(root, resolved)
             print("alignment toolchain: PASS (matches registry/toolchain.json and pixi.lock)")
+            return 0
+        if args.command == "alignment-verify-seeds":
+            from enterovirus_genbank_curated.align.seeds import verify_seeds
+
+            checked = verify_seeds(root)
+            print(
+                f"alignment seeds: PASS ({checked} files in registry/alignment_seeds/ match "
+                f"their pinned hashes and declared match-column counts)"
+            )
             return 0
     except ContractError as exc:
         print(f"contract validation failed: {exc}", file=sys.stderr)

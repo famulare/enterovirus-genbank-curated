@@ -1,11 +1,12 @@
-"""Exercise the two alignment CLI branches by calling `cli.main` directly.
+"""Exercise the three alignment CLI branches by calling `cli.main` directly.
 
 `ci.yml` records the convention this follows: a `cli.py` branch is covered by a fast test calling
 `cli.main([...])`, not by a workflow step that redoes work pytest has already done.
 
-Both verbs are deliberately cheap. `alignment-population` reads metadata and runs no aligner, so it
-is the 1-to-1 claim in executable form. `alignment-toolchain` only inspects an installed prefix, and
-skips when that prefix is absent.
+All three verbs are deliberately cheap. `alignment-population` reads metadata and runs no aligner,
+so it is the 1-to-1 claim in executable form. `alignment-toolchain` only inspects an installed
+prefix, and skips when that prefix is absent. `alignment-verify-seeds` re-hashes the committed
+covariance-model core and needs no native toolchain at all, so it never skips.
 """
 
 from __future__ import annotations
@@ -86,3 +87,19 @@ def test_alignment_toolchain_fails_loudly_without_a_prefix(
     """A missing environment must name the command that reconstructs it."""
     assert cli.main(["alignment-toolchain", "--repository-root", str(tmp_path)]) == 1
     assert "pixi install --locked -e align" in capsys.readouterr().err
+
+
+def test_alignment_verify_seeds_needs_no_toolchain(
+    repository_root: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The one alignment verb that must pass on every push with no native binary installed."""
+    assert cli.main(["alignment-verify-seeds", "--repository-root", str(repository_root)]) == 0
+    out = capsys.readouterr().out
+    assert "alignment seeds: PASS (12 files" in out
+
+
+def test_alignment_verify_seeds_fails_loudly_without_the_directory(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert cli.main(["alignment-verify-seeds", "--repository-root", str(tmp_path)]) == 1
+    assert "does not exist" in capsys.readouterr().err
