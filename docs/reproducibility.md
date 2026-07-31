@@ -137,6 +137,34 @@ a record predicts itself, not how well a rule would generalize. A rule built on 
 memorizing the oracle. On the feature sets that do generalize, roughly 250 and 650 records are
 irreducibly ambiguous and belong in a curation queue rather than in a rule.
 
+### What a decline turns into: the curation queue
+
+Declining honestly is only half the design. `evgc build-metadata` now also writes
+`curation/curation_queue.tsv`, and it is what stops `unresolved_reason` being a note nobody acts on.
+
+**14,417 declined rows collapse into 148 groups**, because records decline for the *same* reason:
+every record whose `/isolation_source` is `conjunctival swab` is one decision, not 462. The queue is
+keyed on the input the rule examined and could not decide from, so resolving one group resolves every
+record in it. `queue_id` is derived from that content rather than allocated sequentially, so
+re-running the build does not renumber an in-flight worksheet.
+
+Three properties are worth stating because each is a failure mode avoided:
+
+- **`registry_field`, not the canonical column.** A curator resolving `sample_origin` must file
+  against `origin_class`. A decision filed under the canonical name would validate, sit in the ledger,
+  and change nothing — the D2 failure exactly. The queue names the field a resolution has to use.
+- **`suggested_resolution_kind` keeps boundary 3 operational.** A call about one subject is a
+  `decision`; a mapping that generalizes is a `rule_parameter` change with a version bump. Encoding a
+  general rule as 2,000 identical decisions would bury it in curation history.
+- **Consequential declines are not queued.** `curation_status` declines only because `virus_group`
+  did, so queueing both would ask for 3,466 decisions where 1,733 exist. A queue that overstates its
+  own size is worse than no queue.
+
+It is **not** a diff against the release. Every row is knowable from `raw/` and `registry/` at build
+time with no `final/` present. Where the rewrite *disagrees* with shipped values is a separate
+artifact, because merging the two would let the release become a pipeline input with a human as the
+transport.
+
 ### The second deliberate break: `locality`'s basis
 
 The same defect, found by the same method. 2.4.1 labels **every** blank `locality`

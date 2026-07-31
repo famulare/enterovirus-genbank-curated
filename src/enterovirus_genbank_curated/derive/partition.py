@@ -51,6 +51,9 @@ PARTITION_LABELS = {
 BASIS_PARTITION = "partition"
 BASIS_RELEASE_POLICY = "release_policy"
 UNRESOLVED_UNINFORMATIVE = "organism_name_does_not_determine_membership"
+# `curation_status` declines only because `virus_group` did. Naming that distinctly keeps it out of
+# the curation queue, which would otherwise ask for the same decision twice under two field names.
+UNRESOLVED_FOLLOWS_PARTITION = "follows_unresolved_virus_group"
 
 POLIO_NAME_FRAGMENTS = ("poliovirus", "polio virus")
 
@@ -106,7 +109,10 @@ def virus_group(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
             value="",
             evidence_basis=BASIS_PARTITION,
             source_field=PARTITION_SOURCE_FIELD,
-            source_value="",
+            # On a declined row `source_value` records the input the rule examined and could not
+            # decide from, which is what lets the queue group by it. Declined rows are never
+            # compared against the release, so this cannot affect parity.
+            source_value=view.record.get("organism_name", ""),
             unresolved_reason=UNRESOLVED_UNINFORMATIVE,
         )
     declared = parameters["groups"]
@@ -139,8 +145,8 @@ def curation_status(parameters: Mapping[str, Any], view: RecordView) -> RuleOutc
             value="",
             evidence_basis=BASIS_RELEASE_POLICY,
             source_field=PARTITION_SOURCE_FIELD,
-            source_value="",
-            unresolved_reason=UNRESOLVED_UNINFORMATIVE,
+            source_value=view.record.get("organism_name", ""),
+            unresolved_reason=UNRESOLVED_FOLLOWS_PARTITION,
         )
     status = (
         parameters["poliovirus_status"]
