@@ -88,7 +88,7 @@ RULE_PARAMETER_REASONS = frozenset(
 
 # Declines that are *consequences* of another field declining, not work of their own.
 # `curation_status` is release policy over `virus_group`: resolving the membership resolves the
-# status too. Queueing both would ask for 3,466 decisions where 1,733 exist, and a queue that
+# status too. Queueing both would ask for twice the decisions that exist, and a queue that
 # overstates its own size is worse than no queue.
 CONSEQUENTIAL_REASONS = frozenset({"follows_unresolved_virus_group"})
 

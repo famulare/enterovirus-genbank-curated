@@ -114,9 +114,10 @@ difference as an exact count that fails if it moves. See
 [`docs/reproducibility.md`](docs/reproducibility.md).
 
 Two properties matter as much as the coverage. A rule that cannot decide from declared inputs
-**declines** rather than guessing — 1,733 records whose organism name cannot settle poliovirus
-membership, 12,684 whose `/isolation_source` carries no specimen keyword — and every declined cell
-becomes one row in a curation queue, grouped so that 14,417 records reduce to 148 curator decisions.
+**declines** rather than guessing — 1,832 records whose organism name cannot settle poliovirus
+membership, 12,677 whose `/isolation_source` carries no specimen keyword, 4,582 with no evidence of
+sample origin — and every declined cell becomes one row in a curation queue, grouped by the input the
+rule could not decide from so that 17,366 declined cells reduce to 186 curator decisions.
 And the build cannot read `final/` at all: the undeclared-input guard refuses it, so a rule cannot
 quietly reproduce the answer it is being compared against.
 

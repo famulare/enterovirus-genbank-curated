@@ -549,7 +549,7 @@ other about the same records.
 
 **Answered 2026-07-30.** A human host means a human-origin sample; an OPV-derived isolate is `human`
 if it came from a person, with the vaccine-derived fact staying in `poliovirus_classification` where it
-already lives. R-ORIGIN-2 implements that: 19,801 of 24,284 resolved, **4** disagreements, and
+already lives. R-ORIGIN-2 implements that: 19,702 of 24,284 resolved, **4** disagreements, and
 `manual_override` exact.
 
 Two things fell out of implementing it that were not visible from the ceiling analysis. Scoping the

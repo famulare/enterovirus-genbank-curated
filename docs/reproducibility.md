@@ -65,7 +65,7 @@ The date family does not reproduce the release, on purpose. This is the first pl
 corrects rather than reproduces, and the second follows it.
 
 For every record that deposited a `/collection_date`, the canonical date **is** the ISO normalization
-of that qualifier and the precision **is** its shape — 19,730 rows, exactly, with no curated input,
+of that qualifier and the precision **is** its shape — 19,732 carved records, no curated input,
 including the floor-of-mean midpoint on all 121 interval records. The release describes these as
 projections of curated fields; for these rows those curated fields evidently just held the normalized
 source value.
@@ -142,7 +142,7 @@ irreducibly ambiguous and belong in a curation queue rather than in a rule.
 Declining honestly is only half the design. `evgc build-metadata` now also writes
 `curation/curation_queue.tsv`, and it is what stops `unresolved_reason` being a note nobody acts on.
 
-**14,417 declined rows collapse into 148 groups**, because records decline for the *same* reason:
+**17,366 declined cells collapse into 186 groups**, because records decline for the *same* reason:
 every record whose `/isolation_source` is `conjunctival swab` is one decision, not 462. The queue is
 keyed on the input the rule examined and could not decide from, so resolving one group resolves every
 record in it. `queue_id` is derived from that content rather than allocated sequentially, so
@@ -157,7 +157,7 @@ Three properties are worth stating because each is a failure mode avoided:
   `decision`; a mapping that generalizes is a `rule_parameter` change with a version bump. Encoding a
   general rule as 2,000 identical decisions would bury it in curation history.
 - **Consequential declines are not queued.** `curation_status` declines only because `virus_group`
-  did, so queueing both would ask for 3,466 decisions where 1,733 exist. A queue that overstates its
+  did, so queueing both would ask for twice the decisions that exist. A queue that overstates its
   own size is worse than no queue.
 
 It is **not** a diff against the release. Every row is knowable from `raw/` and `registry/` at build

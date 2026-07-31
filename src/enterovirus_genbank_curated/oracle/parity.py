@@ -259,13 +259,15 @@ def compare_metadata_to_release(
 # That second number is 414, and an earlier draft of this work mistook it for the size of the
 # problem — which is how a rule ends up scoring 98.3% by guessing.
 #
-# 1,733 = 1,765 records carrying an uninformative organism name in the shipped canonical table
+# 1,832 = 1,765 records carrying an uninformative organism name in the shipped canonical table
 #         − 17 that are `SEQUENCE_RESCUED_INCLUSIONS` and so are not in the carve at all
 #         − 15 carved ones the ledger's `is_poliovirus` decisions resolve
 #              (17 such decisions exist; 2 are on records literally named `Poliovirus 2`/`3`, which
-#               the name predicate already decides, so only 15 land on uninformative names).
+#               the name predicate already decides, so only 15 land on uninformative names)
+#         + 99 a review found were being guessed: 95 named `Human enterovirus`, the unqualified
+#           pre-2016 species name, and 4 named for a strain rather than a type.
 UNRESOLVED_PARTITION_ROWS = 1832
-# `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: 12,680 where no keyword matches
+# `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: those where no keyword matches
 # `/isolation_source` and 4 where two categories match, naming two specimens rather than one. One of
 # the 12,680 is AF326751.2, which the release excludes, so 12,683 of the 24,284 shared rows decline.
 UNRESOLVED_SPECIMEN_ROWS = 12677
