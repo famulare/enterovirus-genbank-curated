@@ -1,0 +1,140 @@
+name: Alignments
+
+# The expensive half of the alignment layer, deliberately kept out of `ci.yml`. A full build runs the
+# native aligners over 24,301 records and takes hours; `ci.yml` keeps only the toolchain-free checks
+# so every push stays fast. If you are about to add a mafft step to `ci.yml`, this is the workflow it
+# belongs in.
+#
+# Not a build trigger. `schedule` exists to detect drift — a dependency bump or a lockfile change
+# that alters an artifact — and `workflow_dispatch` to rebuild on request. Neither commits anything:
+# a human commits a regeneration, exactly as `site/data/` already works.
+
+on:
+  workflow_dispatch:
+    inputs:
+      artifact:
+        description: "One artifact name, or empty for all six"
+        required: false
+        default: ""
+  schedule:
+    # Weekly, Sunday 04:00 UTC. Drift detection does not need to be prompt.
+    - cron: "0 4 * * 0"
+  pull_request:
+    paths:
+      - "src/enterovirus_genbank_curated/align/**"
+      - "src/enterovirus_genbank_curated/export/alignment.py"
+      - "src/enterovirus_genbank_curated/validation/alignment.py"
+      - "src/enterovirus_genbank_curated/sandbox*.py"
+      - "registry/toolchain.json"
+      - "registry/alignment_seeds/**"
+      - "pixi.toml"
+      - "pixi.lock"
+      - ".github/workflows/alignments.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  # One build at a time per ref. Concurrent aligner processes are what exhausted memory on a real
+  # machine, and while separate runners do not share RAM, a queued rerun of the same ref is waste.
+  group: alignments-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fails in ~2 minutes on a lock/declaration disagreement, before anything expensive starts.
+  toolchain:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          environments: align
+          locked: true
+          cache: true
+      - name: Tools match the declaration and the lock
+        run: pixi run -e align evgc alignment-toolchain
+      - name: The committed covariance-model core is intact
+        run: pixi run -e align evgc alignment-verify-seeds
+
+  build:
+    needs: toolchain
+    runs-on: ubuntu-latest
+    # Well under the 6h hosted ceiling, and generous against the measured local times.
+    timeout-minutes: 330
+    strategy:
+      # Every artifact reports, so one failure does not hide the other five.
+      fail-fast: false
+      matrix:
+        artifact:
+          - POLIO_unified
+          - NPEV_unified
+          - EV_unified
+          - PV1_unified
+          - PV2_unified
+          - PV3_unified
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          environments: align
+          locked: true
+          cache: true
+
+      # One artifact per job, one thread per tool. The matrix parallelises across runners, which do
+      # not share memory; within a runner the build is strictly sequential by construction.
+      - name: Build ${{ matrix.artifact }}
+        run: |
+          pixi run -e align evgc alignment-build \
+            --output-dir derived/alignments \
+            --artifact ${{ matrix.artifact }} \
+            --threads 1
+
+      # The gate needs no aligner, but running it here means a build that produces a malformed
+      # artifact fails in the job that produced it rather than somewhere downstream.
+      - name: Verify ${{ matrix.artifact }} against metadata
+        run: |
+          pixi run -e align evgc alignment-verify \
+            --output-dir derived/alignments \
+            --artifact ${{ matrix.artifact }}
+
+      - name: Shape report and declared delta for ${{ matrix.artifact }}
+        run: |
+          pixi run -e align evgc alignment-shape \
+            --output-dir derived/alignments \
+            --artifact ${{ matrix.artifact }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alignment-${{ matrix.artifact }}
+          path: derived/alignments/
+          if-no-files-found: error
+
+  # Reports drift; never commits. The cross-artifact set identities can only be checked here,
+  # because they are statements about several artifacts at once and each build job has only one.
+  gather:
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          environments: align
+          locked: true
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: alignment-*
+          merge-multiple: true
+          path: derived/alignments
+      - name: Every artifact, including the cross-artifact set identities
+        run: pixi run -e align evgc alignment-verify --output-dir derived/alignments
+      - name: Declared delta against the shipped release
+        run: pixi run -e align evgc alignment-shape --output-dir derived/alignments
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alignment-shape-report
+          path: |
+            derived/alignments/shape_report.json
+            derived/alignments/shape_report.md
+          if-no-files-found: error

@@ -59,11 +59,13 @@ jobs:
       # against the hashes the release manifest declares, plus the canonical metadata transport
       # cell-compared against the shipped table. ~50s, so it belongs on every push.
       #
-      # The alignment stage, when it can run end to end, does NOT belong here: it is multi-hour and
-      # needs the native toolchain under load. It gets its own scheduled workflow, and this job
-      # keeps only the cheap, toolchain-free half — the alignment CLI tests above, and later the
-      # artifact staleness check. If you are about to add a step here that invokes mafft, that is
-      # the signal you are in the wrong workflow.
+      # The alignment stage does NOT belong here: it runs the native aligners over 24,301 records
+      # and takes hours. It has its own workflow, `alignments.yml`, on workflow_dispatch plus a
+      # weekly drift schedule plus a path filter. This job keeps only the cheap, toolchain-free
+      # half — the alignment CLI tests above, which now include `alignment-verify` and
+      # `alignment-shape` against whatever is built in the tree, and the assertion that the
+      # push-time verbs spawn no child process. If you are about to add a step here that invokes
+      # mafft, that is the signal you are in the wrong workflow.
       #
       # `evgc parity-metadata` is not a separate step: this tier runs it twice already — unguarded
       # through test_metadata_transport_matches_the_shipped_canonical, and as a guarded child
