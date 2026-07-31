@@ -12,6 +12,8 @@ push.
 from __future__ import annotations
 
 import gzip
+import hashlib
+import json
 from dataclasses import replace
 from pathlib import Path
 
@@ -19,6 +21,7 @@ import pytest
 
 from enterovirus_genbank_curated.align import contract
 from enterovirus_genbank_curated.align import population as population_module
+from enterovirus_genbank_curated.align.provenance import PROVENANCE_SUFFIX
 from enterovirus_genbank_curated.export import alignment as export_alignment
 from enterovirus_genbank_curated.export.alignment import (
     COVERAGE_SUFFIX,
@@ -72,13 +75,41 @@ def sequences(repository_root: Path) -> dict[str, str]:
 
 
 def _write(output_dir: Path, name: str, sto: str, fasta: str, coverage: str) -> None:
+    """Write the three gzipped artifacts plus a provenance file that agrees with them, since the
+    gate now cross-checks the two and a fixture missing one is not well-formed."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    for suffix, text in (
-        (STOCKHOLM_SUFFIX, sto), (FASTA_SUFFIX, fasta), (COVERAGE_SUFFIX, coverage)
+    written: dict[str, Path] = {}
+    for key, suffix, text in (
+        ("stockholm", STOCKHOLM_SUFFIX, sto),
+        ("fasta", FASTA_SUFFIX, fasta),
+        ("coverage", COVERAGE_SUFFIX, coverage),
     ):
         path = output_dir / f"{name}{suffix}"
         with path.open("wb") as raw, gzip.GzipFile(fileobj=raw, mode="wb", mtime=0) as gz:
             gz.write(text.encode("utf-8"))
+        written[key] = path
+
+    order, rows, rf, _ss = gate.parse_stockholm(sto)
+    widths: dict[str, int] = {}
+    for row in gate.parse_coverage(coverage):
+        widths[row["block"]] = int(row["block_nt"])
+    (output_dir / f"{name}{PROVENANCE_SUFFIX}").write_text(
+        json.dumps(
+            {
+                "rows": len(order),
+                "width_nt": len(rf),
+                "block_widths": widths,
+                "artifact_sha256": {
+                    key: hashlib.sha256(path.read_bytes()).hexdigest()
+                    for key, path in written.items()
+                },
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def _tiny_population(
@@ -332,6 +363,41 @@ def test_block_widths_that_do_not_sum_to_the_row_width_are_caught(
 
     report = _mutate(output_dir, population, sequences, transform)
     assert _fails_with(report, "blocks sum to")
+
+
+def test_a_provenance_that_describes_a_different_build_is_caught(
+    artifact_dir: tuple[Path, population_module.AlignmentPopulation], sequences: dict[str, str]
+) -> None:
+    """A stale provenance is worse than none: it reads as a record of these exact bytes. Here the
+    row count is left describing a previous build."""
+    output_dir, population = artifact_dir
+    path = output_dir / f"{NAME}{PROVENANCE_SUFFIX}"
+    document = json.loads(path.read_text())
+    document["rows"] = document["rows"] + 1
+    path.write_text(json.dumps(document), encoding="utf-8")
+    report = _run(output_dir, population, sequences)
+    assert _fails_with(report, "provenance says")
+
+
+def test_a_provenance_hash_that_does_not_match_the_file_is_caught(
+    artifact_dir: tuple[Path, population_module.AlignmentPopulation], sequences: dict[str, str]
+) -> None:
+    output_dir, population = artifact_dir
+    path = output_dir / f"{NAME}{PROVENANCE_SUFFIX}"
+    document = json.loads(path.read_text())
+    document["artifact_sha256"]["stockholm"] = "0" * 64
+    path.write_text(json.dumps(document), encoding="utf-8")
+    report = _run(output_dir, population, sequences)
+    assert _fails_with(report, "provenance sha256")
+
+
+def test_a_missing_provenance_is_caught(
+    artifact_dir: tuple[Path, population_module.AlignmentPopulation], sequences: dict[str, str]
+) -> None:
+    output_dir, population = artifact_dir
+    (output_dir / f"{NAME}{PROVENANCE_SUFFIX}").unlink()
+    report = _run(output_dir, population, sequences)
+    assert _fails_with(report, "is absent")
 
 
 def test_a_local_path_in_an_artifact_is_caught(

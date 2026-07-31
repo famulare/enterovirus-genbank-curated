@@ -25,11 +25,14 @@ genome position, so the total is that genome's length, and that is checked.
 from __future__ import annotations
 
 import gzip
+import hashlib
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from enterovirus_genbank_curated.align import contract
 from enterovirus_genbank_curated.align import population as population_module
+from enterovirus_genbank_curated.align.provenance import PROVENANCE_SUFFIX
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.export.alignment import (
     COVERAGE_COLUMNS,
@@ -78,6 +81,10 @@ class LoadedArtifact:
     width_nt: int
     block_widths: dict[str, int]
     coverage: tuple[dict[str, str], ...]
+
+
+def _sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _read_gzip_text(path: Path) -> str:
@@ -282,6 +289,39 @@ def verify_artifact(
         not mismatched,
         f"{name}: {len(mismatched)} FASTA row(s) differ from the Stockholm: {mismatched[:5]}",
     )
+
+    # The provenance must describe the artifact that sits beside it, not a previous build of it.
+    # A stale provenance is worse than none: it reads as a record of these bytes.
+    provenance_path = output_dir / f"{name}{PROVENANCE_SUFFIX}"
+    if not provenance_path.is_file():
+        report.check(False, f"{name}: {provenance_path.name} is absent")
+    else:
+        document = json.loads(provenance_path.read_text(encoding="utf-8"))
+        report.check(
+            document.get("rows") == len(artifact.accessions),
+            f"{name}: provenance says {document.get('rows')} rows, artifact has "
+            f"{len(artifact.accessions)}",
+        )
+        report.check(
+            document.get("width_nt") == artifact.width_nt,
+            f"{name}: provenance says width {document.get('width_nt')}, artifact is "
+            f"{artifact.width_nt}",
+        )
+        declared_blocks = document.get("block_widths", {})
+        report.check(
+            all(declared_blocks.get(b) == artifact.block_widths.get(b) for b in BLOCK_ORDER),
+            f"{name}: provenance block widths {declared_blocks} disagree with the coverage "
+            f"sidecar's {artifact.block_widths}",
+        )
+        for key, suffix in (
+            ("stockholm", STOCKHOLM_SUFFIX), ("fasta", FASTA_SUFFIX), ("coverage", COVERAGE_SUFFIX)
+        ):
+            declared = document.get("artifact_sha256", {}).get(key)
+            actual = _sha256(output_dir / f"{name}{suffix}")
+            report.check(
+                declared == actual,
+                f"{name}: provenance sha256 for {key} is {declared}, file hashes to {actual}",
+            )
 
     # 9/10. Stack-specific reference recovery.
     if spec.stack == "anchored":

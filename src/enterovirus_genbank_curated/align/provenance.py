@@ -59,6 +59,7 @@ def build_provenance(
     tool_identity: dict[str, str],
     threads: int,
     seconds: float,
+    over_length_cap: tuple[str, ...] = (),
 ) -> dict:
     spec = population.spec
     by_accession = {record.accession: record for record in population.records}
@@ -123,6 +124,11 @@ def build_provenance(
             "pdist_guard_bypass": sorted(spec.anchor.pdist_guard_bypass),
         }
         document["n_reference_columns"] = stitched.width_nt
+        # `length_cap` is a declared reporting threshold rather than a filter (see AnchorSpec), so
+        # it has to actually report: an empty list is the finding that nothing exceeded it, and a
+        # threshold whose result appears nowhere would be the same anti-pattern as a check that
+        # cannot fail.
+        document["over_length_cap"] = list(over_length_cap)
     else:
         document["codon"] = asdict(spec.codon)
         document["cds_codons"] = stitched.width_cds // 3
