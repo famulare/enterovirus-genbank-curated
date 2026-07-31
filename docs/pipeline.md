@@ -79,7 +79,10 @@ the structural block needs (four genus-wide, six per-serotype Sabin-anchored) ar
 inputs-of-record under `registry/alignment_seeds/` and hash-gated by `evgc alignment-verify-seeds`,
 so a routine build needs no compiler and no network; the full from-scratch rebuild path
 (`scripts/setup_mxscarna.sh`) exists behind a file-presence gate and is not expected to run even on
-a fresh clone. None of this yet produces an alignment file — that is staged-delivery item 7, below.
+a fresh clone. `evgc alignment-build` then produces all six artifacts into `derived/alignments/`
+(strictly one at a time — concurrent aligner processes are what exhausted memory on a real machine),
+`evgc alignment-verify` gates them against metadata-derived populations with no aligner installed,
+and `evgc alignment-shape` writes the shape report and the declared delta against 2.4.1.
 
 ## Public commands
 
@@ -93,14 +96,25 @@ evgc parity-metadata
 evgc alignment-population
 evgc alignment-toolchain
 evgc alignment-verify-seeds
+evgc alignment-build  --output-dir DIR [--artifact NAME ...] [--threads N]
+evgc alignment-verify --output-dir DIR [--artifact NAME ...]
+evgc alignment-shape  --output-dir DIR [--artifact NAME ...]
 ```
 
-The three `alignment-*` verbs are named `alignment-<stage>` rather than `build-alignments` /
-`parity-alignments` on purpose: there is no single `build`/`parity` pair for the alignment layer
-yet, only independent, stage-scoped checks, and naming them otherwise would claim a symmetry with
-`build-source`/`parity-source` that does not exist. `alignment-population` and
-`alignment-verify-seeds` need no native toolchain; `alignment-toolchain` does, and is the one that
-fails on a machine without `pixi install --locked -e align`.
+The `alignment-*` verbs are named `alignment-<stage>` rather than `build-alignments` /
+`parity-alignments` on purpose. There is deliberately no `parity-alignments`: the shipped alignment
+bytes cannot be reproduced even in principle, so a verb promising parity with them would be claiming
+a symmetry with `build-source`/`parity-source` that does not exist. `alignment-verify` checks the
+rebuild against metadata instead, and `alignment-shape` states the declared delta against 2.4.1.
+
+Only `alignment-build` and `alignment-toolchain` need the native toolchain. `alignment-population`,
+`alignment-verify-seeds`, `alignment-verify` and `alignment-shape` are all pure Python, which is what
+lets the gate run on every push while a build takes hours.
+
+`alignment-build` has no `--parallel` option, and that absence is load-bearing rather than an
+omission: no single step of a build needs more than about 0.7 GB, but running several concurrently
+reached roughly 50 GB and froze a real machine. Artifacts are built strictly one at a time, and
+`--threads` defaults to 1.
 
 Still planned, and not yet in any form:
 
@@ -131,12 +145,15 @@ is declared in code, compared for equality, and invisible to the build — see
    provenance row compared to the release on all nine columns. The sequence-derived and
    curated-master columns remain.
 6. Decision application, disposition, and complete provenance.
-7. Dictionaries, references, and reproducible alignments. **Partly delivered:** each of the six
-   shipped alignments' row set is now derivable from `final/canonical/` and `final/audit/` alone
-   (`evgc alignment-population`), the native toolchain is pinned two ways
-   (`evgc alignment-toolchain`), and the NCR covariance-model core is committed and hash-gated
-   (`evgc alignment-verify-seeds`). No alignment file is produced yet — segmentation, the
-   codon-aware CDS block, the structural NCR block, and stitching are all still unwritten.
+7. Dictionaries, references, and reproducible alignments. **Largely delivered:** all six
+   alignments are now built natively by this repository (`evgc alignment-build`) from
+   `final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft`
+   and `cmalign` — segmentation, the codon-aware CDS block, the Sabin-anchored CDS projection, the
+   structural NCR block, stitching and the export writer all exist. `evgc alignment-verify` gates
+   the result against metadata-derived populations and `evgc alignment-shape` states the declared
+   delta against 2.4.1, both without an aligner. Outputs land in `derived/alignments/`; promoting
+   them into `final/` alongside a new release, and the site rebuild that depends on it, is the
+   remaining work. Dictionaries and references are untouched.
 8. Full fresh-clone parity and deterministic rebuild gate.
 9. A new pipeline-native release; 2.1.5 remains historical and immutable.
 

@@ -257,12 +257,42 @@ and cutting a new release. That is a real constraint, not an oversight.
 
 ## The alignment layer
 
-`final/alignments/` was carved in from a private pipeline and is not yet reproducible — no
-alignment file is produced by anything in this repository today. What exists is the groundwork:
-each shipped alignment's row set is derivable from `final/canonical/` and `final/audit/` alone, the
-native toolchain is pinned two independent ways, and the one NCR covariance-model core a rebuild
-would need is committed and hash-gated. None of this is a parity claim on the shipped bytes; the
-shipped bytes cannot be reproduced even in principle — see below.
+`final/alignments/` was carved in from a private pipeline. **This repository now builds its own
+alignments natively** — `evgc alignment-build` produces all six artifacts from
+`final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft` and
+Infernal's `cmalign`. They are written to `derived/alignments/`, not `final/alignments/`, so 2.4.1's
+bytes stay immutable while the rebuild is reviewed; promotion into a release is a separate step.
+
+None of this is a parity claim on the shipped bytes, and it never can be: those bytes came from code
+that no longer exists in that form, built at an unrecorded thread count with accidental
+tie-breaking. What replaces parity is a **declared delta** — `evgc alignment-shape` states exactly
+which accessions each rebuild adds and drops relative to the shipped file, with a reason per dropped
+row from a closed vocabulary, and an *undeclared* drop raises rather than being absorbed. That is
+the stronger claim: parity against artifacts built by vanished code would prove only that nobody has
+touched the file since.
+
+`evgc alignment-verify` is the acceptance gate. It re-reads the written artifacts and checks them
+against populations derived independently from metadata — row set both directions, row order, block
+widths summing to the row width, one declared alphabet, the coverage sidecar agreeing row for row,
+the FASTA being a faithful projection of the Stockholm, and the cross-artifact set identities
+(`EV == POLIO ∪ NPEV`, disjointness, each `PV{n}` inside POLIO). It is pure Python and needs no
+aligner, so it runs on every push while a build takes hours. Every check ships with the mutation
+that proves it fires.
+
+**Two properties the anchored stack gets for free, and they are checked.** For `PV{1,2,3}` every
+column is a real Sabin genome position, because the per-serotype covariance models are
+`cmbuild --hand` against that serotype's own reference. So the three block widths sum to exactly the
+reference genome length — 7,441 / 7,439 / 7,432, matching the shipped `n_sabin_reference_columns` —
+the reference row projected onto its own frame equals its genome byte-for-byte, and `#=GC RF` *is*
+that genome. Confirmed on real builds, not asserted.
+
+**What the rebuild is honest about.** The NCR blocks keep only `cmalign` match columns, so
+insert-column residues are discarded; the anchored CDS projection drops insertions relative to the
+reference for the same reason a fixed reference frame must. Both are lossy by construction and both
+are reported in the shape report's residue-occupancy distribution rather than hidden. A record with
+no placeable material still gets a row — all gaps, with the reason recorded per block in
+`<name>.coverage.tsv.gz` — so the row set stays literally 1-to-1 with metadata and "block absent"
+stays distinguishable from "deleted" without inventing an alignment character.
 
 **The shipped alignments are not 1-to-1 with the release they ship beside, measured.** Row sets read
 out of the shipped Stockholm files against `final/canonical/sequence_metadata.tsv.gz`:
