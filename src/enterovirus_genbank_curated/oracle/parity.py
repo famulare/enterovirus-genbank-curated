@@ -258,6 +258,93 @@ def compare_metadata_to_release(
     )
 
 
+# Declared residuals live here rather than beside the rules, so the build cannot reach them at all:
+# `tests/test_module_boundaries.py` forbids `derive/` from importing `oracle`. The two sets in
+# `derive/metadata.py` predate this file and should move here too.
+#
+# `virus_group` declines on every record whose organism name cannot determine polio membership — the
+# polio-containing species at species level, the bare genus, or a non-identification. Upstream
+# resolved these by capsid amino-acid distance (R-MEMBERSHIP-AA-1).
+#
+# The count is the *input* population, not the population where a default would have landed wrong.
+# That second number is 414, and an earlier draft of this work mistook it for the size of the
+# problem — which is how a rule ends up scoring 98.3% by guessing.
+#
+# 1,733 = 1,765 records carrying an uninformative organism name in the shipped canonical table
+#         − 17 that are `SEQUENCE_RESCUED_INCLUSIONS` and so are not in the carve at all
+#         − 15 carved ones the ledger's `is_poliovirus` decisions resolve
+#              (17 such decisions exist; 2 are on records literally named `Poliovirus 2`/`3`, which
+#               the name predicate already decides, so only 15 land on uninformative names).
+UNRESOLVED_PARTITION_ROWS = 1733
+PARTITION_FIELDS = ("virus_group", "curation_status")
+
+# Fields the rewrite deliberately produces differently from the release. For these, requiring nine
+# columns to match is the wrong gate — a superseding rule has a different `rule_id` and often a
+# different `evidence_basis` on *every* row, so an equality check would report thousands of
+# differences that are all intended and hide the one that is not.
+#
+# So the value is compared, the count of disagreements is required to equal a declared number, and
+# the rule/basis columns are expected to differ. A delta that cannot be stated as a number is not a
+# declared delta.
+#
+# Declared **per column**, not per field. An earlier version compared only `final_value` for a
+# superseded field, which would have made the `locality` correction invisible: splitting one
+# overstated `evidence_basis` into three honest ones changes no value at all. It would also have
+# let a real regression in `source_field` or `manual_override` pass unnoticed on a superseded field.
+# Every column is declared, including the zeros, so the shape of a break is legible and a new
+# disagreement in an unexpected column fails.
+SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
+    "collection_date": {
+        # 1,761 = the 1,764 dateless records 2.4.1 gave a year recovered from outside GenBank, now
+        #         emitting blank − 3 whose year an active `collection_year_curated` decision
+        #         supplies. The 2,805 the release also left blank already agree.
+        "final_value": 1761,
+        # Every row: a superseding rule has a different id by construction.
+        "winning_rule_id": 24284,
+        # All 4,549 dateless rows move to `no_date_deposited`, and their `source_value` moves with
+        # it. `source_field` moves on only the 1,761 whose value also moved, because the release
+        # already recorded the other 2,805 against `collection_date_precision`.
+        "evidence_basis": 4549,
+        "source_field": 1761,
+        "source_value": 4549,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "manual_override": 0,
+    },
+    "collection_date_precision": {
+        # 4,549 = 4,569 records that deposited no date − 17 outside the carve − 3 a ledger decision
+        #         resolves to `year`, which the release also calls `year`.
+        "final_value": 4549,
+        "winning_rule_id": 24284,
+        "evidence_basis": 4549,
+        "source_field": 4549,
+        "source_value": 4549,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "manual_override": 0,
+    },
+    "locality": {
+        # No value moves: every blank stays blank and every non-blank was already correct. The whole
+        # correction is in the branch label, which is exactly why per-column declaration matters.
+        "final_value": 0,
+        "winning_rule_id": 24284,
+        # 19,018 = 16,987 records depositing a country and no region (now `no_admin1_deposited`)
+        #          + 2,048 depositing no geo_loc_name at all (now `no_geography_deposited`),
+        #          both of which 2.4.1 called `duplicate_of_admin1_suppressed`, less the 17 of those
+        #          outside the carve. Measured, not arithmetic on the raw canonical counts.
+        "evidence_basis": 19018,
+        "source_field": 0,
+        "source_value": 0,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "manual_override": 0,
+    },
+}
+
+
 @dataclass(frozen=True)
 class ProvenanceParityResult:
     fields: tuple[str, ...]
@@ -265,6 +352,8 @@ class ProvenanceParityResult:
     basis_counts: dict[str, int]
     absent_from_build: int
     absent_from_release: int
+    unresolved_by_field: dict[str, int]
+    superseded_deltas: dict[str, dict[str, int]]
 
 
 def compare_provenance_to_release(
@@ -293,9 +382,26 @@ def compare_provenance_to_release(
     # The provenance row set inherits the carve's declared 18-record gap exactly, and inheriting it
     # is checked rather than assumed. Skipping unmatched rows would let a rule that projected the
     # wrong population pass by producing rows nothing compares against.
-    built_keys = {(row["version"], row["canonical_field"]) for row in rows}
+    # A declined row has no shipped counterpart to compare against — the release always produced a
+    # value. It is counted, required to match the declared residual, and never compared. Comparing
+    # it would fail; silently dropping it would let a rule decline its way to a clean gate.
+    unresolved = [row for row in rows if row.get("unresolved_reason")]
+    unresolved_by_field: dict[str, int] = {}
+    for row in unresolved:
+        field = row["canonical_field"]
+        unresolved_by_field[field] = unresolved_by_field.get(field, 0) + 1
+    for field in PARTITION_FIELDS:
+        if field in unresolved_by_field and unresolved_by_field[field] != UNRESOLVED_PARTITION_ROWS:
+            raise ContractError(
+                f"{field} declined on {unresolved_by_field[field]} records, not the declared "
+                f"{UNRESOLVED_PARTITION_ROWS}; the uninformative-organism population has moved"
+            )
+
+    resolved = [row for row in rows if not row.get("unresolved_reason")]
+    built_keys = {(row["version"], row["canonical_field"]) for row in resolved}
+    unresolved_keys = {(row["version"], row["canonical_field"]) for row in unresolved}
     built_only = built_keys - set(shipped)
-    release_only = set(shipped) - built_keys
+    release_only = set(shipped) - built_keys - unresolved_keys
     if {version for version, _ in built_only} != UNDECLARED_EXCLUSIONS:
         raise ContractError(
             "provenance rows with no shipped counterpart are not the declared exclusion set: "
@@ -308,10 +414,18 @@ def compare_provenance_to_release(
         )
 
     differences: list[str] = []
-    for row in rows:
+    superseded_deltas: dict[str, dict[str, int]] = {}
+    for row in resolved:
         key = (row["version"], row["canonical_field"])
         want = shipped.get(key)
         if want is None:
+            continue
+        field = row["canonical_field"]
+        if field in SUPERSEDED_FIELD_DELTAS:
+            per_column = superseded_deltas.setdefault(field, dict.fromkeys(PROVENANCE_COLUMNS, 0))
+            for column in PROVENANCE_COLUMNS:
+                if row[column] != want[index[column]]:
+                    per_column[column] += 1
             continue
         for column in PROVENANCE_COLUMNS:
             if row[column] != want[index[column]]:
@@ -324,19 +438,44 @@ def compare_provenance_to_release(
             f"{len(differences)} provenance cells disagree with the shipped release — {shown}"
         )
 
+    for field, expected in SUPERSEDED_FIELD_DELTAS.items():
+        if field not in {row["canonical_field"] for row in resolved}:
+            continue
+        actual = superseded_deltas.get(field, dict.fromkeys(PROVENANCE_COLUMNS, 0))
+        if set(expected) != set(PROVENANCE_COLUMNS):
+            raise ContractError(
+                f"the declared delta for {field} does not cover every provenance column; an "
+                f"undeclared column would then be free to disagree silently"
+            )
+        moved = {
+            c: (actual[c], expected[c])
+            for c in PROVENANCE_COLUMNS
+            if actual[c] != expected[c]
+        }
+        if moved:
+            detail = "; ".join(
+                f"{c}: {got} not the declared {want}" for c, (got, want) in moved.items()
+            )
+            raise ContractError(
+                f"{field} disagrees with the release differently than declared — {detail}. A "
+                f"deliberate delta has changed shape and needs re-adjudicating."
+            )
+
     # Counted over compared rows only, so the reported branch tallies sum to `compared_rows` rather
-    # than silently including the row that has no shipped counterpart.
+    # than silently including rows that have no shipped counterpart.
     basis_counts: dict[str, int] = {}
-    for row in rows:
+    for row in resolved:
         if (row["version"], row["canonical_field"]) in built_only:
             continue
         basis_counts[row["evidence_basis"]] = basis_counts.get(row["evidence_basis"], 0) + 1
     return ProvenanceParityResult(
         fields=tuple(fields),
-        compared_rows=len(rows) - len(built_only),
+        compared_rows=len(resolved) - len(built_only),
         basis_counts=basis_counts,
         absent_from_build=len(release_only),
         absent_from_release=len(built_only),
+        unresolved_by_field=unresolved_by_field,
+        superseded_deltas=superseded_deltas,
     )
 
 

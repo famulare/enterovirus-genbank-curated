@@ -97,7 +97,7 @@
     "rule_version": "2.4.1",
     "field_name": "collection_date",
     "description": "Precision-driven and curated-first, so a superseded source value can never resurrect: day -> collection_date_curated (ISO YYYY-MM-DD); month -> the source /collection_date normalized to YYYY-MM (the curated layer has no month field, so this is a normalization of the source, not a fallback to it, and the normalized year is cross-checked against collection_year_curated); year -> collection_year_curated (YYYY); range -> collection_year_curated, which holds the R-DATE-RANGE-1 midpoint, never the raw interval string; unknown -> blank. Every emitted value matches ^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$.",
-    "implementation": "derive.dates.collection_date",
+    "implementation": "derive.dates.collection_date_v241",
     "parameters": {
       "output_pattern": "^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$",
       "precisions": [
@@ -108,14 +108,14 @@
         "unknown"
       ]
     },
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-DATE-PRECISION-1",
     "rule_version": "2.4.1",
     "field_name": "collection_date_precision",
     "description": "Project the curated collection_date_precision (day/month/year/range/unknown).",
-    "implementation": "derive.dates.collection_date_precision",
+    "implementation": "derive.dates.collection_date_precision_v241",
     "parameters": {
       "precisions": [
         "day",
@@ -125,7 +125,7 @@
         "unknown"
       ]
     },
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-DATE-RANGE-1",
@@ -152,9 +152,9 @@
     "rule_version": "2.4.1",
     "field_name": "locality",
     "description": "Sub-admin1 detail only. parse_geo derives country/admin1/locality from one GenBank geo_loc_name string, so locality was byte-identical to admin1 whenever no finer detail was deposited (4,285 of 5,319 rows; containment is exact -- locality always startswith admin1). Blank it when it equals admin1 so a non-blank locality means genuine sub-admin1 information.",
-    "implementation": "derive.geo.locality",
+    "implementation": "derive.geo.locality_v241",
     "parameters": {},
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-EXCLUDE-1",
@@ -328,6 +328,52 @@
     "implementation": "derive.evidence.serotype_coverage_guard",
     "parameters": {
       "min_serotype_codons": "100"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-DATE-PRECISION-2",
+    "rule_version": "1.0.0",
+    "field_name": "collection_date_precision",
+    "description": "Precision is the shape of the GenBank /collection_date qualifier: day, month, year, or range. A record that deposited no date has no precision and projects NA. This supersedes R-DATE-PRECISION-1, which projected the curated collection_date_precision and used 'unknown' for 2,805 dateless records while giving 1,764 others a year recovered from outside GenBank. Nothing in raw/ separates those two groups, so the split cannot be reproduced and guessing it would fabricate 4,569 values. NA also frees 'unknown' to mean what it says: a date exists but its precision is unclear.",
+    "implementation": "derive.dates.collection_date_precision",
+    "parameters": {
+      "precisions": [
+        "day",
+        "month",
+        "year",
+        "range"
+      ],
+      "not_applicable": "NA"
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-DATE-2",
+    "rule_version": "1.0.0",
+    "field_name": "collection_date",
+    "description": "Precision-driven and source-derived: day and month precision emit the ISO normalization of the GenBank /collection_date, year emits the year, and range emits the midpoint (floor of the mean of the endpoint years). A record with no date emits blank, so collection_date is blank if and only if collection_date_precision is NA. Every emitted value matches ^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$. An active collection_year_curated decision wins outright, which is what keeps a rejected submitter date from being reinstated. This supersedes R-DATE-1, whose curated-first branches are not reachable from raw/ alone.",
+    "implementation": "derive.dates.collection_date",
+    "parameters": {
+      "output_pattern": "^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$",
+      "precisions": [
+        "day",
+        "month",
+        "year",
+        "range"
+      ]
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-GEO-LOCALITY-2",
+    "rule_version": "1.0.0",
+    "field_name": "locality",
+    "description": "Sub-admin1 detail only, with the reason a locality is blank recorded honestly. parse_geo derives country/admin1/locality from one GenBank geo_loc_name string, and locality is blanked when it would merely repeat admin1. R-GEO-LOCALITY-1 labelled every blank duplicate_of_admin1_suppressed, but only 4,233 of 23,268 are suppressions: 16,987 records deposited a country and no region, which projects no_admin1_deposited, and 2,048 deposited no geo_loc_name at all, which projects no_geography_deposited. Those two stay distinct because a record naming only a country did deposit geography. A non-blank locality still means genuine sub-admin1 information.",
+    "implementation": "derive.geo.locality",
+    "parameters": {
+      "no_admin1_basis": "no_admin1_deposited",
+      "no_geography_basis": "no_geography_deposited"
     },
     "status": "active"
   }

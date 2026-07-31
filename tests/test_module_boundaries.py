@@ -23,8 +23,8 @@ PACKAGE = "src/enterovirus_genbank_curated"
 #
 # Every entry must exist — `rglob` over a missing directory returns nothing, so listing a tree that
 # has not been created yet (or misspelling one) would silently cover zero files while looking like
-# coverage. Add `curate` and `validation` here when those packages land.
-BUILD_TREES = ("derive", "export", "genbank", "registry")
+# coverage. Add `curate` here when that package lands.
+BUILD_TREES = ("derive", "export", "genbank", "registry", "validation")
 BUILD_MODULES = ("build.py", "contracts.py", "sandbox.py")
 
 ORACLE_PACKAGE = "enterovirus_genbank_curated.oracle"

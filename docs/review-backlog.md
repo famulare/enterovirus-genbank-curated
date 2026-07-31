@@ -497,3 +497,21 @@ verification were the same act and must not be.
    defect-dense as original work; three rounds now say so.
 6. **Nothing self-certified.** The adversarial-reviewer pattern found ~59 defects across four
    charters with near-zero overlap. It is a standing gate, not an escalation.
+
+### B52. The seventeen patent-division poliovirus records the transport cannot carve
+`src/enterovirus_genbank_curated/derive/metadata.py` (`SEQUENCE_RESCUED_INCLUSIONS`)
+
+Raised and dispositioned 2026-07-30. All seventeen are `division=PAT` with an organism of
+`unidentified` (9), `Homo sapiens` (3) or `synthetic construct` (5), so no organism-name predicate
+reaches them; the release recovers them by capsid amino-acid distance (R-MEMBERSHIP-AA-1). They span
+three quite different cases: patent claims on Sabin capsid fragments (`E00765`–`E00769`, 709–1,786
+nt) and whole Sabin genes (`E01570`–`E01572`, ~4,670 nt); five 70-nt fragments from WO2012090000
+(`JA792237`/`38`/`49`/`50`/`51`); and `PE314016`/`PH149759`, which are `sequence_sha256`-identical to
+`AF111984`, a named wild PV1 field isolate.
+
+Since the dataset is described as epidemiology-first and these carry no date, place, host or
+surveillance context, carve-exclusion was considered — there is precedent in the `FV537075`–`77`
+exclusion. **Curator disposition: they belong in the carve.** So this is a gap to close by
+implementing the membership rule, not by dropping records, and closing it by exclusion would remove
+real poliovirus sequence from the release. `SEQUENCE_RESCUED_INCLUSIONS` should reach empty when the
+pairwise sequence-evidence stage lands.

@@ -30,30 +30,115 @@ hold a GenBank value moved into a canonical column — `accession`, `version`, `
 `country`, `admin1`, `locality`, `biosample_accession`. Every one of those cells matches the
 release exactly, in the same row order, and repeated builds are byte-stable. The split is not a
 judgement call: `final/audit/canonical_projection_provenance.tsv.gz` carries a projection row for
-exactly the other fourteen columns, minus `locality`, whose rule (R-GEO-LOCALITY-1) is closed-form
-over one GenBank string.
+exactly the other fourteen columns, minus `locality`, whose rule is closed-form over one GenBank
+string.
 
-`locality` is also reproduced *with its provenance*. `evgc parity-metadata` compares the generated
-projection rows against `final/audit/canonical_projection_provenance.tsv.gz` on all nine shipped
-columns for all 24,284 shared records — the value, the upstream field and value it came from, the
-winning rule, and the branch label — and both shipped branches come out right
-(`geo_parse` 1,033 / `duplicate_of_admin1_suppressed` 23,251). That is a deliberately small first
-column: reproducing a value while mislabelling which way the rule went is right by luck, and this is
-the cheapest place to establish that the rule catalog, the outcome type and the provenance writer all
-agree with the release before a harder column is attempted.
+`locality` is also produced *with its provenance*, and it was the deliberately small first column for
+that: reproducing a value while mislabelling which way the rule went is right by luck, so the cheapest
+place to establish that the rule catalog, the outcome type and the provenance writer all agree with the
+release is on one closed-form rule before a harder column is attempted. Its **value** matches the
+release on all 24,284 shared records. Its **branch label** does not, and comparing the label is what
+found that the shipped label was wrong — see [the second deliberate break](#the-second-deliberate-break-localitys-basis).
 
-One shipped label is reproduced despite overstating its case, and is pinned rather than quietly
-inherited: `duplicate_of_admin1_suppressed` covers 2,048 records that deposited no
-`/geo_loc_name` at all, where there was never a locality to suppress. Splitting it would mean moving
-a published controlled value, which belongs to a release that can afford it.
+`virus_group` and `curation_status` are projected the same way, and they are where the rewrite first
+**declines** rather than guessing. Poliovirus sits inside one enterovirus species — *Enterovirus C*,
+renamed *Enterovirus coxsackiepol* — so a GenBank organism name decides membership only when it names
+something at or below the type level. Six names cannot: the polio-containing species under either
+name, the bare genus, and three that are not virus identifications at all (`unidentified`,
+`synthetic construct`, `Homo sapiens`). The rule returns unresolved for all of them.
 
-The other thirteen columns are not written at all, and the build ships a
-`metadata_transport_coverage.json` next to the table naming each one and the input it needs —
-`sample_origin`, `surveillance_stream`, `specimen_type` and the `collection_date` family project
-curated-master fields; `sequence_scope`, `virus_type`, `poliovirus_classification`, `virus_group`
-and `curation_status` need sequence comparison against a reference panel. A partial table is not a
-release table, which is why it is written as `canonical/sequence_metadata_transport.tsv.gz` with a
-coverage declaration rather than under the shipped name.
+That matters more than it looks. Defaulting those names to non-polio scores **98.3%** against the
+release, which reads as success and is a guess on 414 records — and `virus_group` gates
+`sequence_scope`, `curation_status`, `poliovirus_classification` and the whole epi partition, so four
+later columns would inherit the guess and each look right for the wrong reason. The honest population
+is **1,733 declined rows**, not 414: 414 is only where a default would have landed wrong. Sizing an
+ambiguity by its disagreements rather than by its inputs is the specific mistake being avoided here.
+
+Of the 22,551 rows the rule does decide, every one matches the release, including `manual_override`
+— TRUE on exactly the seventeen records the ledger's `is_poliovirus` decisions resolve. That is the
+first place a recorded decision is shown to reach a generated provenance row rather than merely
+existing in the ledger, which is the D2 failure stated positively.
+
+### The first deliberate break: `collection_date_precision`
+
+The date family does not reproduce the release, on purpose. This is the first place the rewrite
+corrects rather than reproduces, and the second follows it.
+
+For every record that deposited a `/collection_date`, the canonical date **is** the ISO normalization
+of that qualifier and the precision **is** its shape — 19,730 rows, exactly, with no curated input,
+including the floor-of-mean midpoint on all 121 interval records. The release describes these as
+projections of curated fields; for these rows those curated fields evidently just held the normalized
+source value.
+
+The problem is the 4,569 records that deposited **no** date. The release splits them: 2,805 get
+precision `unknown`, and 1,764 get precision `year` with a year recovered outside GenBank by an
+archival reconstruction whose inputs are not in this repository. Nothing in `raw/` separates those two
+groups, so the split cannot be reproduced, and guessing it would fabricate 4,569 values.
+
+**Curator decision, 2026-07-30: a record with no date has no precision.** Those rows now carry `NA`
+and a blank date.
+
+**Invariant broken, and its replacement.** 2.4.1 guaranteed
+`collection_date_precision ∈ {day, month, year, range, unknown}` and said nothing relating the
+precision to the value. The vocabulary is now `{day, month, year, range, NA}` — `unknown` retired,
+`NA` new — under a stronger guarantee that ties the two columns together:
+
+> `collection_date` is blank if and only if `collection_date_precision` is `NA`.
+
+That is checkable in both directions and both matter: a blank date with a real precision claims a
+determination about a date that is not there, and a populated date with `NA` claims no determination
+about one that is. It is enforced against the build's own output by `validation/invariants.py` before
+anything is written, so it holds for a fresh clone with no `final/` present and cannot be satisfied by
+copying. `unknown` is also freed to mean what it says — a date exists but its precision is unclear.
+
+The break is counted, not just described: **1,761** records differ on `collection_date` and **4,549**
+on `collection_date_precision`, declared in `oracle/parity.py` and required to match exactly, so a
+deliberate delta changing size fails the gate. The 1,764 whose year came from identifier parsing are
+recoverable later — the frozen archival-dates extract labels 21 identifier rule families, usable as a
+validation oracle rather than an input — and each one recovered moves a row from `NA` back to `year`,
+never the reverse.
+
+R-DATE-1 and R-DATE-PRECISION-1 are therefore `deprecated` in the catalog and superseded by R-DATE-2
+and R-DATE-PRECISION-2 on real semver. `final/audit/rules.tsv.gz` still regenerates byte-for-byte,
+because the view emits only rules carrying the baseline's own `rule_version` — which is how the
+catalog can evolve without moving a published artifact.
+
+### The second deliberate break: `locality`'s basis
+
+The same defect, found by the same method. 2.4.1 labels **every** blank `locality`
+`duplicate_of_admin1_suppressed`. Measured, only **4,233 of 23,268** are suppressions:
+
+| n | what the record deposited | the release said | the rewrite says |
+|---|---|---|---|
+| 4,233 | `Country: Region` | suppressed | `duplicate_of_admin1_suppressed` |
+| 16,987 | `Country` only, no region | suppressed | `no_admin1_deposited` |
+| 2,048 | no `/geo_loc_name` at all | suppressed | `no_geography_deposited` |
+
+So the label asserts a determination that was never made on 19,035 records. The two new bases stay
+distinct deliberately: a record naming only a country *did* deposit geography, so folding it into
+"nothing deposited" would replace one overstatement with another.
+
+**Invariant broken, and its replacement.** The release constrained the basis column to a vocabulary
+and nothing more, which is how one value drifted into meaning "blank". Each basis is now a claim about
+the record's own geography, and all four parts are enforced by `validation/invariants.py` against the
+build's own output:
+
+> `locality` is blank iff the basis is one of the three blank reasons;
+> `duplicate_of_admin1_suppressed` implies a non-blank `admin1`;
+> `no_admin1_deposited` implies a non-blank `country` and a blank `admin1`;
+> `no_geography_deposited` implies both blank.
+
+`country` and `admin1` are transport columns rather than projections, so this cannot live inside the
+rule — no rule sees two columns at once, which is exactly why cross-column invariants get their own
+module.
+
+**This break is why declared deltas are counted per column rather than per field.** No `locality`
+*value* changes: every blank stays blank and every non-blank was already right. The entire correction
+is in `evidence_basis`. An earlier version of the parity gate compared only `final_value` for a
+superseded field, so this correction would have registered as zero difference — and a genuine
+regression in `source_field` or `manual_override` would have passed unnoticed alongside it. Every
+provenance column is now declared for every superseded field, zeros included, so the *shape* of a
+break is legible and a disagreement in an unexpected column fails.
 
 **The row set has a known 18-record gap, and it is pinned rather than absorbed.** The transport
 carves on two closed predicates — the GenBank lineage names the `Enterovirus` genus, and the ledger
@@ -62,7 +147,9 @@ does not actively exclude the accession — which reproduces 24,284 of the 24,30
 - Seventeen shipped records it cannot reach: patent-division deposits whose organism is
   `unidentified`, `Homo sapiens` or `synthetic construct`, recovered upstream by capsid amino-acid
   distance to a poliovirus reference (R-MEMBERSHIP-AA-1). Eight name polio in their `DEFINITION`;
-  nine do not, so no text rule recovers the set — it needs the sequence stage.
+  nine do not, so no text rule recovers the set — it needs the sequence stage. The curator confirmed
+  on 2026-07-30 that these records belong in the carve, so this is a gap to close by implementing the
+  membership rule rather than one to close by excluding them.
 - One record it carves that the release excludes: `AF326751.2` (Simian agent 5 strain B165) carries
   `Enterovirus` in its lineage but ships as `non_ev_other` with no exclusion reason and no row in
   `registry/decisions.tsv`. The call is real; its basis is not in any declared input.

@@ -22,14 +22,8 @@ Two things this module must not do, both of them boundary 1 in `docs/pipeline.md
 
 from __future__ import annotations
 
-import csv
 from dataclasses import dataclass
-from pathlib import Path
 
-from enterovirus_genbank_curated.contracts import (
-    ACTIVE_STATUS,
-    ContractError,
-)
 from enterovirus_genbank_curated.derive.geo import GEO_QUALIFIER, parse_geo_loc_name
 
 # Canonical column <- `records` column, for the columns that are a straight rename or identity.
@@ -85,13 +79,15 @@ PENDING_COLUMNS = {
     ),
 }
 
-EXCLUDING_DECISION_TYPES = frozenset({"membership_exclusion", "carve_exclusion"})
-
 # The shipped carve includes these seventeen records; this transport cannot. All are patent-division
 # deposits whose organism is `unidentified`, `Homo sapiens` or `synthetic construct`, so the genus
 # predicate below rejects them, and they were recovered upstream by capsid amino-acid distance to a
 # poliovirus reference (R-MEMBERSHIP-AA-1). Eight name polio in their DEFINITION, but nine do not,
 # so no text rule recovers the set — it needs the sequence stage.
+#
+# Curator disposition, 2026-07-30: these records **belong** in the carve. So this is a gap to close
+# by implementing the membership rule, not a set to carve-exclude — dropping them would remove real
+# poliovirus sequence from the release.
 SEQUENCE_RESCUED_INCLUSIONS = frozenset(
     {
         "E00765.1", "E00766.1", "E00767.1", "E00768.1", "E00769.1",
@@ -107,29 +103,6 @@ SEQUENCE_RESCUED_INCLUSIONS = frozenset(
 # `non_ev_other` with no exclusion reason and it has no row in `registry/decisions.tsv`. The call is
 # real but its basis is not in any declared input, so it is recorded rather than guessed at.
 UNDECLARED_EXCLUSIONS = frozenset({"AF326751.2"})
-
-
-def load_excluded_accessions(ledger_path: Path) -> frozenset[str]:
-    """Accessions the curation ledger actively removes from the canonical carve.
-
-    Only `membership_exclusion` and `carve_exclusion` rows at `status == active` count. Retired and
-    superseded rows are curation history: honouring them would resurrect a decision the curator has
-    withdrawn.
-    """
-    try:
-        handle = ledger_path.open("r", encoding="utf-8", newline="")
-    except OSError as exc:
-        raise ContractError(f"cannot read decision ledger {ledger_path}: {exc}") from exc
-    with handle:
-        reader = csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
-        required = {"decision_type", "accession", "status"}
-        if not required <= set(reader.fieldnames or ()):
-            raise ContractError(f"{ledger_path} must declare columns {sorted(required)}")
-        return frozenset(
-            row["accession"]
-            for row in reader
-            if row["status"] == ACTIVE_STATUS and row["decision_type"] in EXCLUDING_DECISION_TYPES
-        )
 
 
 def _lineage_taxa(tables: dict[str, list[dict[str, str]]]) -> dict[str, set[str]]:

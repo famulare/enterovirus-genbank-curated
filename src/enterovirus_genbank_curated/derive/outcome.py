@@ -33,6 +33,7 @@ class RecordView:
     accession: str
     record: Mapping[str, str]
     qualifiers: Mapping[str, str]
+    decisions: Mapping[str, str]
 
     def qualifier(self, name: str) -> str:
         return self.qualifiers.get(name, "")
@@ -45,6 +46,10 @@ class RuleOutcome:
     source_field: str
     source_value: str
     unresolved_reason: str = ""
+    # Set by a rule that reached its value through an active ledger decision. The rule knows this,
+    # and nothing downstream can infer it, which is why it belongs on the outcome rather than being
+    # reconstructed by joining afterwards.
+    manual_override: bool = False
 
     @property
     def resolved(self) -> bool:

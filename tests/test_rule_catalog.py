@@ -21,10 +21,15 @@ from typing import Any
 
 import pytest
 
-from enterovirus_genbank_curated.contracts import RULES_SCHEMA_PATH, ContractError
+from enterovirus_genbank_curated.contracts import (
+    BASELINE_RELEASE,
+    RULES_SCHEMA_PATH,
+    ContractError,
+)
 from enterovirus_genbank_curated.export.audit import RULES_VIEW_RELATIVE, write_rules_view
 from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 from enterovirus_genbank_curated.registry.rules import (
+    BASELINE_VIEW_RULE_COUNT,
     EXPECTED_RULE_COUNT,
     RULE_FIELD_ORDER,
     RULE_IMPLEMENTATIONS,
@@ -250,8 +255,15 @@ def test_the_declared_field_order_is_the_schemas_required_order(contract) -> Non
 def test_the_shipped_view_has_no_rule_the_catalog_omits(
     repository_root: Path, contract
 ) -> None:
-    """Both directions, so neither a dropped nor an invented rule passes."""
+    """Both directions, so neither a dropped nor an invented rule passes.
+
+    Only the rules carrying the baseline's own `rule_version` are in the frozen view — that is what
+    lets the catalog hold the rewrite's superseding rules without moving a published artifact.
+    """
     specs = load_rule_catalog(repository_root / RULES_CATALOG_PATH, contract)
+    in_view = [s for s in specs if s.rule_version == BASELINE_RELEASE]
+    assert len(in_view) == BASELINE_VIEW_RULE_COUNT
+    assert len(specs) == EXPECTED_RULE_COUNT
     with gzip.open(repository_root / SHIPPED_RULES, "rt", encoding="utf-8") as handle:
         shipped_ids = [line.split("\t")[0] for line in handle.read().splitlines()[1:]]
-    assert [s.rule_id for s in specs] == shipped_ids
+    assert [s.rule_id for s in in_view] == shipped_ids
