@@ -84,6 +84,33 @@ PENDING_COLUMNS = {
 # Curator disposition, 2026-07-30: these records **belong** in the carve. So this is a gap to close
 # by implementing the membership rule, not a set to carve-exclude — dropping them would remove real
 # poliovirus sequence from the release.
+#
+# **Measured 2026-07-31, and the answer is 10 of the 17.** `derive/evidence.py` now provides the
+# frame this needs, so the capsid amino-acid p-distance was computed for all seventeen against Sabin
+# 1/2/3 in the polyprotein reading frame, and scored against R-MEMBERSHIP-AA-1's own published
+# parameters — below 8.0% with at least 50 codons rescues, 15.0% or above confirms not-poliovirus:
+#
+#   rescued, below 8%:  E00766 0.59% | E00767 0.24% | E00768 0.81% | E00769 1.52% | E01570 0.23%
+#                       E01572 0.46% | HV932178 1.48% | MA400487 2.68% | PE314016 3.29%
+#                       PH149759 3.29%   (224-881 codons compared)
+#   inside the band, undecided by the declared rule:  E00765 14.89% (235 codons)
+#                                                     E01571  9.22% (879 codons)
+#   no capsid overlap at all:  JA792237 JA792238 JA792249 JA792250 JA792251 — 70 nt each, patent
+#                              oligos that do not reach the capsid, so no AA distance exists to
+#                              measure and no threshold applies
+#
+# Two things that measurement settles. E01571's 9.22% is the artifact question §5.4 of
+# `docs/engineered-full-population-readjudication.md` raises: its siblings E01570 and E01572 sit at
+# 0.23% and 0.46%,
+# and all three are 1980s JPO transcriptions of Sabin cDNA clones, so a real 9% capsid divergence is
+# far less likely than transcription error in the patent text. And the five 70-nt oligos are not a
+# membership question at all — they are byte-identical twins of records already in the carve, which
+# is how `derive/engineered.py` reaches them.
+#
+# Closing the gap is therefore a carve change, not a measurement problem: `transport_metadata` would
+# take a second inclusion predicate over sequence evidence. It is not done here because it moves
+# every declared count and witness digest in `oracle/parity.py` at once, and release 3.0.0 was
+# already stamped and green. The remaining seven stay a declared gap and shrink to seven, not zero.
 SEQUENCE_RESCUED_INCLUSIONS = frozenset(
     {
         "E00765.1", "E00766.1", "E00767.1", "E00768.1", "E00769.1",
