@@ -11,6 +11,8 @@ covariance-model core and needs no native toolchain at all, so it never skips.
 
 from __future__ import annotations
 
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -103,3 +105,90 @@ def test_alignment_verify_seeds_fails_loudly_without_the_directory(
 ) -> None:
     assert cli.main(["alignment-verify-seeds", "--repository-root", str(tmp_path)]) == 1
     assert "does not exist" in capsys.readouterr().err
+
+
+# --- the verbs that read a built tree ------------------------------------------------------------
+
+BUILT_DIR = Path(__file__).resolve().parents[1] / "derived/alignments"
+BUILT_PV3 = BUILT_DIR / "PV3_unified.sto.gz"
+REQUIRES_BUILD = pytest.mark.skipif(
+    not BUILT_PV3.is_file(), reason="no built alignment in derived/alignments/"
+)
+
+
+@REQUIRES_BUILD
+def test_alignment_verify_passes_on_a_built_artifact(
+    repository_root: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    exit_code = cli.main([
+        "alignment-verify", "--repository-root", str(repository_root),
+        "--output-dir", str(BUILT_DIR), "--artifact", "PV3_unified",
+    ])
+    out = capsys.readouterr()
+    assert exit_code == 0, out.err
+    assert "alignment verify: PASS" in out.out
+
+
+@REQUIRES_BUILD
+def test_alignment_shape_reports_the_declared_delta(
+    repository_root: Path, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    """Runs against a copy so the verb's own report files do not land in the built tree."""
+    import shutil
+
+    for path in BUILT_DIR.glob("PV3_unified*"):
+        shutil.copy(path, tmp_path / path.name)
+    exit_code = cli.main([
+        "alignment-shape", "--repository-root", str(repository_root),
+        "--output-dir", str(tmp_path), "--artifact", "PV3_unified",
+    ])
+    out = capsys.readouterr()
+    assert exit_code == 0, out.err
+    assert "vs 2.4.1" in out.out
+    assert (tmp_path / "shape_report.json").is_file()
+    assert (tmp_path / "shape_report.md").is_file()
+
+
+def test_alignment_verify_rejects_an_unknown_artifact(
+    repository_root: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    exit_code = cli.main([
+        "alignment-verify", "--repository-root", str(repository_root),
+        "--output-dir", str(tmp_path), "--artifact", "PV9_unified",
+    ])
+    assert exit_code == 1
+    assert "unknown alignment" in capsys.readouterr().err
+
+
+# --- the cheap verbs must stay cheap -------------------------------------------------------------
+
+NO_CHILD_SCRIPT = """
+import sys
+spawned = []
+sys.addaudithook(
+    lambda event, args: spawned.append(event)
+    if event in ("subprocess.Popen", "os.exec", "os.posix_spawn", "os.fork")
+    else None
+)
+from enterovirus_genbank_curated import cli
+code = cli.main({argv!r})
+assert code == 0, f"verb failed with {{code}}"
+assert not spawned, f"spawned a child process: {{spawned}}"
+print("NO CHILD")
+"""
+
+
+@pytest.mark.parametrize("verb", ["alignment-population", "alignment-verify-seeds"])
+def test_the_cheap_verbs_spawn_no_child_process(repository_root: Path, verb: str) -> None:
+    """The property that keeps the push-time gate cheap. If one of these ever needs to *run* mafft
+    it has inherited the multi-hour job's cost, and this is what says so out loud. Asserted with an
+    audit hook rather than the input guard, because `align/` legitimately reads `final/` and the
+    input guard would refuse that for an unrelated reason.
+    """
+    argv = [verb, "--repository-root", str(repository_root)]
+    result = subprocess.run(
+        [sys.executable, "-c", NO_CHILD_SCRIPT.format(argv=argv)],
+        capture_output=True, text=True, cwd=repository_root, timeout=300,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "NO CHILD" in result.stdout
