@@ -41,12 +41,19 @@ naming: three the release calls `vaccine` on a `/host=Homo sapiens` deposit — 
 fact belongs in `poliovirus_classification`, which already records it — and one `/host=nonhuman
 primate` the release calls `human`, which is simply wrong.
 
-The rule is **partition-scoped**, which is load-bearing rather than tidy. `sample_origin` was
-curated for poliovirus only, so a non-poliovirus record projects `unknown` under its own basis, and
-a record whose membership is *undecided* declines rather than being scoped either way. That scoping
-removes 23 of the 34 defects an unscoped draft had: the `/isolation_source=opv` records are
-`Enterovirus C`, whose membership no organism name can settle, so no epi rule should have been asked
-about them at all.
+**A deposited `/host` is read whatever the virus group** (curator decision, 2026-07-30). The
+partition scope exists because the *curated master* covered poliovirus only, which is a fact about
+the upstream process rather than about the record; where GenBank states a host, declining to read it
+would assert non-determination about data that is right there. This is the largest single correction
+in the rewrite: **11,767 records** differ from the release on `sample_origin`, 11,617 of them a stated
+human host the release calls `unknown`.
+
+The scope still applies when no host was deposited, and there it is load-bearing rather than tidy.
+The specimen-text fallback was calibrated on poliovirus and there is no evidence it carries to a
+population it was never measured against, so a non-poliovirus record with no host projects `unknown`
+under its own basis and a record whose membership is *undecided* declines. That scoping removes 23 of
+the 34 defects an unscoped draft had: the `/isolation_source=opv` records are `Enterovirus C`, whose
+membership no organism name can settle, so no epi rule should have been asked about them at all.
 
 Note what `unknown` is *not* doing here. It carries both "never curated outside poliovirus" and
 "curated but undetermined", and unlike the `locality` basis that is not a conflation to fix in the
@@ -187,6 +194,23 @@ def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
             manual_override=True,
         )
 
+    # A deposited `/host` answers the question outright, whatever the virus group. Curator decision,
+    # 2026-07-30: the partition scope exists because the *curated master* covered poliovirus only,
+    # which is a fact about the upstream process rather than about the record. Where GenBank states
+    # a host, declining to read it asserts non-determination about something the data does state.
+    origins = parameters["origins"]
+    host = view.qualifier(HOST_QUALIFIER).strip().lower()
+    if host:
+        human = re.search(parameters["human_host_pattern"], host) is not None
+        return RuleOutcome(
+            value=origins["human"] if human else origins["non_human"],
+            evidence_basis=BASIS_HOST_SPECIES,
+            source_field=ORIGIN_SOURCE_FIELD,
+            source_value=host,
+        )
+
+    # With no host the scope matters again: the specimen-text fallback was calibrated on poliovirus
+    # and there is no evidence it carries to a population it was never measured against.
     partition = resolved_partition(view)
     if not partition:
         return RuleOutcome(
@@ -202,17 +226,6 @@ def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
             evidence_basis=BASIS_OUTSIDE_POLIOVIRUS,
             source_field=ORIGIN_SOURCE_FIELD,
             source_value=partition,
-        )
-
-    origins = parameters["origins"]
-    host = view.qualifier(HOST_QUALIFIER).strip().lower()
-    if host:
-        human = re.search(parameters["human_host_pattern"], host) is not None
-        return RuleOutcome(
-            value=origins["human"] if human else origins["non_human"],
-            evidence_basis=BASIS_HOST_SPECIES,
-            source_field=ORIGIN_SOURCE_FIELD,
-            source_value=host,
         )
 
     specimen = view.qualifier(ISOLATION_SOURCE_QUALIFIER).strip().lower()

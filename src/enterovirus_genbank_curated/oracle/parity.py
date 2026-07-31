@@ -274,7 +274,7 @@ UNRESOLVED_SPECIMEN_ROWS = 12677
 # `sample_origin` rows R-ORIGIN-2 declines, over the built carve: poliovirus records that
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
 # itself undecided and so cannot be scoped either way.
-UNRESOLVED_ORIGIN_ROWS = 4582
+UNRESOLVED_ORIGIN_ROWS = 3693
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -309,8 +309,8 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
     },
     "locality": {"evidence_basis": "8c042f23e8b20cd4"},
     "sample_origin": {
-        "final_value": "2e915e4fd4f6f397",
-        "source_value": "8753f4cb19e1dccb",
+        "final_value": "81505b557e961fee",
+        "source_value": "5f4a81297425dc09",
     },
     "specimen_type": {
         "final_value": "a8aa1248a8e83d19",
@@ -351,18 +351,19 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "manual_override": 0,
     },
     "sample_origin": {
-        # Only four, and each is explicable. JX181922.1 and OR538735.1 are records the ledger calls
-        # non-poliovirus that the release nonetheless gave a curated origin, where R-ORIGIN-2 scopes
-        # them out. JX538031.1 deposits `/host=nonhuman primate` and the release calls it `human`,
-        # which is simply wrong. MK719554.1 is the authorized correction: `/host=Homo sapiens`
-        # against a shipped `unknown`.
-        "final_value": 4,
-        "winning_rule_id": 19702,
-        "evidence_basis": 19702,
+        # 11,767 = 11,617 records whose `/host` names a human and which the release calls `unknown`
+        #          + 149 whose `/host` names something non-human, also shipped `unknown`
+        #          + 1 (`JX538031.1`) deposited as `/host=nonhuman primate` and shipped as `human`.
+        # The release only curated origin for poliovirus, so `unknown` outside it means "not looked
+        # at" rather than "looked at and undetermined". Curator decision 2026-07-30: where GenBank
+        # states a host, read it — declining would assert non-determination about stated data.
+        "final_value": 11767,
+        "winning_rule_id": 20591,
+        "evidence_basis": 20591,
         # The rule records the input it read — the host, the specimen text, or the partition it
         # scoped by — where the release recorded the curated `origin_class` it projected. The 242
         # agreeing rows are where the host string already was the origin, plus the ledger overrides.
-        "source_value": 19460,
+        "source_value": 20349,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,

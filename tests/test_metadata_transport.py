@@ -134,6 +134,8 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "virus_group": 24284 - UNRESOLVED_PARTITION_ROWS,
         "curation_status": 24284 - UNRESOLVED_PARTITION_ROWS,
         "specimen_type": 24284 - (UNRESOLVED_SPECIMEN_ROWS - 1),
+        # No -1 here, unlike specimen_type: AF326751.2 has no host, but its organism decides a
+        # non-polio partition, which scopes sample_origin out to `unknown` — a resolved value.
         "sample_origin": 24284 - UNRESOLVED_ORIGIN_ROWS,
     }
     assert set(resolved_per_field) == set(provenance.fields)

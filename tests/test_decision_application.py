@@ -27,15 +27,18 @@ from enterovirus_genbank_curated.curate.apply import (
     assert_every_decision_is_accounted_for,
 )
 
-# Measured, and pinned so a decision cannot quietly stop being applied. `applied_unchanged` is
-# the interesting one: 55 assertions a rule now reaches on its own, so they are candidates for
-# retirement rather than curation doing work.
+# Measured, and pinned so a decision cannot quietly stop being applied. `applied_unchanged` is the
+# interesting one: 138 assertions the rules now reach on their own, so they are candidates for
+# retirement rather than curation doing work. It rose from 55 and `applied_filled_unresolved` fell
+# from 221 by the same 83 when R-ORIGIN-2 began reading `/host` outside poliovirus — decisions that
+# had been the only source of a value became redundant with the rule. That movement is the status
+# earning its place: no other column would have shown it.
 EXPECTED_TALLY = {
     "field_not_projected": 2553,
-    "applied_filled_unresolved": 221,
+    "applied_filled_unresolved": 138,
     "applied_exclusion": 173,
     "no_canonical_field": 123,
-    "applied_unchanged": 55,
+    "applied_unchanged": 138,
     "subject_outside_carve": 18,
     "applied_changed": 17,
     "not_in_force_retired": 17,
