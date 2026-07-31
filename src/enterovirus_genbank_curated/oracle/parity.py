@@ -263,6 +263,10 @@ def compare_metadata_to_release(
 #              (17 such decisions exist; 2 are on records literally named `Poliovirus 2`/`3`, which
 #               the name predicate already decides, so only 15 land on uninformative names).
 UNRESOLVED_PARTITION_ROWS = 1733
+# `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: 12,680 where no keyword matches
+# `/isolation_source` and 4 where two categories match, naming two specimens rather than one. One of
+# the 12,680 is AF326751.2, which the release excludes, so 12,683 of the 24,284 shared rows decline.
+UNRESOLVED_SPECIMEN_ROWS = 12684
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -310,6 +314,24 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
+        "manual_override": 0,
+    },
+    "specimen_type": {
+        # One record: GQ331952.1 deposits `/isolation_source=groundwater` and ships `stool`.
+        # Groundwater is not stool, so this is left as a declared disagreement rather than
+        # pattern-matched around — see `derive/epi.py`.
+        "final_value": 1,
+        "winning_rule_id": 11601,
+        "evidence_basis": 11601,
+        # 9,536 = every resolved row whose raw `/isolation_source` differs from the curated category
+        #         the release recorded. R-SPECIMEN-2 records what it actually read ("throat swab"),
+        #         where the release recorded the curated field it projected ("respiratory"). The
+        #         remaining 2,065 agree because the qualifier already was the category ("stool").
+        "source_value": 9536,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "source_field": 0,
         "manual_override": 0,
     },
     "locality": {

@@ -21,6 +21,12 @@ import pytest
 
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.derive.apply import project_field
+from enterovirus_genbank_curated.derive.epi import (
+    UNRESOLVED_AMBIGUOUS,
+    UNRESOLVED_NO_KEYWORD,
+    matching_specimen_types,
+    specimen_type,
+)
 from enterovirus_genbank_curated.derive.geo import (
     BASIS_NO_ADMIN1,
     BASIS_NO_GEOGRAPHY,
@@ -273,3 +279,75 @@ def test_the_shipped_locality_basis_conflates_three_populations(repository_root:
     )
     genuine = len(locality_rows) - len(overstated) - 1033
     assert genuine == 4233
+
+
+# --- specimen_type: the keyword rule, and the two defects its disagreements exposed --------------
+
+SPECIMEN_PATTERNS = {
+    "environmental": "sewage|wastewater|waste water|effluent|water|environmental",
+    "stool": "stool|faeces|faecal|feces|fecal|rectal",
+    "respiratory": "throat|nasal|nasopharyn|oropharyn|respiratory|sputum|pharyn",
+    "CNS": r"\bcsf\b|cerebrospinal",
+    "serum": "serum|blood|plasma",
+}
+
+
+@pytest.mark.parametrize(
+    ("isolation_source", "expected"),
+    [
+        ("stool", {"stool"}),
+        ("Stool specimen from AFP case", {"stool"}),
+        ("feces", {"stool"}),
+        ("sewage", {"environmental"}),
+        ("wastewater", {"environmental"}),
+        ("river water", {"environmental"}),
+        ("nasopharyngeal/oropharyngeal swab", {"respiratory"}),
+        ("CSF", {"CNS"}),
+        ("", set()),
+        ("conjunctival swab", set()),
+        ("rhabdomyosarcoma cell", set()),
+        # The word-boundary defect: a bare `fec` fires inside "infection", so two records labelled
+        # only with a respiratory illness were being called stool.
+        ("case of acute respiratory infection", {"respiratory"}),
+        # Genuine ambiguity: the source names two specimens, so no single answer is derivable.
+        ("throat swab and stool samples from an immunodeficient patient", {"respiratory", "stool"}),
+    ],
+)
+def test_specimen_keywords_match_every_category_present(
+    isolation_source: str, expected: set[str]
+) -> None:
+    assert matching_specimen_types(SPECIMEN_PATTERNS, isolation_source) == expected
+
+
+def specimen_view(isolation_source: str) -> RecordView:
+    return RecordView(
+        version="AB000001.1",
+        accession="AB000001",
+        record={"version": "AB000001.1", "accession": "AB000001"},
+        qualifiers={"isolation_source": isolation_source},
+        decisions={},
+    )
+
+
+def test_two_specimen_keywords_decline_rather_than_pick_by_pattern_order() -> None:
+    """The whole reason `matching_specimen_types` returns a set.
+
+    Iteration order would give a confident answer here and be right or wrong by accident. Four
+    records in the corpus name both a throat swab and a stool sample.
+    """
+    outcome = specimen_type(
+        {"patterns": SPECIMEN_PATTERNS},
+        specimen_view("throat swab and stool samples from an immunodeficient patient"),
+    )
+    assert not outcome.resolved
+    assert outcome.value == ""
+    assert outcome.unresolved_reason == UNRESOLVED_AMBIGUOUS
+
+
+def test_no_keyword_declines_and_keeps_what_it_read() -> None:
+    outcome = specimen_type({"patterns": SPECIMEN_PATTERNS}, specimen_view("conjunctival swab"))
+    assert not outcome.resolved
+    assert outcome.unresolved_reason == UNRESOLVED_NO_KEYWORD
+    # `source_value` records the qualifier even when the rule declines, so a queue row can show the
+    # curator what the rule was looking at.
+    assert outcome.source_value == "conjunctival swab"

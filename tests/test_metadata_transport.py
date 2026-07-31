@@ -24,6 +24,7 @@ from enterovirus_genbank_curated.derive.metadata import (
 from enterovirus_genbank_curated.oracle.parity import (
     SUPERSEDED_FIELD_DELTAS,
     UNRESOLVED_PARTITION_ROWS,
+    UNRESOLVED_SPECIMEN_ROWS,
     verify_metadata_parity,
 )
 from enterovirus_genbank_curated.registry.decisions import load_excluded_accessions
@@ -112,22 +113,40 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "collection_date_precision",
         "curation_status",
         "locality",
+        "specimen_type",
         "virus_group",
     )
-    # locality and both date columns resolve on every shared record; the two partition columns
-    # decline on the same population.
-    assert provenance.compared_rows == 3 * 24284 + 2 * (24284 - UNRESOLVED_PARTITION_ROWS)
+    # Per field, how many of the 24,284 shared records the rule resolves. Spelled out rather than
+    # computed, because the declined counts below are over the 24,285 *built* rows: AF326751.2
+    # deposits no `/isolation_source`, so its specimen_type decline is counted there but is not a
+    # shared row. That one-record difference is exactly the kind of thing a single total would hide.
+    resolved_per_field = {
+        "locality": 24284,
+        "collection_date": 24284,
+        "collection_date_precision": 24284,
+        "virus_group": 24284 - UNRESOLVED_PARTITION_ROWS,
+        "curation_status": 24284 - UNRESOLVED_PARTITION_ROWS,
+        "specimen_type": 24284 - (UNRESOLVED_SPECIMEN_ROWS - 1),
+    }
+    assert set(resolved_per_field) == set(provenance.fields)
+    assert provenance.compared_rows == sum(resolved_per_field.values())
     assert sum(provenance.basis_counts.values()) == provenance.compared_rows
-    # Counted as (version, field) keys, so the declared row-set gap scales with the number of
-    # projected fields: every gap record is missing one row per implemented rule.
-    fields = len(provenance.fields)
-    assert provenance.absent_from_build == len(SEQUENCE_RESCUED_INCLUSIONS) * fields
-    assert provenance.absent_from_release == len(UNDECLARED_EXCLUSIONS) * fields
+    # Counted as (version, field) keys. The seventeen records the carve cannot reach are missing one
+    # row per projected field, since the release has a row for all six.
+    assert provenance.absent_from_build == len(SEQUENCE_RESCUED_INCLUSIONS) * len(
+        provenance.fields
+    )
+    # The converse is not symmetric, and the asymmetry is the point: AF326751.2 contributes only the
+    # five rows its rules *resolve*. It deposits no `/isolation_source`, so specimen_type declines,
+    # and a declined row is not compared at all — so it cannot be counted as a missing comparison.
+    assert len(UNDECLARED_EXCLUSIONS) == 1
+    assert provenance.absent_from_release == len(provenance.fields) - 1
 
     # Both partition columns decline on the same population, and never on a different one.
     assert provenance.unresolved_by_field == {
         "virus_group": UNRESOLVED_PARTITION_ROWS,
         "curation_status": UNRESOLVED_PARTITION_ROWS,
+        "specimen_type": UNRESOLVED_SPECIMEN_ROWS,
     }
 
     # The two date columns deliberately differ from the release, by exactly the declared amount.
