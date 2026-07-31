@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from enterovirus_genbank_curated.align import build as align_build
 from enterovirus_genbank_curated.build import build_metadata_layer, build_source_layer
 from enterovirus_genbank_curated.contracts import (
     BASELINE_RELEASE,
@@ -123,6 +124,26 @@ def build_parser() -> argparse.ArgumentParser:
         help="re-hash the committed NCR covariance-model core; needs no aligner",
     )
     alignment_verify_seeds.add_argument("--repository-root", type=Path, default=Path.cwd())
+
+    alignment_build = subparsers.add_parser(
+        "alignment-build",
+        help="build alignment artifacts, strictly one at a time (needs mafft + Infernal)",
+    )
+    alignment_build.add_argument("--repository-root", type=Path, default=Path.cwd())
+    alignment_build.add_argument(
+        "--output-dir", type=Path, required=True,
+        help="where to write <name>.sto.gz, <name>_aln.fasta.gz and <name>.coverage.tsv.gz",
+    )
+    alignment_build.add_argument(
+        "--artifact", action="append", dest="artifacts", metavar="NAME",
+        help="restrict to one alignment; repeatable. Default: all six.",
+    )
+    # No --parallel, by design: concurrent aligner processes are what exhausted memory on a real
+    # machine (see align/build.py). --threads is the one knob, and its default is 1.
+    alignment_build.add_argument(
+        "--threads", type=int, default=align_build.DEFAULT_THREADS,
+        help=f"threads per tool invocation (default {align_build.DEFAULT_THREADS})",
+    )
     return parser
 
 
@@ -275,6 +296,31 @@ def main(argv: list[str] | None = None) -> int:
                 f"alignment seeds: PASS ({checked} files in registry/alignment_seeds/ match "
                 f"their pinned hashes and declared match-column counts)"
             )
+            return 0
+        if args.command == "alignment-build":
+            names = tuple(args.artifacts) if args.artifacts else None
+
+            def report(stage: str, name: str, result=None) -> None:
+                if stage == "load":
+                    print("loading canonical records ...", flush=True)
+                elif stage == "segment":
+                    print("segmenting all records (one pass, shared) ...", flush=True)
+                elif stage == "start":
+                    print(f"building {name} ...", flush=True)
+                elif stage == "done" and result is not None:
+                    s = result.stitched
+                    print(
+                        f"  {name}: {len(s.accessions)} rows x {s.width_nt} nt "
+                        f"(5'NCR {s.width_5ncr} + CDS {s.width_cds} + 3'NCR {s.width_3ncr}) "
+                        f"in {result.seconds / 60:.1f} min",
+                        flush=True,
+                    )
+
+            results = align_build.build_all(
+                root, args.output_dir.resolve(), names=names,
+                threads=args.threads, on_event=report,
+            )
+            print(f"alignment build: PASS ({len(results)} artifact(s) written)")
             return 0
     except ContractError as exc:
         print(f"contract validation failed: {exc}", file=sys.stderr)

@@ -58,10 +58,11 @@ def make_population(
 
 
 def make_ncr_block(
-    side: str, aligned_nt: dict[str, str], width: int, ss_cons: str = ""
+    side: str, aligned_nt: dict[str, str], width: int, ss_cons: str = "", model_rf: str = ""
 ) -> NcrBlock:
     return NcrBlock(
         side=side, width_nt=width, aligned_nt=aligned_nt, ss_cons=ss_cons or "." * width,
+        model_rf=model_rf or "N" * width,
         excluded_oversized=(), exec_result=FAKE_RESULT,
     )
 

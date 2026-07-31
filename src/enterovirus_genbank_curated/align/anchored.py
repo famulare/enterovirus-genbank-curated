@@ -566,16 +566,52 @@ def _gap_audit(
     return non_multiple, misphased
 
 
+@dataclass(frozen=True)
+class AnchorInputs:
+    """Everything the anchored stack needs out of `final/`, read once.
+
+    Exists so a caller can do all of its `final/` reading *before* arming the tool-exec guard,
+    which shares `sandbox`'s path rules and so refuses reads of the shipped release. `align/` may
+    read `final/` — the documented boundary exception — but only outside the guarded window, and
+    hoisting the reads here makes that separation structural rather than incidental.
+    """
+
+    region_rows: tuple[regions.Region, ...]
+    cds_by_record: dict[str, list[dict]]
+    parts_by_feature: dict[str, list[dict]]
+    codon_starts: dict[str, str]
+
+
+def load_anchor_inputs(repository_root: Path) -> AnchorInputs:
+    cds_by_record, parts_by_feature, codon_starts = segment._load_cds_index(repository_root)
+    return AnchorInputs(
+        region_rows=tuple(regions.derive_regions(repository_root)),
+        cds_by_record=cds_by_record,
+        parts_by_feature=parts_by_feature,
+        codon_starts=codon_starts,
+    )
+
+
 def build_anchored_cds_block(
-    population: AlignmentPopulation, repository_root: Path
+    population: AlignmentPopulation,
+    repository_root: Path | None = None,
+    *,
+    inputs: AnchorInputs | None = None,
 ) -> AnchoredCdsBlock:
-    """The CDS block for one anchored artifact. Pure Biopython — no aligner binary, no scratch."""
+    """The CDS block for one anchored artifact. Pure Biopython — no aligner binary, no scratch.
+
+    Supply `inputs` when the tool guard is (or will be) armed; `repository_root` is the convenience
+    path for unguarded callers such as tests, and reads the same tables itself.
+    """
     spec = population.spec.anchor
     if spec is None:
         raise ContractError(f"{population.spec.name} has no declared AnchorSpec")
+    if inputs is None:
+        if repository_root is None:
+            raise ContractError("build_anchored_cds_block needs either repository_root or inputs")
+        inputs = load_anchor_inputs(repository_root)
 
-    derived = regions.derive_regions(repository_root)
-    region_rows = [row for row in derived if row.serotype == spec.serotype]
+    region_rows = [row for row in inputs.region_rows if row.serotype == spec.serotype]
     if not region_rows:
         raise ContractError(f"no derived regions for {spec.serotype}")
     by_region = {row.region: row for row in region_rows}
@@ -597,7 +633,6 @@ def build_anchored_cds_block(
     reference = reference_record.sequence
 
     cds_start0, cds_end0 = cds_start - 1, cds_end
-    cds_by_record, parts_by_feature, codon_starts = segment._load_cds_index(repository_root)
 
     aligner = nucleotide_aligner()
     aligned_nt: dict[str, str] = {}
@@ -611,7 +646,7 @@ def build_anchored_cds_block(
         # Keyed on `version`, not `accession`: `record_id` in the feature tables is the versioned
         # id, and `align.segment` looks it up the same way.
         query_cds = _query_cds_frame(
-            record.version, cds_by_record, parts_by_feature, codon_starts
+            record.version, inputs.cds_by_record, inputs.parts_by_feature, inputs.codon_starts
         )
         strand, alignment, oriented = codon_aware_align(
             aligner, reference, (cds_start, cds_end), record.sequence, query_cds,

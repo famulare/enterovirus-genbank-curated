@@ -143,10 +143,16 @@ def stitch(
 ) -> StitchedAlignment:
     """Assemble one row per population record.
 
-    `cds_rf` overrides the CDS span's `#=GC RF`. The unified stack leaves it None and gets a
-    per-column majority nucleotide, which is the only honest summary of a de-novo profile alignment.
-    The anchored stack passes the Sabin reference's own CDS substring, because there every column
-    *is* that reference's position and a majority would obscure a coordinate the reader can use.
+    `cds_rf` selects the whole `#=GC RF` convention, because the two stacks differ consistently
+    across all three blocks rather than only over the CDS:
+
+    * **None (unified)** — every block gets a per-column majority nucleotide, the only honest
+      summary of a de-novo profile alignment whose columns are consensus positions.
+    * **A string (anchored)** — the CDS span gets that string (the reference's own CDS bases) and
+      the two NCR blocks get their covariance model's own `RF`. For the `cmbuild --hand`
+      per-serotype models every match column *is* a true reference genome position, so the whole RF
+      line reads out as reference coordinates a reader can look up. A majority there would throw
+      that away.
     """
     ncr_spec = population.spec.ncr
     if ncr_spec is None:
@@ -211,7 +217,12 @@ def stitch(
     rows_cds = [cds_block.aligned_nt[a] for a in ordered_accessions_cds]
     rf5 = _majority_rf(rows_5, width_5) if width_5 else ""
     rf3 = _majority_rf(rows_3, width_3) if width_3 else ""
-    rf_cds = cds_rf if cds_rf is not None else _majority_rf(rows_cds, width_cds)
+    if cds_rf is None:
+        rf_cds = _majority_rf(rows_cds, width_cds)
+    else:
+        rf_cds = cds_rf
+        rf5 = five_prime.model_rf
+        rf3 = three_prime.model_rf
     rf = rf5 + rf_cds + rf3
     ss_cons = five_prime.ss_cons + (GAP_RF * width_cds) + three_prime.ss_cons
 

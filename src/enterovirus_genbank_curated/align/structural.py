@@ -67,6 +67,9 @@ class NcrBlock:
     width_nt: int
     aligned_nt: dict[str, str]
     ss_cons: str
+    # The covariance model's own RF over the kept columns. For the per-serotype `cmbuild --hand`
+    # models this is the reference genome's own bases at true genome positions.
+    model_rf: str
     excluded_oversized: tuple[str, ...]
     exec_result: ToolResult
 
@@ -95,19 +98,37 @@ def _ncr_population(
     return population, tuple(sorted(excluded))
 
 
-def _match_columns(sto_path: Path) -> tuple[dict[str, str], str]:
-    """Keep only cmalign's consensus (match) columns, ported verbatim from upstream's
-    `match_columns()`. See the module-level `NOT_MATCH_COLUMN` comment for the rule."""
+def _to_dna(text: str) -> str:
+    """Uppercase, `.` gaps normalised to `-`, and **U to T**.
+
+    Infernal models RNA and emits `U`; every other block in this pipeline is DNA, straight from
+    GenBank, and the metadata's `sequence_sha256` is over the DNA. Without this the same row would
+    change alphabet mid-sequence — DNA across the CDS, RNA across the two NCR blocks — which is
+    incoherent for a consumer and would break the "ungapped block equals the source substring"
+    invariant on the NCR side. One declared alphabet for the whole artifact: DNA.
+    """
+    return text.upper().replace(".", GAP_SYMBOL).replace("U", "T")
+
+
+def _match_columns(sto_path: Path) -> tuple[dict[str, str], str, str]:
+    """Keep only cmalign's consensus (match) columns, ported from upstream's `match_columns()`.
+    See the module-level `NOT_MATCH_COLUMN` comment for the rule.
+
+    Returns the rows, the `SS_cons` over kept columns, and the model's own `RF` over kept columns.
+    The RF is what upstream called "true Sabin positions, hand-built": for a `cmbuild --hand` model
+    every match column is a real reference genome position, so that line is a coordinate the reader
+    can look up rather than a consensus over whatever rows happened to be present.
+    """
     alignment = AlignIO.read(sto_path, "stockholm")
     rf = alignment.column_annotations["reference_annotation"]
     ss = alignment.column_annotations.get("secondary_structure", "." * len(rf))
     keep = [i for i, c in enumerate(rf) if c not in NOT_MATCH_COLUMN]
     rows = {
-        record.id: "".join(str(record.seq)[i] for i in keep).upper().replace(".", GAP_SYMBOL)
-        for record in alignment
+        record.id: _to_dna("".join(str(record.seq)[i] for i in keep)) for record in alignment
     }
     ss_kept = "".join(ss[i] for i in keep)
-    return rows, ss_kept
+    rf_kept = _to_dna("".join(rf[i] for i in keep))
+    return rows, ss_kept, rf_kept
 
 
 def build_ncr_block(
@@ -140,10 +161,19 @@ def build_ncr_block(
 
     cm_path = repository_root / side_spec.cm_path
     cmalign_output_name = CMALIGN_STOCKHOLM[side]
+    # `--cpu` is pinned rather than left to Infernal's own default, which upstream did leave
+    # unpinned. Two reasons, both measured: an unpinned thread count is a determinism hole (the
+    # number of workers is a property of the machine, not the declaration), and each worker carries
+    # its own DP matrices — 500 sequences against the 738-state 5' model peaked at 0.57 GB pinned to
+    # one CPU against 0.76 GB unpinned. Concurrency is what makes these steps expensive, so the
+    # thread count belongs in the declaration.
     result = run_tool(
         toolchain,
         "cmalign",
-        ["--outformat", "Stockholm", "-o", cmalign_output_name, cm_path.name, pop_fasta_name],
+        [
+            "--cpu", str(threads), "--outformat", "Stockholm", "-o", cmalign_output_name,
+            cm_path.name, pop_fasta_name,
+        ],
         scratch=scratch,
         index=index,
         label=f"{population.spec.name}_ncr_{side}",
@@ -154,7 +184,7 @@ def build_ncr_block(
         guard=guard,
     )
 
-    rows, ss_cons = _match_columns(result.run_dir / cmalign_output_name)
+    rows, ss_cons, model_rf = _match_columns(result.run_dir / cmalign_output_name)
 
     missing = set(ncr_population) - set(rows)
     if missing:
@@ -176,6 +206,7 @@ def build_ncr_block(
         width_nt=width,
         aligned_nt=rows,
         ss_cons=ss_cons,
+        model_rf=model_rf,
         excluded_oversized=excluded,
         exec_result=result,
     )

@@ -141,9 +141,10 @@ def test_match_columns_keeps_only_non_gap_rf_columns(tmp_path: Path) -> None:
         "#=GC RF                 ACGT.ACGT\n"
         "//\n"
     )
-    rows, ss_cons = structural._match_columns(sto)
+    rows, ss_cons, model_rf = structural._match_columns(sto)
     assert rows == {"seq1": "AC-TACGT", "seq2": "AC-TACGT", "seq3": "ACGTACGT"}
     assert ss_cons == "(((())))"
+    assert model_rf == "ACGTACGT"
 
 
 def test_match_columns_keeps_every_column_when_rf_has_no_inserts(tmp_path: Path) -> None:
@@ -155,7 +156,7 @@ def test_match_columns_keeps_every_column_when_rf_has_no_inserts(tmp_path: Path)
         "#=GC RF                 ACGT\n"
         "//\n"
     )
-    rows, ss_cons = structural._match_columns(sto)
+    rows, ss_cons, model_rf = structural._match_columns(sto)
     assert rows == {"seq1": "ACGT"}
     assert ss_cons == "((.)"
 
