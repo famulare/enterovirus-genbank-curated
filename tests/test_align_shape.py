@@ -166,7 +166,9 @@ def test_translation_qc_ignores_fragments_and_counts_internal_stops() -> None:
         # Mostly gaps: a fragment, excluded from the metric entirely.
         "FRAGMENT": "NN" + "ATG------" + "N",
     }
-    qc = shape._translation_qc(rows, widths)
+    # The floor is injected rather than taken from the constant, so this test states the selection
+    # rule instead of depending on today's value of it.
+    qc = shape._translation_qc(rows, widths, min_orf_nt=9)
     assert qc["near_complete_rows"] == 2
     assert qc["no_internal_stop"] == 1
     assert [o["accession"] for o in qc["with_internal_stop"]] == ["STOP"]
@@ -186,4 +188,21 @@ def test_the_real_anchored_build_translates_cleanly(repository_root: Path) -> No
     assert clean_fraction > 0.95, (
         f"only {clean_fraction:.1%} of near-complete CDS blocks translate without an internal "
         f"stop: {qc['with_internal_stop'][:8]}"
+    )
+
+
+def test_the_near_complete_floor_is_an_absolute_length_not_a_block_fraction() -> None:
+    """The bug this guards: an occupancy *fraction* selects nothing on the unified stack, whose CDS
+    block is 7,839 columns wide while its longest ungapped ORF is 6,669 nt — 85%. A metric that
+    silently measures zero rows on half the artifacts is the same anti-pattern as a check that
+    cannot fail."""
+    width_cds = 7839
+    widths = {"5ncr": 0, "cds": width_cds, "3ncr": 0}
+    # One row with a realistic complete ORF: 6,669 nt of residues in a much wider block.
+    residues = 6669
+    rows = {"WHOLE": ("ATG" * (residues // 3)) + "-" * (width_cds - residues)}
+    qc = shape._translation_qc(rows, widths)
+    assert qc["near_complete_rows"] == 1, (
+        "a complete ORF must be selected even though it fills only "
+        f"{residues / width_cds:.0%} of the block"
     )

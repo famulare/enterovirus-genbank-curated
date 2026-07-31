@@ -207,18 +207,32 @@ def shape_of(
     }
 
 
-def _translation_qc(rows: dict[str, str], block_widths: dict[str, int]) -> dict:
+# A near-complete enterovirus polyprotein ORF is about 6,600 nt. This selects whole genomes in both
+# stacks, and it is an *absolute* length rather than a fraction of the block for a reason worth
+# recording: an earlier version used "at least 99% of the block occupied", which works for the
+# anchored stack — where the block is the reference genome, so a complete genome fills it — and
+# silently selects nothing at all for the unified stack, whose CDS block is 7,839 columns wide while
+# the longest ungapped ORF in it is 6,669 nt, or 85%. A metric that quietly measures zero rows on
+# half the artifacts is the same anti-pattern as a check that cannot fail.
+NEAR_COMPLETE_ORF_NT = 6000
+
+
+def _translation_qc(
+    rows: dict[str, str], block_widths: dict[str, int], min_orf_nt: int = NEAR_COMPLETE_ORF_NT
+) -> dict:
     """Do the near-complete CDS blocks actually translate?
 
     The structural gate checks widths and alphabets; only translation tells you the codon frame is
-    *right*. Restricted to rows whose CDS block is at least 99% occupied, since a fragment's partial
-    block says nothing about frame.
+    *right*. Gaps become `N` rather than being stripped, which preserves frame in both stacks: every
+    gap is a codon-aligned triplet, since `align.codon`'s backtranslation maps each amino-acid gap
+    to exactly `"---"` and the anchored projection sits on the reference's own codon frame.
 
-    Measured on the first real `PV1_unified` build: 403 of 407 such rows carry no internal stop, and
-    three of the four exceptions are `FV537075`-`FV537077` — the bisulfite-converted Mahoney strings
-    this repository has already adjudicated as not being poliovirus genomes at all. A C-to-T
-    converted genome *should* fail to translate, so the aligner is right about them, and this metric
-    surfacing them is the check working rather than failing.
+    Measured: `POLIO_unified` gives 2,024 of 2,024 clean, `PV1_unified` 403 of 407. Three of that
+    stack's four exceptions are `FV537075`-`FV537077`, the bisulfite-converted Mahoney strings
+    already adjudicated as not poliovirus genomes — a C-to-T converted genome *should* fail to
+    translate, so surfacing them is the metric working. They are absent from the unified count
+    because `align.segment` rejects their annotated frame, and the inferred ORF it falls back to is
+    far shorter than the floor.
     """
     width_cds = block_widths.get("cds", 0)
     offset = block_widths.get("5ncr", 0)
@@ -229,7 +243,7 @@ def _translation_qc(rows: dict[str, str], block_widths: dict[str, int]) -> dict:
     offenders: list[dict[str, int | str]] = []
     for accession in sorted(rows):
         block = rows[accession][offset : offset + width_cds]
-        if block.count("-") / width_cds >= 0.01:
+        if len(block) - block.count("-") < min_orf_nt:
             continue
         aa = segment.translate(block.replace("-", "N"))
         internal = aa[:-1].count("*")
