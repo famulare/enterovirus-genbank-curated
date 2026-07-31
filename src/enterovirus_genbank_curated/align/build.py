@@ -162,6 +162,7 @@ def build_one(
         # itself rather than a consensus over the rows.
         cds_rf: str | None = anchored_block.reference_row
         over_length_cap = anchored_block.over_length_cap
+        anchored_rows: tuple = anchored_block.rows
     else:
         cds_block = codon.build_codon_block(
             population, segmentations, context.toolchain, context.scratch, context.guard,
@@ -169,6 +170,7 @@ def build_one(
         )
         cds_rf = None
         over_length_cap = ()
+        anchored_rows = ()
 
     five_prime, three_prime = structural.build_ncr_blocks(
         population, segmentations, context.toolchain, context.scratch, context.guard,
@@ -184,6 +186,7 @@ def build_one(
         repository_root, population, stitched, paths,
         tool_identity=provenance_module.tool_identity(context.toolchain),
         threads=threads, seconds=seconds, over_length_cap=over_length_cap,
+        anchored_rows=anchored_rows,
     )
     paths["provenance"] = provenance_module.write_provenance(output_dir, name, document)
     return BuildResult(name=name, stitched=stitched, paths=paths, seconds=seconds)

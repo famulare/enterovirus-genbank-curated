@@ -436,3 +436,47 @@ def test_the_thread_count_is_a_literal_constant_not_derived_from_the_host() -> N
         and node.func.attr == "cpu_count"
     ]
     assert not calls, "the thread count must be a literal, never os.cpu_count()"
+
+
+# --- the anchored audit ---------------------------------------------------------------------------
+
+
+def test_anchored_audit_summarises_the_per_row_decisions() -> None:
+    """The alignment does not show which path produced a row, so these aggregates are how a reader
+    learns whether the ported frameshift-recovery machinery ever fires at all. A mechanism nobody
+    can observe is one nobody can tell is dead."""
+    from enterovirus_genbank_curated.align import provenance
+
+    rows = (
+        anchored.AnchoredRow(
+            accession="A", strand=anchored.FORWARD, method=anchored.METHOD_CODON,
+            internal_stop=False, recovered=None, cds_row="ATG",
+            n_cds_gap_non_multiple_of_three=0, n_cds_gap_misphased=0,
+        ),
+        anchored.AnchoredRow(
+            accession="B", strand=anchored.REVERSE_COMPLEMENT, method=anchored.METHOD_RECOVERED,
+            internal_stop=True, recovered=True, cds_row="ATG",
+            n_cds_gap_non_multiple_of_three=1, n_cds_gap_misphased=0,
+        ),
+        anchored.AnchoredRow(
+            accession="C", strand=anchored.FORWARD, method=anchored.METHOD_NT_CDS_FALLBACK,
+            internal_stop=True, recovered=False, cds_row="ATG",
+            n_cds_gap_non_multiple_of_three=0, n_cds_gap_misphased=2,
+        ),
+    )
+    audit = provenance.anchored_audit(rows)
+    assert audit["methods"] == {"codon": 1, "nt_cds_fallback": 1, "recovered": 1}
+    assert audit["strands"] == {"forward": 2, "reverse_complement": 1}
+    assert audit["rows_with_internal_stop"] == 2
+    assert audit["frameshift_recovered"] == 1
+    assert audit["frameshift_recovery_failed"] == 1
+    assert audit["rows_with_non_multiple_of_three_cds_gap"] == 1
+    assert audit["rows_with_misphased_cds_gap"] == 1
+
+
+def test_anchored_audit_of_nothing_is_empty_rather_than_zeroes() -> None:
+    """An empty dict says "not an anchored build"; a dict of zeroes would claim measurements were
+    taken and all came back zero."""
+    from enterovirus_genbank_curated.align import provenance
+
+    assert provenance.anchored_audit(()) == {}

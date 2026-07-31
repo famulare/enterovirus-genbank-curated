@@ -60,6 +60,7 @@ def build_provenance(
     threads: int,
     seconds: float,
     over_length_cap: tuple[str, ...] = (),
+    anchored_rows: tuple = (),
 ) -> dict:
     spec = population.spec
     by_accession = {record.accession: record for record in population.records}
@@ -129,12 +130,39 @@ def build_provenance(
         # threshold whose result appears nowhere would be the same anti-pattern as a check that
         # cannot fail.
         document["over_length_cap"] = list(over_length_cap)
+        document["anchored_audit"] = anchored_audit(anchored_rows)
     else:
         document["codon"] = asdict(spec.codon)
         document["cds_codons"] = stitched.width_cds // 3
         document["cds_width_is_whole_codons"] = stitched.width_cds % 3 == 0
         document["blocks_present_cds"] = present[BLOCK_CDS]
     return document
+
+
+def anchored_audit(rows: tuple) -> dict:
+    """Aggregates over the anchored stack's per-row decisions.
+
+    Recorded because the alignment itself does not show which path produced a row, and a ported
+    mechanism nobody can observe is a mechanism nobody can tell is dead. In particular this is how a
+    reader learns whether the frameshift-recovery path ever fires: `method` counts `recovered`
+    against `nt_cds_fallback` (recovery attempted and failed), and `nt_better` counts the times the
+    do-no-harm guard preferred the plain nucleotide anchor.
+    """
+    if not rows:
+        return {}
+    return {
+        "methods": dict(sorted(Counter(row.method for row in rows).items())),
+        "strands": dict(sorted(Counter(row.strand for row in rows).items())),
+        "rows_with_internal_stop": sum(1 for row in rows if row.internal_stop),
+        "frameshift_recovered": sum(1 for row in rows if row.recovered is True),
+        "frameshift_recovery_failed": sum(1 for row in rows if row.recovered is False),
+        # A non-multiple-of-three CDS deletion inside a covered span implies a frameshift no real
+        # poliovirus carries, so a nonzero count here is a sequencing or annotation signal.
+        "rows_with_non_multiple_of_three_cds_gap": sum(
+            1 for row in rows if row.n_cds_gap_non_multiple_of_three
+        ),
+        "rows_with_misphased_cds_gap": sum(1 for row in rows if row.n_cds_gap_misphased),
+    }
 
 
 def population_sha256(accessions: tuple[str, ...]) -> str:
