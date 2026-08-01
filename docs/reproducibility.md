@@ -311,18 +311,24 @@ would settle it is already written — what is missing is the *definition*.
 
 ## The alignment layer
 
-`final/alignments/` was carved in from a private pipeline. **This repository now builds its own
-alignments natively** — `evgc alignment-build` produces them from `final/canonical/`,
+`final/alignments/` was carved in from a private pipeline until 2026-08-01. **It now holds this
+repository's own alignments** — `evgc alignment-build` produces them from `final/canonical/`,
 `final/source/` and the committed covariance-model core, using only `mafft` and Infernal's
-`cmalign`. They are written to `derived/alignments/`, not `final/alignments/`, so 2.4.1's bytes stay
-immutable while the rebuild is reviewed; promotion into a release is a separate step.
+`cmalign`, into `derived/alignments/`; promotion into the release is a separate, reviewed copy, the
+same shape as `site/data/`. 2.4.1's nineteen files are retired to `releases/2.4.1/alignments/`,
+where the declared delta is still measured against them.
 
-Five of the six declared populations are built and committed, and not at one parameter set:
-`POLIO_unified` and `NPEV_unified` carry MAFFT `--ep 0.5`, `PV1`/`PV2`/`PV3` predate it, and
-`EV_unified` has never been built. So the row-set table below describes all six as *declared*, while
-`derived/alignments/` holds five as *built*. A uniform rebuild is pending, and it is cheap to run
-once the anchor question below is settled — there is no point building a sixth artifact against a
-row set the pipeline no longer produces.
+**All six declared populations are built, at one parameter set, from the 4.0.0 canonical table.**
+The previous state is what made that worth doing: five artifacts, `EV_unified` never built at all,
+and two different gap-extension settings — `POLIO_unified` and `NPEV_unified` carried MAFFT
+`--ep 0.5` while `PV1`/`PV2`/`PV3` predated it. Build times, one artifact at a time on eight
+threads: PV3 7.4 min, PV1 13.5, PV2 24.9, POLIO 25.9, NPEV 74.5, EV 234.4.
+
+The three anchored stacks are the strongest result. `PV1`/`PV2`/`PV3` come out at **zero sparse
+columns and zero single-row columns**, at widths of exactly 7,441 / 7,439 / 7,432 — their own Sabin
+genome lengths. Nothing enforces that; it falls out of the per-serotype covariance models being
+`cmbuild --hand` against each serotype's reference, and it is the check that the anchored projection
+is doing what it claims.
 
 None of this is a parity claim on the shipped bytes, and it never can be: those bytes came from code
 that no longer exists in that form, built at an unrecorded thread count with accidental
@@ -433,29 +439,40 @@ no placeable material still gets a row — all gaps, with the reason recorded pe
 `<name>.coverage.tsv.gz` — so the row set stays literally 1-to-1 with metadata and "block absent"
 stays distinguishable from "deleted" without inventing an alignment character.
 
-**The shipped alignments are not 1-to-1 with the release they ship beside, measured.** Row sets read
-out of the shipped Stockholm files against `final/canonical/sequence_metadata.tsv.gz`:
+**2.4.1's alignments were not 1-to-1 with the release they shipped beside; 4.0.0's are, by
+construction.** The delta each artifact declares against `releases/2.4.1/alignments/`, as built:
 
-| artifact | shipped rows | canonical target | delta |
+| artifact | 2.4.1 rows | 4.0.0 rows | delta |
 |---|---|---|---|
-| `POLIO_unified` | 9,988 | 10,084 | +98 added, −2 dropped (2 records canonical now calls non-polio) |
-| `NPEV_unified` | 14,050 | 14,217 | +167 added |
-| `EV_unified` | 24,038 | 24,301 | +263 added |
-| `PV1_unified` | 3,732 | 4,427 | +715 added, −20 dropped |
-| `PV2_unified` | 3,604 | 3,939 | +358 added, −23 dropped |
-| `PV3_unified` | 1,425 | 1,693 | +270 added, −2 dropped |
+| `POLIO_unified` | 9,988 | 10,090 | +106 / −4 |
+| `NPEV_unified` | 14,050 | 14,218 | +168 / −0 |
+| `EV_unified` | 24,038 | 24,308 | +272 / −2 |
+| `PV1_unified` | 3,732 | 4,337 | +717 / −112 |
+| `PV2_unified` | 3,604 | 3,790 | +357 / −171 |
+| `PV3_unified` | 1,425 | 1,597 | +263 / −91 |
 
-`evgc alignment-population` derives the target column: upstream tied *membership* to evidence
-confidence (a record its typing could not resolve confidently was simply absent), and the rebuild
-ties membership to curated `virus_group`/`virus_type` instead, using evidence only to assign the
-seed/backbone/addon tier. For the three `PV{n}` artifacts the 45 dropped rows are not a bug —
-Mike adjudicated them 2026-07-30, since 40 of the 43 relabelled records have fewer than 100 capsid
-codons compared (mean 58.3), so the coverage-guarded serotype rule correctly rejects the
-sequence-based capsid call and falls back to the submitted GenBank name.
+Every dropped row carries a reason from a closed vocabulary, and an *undeclared* drop raises rather
+than being absorbed. Across the three serotype files the 374 drops are 332 `virus_type_lost`, 37
+`serotype_relabelled`, 3 `carve_excluded` and 2 `group_moved`.
 
-Applied to the *shipped* row sets, this repository's tiering columns reproduce the shipped tier
-splits exactly for `POLIO_unified` (8,736/1,252) and `NPEV_unified` (10,418/3,632) — the strongest
-port-fidelity evidence available without running an aligner, since it needs no aligner at all.
+`evgc alignment-population` derives the row set: upstream tied *membership* to evidence confidence
+(a record its typing could not resolve confidently was simply absent), and the rebuild ties
+membership to curated `virus_group`/`virus_type` instead, using evidence only to assign the
+seed/backbone/addon tier. That inversion is why the serotype files both grow and shrink — they
+admit fragments upstream's evidence gate excluded, and they decline records upstream typed from
+curated data that R-TYPE-2 will not type from an organism name stating no serotype. It is also why
+PV1's P1 coverage is 3,623 of 4,337 rather than all of them: a deposit named "Poliovirus 1" now
+joins PV1 with or without a capsid, and the 714 rows without P1 are almost exactly the 717 the
+population added. The `serotype_relabelled` drops were adjudicated 2026-07-30 — 40 of the 43
+relabelled records have fewer than 100 capsid codons compared (mean 58.3), so the coverage-guarded
+serotype rule correctly rejects the sequence-based capsid call and falls back to the submitted
+GenBank name.
+
+Applied to 2.4.1's own row sets, this repository's tiering columns still reproduce its tier splits
+exactly — `POLIO_unified` 8,736/1,252 and `NPEV_unified` 10,418/3,632 — the strongest port-fidelity
+evidence available without running an aligner, since it needs no aligner at all. That claim is
+about the evidence table and those row sets, neither of which the re-anchor moved, which is why it
+survived it unchanged.
 
 **The native toolchain is pinned twice, from independent sources.** `pixi.toml` declares two
 environments: `align` (Python 3.12, `mafft` 7.526, Infernal 1.1.5, both `linux-64` and `osx-arm64`)
