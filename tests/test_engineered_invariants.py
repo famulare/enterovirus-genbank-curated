@@ -194,10 +194,10 @@ LEGITIMATE_SAME_SEQUENCE_SPLITS: dict[tuple[str, ...], str] = {}
 # the defect: `\bPAT\b` matched as free text inside a 20-field blob, so *every* patent-division
 # record is flagged engineered regardless of what its sequence is. When the rule is rewritten this
 # equality is the first thing that should break.
-EXPECTED_TRUE_TOTAL = 543
-EXPECTED_TRUE_AT_LEAST_3000NT = 58
-EXPECTED_PAT_IN_CANONICAL = 506
-EXPECTED_PAT_TRUE = 506
+EXPECTED_TRUE_TOTAL = 38
+EXPECTED_TRUE_AT_LEAST_3000NT = 11
+EXPECTED_PAT_IN_CANONICAL = 512
+EXPECTED_PAT_TRUE = 24
 EXPECTED_SYN_IN_CANONICAL = 7
 EXPECTED_SYN_TRUE = 7
 
@@ -205,19 +205,19 @@ EXPECTED_SYN_TRUE = 7
 # Without this, deleting `SYN` from `DELIBERATE_DEPOSIT_DIVISIONS` is undetectable: all 7 canonical
 # SYN records are sha256 singletons, so they contribute nothing to the group/record pins below and
 # a PAT-only restriction yields *identically* 178/374.
-EXPECTED_SCOPED_RECORDS = 513
+EXPECTED_SCOPED_RECORDS = 519
 
 # Pinned so a future change that *stops* constraining records — by moving them out of PAT/SYN, or
 # by dropping them from canonical — fails loudly instead of turning the invariant into a check over
 # an empty set.
-EXPECTED_CONSTRAINED_GROUPS = 178
-EXPECTED_CONSTRAINED_RECORDS = 374
+EXPECTED_CONSTRAINED_GROUPS = 179
+EXPECTED_CONSTRAINED_RECORDS = 381
 
 # Counts alone constrain cardinality, not membership: a compensating swap (one group leaving the
 # scope, another joining) preserves 178/374 exactly. This digest pins *which* groups and which
 # accessions, so such a swap is visible.
 EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256 = (
-    "a1e8c284da03e2309f28f00de24e3942b4374e2d943da31220abe399706ed439"
+    "a114cc523ef305e7d9641027988898bc32374d2a4c9f0c37371da8d35fe6811a"
 )
 
 # The population the general falsification controls run over.
@@ -226,8 +226,8 @@ EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256 = (
 # canonical records (unaligned non-polio), which collapses 19 identical-sequence groups below two
 # members. Both counts fall by exactly 19 because all 19 were agreeing groups. Purely a
 # population-size effect — re-measured, not derived.
-EXPECTED_MULTI_MEMBER_GROUPS = 1625
-EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1613
+EXPECTED_MULTI_MEMBER_GROUPS = 1626
+EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1626
 
 # Invariant B's outstanding violations, pinned as the exact set of TRUE members per group.
 #
@@ -236,41 +236,22 @@ EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1613
 # which is the defect class this file exists to prevent, was therefore invisible. Set equality
 # catches a new violation and a silent resolution alike.
 #
-# Every entry resolves when the re-adjudication's flips reach `final/canonical/`. That needs the
-# private pipeline to rebuild and re-ship; nothing in this repository writes that file. When the
-# rebuild lands, this pin goes to `{}` minus whatever moves into
-# `LEGITIMATE_SAME_SEQUENCE_SPLITS` above.
+# **Empty since 2026-08-01, and that is the predicted outcome rather than a check going quiet.**
+# The pin said every entry resolves when the re-adjudication's flips reach `final/canonical/`, and
+# noted that nothing in this repository writes that file. Both halves came true at once: `final/`
+# is now `evgc build-metadata`'s own destination, so R-CONSTRUCT-2 writes the column, and all
+# twelve groups resolved together — no group moved into `LEGITIMATE_SAME_SEQUENCE_SPLITS`, because
+# the rule flips the *whole* byte-identical group rather than one member of it. The twelve were
+# `A09260`, the eight `DD2142xx` groups, `DD214216`+7 siblings, `DD214219`+3, `HW349523`+3 and
+# `PE314016`+1; git history at `1ecb937` has the full pin.
 #
 # `EXPECTED_KNOWN_SPLIT_COUNT` is asserted separately so that moving a group from this pin into the
 # legitimate one cannot happen silently: the union assertion alone is satisfied by any partition of
-# the same 12 groups, including emptying this set wholesale.
-KNOWN_SAME_SEQUENCE_SPLITS: frozenset[tuple[str, ...]] = frozenset(
-    {
-        ("A09260",),
-        (
-            "DD214216",
-            "DI499146",
-            "FV537074",
-            "HC025129",
-            "HV932178",
-            "JC013103",
-            "LY501106",
-            "LZ216101",
-        ),
-        ("DD214217",),
-        ("DD214218",),
-        ("DD214219", "DI499147", "HV202313", "JC013104"),
-        ("DD214220",),
-        ("DD214221",),
-        ("DD214222",),
-        ("DD214223",),
-        ("DD214224",),
-        ("HW349523", "LP131905", "MA783942", "MP510547"),
-        ("PE314016", "PH149759"),
-    }
-)
+# the same groups, including emptying this set wholesale. It is now a named zero, so the first new
+# split fails here rather than appearing as an unpinned key.
+KNOWN_SAME_SEQUENCE_SPLITS: frozenset[tuple[str, ...]] = frozenset()
 
-EXPECTED_KNOWN_SPLIT_COUNT = 12
+EXPECTED_KNOWN_SPLIT_COUNT = 0
 
 # Byte-identical groups where the ledger's own assertions are partial: it speaks for some members
 # and either contradicts, or stays silent about, byte-identical siblings that ship a different
@@ -294,15 +275,18 @@ EXPECTED_KNOWN_SPLIT_COUNT = 12
 #   superseded by a TRUE one and its byte-identical twin `PU749298` gained the matching row it never
 #   had. The group is now spoken for in full.
 #
-# `CS406436` and `CS406482` remain, and they are the live D2 defect in its original form: both carry
-# an active FALSE row while the release ships them TRUE. Nothing here can close that — the shipped
-# column is the thing that disagrees, and this repository does not write it.
-KNOWN_LEDGER_INCOHERENT_GROUPS: frozenset[tuple[str, ...]] = frozenset(
-    {
-        ("CS406436",),
-        ("CS406482",),
-    }
-)
+# **`CS406436` and `CS406482` closed on 2026-08-01, and the closure is worth reading twice.** They
+# were the live D2 defect in its original form: both carried an active FALSE ledger row while the
+# release shipped them TRUE, and the note here said "nothing here can close that — the shipped
+# column is the thing that disagrees, and this repository does not write it."
+#
+# It writes it now. `final/canonical/` is `evgc build-metadata`'s destination, R-CONSTRUCT-2 reads
+# the ledger, and both records ship FALSE alongside their byte-identical twins. The defect that
+# named this whole file — curation recorded in one place and applied in another — is closed by
+# making the two places the same place.
+#
+# Kept as a named empty set rather than deleted: the next partial adjudication should fail here.
+KNOWN_LEDGER_INCOHERENT_GROUPS: frozenset[tuple[str, ...]] = frozenset()
 
 
 @pytest.fixture(scope="module")
@@ -547,24 +531,13 @@ def test_the_engineered_population_matches_its_pins(
         )
 
 
-def test_the_blanket_patent_flag_is_recorded_as_a_known_defect(
-    engineered_by_accession: dict[str, str],
-    division_by_accession: dict[str, str],
-) -> None:
-    """Every single patent-division record ships TRUE, and that is the bug, not a finding.
-
-    Asserted rather than merely documented so the situation cannot be quietly *partially* fixed:
-    flipping some patent records without rewriting the predicate would leave a half-migrated column
-    that reads as if it had been adjudicated. When the rule rewrite lands this test must be deleted
-    along with the pins above, deliberately.
-    """
-    patent = {a for a in engineered_by_accession if division_by_accession.get(a) == "PAT"}
-    flagged = {a for a in patent if engineered_by_accession[a] == "TRUE"}
-    assert flagged == patent, (
-        "some patent records now ship FALSE, so the blanket flag is partially corrected: "
-        f"{len(patent) - len(flagged)} of {len(patent)}. Finish the predicate rewrite and retire "
-        "this test rather than leaving the column half-adjudicated."
-    )
+# `test_the_blanket_patent_flag_is_recorded_as_a_known_defect` was deleted here on 2026-08-01, on
+# the instruction it carried from the day it was written: "when the rule rewrite lands this test
+# must be deleted along with the pins above, deliberately." It asserted that *every* PAT record
+# ships TRUE — the signature of `\bPAT\b` matching as free text inside a 20-field blob — so that
+# the column could not be quietly half-corrected. R-CONSTRUCT-2 now writes the column and 488 of
+# the 512 patent records ship FALSE, which is the rewrite the test was waiting for rather than the
+# partial migration it was guarding against.
 
 
 def test_invariant_a_scope_membership_is_pinned(

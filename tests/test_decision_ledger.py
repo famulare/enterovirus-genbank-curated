@@ -185,12 +185,26 @@ VOCABULARY_REPAIR_NET_ACTIVE = len(VOCABULARY_REPAIR_ADDITIONS) - len(VOCABULARY
 # `virus_group` (2026-08-01). Not a curator adjudication and not a migrated registry, so it carries
 # its own `source_artifact` rather than borrowing either vocabulary.
 UPSTREAM_PARTITION_SOURCE = "upstream_partition_projection_2026-08-01"
-EXPECTED_UPSTREAM_PARTITION_ROWS = 1385
+EXPECTED_UPSTREAM_PARTITION_ROWS = 1379
+
+# The six the upstream projection could not reach, because upstream has no row for them either:
+# `A08076` and `HW505760`/`61`/`72`/`73`/`74`, patent deposits of 70-100 nt — far below the 50
+# compared codons R-MEMBERSHIP-AA-1's capsid-AA band needs, so every predicate declines. The
+# sequence settles it: `A08076` is 99.0% identical over its full length to the Sabin 1 reference
+# `AY184219.1`, and the five `HW*` fragments align at position 469 of the Sabin 3 reference
+# `AY184221.1` at 85.7-100% (`HW505772` is an exact substring). Their own definitions say so too —
+# "DNA sequence type PV1" and JP patent "INACTIVATED POLIOVACCINE".
+#
+# Separate `source_artifact` from the projection above because the basis is different in kind:
+# that one adopts another release's assignment, this one measures the deposited sequence.
+SHORT_PATENT_MEMBERSHIP_SOURCE = "short_patent_deposit_sequence_membership_2026-08-01"
+EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS = 6
 
 EXPECTED_STATUS = {
     "active": (
         2895
         + EXPECTED_UPSTREAM_PARTITION_ROWS
+        + EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
         + EXPECTED_VDPV_ROWS
         - RULE_REDUNDANT_RETIREMENTS
         - ADJUDICATION_RETIREMENTS
@@ -235,6 +249,7 @@ def test_ledger_satisfies_its_own_contract(
         + len(VOCABULARY_REPAIR_ADDITIONS)
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
         + EXPECTED_UPSTREAM_PARTITION_ROWS
+        + EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -661,10 +676,14 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     )
     assert sources[UPSTREAM_PARTITION_SOURCE] == EXPECTED_UPSTREAM_PARTITION_ROWS
+    assert (
+        sources[SHORT_PATENT_MEMBERSHIP_SOURCE] == EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
+    )
     assert set(sources) == registries | {
         "curator_adjudication_2026-07-29",
         "curator_adjudication_2026-07-31",
         UPSTREAM_PARTITION_SOURCE,
+        SHORT_PATENT_MEMBERSHIP_SOURCE,
     }
 
     repair_subjects = {subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS}

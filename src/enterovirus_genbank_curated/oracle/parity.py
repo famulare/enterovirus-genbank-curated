@@ -204,7 +204,19 @@ def verify_source_parity(repository_root: Path, *, guarded: bool = False) -> dic
 # record with no name serotype now measures VP1/capsid divergence against the band's own identified
 # serotype (`BASIS_VP1_BY_MEMBERSHIP_BAND`/`BASIS_CAPSID_BY_MEMBERSHIP_BAND` in `derive/evidence.py`),
 # not a name that was never going to state it.
-UNRESOLVED_PARTITION_ROWS = 1385
+#
+# 1,385 fell to **0** on 2026-08-01 (commit `c245dd3`). The upstream release already assigns 1,379
+# of them, projected into the ledger as `is_poliovirus` decisions under
+# `upstream_partition_projection_2026-08-01`; the remaining six — `A08076` and `HW505760`/`61`/`72`/
+# `73`/`74` — are absent upstream and 70-100 nt, far below the 50 compared codons the capsid-AA band
+# needs, and the curator calls them poliovirus fragments directly. No record now ships a blank
+# partition.
+#
+# Kept as a named zero rather than deleted, like `UNRESOLVED_ENGINEERED_ROWS` below: the next
+# organism name the rule cannot decide from should fail this gate rather than appear as a new key
+# nobody pinned. It is also the load-bearing one — `align/population.py` requires a partition on
+# every row, so a decline here is not a blank cell but a broken alignment layer.
+UNRESOLVED_PARTITION_ROWS = 0
 # `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: those where no keyword matches
 # `/isolation_source` and 4 where two categories match, naming two specimens rather than one. All 23
 # rescued records decline — patent deposits carry no `/isolation_source` — so this moved with them.
@@ -219,8 +231,13 @@ UNRESOLVED_SPECIMEN_ROWS = 12700
 #
 # Down a further 21, 2026-08-01, when the capsid-AA membership band resolved `virus_group` directly
 # for 140 more records: 21 of them deposit a `/host` and so read it here for the first time; the
-# other 119 have none and stay declined. See `SUPERSEDED_FIELD_DELTAS["sample_origin"]`.
-UNRESOLVED_ORIGIN_ROWS = 3661
+# other 119 have none and stay declined.
+#
+# Down a further 759 the same day, when the upstream partition projection closed `virus_group`
+# entirely: those 759 are now scoped and read their `/host`. The rest of the 1,385 newly-partitioned
+# records deposit no `/host` and no recognisable human specimen, so they stay declined here — a
+# resolved partition makes the question askable, not answered.
+UNRESOLVED_ORIGIN_ROWS = 2902
 # `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
 # its values — plus those whose partition is undecided and so cannot be scoped either way. 20 of the
@@ -228,9 +245,12 @@ UNRESOLVED_ORIGIN_ROWS = 3661
 #
 # Down a further 56, 2026-08-01, when the capsid-AA membership band resolved `virus_group` directly
 # for 211 more records: 56 of them name a surveillance context in their own text and read it here for
-# the first time; the rest do not and stay declined. See
-# `SUPERSEDED_FIELD_DELTAS["surveillance_stream"]`.
-UNRESOLVED_STREAM_ROWS = 8594
+# the first time; the rest do not and stay declined.
+#
+# Down a further 1,023 the same day, with the upstream partition projection. Same shape as
+# `sample_origin` above: a scoped record can be asked the question, and 1,023 of the newly-scoped
+# ones name a surveillance context in their own text. The others name none.
+UNRESOLVED_STREAM_ROWS = 7571
 # `engineered_or_construct` now declines on nothing. It declined on `LY501105` and `LZ216100`, the
 # CAVA cold-adaptation pair Appendix B of the re-adjudication recorded as open in either direction,
 # and the curator closed both FALSE on 2026-07-31 on the precedent already set inside patent
@@ -281,22 +301,30 @@ UNRESOLVED_TYPE_ROWS = 2216
 #
 # Down a further 708 the same day, when the reference-title text fallback landed
 # (`needs_other_data_text_fallback`): every one of the 708 had no divergence measurement by either
-# basis and so was declined before; 705 land on the value 2.4.1 ships and 3 do not (see the
-# `final_value` count in `SUPERSEDED_FIELD_DELTAS` above) — a decline turned into a value either way,
-# which is what leaves the declined population.
+# basis and so was declined before; 705 landed on the value 2.4.1 shipped and 3 did not — a decline
+# turned into a value either way, which is what leaves the declined population. (The per-column
+# disagreement tables those figures were declared in retired with the release comparison; the
+# measurements are kept here as the history of how this number got where it is.)
 #
 # Down a further 191 the same day, when isolate-linked inference landed: 192 candidates, 191 applied
-# (one, a short unverified key with no batch corroboration, stays declined). 190 of the 191 land on
-# the value 2.4.1 ships; the one that does not, `X70506`, is counted in `final_value` above.
+# (one, a short unverified key with no batch corroboration, stays declined). 190 of the 191 landed on
+# the value 2.4.1 shipped; the one that did not was `X70506`.
 #
 # Down a further 211, 2026-08-01, when the capsid-AA membership band resolved `virus_group` directly:
 # 71 records banded `non_polio_enterovirus` resolve to a determined blank (`not_applicable_outside_
 # poliovirus`, the same value the release ships for every non-poliovirus row) rather than declining
 # for "following" an undecided partition, and the other 140 banded `poliovirus` now measure VP1/
 # capsid divergence against the band's own identified serotype and resolve outright — 130 of the 140
-# land on the value 2.4.1 ships; the other 10 are counted in `final_value` above (8 genuine
-# disagreements, 2 not in the shared carve at all).
-UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60 - 708 - 191 - 211
+# landed on the value 2.4.1 shipped, 8 genuinely disagreed, and 2 were not in the shared carve at
+# all.
+#
+# Down a further 1,364 on 2026-08-01, when the upstream partition projection closed `virus_group`:
+# this rule declined on 1,385 records for "following" an undecided partition and now follows a
+# decided one instead — 1,364 of them resolve outright (most to the determined blank
+# `not_applicable_outside_poliovirus`, since the projection lands far more records in
+# `non_polio_enterovirus` than in `poliovirus`), and 21 are newly-scoped poliovirus records that
+# still have too little usable sequence to measure divergence over.
+UNRESOLVED_CLASSIFICATION_ROWS = 476
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 
