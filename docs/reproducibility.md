@@ -377,6 +377,39 @@ CPU and 582 MB at eight. One thread bought no memory that mattered and gave up a
 The default is now eight, a literal constant rather than `os.cpu_count()`, because the thread count
 is recorded in provenance and a declared input should not depend on the host that built it.
 
+**One measured regression in the 4.0.0 NPEV rebuild, and it is not tuned away here.** The CDS block
+came out at 14,598 columns against the previous rebuild's 12,705 and 2.4.1's 7,677, on a row set
+that grew by exactly one record. The extra width is not spread across the corpus — it is one
+accession:
+
+| | previous rebuild | 4.0.0 rebuild |
+|---|---|---|
+| rows | 14,217 | 14,218 |
+| CDS columns | 12,705 | 14,598 |
+| single-row columns | 3,258 | 5,205 |
+| `PX242045` columns it alone occupies | **0** | **2,169** |
+| `MG692415` | 1,980 | 2,022 |
+| `MG692413` | 768 | 768 |
+
+`PX242045` is an ordinary 7,327 nt Coxsackievirus A24 with 2,410 CVA24 siblings in the same
+alignment, so 2,169 private columns — 30% of its own length — is a placement failure, not biology.
+`MG692415` and `MG692413` were already like this and are unchanged; this is one record newly
+shredded.
+
+**The likely mechanism, stated as a hypothesis because it is not verified.** The only population
+change is `AF326751.2`, the Simian agent 5 genome the membership rescue admits — and it is an
+*addon*, as is `PX242045` (`enterovirus_type_sequence_confident=FALSE` for both). Addons are placed
+in one shared MAFFT `--addfragments` call, so fragments interact: a divergent addon can displace
+another. Confirming it costs one 75-minute rebuild with `AF326751.2` withheld, which has not been
+run. Do not read the table above as more than it says — it establishes *that* one record moved and
+*when*, not why.
+
+Nothing was tuned to make the number smaller. `--ep 0.5`, `--op 4.5` and `--lop -24.0` are the
+measured settings recorded in `parameter_departures`, and reaching for them to flatten a single
+record's placement would be fitting a global parameter to one accession. The shape report counts
+single-row columns and names their owners on every build precisely so this is visible without
+anyone going looking.
+
 **What the rebuild is honest about.** The NCR blocks keep only `cmalign` match columns, so
 insert-column residues are discarded; the anchored CDS projection drops insertions relative to the
 reference for the same reason a fixed reference frame must. Both are lossy by construction and both
