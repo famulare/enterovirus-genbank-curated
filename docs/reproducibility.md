@@ -29,15 +29,18 @@ declared in `final/audit/release_file_manifest.tsv`. All twenty-four match byte-
 repeated builds are byte-stable. Only `genbank_source.duckdb` is excluded, because DuckDB file
 bytes are not reproducible; the manifest records a logical-content hash for it.
 
-**Partly reproducible — `final/canonical/sequence_metadata.tsv.gz`.** `evgc parity-metadata`
-rebuilds the canonical carve from `raw/sequence.gb.zip` and `registry/decisions.tsv` alone and
-compares it to the shipped table cell by cell:
+**Rebuilt, and no longer compared — `final/canonical/sequence_metadata.tsv.gz`.** `evgc
+build-metadata` writes it from `raw/sequence.gb.zip` and `registry/decisions.tsv` alone. Until
+2026-08-01 `evgc parity-metadata` compared the rebuild to the shipped table cell by cell; that
+comparison retired with the promotion, because `final/` now holds what the build writes. What it
+established while it ran is recorded below and did not stop being true — it stopped being
+*checkable* against this tree, which is a different thing and worth saying plainly.
 
 ```bash
-evgc parity-metadata    # 24,299 rows x 13 transported columns, cell for cell
+evgc check-declines    # the successor: every declined cell equals its declared count
 ```
 
-This is a *transport* claim, not a claim on the table. Thirteen of the twenty-six canonical columns
+This was a *transport* claim, not a claim on the table. Thirteen of the twenty-six canonical columns
 hold a GenBank value moved into a canonical column — `accession`, `version`, `sequence_sha256`,
 `sequence_length_nt`, `ncbi_taxid`, `organism_name`, `isolate_name`, `strain_name`, `host_name`,
 `country`, `admin1`, `locality`, `biosample_accession`. Every one of those cells matches the
@@ -557,7 +560,7 @@ The `final/` read refusal is new, and it changed how the `parity-*` verbs run. R
 left the failure that matters wide open: a derive stage that reads the shipped canonical table can
 reproduce it perfectly and prove nothing, and reaching for that read is exactly what happens while
 someone calibrates a rule against the oracle. The comparison itself must read `final/`, so
-`--guard-inputs` on `evgc parity-source` and `evgc parity-metadata` now runs the **build in a guarded
+`--guard-inputs` on `evgc parity-source` and `evgc check-declines` runs the **build in a guarded
 child process** and compares in the unguarded parent, and it fails unless that child reported the
 guard's own PASS line. Before this, the guard was installed in the same process that then read the
 release, which made it structurally unable to distinguish a build reading the comparison target from
@@ -737,7 +740,7 @@ column, so any substitution fails. Columns whose count already equals every comp
 because "all of them" is already an identity.
 
 **The cross-column invariants were enforced by nothing.** Replacing both with no-ops left `pytest`,
-`pytest -m slow`, `validate-contracts` and `parity-metadata` all green — so the claim that they are
+`pytest -m slow`, `validate-contracts` and the then-current `parity-metadata` all green — so the claim that they are
 enforced was prose, which is R2 in the file that describes R2. `tests/test_invariants.py` now supplies
 a negative control per property plus positive controls. Two real holes went with it: a locality row
 whose transport row was missing skipped all four checks rather than failing, and either invariant

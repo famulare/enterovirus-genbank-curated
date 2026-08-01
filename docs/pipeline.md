@@ -116,7 +116,7 @@ evgc validate-ledger registry/decisions.tsv
 evgc build-source   --output DIR
 evgc parity-source
 evgc build-metadata --output DIR
-evgc parity-metadata
+evgc check-declines
 evgc alignment-population
 evgc alignment-toolchain
 evgc alignment-verify-seeds
@@ -149,12 +149,12 @@ evgc verify
 evgc parity --against releases/2.4.1
 ```
 
-`parity-metadata` is a cell-level check rather than a file hash, because a build's bytes are
-legitimately not the release's bytes: it now fills 25 of the 26 canonical columns, but with values
-derived rather than copied, and its carve is not the shipped carve. What it claims is narrower and
-checkable: every cell it produces equals the shipped cell, for every record both agree belongs in the
-carve, in the same order. Where it declines to agree it says so as a count rather than passing —
-`oracle/parity.py`'s `UNRESOLVED_*` constants and `SUPERSEDED_FIELD_DELTAS`. The row-set gap is
+`check-declines` replaced `parity-metadata` on 2026-08-01. The old verb compared the rebuilt
+transport to `final/` cell by cell, which was the right check while `final/` held 2.4.1 and is a
+self-comparison now that it holds this build's own output. The replacement makes a claim that needs
+no oracle: the build declines exactly where `oracle/parity.py`'s `UNRESOLVED_*` constants say it
+declines, per canonical field, including the named zeros. A rule that quietly starts guessing where
+it used to refuse moves a number there and fails. The row-set gap is still
 declared in code, compared for equality, and invisible to the build; `R-MEMBERSHIP-AA-1` closed most
 of it, leaving two records, and the build now carves 24,308 rows against the shipped 24,301 — see
 [`reproducibility.md`](reproducibility.md).
@@ -167,7 +167,7 @@ of it, leaving two records, and the build now carves 24,308 rows against the shi
 4. Retirement — not replacement — of the two frozen legacy upstream stages. Investigating them
    showed there is nothing to rebuild: see below.
 5. Deterministic derivation and versioned rules. **Delivered:** the canonical metadata transport
-   (`evgc parity-metadata`) covers the 13 columns that are source values, the 12 computed columns are
+   covers the 13 columns that are source values, the 12 computed columns are
    derived by `derive/typing.py`, `derive/classification.py`, `derive/engineered.py` and
    `derive/evidence.py`, and `registry/rules.json` declares all 28 rules with their thresholds as
    data, regenerating the shipped rule table byte-for-byte. `locality` is projected through the rule
