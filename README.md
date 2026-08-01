@@ -104,7 +104,7 @@ into `final/` or `raw/`, which are immutable.
 
 ```bash
 evgc parity-metadata                          # 24,299 rows: 13 transported columns + 12 projected
-evgc build-metadata --output release/3.2.0    # write the whole dataset, manifests included
+evgc build-metadata --output release/3.3.0    # write the whole dataset, manifests included
 ```
 
 From `raw/` and `registry/` alone this carves the canonical row set and fills **25 of the 26
@@ -133,19 +133,20 @@ combination it agrees on 86.7% of poliovirus records, with systematic rather tha
 `record_type` is not a function of coverage against Sabin VP1 alone, and fitting to 86.7% would
 assert a wrong determination on 1,332 records. It stays declared-pending instead.
 
-What that same stage *does* support is classification. `poliovirus_classification` is decided by VP1
-nucleotide divergence from the matching Sabin reference, using the thresholds the release already
-publishes in its own rule table — Sabin-like below 1% (0.6% for PV2), wild at or above 15%. Measured
-before those parameters were read, every `Sabin-like` record in the release sits below 1% and every
-`wild` record above 18%, so the published thresholds are recovered from the data rather than imposed
-on it.
+What that same stage *does* support is classification. `poliovirus_classification` is decided by
+nucleotide divergence from the matching Sabin reference — VP1 first, and where VP1 alone is absent
+or too short, the whole capsid (VP4-VP2-VP3-VP1) as a guarded fallback — using the thresholds the
+release already publishes in its own rule table — Sabin-like below 1% (0.6% for PV2), wild at or
+above 15%. Measured before those parameters were read, every `Sabin-like` record in the release sits
+below 1% and every `wild` record above 18%, so the published thresholds are recovered from the data
+rather than imposed on it.
 
 Three properties matter as much as the coverage. A rule that cannot decide from declared inputs
 **declines** rather than guessing — 12,700 records whose `/isolation_source` carries no specimen
-keyword, 3,189 whose classification no sequence or ledger row settles, 2,216 whose organism name
+keyword, 3,041 whose classification no sequence or ledger row settles, 2,216 whose organism name
 states no type, 1,596 whose organism name cannot settle poliovirus membership — and every declined
 cell becomes one row in a curation queue, grouped by the input the rule could not decide from, so
-that 28,392 declined cells reduce to 302 curator questions. The build cannot read `final/` at all:
+that 28,244 declined cells reduce to 302 curator questions. The build cannot read `final/` at all:
 the undeclared-input guard refuses it, so a rule cannot quietly reproduce the answer it is being
 compared against. And a blank cell is never a claim — `audit/projection_provenance.tsv.gz` carries
 `unresolved_reason` per cell, and `audit/build_manifest.json` states per column how many cells are
@@ -159,9 +160,9 @@ assertion sitting in the ledger for two releases while the pipeline quietly reco
 of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
 canonical column now reaches a rule that projects it.
 
-### Release 3.2.0
+### Release 3.3.0
 
-`release/3.2.0/` is the dataset this pipeline produces end to end from public inputs. 3.0.0 was the
+`release/3.3.0/` is the dataset this pipeline produces end to end from public inputs. 3.0.0 was the
 **major** break: `engineered_or_construct` flips TRUE to FALSE on 511 records (2.4.1's predicate
 matched the database division code as free text, so it largely reported *where* a sequence was
 deposited); `sequence_scope` is empty; and several thousand cells are blank-because-undetermined where
@@ -195,13 +196,62 @@ testing the organism name before the ledger, so 259 records named only `Enterovi
 `Enterovirus coxsackiepol` (the polio-*containing* species, hence uninformative alone) declined
 `virus_group`, and then declined `poliovirus_classification` for "following" a partition a
 paper-based ledger decision had already settled. All 259 land on the value 2.4.1 already ships.
-[`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
-one of the 2,159 remaining differences from 2.4.1's `poliovirus_classification` by category — mostly
-epidemiological attribution (`cVDPV` vs `iVDPV` vs `wild`) that no property of a sequence carries.
 
 Two audit views the build could already produce are now written: `audit/rules.tsv.gz`, which
-reproduces the shipped file byte-for-byte, and `audit/vp1_divergence.tsv.gz`, the VP1 divergence
-measurement `poliovirus_classification` was decided from and previously discarded after use.
+reproduces the shipped file byte-for-byte, and `audit/classification_divergence.tsv.gz`, the
+divergence measurement `poliovirus_classification` was decided from and previously discarded after
+use.
+
+3.3.0 adds a fallback to the same rule, for records VP1 alone cannot classify. 1,911 carved,
+name-serotyped records have no usable VP1 at all; `derive/evidence.compare_capsid_nt` measures
+divergence over the whole capsid (VP4-VP2-VP3-VP1) instead, over the same thresholds — the same
+VP1-first / P1-fallback precedence MAD-VDPV's own sequence classifier states outright. 148 records
+newly resolve, every one agreeing with the shipped classification wherever 2.4.1 has one to compare
+against.
+
+The fallback needed a guard VP1 alone does not — at the time. VP1 in poliovirus has no indels
+relative to Sabin — measured, and the reason an ungapped single-offset comparison is exact there —
+but that fact does not extend to VP4, VP2 or VP3, and two records surfaced it directly: a run of
+mismatches at the unrelated-sequence rate beginning at one exact position, resolved by shifting the
+query **one nucleotide** from that point on. A real indel in a coding, replicating poliovirus genome
+must be a multiple of three to preserve the reading frame, so a one-nucleotide break is a single bad
+base call in the deposit, not biology. `derive/evidence.py` declines the whole comparison when any
+150 nt chunk of it deviates from the window's own divergence by more than a measured floor — the
+three broken windows this found sit at 21.5, 21.8 and 55.2 percentage points of internal deviation;
+the next-highest genuine one sits at 8.1.
+
+`MIN_VP1_NT`/`MIN_CAPSID_NT` later dropped from 300 to MAD-VDPV's own published floor, 50 nt,
+recovering 60 more declines, every one agreeing with the shipped classification — but lowering the
+floor without protection surfaced the same single-bad-base failure in VP1 for the first time
+(`AY320423`, `JN092124`, `AY365233`, each 15-24 points more divergent than MAD-VDPV's own alignment
+over a 171-225 nt window), because the old 300 nt floor had always been enough sequence to dilute one
+bad call rather than be defined by it. `compare_vp1` now shares `compare_capsid_nt`'s
+chunked-homogeneity guard below the old floor, unchanged at or above it.
+
+Two more mechanisms close most of what was left. A reference-title text fallback
+(`derive.classification._group_b_text_fallback`) reads the cited paper's title — a new
+`RecordView.reference_titles` input, never read anywhere else — for `wild`/`VDPV`/`Sabin-like` only,
+and fires only where no divergence measurement exists at all: 708 records resolve, 705 agreeing with
+the shipped value (3 do not, traced to a diagonal-search bug on those specific records rather than a
+text-matching error — see `oracle/parity.py`). Isolate-linked inference
+(`derive/isolate_linkage.py`) is a whole-corpus pass, not a per-record rule — it runs once every
+`poliovirus_classification` row is projected and inherits a value from a sibling accession sharing
+the depositor's own `isolate`/`strain` name and serotype, when every such sibling with a *measured*
+classification (never a decision or the text fallback — propagating either would compound whichever
+one is wrong) agrees on one label: 191 more resolve, 190 agreeing (the one that does not is the
+known Mahoney/Sabin-1 trap below, reaching a second record through the link).
+
+[`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
+one of the 666 remaining differences from 2.4.1's `poliovirus_classification` by category — 97.3%
+of the shared carve agrees, and 608 of the 666 are a decline rather than a contradiction. The
+epidemiological refinement `cVDPV`/`iVDPV` is now emitted wherever the record itself states it,
+including from `isolation_source` and `note`; the 95 that were not are two published environmental
+studies whose circulation claim lives in the paper rather than in any deposit, and a further 28
+strain-identity/patent (`reference_or_lab_text`) and unpublished-reference (`group_A_text_owned`)
+records are likewise now decisions rather than declines — all traced by decomposing the largest
+remaining discrepancy block into MAD-VDPV's own named mechanisms. Only the 4 `chimera` records remain
+outside the sequence rule's reach — a recombination-detection rule was built and reverted after it
+misclassified 192 other records, see the migration-gap doc for why.
 
 It carries no wall-clock timestamp. `audit/build_manifest.json` identifies the build by the hashes of
 its four determinants — the frozen archive, the decision ledger, the rule catalog, and the code — so

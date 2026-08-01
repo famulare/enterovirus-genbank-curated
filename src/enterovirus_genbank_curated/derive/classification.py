@@ -44,6 +44,15 @@ claim about transmission that this pipeline has no input for.
 A record whose definition or strain *does* name the refinement gets it, since that is the depositor
 stating it.
 
+## VP1-first, capsid-fallback
+
+1,911 carved, name-serotyped records have no usable VP1: too short, or VP1 not deposited at all.
+`derive/evidence.py` falls back to the whole capsid (VP4-VP2-VP3-VP1) for these, the same fallback
+MAD-VDPV's own pipeline takes, over the same thresholds — a longer region to ask the same question,
+not a different one. This rule does not know or care which basis answered it; `view.evidence[
+EVIDENCE_BASIS]` is carried into `source_value` for the audit trail, and nowhere else, because the
+threshold logic below is identical either way.
+
 ## Order of precedence, and where it declines
 
 1. Outside poliovirus the column is **blank by determination**, not declined — the vocabulary is
@@ -51,8 +60,15 @@ stating it.
 2. An undecided partition declines: nothing can be said until membership is settled.
 3. An active `verified_classification` or `classification` decision wins outright.
 4. A refinement named in the record's own text wins over the bare band.
-5. Otherwise the VP1 band, if at least 300 nt of VP1 was compared.
-6. Otherwise decline — no serotype in the organism name to pick a reference with, or too little VP1.
+5. Otherwise the divergence band, VP1 if at least 50 nt of VP1 was compared (below 300 nt, only if
+   it also clears the chunked-homogeneity guard), else the capsid fallback over the same floor and
+   guard (`derive/evidence.compare_capsid_nt`).
+6. No serotype in the organism name to pick a reference with: decline.
+7. No divergence measurement by either basis: fall back to `wild`/`VDPV`/`Sabin-like` named in the
+   record's own text or the cited paper's title (`_group_b_text_fallback`) — MAD-VDPV's own
+   `needs_other_data_text_fallback`. `iVDPV`, `cVDPV` and the reference/lab labels are excluded from
+   this fallback on purpose; see `_GROUP_B_TEXT_PATTERNS`.
+8. Otherwise decline — too little usable sequence by either basis, and no text label to fall back to.
 
 `unresolved` is a value in the shipped vocabulary and this rule never emits it. A cell the pipeline
 cannot decide is an unresolved *cell*, carrying its reason into the provenance table and the
@@ -62,7 +78,7 @@ curation queue; writing "unresolved" into the column would record a non-answer a
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from decimal import Decimal
 from typing import Any
 
@@ -75,10 +91,23 @@ ORGANISM_FIELD = "organism_name"
 DEFINITION_FIELD = "definition"
 STRAIN_QUALIFIER = "strain"
 ISOLATE_QUALIFIER = "isolate"
+# Both carried on the `source` feature, which is the only feature `derive/apply.py` collects
+# qualifiers from — so these are record-level statements by the depositor about this deposit, the
+# same standing as `strain` and `isolate` and not the same standing as a study title.
+ISOLATION_SOURCE_QUALIFIER = "isolation_source"
+NOTE_QUALIFIER = "note"
+# Not `DEFINITION_FIELD`: the text-refinement branch already uses that `source_field` for a
+# `source_value` that is a divergence citation (a real measurement exists on that branch, and the
+# text only picks a refinement within its band). The fallback below has no measurement to cite —
+# its `source_value` is the matched substring itself — and giving it a different field name is what
+# keeps `test_the_real_build_writes_the_measurement_r_class_2_cited` from mistaking one for the
+# other.
+REFERENCE_TITLES_FIELD = "reference_titles"
 
-EVIDENCE_DIVERGENCE = "vp1_divergence_pct"
-EVIDENCE_COMPARED = "vp1_compared_nt"
-EVIDENCE_REFERENCE = "vp1_reference_version"
+EVIDENCE_DIVERGENCE = "divergence_pct"
+EVIDENCE_COMPARED = "compared_nt"
+EVIDENCE_REFERENCE = "reference_version"
+EVIDENCE_BASIS = "basis"
 
 LEDGER_VERIFIED = "verified_classification"
 LEDGER_CLASSIFICATION = "classification"
@@ -94,18 +123,59 @@ BASIS_TEXT_REFINEMENT = "vdpv_refinement_in_record_text"
 BASIS_SABIN_LIKE = "vp1_divergence_below_sabin_like_threshold"
 BASIS_VDPV = "vp1_divergence_in_vaccine_derived_band"
 BASIS_WILD = "vp1_divergence_at_or_above_wild_threshold"
+BASIS_TEXT_FALLBACK = "text_classification_no_sequence_signal"
 
 UNRESOLVED_FOLLOWS_PARTITION = "follows_unresolved_virus_group"
 UNRESOLVED_NO_SEROTYPE = "no_serotype_in_organism_name_to_choose_a_reference"
-UNRESOLVED_TOO_LITTLE_VP1 = "too_little_vp1_compared_to_measure_divergence"
+# Covers both a VP1 measurement that never reached MIN_VP1_NT and a capsid fallback that either
+# could not reach MIN_CAPSID_NT or failed the homogeneity guard — one reason, matching the existing
+# grain of this rule's other reasons: `compare_vp1` already collapses several distinct failures
+# (no diagonal, too short, implausible) into the one outcome of returning `None`.
+UNRESOLVED_INSUFFICIENT_SEQUENCE = "too_little_sequence_compared_to_measure_divergence"
 UNRESOLVED_UNCONTROLLED_VALUE = "curated_value_outside_the_controlled_vocabulary"
 
 # Refinements a depositor may state outright. Longest-first, so `cVDPV` is not read as `VDPV`.
+#
+# `iVDPV` matches an immunodeficient *host* as well as the token, because the refinement is a claim
+# about the host and a depositor who writes `isolation_source="... from an immunodeficient individual
+# who received OPV and developed paralysis"` has stated it as plainly as one who writes `iVDPV`. This
+# is the same record-level standard MAD-VDPV settled on: its own text miner gates `iVDPV` on
+# immunodeficiency evidence in record-level fields specifically, after a title-only match was found
+# stamping `iVDPV` onto a paper's wild comparators.
+#
+# `cVDPV` gets no matching widening, and the asymmetry is deliberate. Circulation is a claim about a
+# transmission chain reconstructed across isolates, so no single record's own text can establish it,
+# and there is no `cVDPV` equivalent of "immunodeficient individual" for a depositor to state. A
+# record that says `cVDPV` outright is honoured; nothing is inferred on its behalf.
+#
+# `aVDPV` was here and is deliberately gone. It is not in this column's controlled vocabulary, so
+# emitting it shipped a value the column does not declare — see `_stated_refinement`.
 _REFINEMENTS = (
     (re.compile(r"\bcvdpv[123]?-?n\b", re.IGNORECASE), "cVDPV-n"),
     (re.compile(r"\bcvdpv", re.IGNORECASE), "cVDPV"),
-    (re.compile(r"\bivdpv", re.IGNORECASE), "iVDPV"),
-    (re.compile(r"\bavdpv", re.IGNORECASE), "aVDPV"),
+    (re.compile(r"\bivdpv|immunodeficien|immunocompromised", re.IGNORECASE), "iVDPV"),
+)
+
+# The band a record's own text may state when no sequence measurement of any kind exists to ask
+# instead — `derive.evidence` never got a comparison to make, not "made one and a decision
+# overrides it". Longest/most-specific first, matching MAD-VDPV's own `CLASS_PATTERNS` order and
+# regexes (`infer_genbank_metadata.py`) for the three bands this pipeline can also reach by
+# sequence: `VDPV` (`aVDPV` included and normalized, the same treatment `_stated_refinement`
+# already gives it), `Sabin-like`, `wild`.
+#
+# `iVDPV`, `cVDPV` and the reference/lab labels (`Sabin`, `vaccine`, `engineered/lab`, ...) are
+# deliberately absent, not merely lower-precedence: MAD-VDPV's own text miner reaches those too, but
+# every record in *this* pipeline's corpus where it does was traced and migrated as an individual
+# ledger decision (`reference_or_lab_text`, `group_A_text_owned`), not automated, because circulation
+# and strain identity are curator calls this pipeline has no automated input for. Restricting the
+# pattern list rather than filtering matches afterward means a record whose text says `cVDPV` is not
+# matched at all here (`\bVDPV\b` does not match inside `cVDPV` — no word boundary precedes the `V`),
+# so it falls through to decline exactly as it did before this rule existed, the same conservative
+# default as finding no text at all.
+_GROUP_B_TEXT_PATTERNS = (
+    (re.compile(r"\bavdpv\b|\bvdpv\b|vaccine[- ]derived poliovirus", re.IGNORECASE), VDPV),
+    (re.compile(r"sabin[- ]like", re.IGNORECASE), SABIN_LIKE),
+    (re.compile(r"\bwild[- ]?type\b|\bwpv[123]?\b|wild poliovirus", re.IGNORECASE), WILD),
 )
 
 
@@ -115,15 +185,37 @@ def _record_text(view: RecordView) -> str:
             view.record.get(DEFINITION_FIELD, ""),
             view.qualifier(STRAIN_QUALIFIER),
             view.qualifier(ISOLATE_QUALIFIER),
+            view.qualifier(ISOLATION_SOURCE_QUALIFIER),
+            view.qualifier(NOTE_QUALIFIER),
         )
     )
 
 
-def _stated_refinement(text: str) -> str:
+def _stated_refinement(text: str, controlled_values: Collection[str]) -> str:
+    """The refinement the record states, or empty when it states none this column can carry.
+
+    The vocabulary check is applied here and not only on the ledger path. It used to guard the ledger
+    alone, so `aVDPV` — which the vocabulary does not contain — shipped on `PP481414` from the text
+    path while the identical string asserted by a decision would have been declined. One rule cannot
+    hold two standards for the same column, and the release ships `VDPV` there, which is true of
+    every record in the band.
+    """
     for pattern, value in _REFINEMENTS:
         if pattern.search(text):
-            return value
+            return value if value in controlled_values else ""
     return ""
+
+
+def _group_b_text_fallback(text: str, controlled_values: Collection[str]) -> tuple[str, str]:
+    """`(value, matched substring)` for the `wild`/`VDPV`/`Sabin-like` named in the text, for a
+    record with no divergence measurement at all — MAD-VDPV's `needs_other_data_text_fallback`. See
+    `_GROUP_B_TEXT_PATTERNS` for why `iVDPV`, `cVDPV` and the reference/lab labels are not in scope
+    here. `("", "")` when nothing matches or the match is outside the controlled vocabulary.
+    """
+    for pattern, value in _GROUP_B_TEXT_PATTERNS:
+        if match := pattern.search(text):
+            return (value, match.group(0)) if value in controlled_values else ("", "")
+    return "", ""
 
 
 @rule_implementation(
@@ -136,6 +228,7 @@ def _stated_refinement(text: str) -> str:
         BASIS_SABIN_LIKE,
         BASIS_VDPV,
         BASIS_WILD,
+        BASIS_TEXT_FALLBACK,
     ),
 )
 def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
@@ -201,19 +294,39 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
     compared = view.evidence.get(EVIDENCE_COMPARED, "")
     divergence = view.evidence.get(EVIDENCE_DIVERGENCE, "")
     reference = view.evidence.get(EVIDENCE_REFERENCE, "")
+    basis = view.evidence.get(EVIDENCE_BASIS, "")
     if not compared or not divergence:
+        # No sequence signal of any kind — not "measured, and a decision overrides it" (step 3
+        # already returned for that), and not "measured, and the record's own text names a finer
+        # refinement" (step 4, below, is the divergence band's business). MAD-VDPV's own text
+        # miner reaches for the cited paper's title here, and so does this: `reference_titles`
+        # is the one field genuinely absent from `_record_text`'s scope, because nowhere else
+        # does this rule read the study rather than the deposit.
+        fallback_text = " ".join(
+            (_record_text(view), view.record.get(ORGANISM_FIELD, ""), view.reference_titles)
+        )
+        stated, matched_text = _group_b_text_fallback(fallback_text, parameters["controlled_values"])
+        if stated:
+            return RuleOutcome(
+                value=stated,
+                evidence_basis=BASIS_TEXT_FALLBACK,
+                source_field=REFERENCE_TITLES_FIELD,
+                source_value=matched_text,
+            )
         return RuleOutcome(
             value="",
             evidence_basis=BASIS_SABIN_LIKE,
             source_field=EVIDENCE_COMPARED,
             source_value=compared,
-            unresolved_reason=UNRESOLVED_TOO_LITTLE_VP1,
+            unresolved_reason=UNRESOLVED_INSUFFICIENT_SEQUENCE,
         )
 
     measured = Decimal(divergence)
     sabin_like_ceiling = Decimal(str(parameters["sabin_like_threshold_pct"][serotype[-1]]))
     wild_floor = Decimal(str(parameters["wild_threshold_pct"]))
-    evidence = f"{divergence}% over {compared} nt vs {reference}"
+    # `basis` is VP1 on almost every row and P1_capsid only on the fallback ones, so it is worth
+    # naming in the audit trail even though the threshold logic below never reads it.
+    evidence = f"{divergence}% over {compared} nt of {basis} vs {reference}"
 
     if measured < sabin_like_ceiling:
         return RuleOutcome(
@@ -229,7 +342,7 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
             source_field=EVIDENCE_DIVERGENCE,
             source_value=evidence,
         )
-    if stated := _stated_refinement(_record_text(view)):
+    if stated := _stated_refinement(_record_text(view), parameters["controlled_values"]):
         return RuleOutcome(
             value=stated,
             evidence_basis=BASIS_TEXT_REFINEMENT,

@@ -332,15 +332,48 @@ UNRESOLVED_ENGINEERED_ROWS = 0
 # reason they land in `UNRESOLVED_PARTITION_ROWS`.
 UNRESOLVED_TYPE_ROWS = 2216
 # `poliovirus_classification` rows R-CLASS-2 declines: 1,596 whose virus group is itself undecided,
-# 1,557 poliovirus records with under 300 nt of VP1 to measure divergence over, 33 with no serotype
-# in the organism name to pick a Sabin reference with, and 3 whose active decision asserts a value
-# outside the declared controlled vocabulary.
+# 1,409 poliovirus records with too little usable sequence by either basis to measure divergence
+# over, 33 with no serotype in the organism name to pick a Sabin reference with, and 3 whose active
+# decision asserts a value outside the declared controlled vocabulary.
 #
-# Down 259 from 3,448, and every one of those 259 is a curated call the previous order threw away:
-# the partition declined on an uninformative organism name, this rule declined for "following" it,
-# and the `classification` decision stating cVDPV or wild was never read. A rule declining because a
-# *weaker* signal was silent is the failure mode; see derive/partition.py.
-UNRESOLVED_CLASSIFICATION_ROWS = 3189
+# Down 259 from 3,448 when a curated classification began entailing membership — every one of those
+# 259 is a curated call the previous order threw away: the partition declined on an uninformative
+# organism name, this rule declined for "following" it, and the `classification` decision stating
+# cVDPV or wild was never read. A rule declining because a *weaker* signal was silent is the failure
+# mode; see derive/partition.py.
+#
+# Down a further 148 from 3,189 when the capsid (P1) nucleotide fallback landed: of the 1,911
+# carved, name-serotyped records VP1 alone cannot reach, 159 clear the fallback's own guards, and
+# 11 of those already had an active ledger decision that would have resolved them regardless, so
+# only 148 newly resolve here. All 148 agree with the shipped classification wherever 2.4.1 has one
+# to compare against — the same measured floor and homogeneity guard `derive/evidence.py` documents,
+# applied to the real corpus rather than to the three records that motivated it.
+#
+# Down a further 3 on 2026-07-31 when the vocabulary repairs resolved `AJ416942`, `DQ205099` and
+# `FJ517648`, whose active decisions the rule was declining rather than shipping (an out-of-
+# vocabulary asserted value) until each was repaired to a value the controlled vocabulary contains.
+# The 115 cVDPV/strain-identity decisions the same day do not move this count: every one of those
+# 115 already had a resolved value before the decision, just the wrong one, so none was declined.
+#
+# Down a further 28 the same day: 24 reference_or_lab_text records (12 `Sabin`, 10 `engineered/lab`,
+# 1 `recombinant/lab`, 1 `reference/lab` — strain-identity/patent deposits too short to reach a
+# divergence measurement) and 4 more `group_A_text_owned` `cVDPV` records, none of which had a prior
+# decision, so all 28 leave the declined population for the first time.
+#
+# Down a further 60 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (MAD-VDPV's own
+# `MIN_SEROTYPE_COMPARED_NT`), guarded by extending the chunked-homogeneity check to VP1 below its
+# old 300 nt floor. Every one of the 60 agrees with the shipped classification.
+#
+# Down a further 708 the same day, when the reference-title text fallback landed
+# (`needs_other_data_text_fallback`): every one of the 708 had no divergence measurement by either
+# basis and so was declined before; 705 land on the value 2.4.1 ships and 3 do not (see the
+# `final_value` count in `SUPERSEDED_FIELD_DELTAS` above) — a decline turned into a value either way,
+# which is what leaves the declined population.
+#
+# Down a further 191 the same day, when isolate-linked inference landed: 192 candidates, 191 applied
+# (one, a short unverified key with no batch corroboration, stays declined). 190 of the 191 land on
+# the value 2.4.1 ships; the one that does not, `X70506`, is counted in `final_value` above.
+UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60 - 708 - 191
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -402,9 +435,32 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "source_value": "3ecf43454058cfeb",
     },
     "poliovirus_classification": {
-        "final_value": "2f3109db557bd43b",
-        "source_value": "149a62cb6d0e0fea",
-        "manual_override": "8b68cdaac2368907",
+        # Re-witnessed 2026-07-31 when the 115 cVDPV/strain-identity decisions cut `final_value`
+        # from 169 to 54. The digest had to move along with the count: 115 records left the
+        # disagreeing set entirely.
+        #
+        # Re-witnessed again the same day when the reference-title text fallback added 3 wrong
+        # values (`AF083938`, `HM537010`, `MG212473` — see the count comment above) on top of the
+        # 54: a different, larger disagreeing set even though the direction of movement (up, not
+        # down) is itself notable enough to be commented at the count.
+        #
+        # Re-witnessed again the same day when isolate-linked inference added one more, `X70506`
+        # (see the count comment above): 54 -> 57 -> 58, each step a different disagreeing set.
+        "final_value": "bb99d3f701d8aa62",
+        # `source_value` here counts *mismatches*, not agreements — see the reading note above the
+        # count declarations. Re-witnessed 2026-07-31 when the VP1/capsid floor dropped to 50 nt: 60
+        # more records join the mismatching set, each a newly-measured divergence whose composed
+        # string never existed before to compare at all.
+        #
+        # Re-witnessed again the same day when the text fallback added 707 more mismatching records.
+        #
+        # Re-witnessed again the same day when isolate-linked inference added 191 more.
+        "source_value": "4093e70d8c20ea74",
+        # Re-witnessed again the same day when the 28 reference_or_lab_text/group_A_text_owned
+        # decisions joined `manual_override` at the same count-preserving position (386, up from
+        # 358): the set of *which* records carry the flag grew even though `final_value`'s own
+        # disagreeing set did not move.
+        "manual_override": "f563a7137f64b399",
     },
 }
 
@@ -637,41 +693,159 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # ledger is a row the release also marked as overridden, including the five it then blanked.
         "manual_override": 0,
     },
-    # 413 of 20,859 move, and 348 of those are one declared coarsening rather than a disagreement
-    # about any record: 302 `cVDPV` and 46 `iVDPV` become the bare `VDPV`. Circulating versus
-    # immunodeficient is an epidemiological attribution, no property of the sequence carries it, and
-    # it is not in the record either — only 283 of the release's 1,767 `cVDPV` records name `cVDPV`
-    # anywhere in their definition, strain or isolate. `VDPV` is true of every record in the band,
-    # so the rule reports the band and leaves the refinement to the ledger or the queue.
+    # 169 of 20,859 move. This was 413 until `_record_text` was widened to read the two other
+    # record-level `source` qualifiers, `isolation_source` and `note`; 248 records carry the release's
+    # own refinement in one of those two fields and were being coarsened only because the rule was
+    # not looking at them. The largest single block was the Angola 2019-2020 cVDPV2 set, whose
+    # `note` reads `type: cVDPV2 VP1` on all 192 records.
     #
-    # Of the remaining 65: about 40 sit at a threshold (13 `wild` -> `VDPV`, 11 `Sabin-like` ->
-    # `VDPV`, 4 `wild` -> `Sabin-like`, 4 `iVDPV` -> `wild` and a scatter of ones and twos), 11 are
-    # `Sabin` -> `Sabin-like` where the release distinguishes the vaccine strain itself from its
-    # descendants and divergence alone cannot, and about 14 are classes the sequence does not reach
-    # at all — `chimera`, `engineered/lab`, `vaccine` — which the release took from text this rule
-    # does not read.
+    # What remains, stated per class rather than in aggregate:
+    #
+    # * **95 `cVDPV` -> `VDPV`** — the whole balance of the coarsening, and now exactly two
+    #   environmental studies: 27 Cameroon records (PMID 25542478) and 68 European wastewater records
+    #   (PMID 39850005 on 20 of them, the same study title on all 68). Neither set states circulation
+    #   in any record-level field; 27 of them say `genotype: OPV2-like`, which is Sabin-2 descent
+    #   with no circulation claim, and the other 68 are sewage. Circulation is a property of a
+    #   reconstructed transmission chain, so no single deposit's own text can carry it and the rule
+    #   correctly declines to infer it. These are the records an epidemiological-attribution override
+    #   has to carry, and the two PMIDs are the provenance it would cite.
+    # * **12 where this pipeline is FINER than the release** — 6 `VDPV` -> `iVDPV` on records whose
+    #   own `isolation_source` names an immunodeficient host, 5 `cVDPV` -> `cVDPV-n` where the
+    #   depositor wrote `Single recombinant cVDPV2-n`, and 1 `Sabin-like` -> `cVDPV`. A reconciliation
+    #   that only counted losses would have reported these as noise.
+    # * **~40 at a threshold** — 13 `wild` -> `VDPV`, 11 `Sabin-like` -> `VDPV`, 4 `wild` ->
+    #   `Sabin-like`, 4 `iVDPV` -> `wild`, and a scatter of ones and twos.
+    # * **12 `Sabin` -> `Sabin-like`/`VDPV`** — the release distinguishes the vaccine seed strain
+    #   itself from its descendants and divergence alone cannot. `X00595` is the clearest case: it is
+    #   Sabin 2, and it reads `VDPV` at 0.664% over 879 nt of VP1 against a 0.600% ceiling, which is
+    #   6 mismatches where the threshold allows 5.
+    # * **5 `vaccine`, 3 `engineered/lab`, 4 `chimera`** — the classes the band does not reach. The
+    #   first two the release took from text and a documented strain-family map; the `chimera` four it
+    #   computed, from recombinant-junction detection rather than from text, so that one is
+    #   reproducible here by a rule this pipeline has not implemented rather than by an override.
+    # * **1 `Sabin-like` -> `engineered/lab`** — `DQ205099`, where the vocabulary repair now ships the
+    #   engineered verdict the ledger always held.
     #
     # An earlier draft disagreed on 73 further records, every one a `Sabin-like` record called
     # `wild` at 73-74% divergence, which is the unrelated-sequence expectation rather than a
     # measurement. Those records do not overlap VP1 at all and one chance 12-mer was winning the
     # diagonal vote. `MIN_DIAGONAL_ANCHORS` closed it; 2 of the 73 remain.
+    # A reading note before the numbers below: every field in this dict is a *mismatch* count —
+    # `compare_provenance_to_release` increments it when `row[column] != shipped[column]`, the same
+    # test the strict (non-superseded) columns use to fail the build outright. `final_value` is the
+    # one column where a small mismatch count is the actual goal (a true classification
+    # disagreement). The other four — `source_field`, `source_value`, `winning_rule_id`,
+    # `evidence_basis` — are internal bookkeeping this pipeline names for itself
+    # (`too_little_sequence_compared_to_measure_divergence`, `R-CLASS-2`, ...) and 2.4.1 never had a
+    # reason to spell the same way, so a mismatch on *those* four is the ordinary case, not a
+    # problem: resolving a decline adds one row to the comparable set, and that row almost always
+    # mismatches on the internal-naming columns even when `final_value` agrees perfectly. The counts
+    # below climb with every batch of newly-resolved records for exactly that reason — more rows
+    # comparable, not more rows wrong — except where a coincidence (both sides naming the same
+    # mechanism, or both citing the asserted value itself) makes a batch mismatch on fewer than its
+    # own size would suggest; those coincidences are called out explicitly where they happen.
     "poliovirus_classification": {
-        "final_value": 413,
-        # 21,118 = 20,859 + the 259 records the curated-classification entailment brings into scope.
-        "winning_rule_id": 21118,
-        "evidence_basis": 21118,
+        # 54, down from 169: 115 curator decisions landed 2026-07-31 — the 95-record cVDPV
+        # epidemiological override (two published studies, Cameroon PMID 25542478 and European
+        # wastewater PMID 39850005, whose circulation claim lives in the paper and not in any one
+        # deposit's own text) and 20 strain-identity/provenance decisions (12 `Sabin` seed-strain
+        # deposits divergence alone cannot tell from their own descendants, 5 `vaccine` from the
+        # documented Cox/Lederle/CHAT family map, 3 `engineered/lab` patent deposits). All 115 land
+        # on the value 2.4.1 already ships, so this is 115 fewer true disagreements, not a reversal.
+        # What remains is exactly the `chimera` gap: 4 records recombination-detection would resolve
+        # (2.4.1 computes `chimera` from a Sabin/wild junction, not from text this rule reads) plus
+        # ~50 ordinary threshold-adjacent disagreements — see `docs/classification-migration-gap.md`.
+        #
+        # 57, up from 54: the reference-title text fallback (below) is a plausible-text guess, not a
+        # measurement, and it is wrong on 3 records it cannot tell apart from a real one —
+        # `AF083938`, `HM537010`, `MG212473`. All three carry a cited-paper title naming
+        # `vaccine-derived poliovirus` (a VDPV-emergence study that also sequenced its own Sabin-like
+        # parental/reference isolate), while MAD-VDPV's own alignment measures each at 0.000-0.333%
+        # over VP1 — `Sabin-like`, not the `VDPV` the title states. This pipeline's own `compare_vp1`
+        # cannot reach any of the three: each finds a diagonal with enough anchor support to pass
+        # `MIN_DIAGONAL_ANCHORS`, but the offset is wrong (44% mismatches on `MG212473`, the
+        # unrelated-sequence rate, over a *complete genome* where a real alignment reads near-zero).
+        # That is a gap in the diagonal search — not investigated further here since it affects only
+        # these 3 of the 24,308 carved records and fixing a seed-and-vote aligner is a different
+        # project than the text fallback — so text is asked, and for these 3 it answers a study-level
+        # question rather than a record-level one. 705 of the 708 the fallback newly resolves still
+        # land on the value 2.4.1 ships; these 3 are the honest cost of the other 705.
+        #
+        # 58, up from 57: isolate-linked inference below (192 candidates, 191 applied) is wrong on
+        # exactly one, `X70506`, which links to `V01149.1` (Mahoney) among its qualifying siblings
+        # and inherits `Sabin-like` — the same known, unfixable-by-sequence trap already on record
+        # for `V01149.1` itself (Sabin 1 *is* attenuated Mahoney, so VP1 distance to Sabin cannot
+        # separate the wild parent from its own vaccine derivative; see
+        # `docs/classification-migration-gap.md`). Not a new failure mode, just the existing one
+        # reaching a second record through a new path.
+        "final_value": 58,
+        # 21,297 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
+        # capsid fallback newly resolves + 3 the vocabulary repairs newly resolve (`AJ416942`,
+        # `DQ205099`, `FJ517648`, whose ledger values were outside the controlled vocabulary and so
+        # were being declined) + 28 the reference_or_lab_text/group_A_text_owned decisions below
+        # newly resolve (`Sabin`/`engineered/lab`/`recombinant/lab`/`reference/lab` strain-identity
+        # deposits, and the 4 further `cVDPV` calls). All 28 are declines-turned-resolved rows
+        # joining the comparable set for the first time — mismatching here, same as almost every
+        # other resolved row, because `winning_rule_id` is this pipeline's own rule-catalog ID
+        # (`R-CLASS-2`) and 2.4.1 does not record one at all.
+        #
+        # 21,357 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (MAD-VDPV's own
+        # `MIN_SEROTYPE_COMPARED_NT`), with the chunked-homogeneity guard extended to VP1 for the
+        # newly-opened sub-300 nt territory: 60 more records newly measure and join the comparable
+        # set — every one of the 60 mismatches here too (same reason), even though all 60 land on
+        # the value 2.4.1 already ships (see `final_value`).
+        #
+        # 22,065 the same day, when the reference-title text fallback landed (`needs_other_data_
+        # text_fallback`): 708 more records resolve where neither VP1 nor the capsid fallback
+        # measures anything at all, and all 708 join the mismatching set here for the same reason.
+        #
+        # 22,256 the same day, when isolate-linked inference landed: 191 more records resolve by
+        # inheriting a sibling accession's measured classification, and all 191 mismatch here too.
+        "winning_rule_id": 22256,
+        # `evidence_basis` tracks `winning_rule_id` exactly through 22,065 (same reason: this
+        # pipeline's own branch-label vocabulary, e.g. `vp1_divergence_below_sabin_like_threshold`,
+        # essentially never coincides with 2.4.1's), and then diverges from it:
+        #
+        # 22,093, not 22065 + 191, when isolate-linked inference landed: MAD-VDPV's own recorded
+        # basis for these same rows is *also* named `isolate_linked_inference` — the one mechanism
+        # in this column where both pipelines happen to use the same word for the same thing — so
+        # 163 of the 191 newly-comparable rows agree here rather than mismatch, and only 28 add to
+        # the count. `winning_rule_id` has no such coincidence available to it, since 2.4.1 does not
+        # record a rule id under any name.
+        "evidence_basis": 22093,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
-        # field or `vp1_divergence_pct`. The 1,781 agreeing on `source_value` are the curated rows,
-        # where both record the asserted value itself.
-        "source_field": 21118,
-        "source_value": 19078,
+        # field or `divergence_pct` — different vocabulary, so a mismatch here is the default too.
+        # 19,228 before the 2026-07-31 decisions, down to 19,113 after the 115 cVDPV/strain-identity
+        # decisions: the one place this column gets a coincidence, because a decision's own
+        # `source_value` is the asserted value itself, which is sometimes exactly what 2.4.1 also
+        # recorded for the field it reconciled from. Unchanged by the 28 reference_or_lab_text/
+        # group_A_text_owned decisions the same day — those 28 were previously blank/declined (no
+        # composed `source_value` to compare at all), not a row that used to mismatch and now
+        # doesn't.
+        #
+        # 19,173, up from 19,113, after the 50 nt floor: all 60 newly-measured rows mismatch —
+        # `source_value` here is this pipeline's own composed string (`"X% over Y nt of ..."`), and
+        # 2.4.1's own recorded value for the same row is shaped differently, so there was no
+        # coincidence to gain the way the ledger rows above had one.
+        #
+        # 19,880 by the text fallback: 708 new fallback rows citing the matched text substring, 707
+        # of which mismatch 2.4.1's own recorded `source_value` for that row (1 happens to coincide).
+        #
+        # 20,071 by isolate-linked inference: 191 new rows citing the linked sibling accession(s) as
+        # `source_value` (e.g. `AY082689.1;V01149.1`) — no coincidence available here either, so all
+        # 191 mismatch 2.4.1's own record for the row.
+        "source_field": 22256,
+        "source_value": 20071,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
-        # 243 = the locked VDPV/wild reconciliation allowlist migrated on 2026-07-30. Those rows now
-        # reach the column as decisions, where the release recorded them as `group_B_sequence_tier`
-        # with no override flag — the value is the same and the attribution is not.
-        "manual_override": 243,
+        # 386 = 243 (the locked VDPV/wild reconciliation allowlist migrated on 2026-07-30) + 115
+        # (the 2026-07-31 cVDPV and strain-identity decisions) + 28 (the same day's
+        # reference_or_lab_text and group_A_text_owned decisions: 12 `Sabin`, 10 `engineered/lab`,
+        # 1 `recombinant/lab`, 1 `reference/lab`, 4 more `cVDPV`). All 386 reach the column as
+        # decisions, where the release recorded them as `group_B_sequence_tier`/`classification_
+        # reconciled` with no override flag — the value is the same and the attribution is not.
+        "manual_override": 386,
     },
     "locality": {
         # No value moves: every blank stays blank and every non-blank was already correct. The whole

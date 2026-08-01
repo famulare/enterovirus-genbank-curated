@@ -61,7 +61,37 @@ from enterovirus_genbank_curated.derive.partition import (
 #          only the reason does, and the reason is what decides whether it is queued.
 # `poliovirus_classification` does not move: it sheds 259 declines, but all 259 were
 # partition-consequent and so were never queued in the first place.
-EXPECTED_QUEUE_WORK_ITEMS = 28392
+#
+# 28,244 when the capsid (P1) nucleotide fallback landed: 148 records that were declining
+# `poliovirus_classification` for want of usable sequence now resolve, and that is the whole
+# movement — every other field's declines are untouched by a rule that only ever *fills* a cell VP1
+# could not reach.
+# 28,241 when the vocabulary repairs landed 2026-07-31: 3 `poliovirus_classification` declines
+# (`AJ416942`, `DQ205099`, `FJ517648`, whose active decisions asserted a value outside the
+# controlled vocabulary) resolve and leave the queue. The 115 cVDPV/strain-identity decisions the
+# same day do not move this count: every one of those already had a resolved value, just the wrong
+# one, so none was ever queued.
+#
+# 28,213 when the reference_or_lab_text (24) and group_A_text_owned (4) decisions landed the same
+# day: 28 more `poliovirus_classification` declines resolve and leave the queue, closing the
+# largest remaining discrepancy block (`declined_too_little_sequence`).
+#
+# 28,153 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (matching MAD-VDPV's own
+# `MIN_SEROTYPE_COMPARED_NT`) with a chunked-homogeneity guard extended to VP1 for the newly-opened
+# sub-300 nt territory: 60 more `poliovirus_classification` declines resolve, every one agreeing
+# with the shipped classification.
+#
+# 27,445 the same day, when the reference-title text fallback landed
+# (`needs_other_data_text_fallback`): 708 more `poliovirus_classification` declines resolve — 705
+# agreeing with the shipped classification and 3 (`AF083938`, `HM537010`, `MG212473`) not, a known,
+# documented cost of asking a study title a record-level question (see `oracle/parity.py`). A decline
+# leaving the queue does not require the value to be right, only that the cell is no longer silent.
+#
+# 27,254 the same day, when isolate-linked inference landed: 191 more `poliovirus_classification`
+# declines resolve by inheriting a sibling accession's measured classification — 190 agreeing with
+# the shipped value and 1 (`X70506`) not, the known `V01149.1` (Mahoney) trap reaching a second
+# record (see `oracle/parity.py`).
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -83,7 +113,35 @@ EXPECTED_QUEUE_WORK_ITEMS = 28392
 # because every record that was in them carries a curated classification. The `Homo sapiens` and
 # `unidentified` groups survive — the entailment reaches 2 records in each and the membership rescue
 # left others behind.
-EXPECTED_QUEUE_GROUPS = 302
+#
+# Still 302 after the capsid fallback: the 148 newly-resolved records all shared the single
+# `too_little_sequence_compared_to_measure_divergence`, no-source-value group under
+# `poliovirus_classification`, which had 1,557 records in it before and has 1,409 now — one group
+# shrinking, not a group disappearing or a new one appearing.
+#
+# 299 when the vocabulary repairs landed 2026-07-31: three one-record groups disappear under
+# `poliovirus_classification`'s `curated_value_outside_the_controlled_vocabulary` reason, one per
+# distinct malformed source_value (`CHAT`, `engineered`, `iVPDV`) — groups are keyed by the exact
+# input the rule declined on, so three different malformed values were always three groups, not
+# one. The 115 cVDPV/strain-identity decisions the same day touch no group: every one of those
+# records already had a resolved value, so none was ever queued.
+#
+# Still 299 when the reference_or_lab_text (24) and group_A_text_owned (4) decisions landed the
+# same day: all 28 shared the single `too_little_sequence_compared_to_measure_divergence`,
+# no-source-value group under `poliovirus_classification` with the 1,381 records that remain
+# declined for the same reason — one group shrinking, not a group disappearing.
+#
+# Still 299 when the VP1/capsid floor dropped to 50 nt the same day: the 60 newly-resolved records
+# shared that same single group with the 1,321 that remain declined.
+#
+# Still 299 when the text fallback landed the same day: the 708 newly-resolved records shared that
+# same single `too_little_sequence_compared_to_measure_divergence`, no-source-value group with the
+# 613 that remain declined for the same reason.
+#
+# Still 299 when isolate-linked inference landed the same day: the 191 newly-resolved records shared
+# that same single group with the 422 that remain declined for the same reason (no divergence
+# measurement and no isolate link either).
+EXPECTED_QUEUE_GROUPS = 302 - 3
 
 
 def declined(

@@ -58,6 +58,17 @@ def build_record_views(
     for record in tables["records"]:
         by_digest.setdefault(record["sequence_sha256"], []).append(record)
 
+    # `record_id` is the version (`A01868.1`, not `A01868`) in this schema, the same identity
+    # `references` rows carry, so no separate join table is needed to reach the reference titles for
+    # a given version — one per `REFERENCE` block, concatenated, is the cited paper's own title.
+    titles: dict[str, list[str]] = {}
+    for row in tables["references"]:
+        if row["record_id"] not in wanted:
+            continue
+        title = row.get("title", "")
+        if title:
+            titles.setdefault(row["record_id"], []).append(title)
+
     ledger = decisions or {}
     measured = evidence or {}
     return [
@@ -69,6 +80,7 @@ def build_record_views(
             decisions=ledger.get(record["accession"], {}),
             byte_identical=tuple(by_digest[record["sequence_sha256"]]),
             evidence=measured.get(record["version"], NO_EVIDENCE),
+            reference_titles=" | ".join(titles.get(record["version"], ())),
         )
         for record in tables["records"]
         if record["version"] in wanted

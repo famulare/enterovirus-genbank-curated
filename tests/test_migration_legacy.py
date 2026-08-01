@@ -390,6 +390,19 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # `engineered_or_construct=FALSE`, the CAVA cold-adaptation pair Appendix B left open in either
     # direction and the curator resolved on the WO2006042156 parental-deposit precedent.
     cava_parental = 2
+    # Three more the same day, same reason again: `AJ416942`, `DQ205099` and `FJ517648`, the only
+    # active assertions whose `classification` value was outside the controlled vocabulary, each
+    # repaired by a new row that supersedes the malformed one. Neither generator produces them.
+    vocabulary_repairs = 3
+    # 115 more the same day: the 95-record cVDPV epidemiological override (Cameroon PMID 25542478,
+    # European wastewater PMID 39850005) and 20 strain-identity/provenance decisions (Sabin seed
+    # strains, the Cox/Lederle/CHAT vaccine family, three engineered/lab patent deposits). Neither
+    # generator produces these either.
+    #
+    # 28 more the same day, closing the largest remaining discrepancy block: 24
+    # reference_or_lab_text records (12 Sabin, 10 engineered/lab, 1 recombinant/lab, 1
+    # reference/lab) and 4 more group_A_text_owned cVDPV records.
+    cvdpv_and_strain_identity = 115 + 28
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)
@@ -397,12 +410,16 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         + reconciled
         + readjudication
         + cava_parental
+        + vocabulary_repairs
+        + cvdpv_and_strain_identity
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
         f"{mig.EXPECTED_BASELINE_DECISIONS} baseline + {len(mig.D2_ACCESSIONS)} D2 additions + "
         f"{carried} carried-forward supersessions + {reconciled} reconciliation-allowlist rows + "
-        f"{readjudication} re-adjudication rows + {cava_parental} CAVA parental rows = {expected}. "
+        f"{readjudication} re-adjudication rows + {cava_parental} CAVA parental rows + "
+        f"{vocabulary_repairs} vocabulary repairs + {cvdpv_and_strain_identity} cVDPV/strain-"
+        f"identity decisions = {expected}. "
         f"Bumping one without the others is the drift the pin exists to catch."
     )
 

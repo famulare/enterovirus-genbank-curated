@@ -48,13 +48,14 @@ from enterovirus_genbank_curated.derive.evidence import (
     measure_membership_rescue,
     measure_sequence_evidence,
 )
+from enterovirus_genbank_curated.derive.isolate_linkage import apply_isolate_linked_inference
 from enterovirus_genbank_curated.derive.metadata import transport_metadata
 from enterovirus_genbank_curated.export.audit import (
+    write_classification_divergence,
     write_decision_applications,
     write_membership_rescue,
     write_projection_provenance,
     write_rules_view,
-    write_vp1_divergence,
 )
 from enterovirus_genbank_curated.export.canonical import (
     assemble_canonical_rows,
@@ -249,6 +250,12 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         for row in project_field(rule, views)
     ]
 
+    # A whole-corpus pass, not a rule: it resolves a `poliovirus_classification` decline by way of
+    # a *sibling's* resolved value, which no single `RecordView` can see. Runs after every rule has
+    # projected (it needs the rest of the corpus's own answers) and before the queue and canonical
+    # table are assembled from `provenance` (so a newly-resolved cell reaches both).
+    provenance = apply_isolate_linked_inference(views, provenance)
+
     # Cross-column invariants, before anything is written. A rule can be individually right and the
     # table still incoherent, and no single rule can see two columns.
     not_applicable_dates = assert_date_precision_invariant(provenance)
@@ -298,13 +305,16 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # `rules.tsv.gz`, and only one test ever called it, which proved the writer and not the release.
     # A rule catalog a release does not carry is a catalog a consumer has to take on trust.
     #
-    # The VP1 divergence view was worse than absent — it was computed on every build, used by
-    # R-CLASS-2 to decide `poliovirus_classification`, and then discarded, so the release published
-    # verdicts and withheld the measurements behind them.
+    # The divergence view was worse than absent — it was computed on every build, used by R-CLASS-2
+    # to decide `poliovirus_classification`, and then discarded, so the release published verdicts
+    # and withheld the measurements behind them.
     row_counts["rules_in_baseline_view"] = write_rules_view(output_dir, catalog)
-    # Was `vp1_measured`, the length of an in-memory dict. Renamed because the number now counts
-    # rows in an artifact a reader can open, which is the only form of a count that can be checked.
-    row_counts["vp1_divergence_rows"] = write_vp1_divergence(output_dir, evidence)
+    # Was `vp1_measured`, then `vp1_divergence_rows`: the length of an in-memory dict, then rows in
+    # an artifact a reader can open. Renamed again now that the artifact carries capsid-fallback
+    # rows too, so a count still named for one basis would describe only most of what it counts.
+    row_counts["classification_divergence_rows"] = write_classification_divergence(
+        output_dir, evidence
+    )
 
     # Both counts go in before this call, because `write_metadata_transport` snapshots `row_counts`
     # into the coverage JSON. A key added after it would reach the build manifest and not the

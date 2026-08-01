@@ -1,15 +1,15 @@
 {
-  "release_version": "3.2.0",
+  "release_version": "3.3.0",
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "b798247968f12d0a8507ba6995ec00e9f319bf9abed1dd81d4abf28bb3ff1a4f",
+  "code_sha256": "cb4a16c9cb6859b3de02be3bb46ba034e3e77d793da1785ef191b1b4eca9582f",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "2e9f7d2353c94896c1a4df3be58de6a09af9d5173063a31dede177e2446f48e3",
-    "rules_sha256": "1bf6f2f6dd5eb66a76e321f44cf8ef6a4fc4bbe37f464949854f6c94b022be44"
+    "decisions_sha256": "1ae58a9aa7719d4da13af34a46b357ef04d0361038fd1dc41bd4af91e8530a6a",
+    "rules_sha256": "6c29c28e49ba2c740fbacfe65025a8069c05bac1ef55b15dad360d47ccf179e7"
   },
   "row_counts": {
     "source_records": 25727,
@@ -20,21 +20,21 @@
     "provenance_rows": 316004,
     "dates_not_applicable": 4573,
     "localities_without_geography": 2055,
-    "curation_queue_groups": 302,
-    "decision_applications": 3190,
-    "curation_queue_records": 28392,
+    "curation_queue_groups": 299,
+    "decision_applications": 3336,
+    "curation_queue_records": 27254,
     "canonical_rows": 24308,
     "vouched_rows": 9929,
     "rules_in_baseline_view": 28,
-    "vp1_divergence_rows": 7728
+    "classification_divergence_rows": 7948
   },
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 173,
-    "applied_changed": 31,
-    "applied_unchanged": 24,
-    "applied_filled_unresolved": 2640,
-    "not_in_force_superseded": 10,
+    "applied_changed": 522,
+    "applied_unchanged": 25,
+    "applied_filled_unresolved": 2291,
+    "not_in_force_superseded": 13,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6
   },
@@ -47,7 +47,7 @@
     ],
     "columns_with_declined_cells": {
       "curation_status": 1596,
-      "poliovirus_classification": 3189,
+      "poliovirus_classification": 2051,
       "sample_origin": 3682,
       "specimen_type": 12700,
       "surveillance_stream": 8650,
@@ -120,9 +120,9 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 8336,
-      "blank": 15972,
-      "declined": 3189,
+      "filled": 9474,
+      "blank": 14834,
+      "declined": 2051,
       "rules": [
         "R-CLASS-2"
       ]

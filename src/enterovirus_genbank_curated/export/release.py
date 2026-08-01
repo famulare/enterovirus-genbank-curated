@@ -5,7 +5,7 @@ build citable in the same way — a build manifest naming its inputs and its cov
 manifest hashing every artifact — so a consumer can tell one build from another without diffing
 gigabytes.
 
-## The version is 3.2.0, and why three more rounds of additive fills are still a minor bump
+## The version is 3.3.0, and why four rounds of additive fills are still a minor bump
 
 Release 3.0.0 was the major one. Three properties of it are incompatible with 2.4.1 for anyone
 reading the columns, and all three still hold here:
@@ -30,7 +30,7 @@ distance or the twin that admitted each one.
 
 Two records remain outside: `E00765.1` and `E01571.1`, which sit in the rule's undecided 8-15% band.
 
-3.2.0 adds two more things, both additive in the same sense.
+3.2.0 added two more things, both additive in the same sense.
 
 **A curated classification now entails poliovirus membership.** A curator asserting
 `classification=cVDPV` has asserted a poliovirus, because that vocabulary is poliovirus-only —
@@ -40,16 +40,38 @@ or `Enterovirus coxsackiepol` (the polio-*containing* species, hence uninformati
 declined `virus_group`, and then declined `poliovirus_classification` for "following" a partition
 that a paper-based judgement in the ledger had already settled. All 259 fill `virus_group`,
 `curation_status` and `poliovirus_classification`, all 259 land on the value 2.4.1 already ships,
-and none was filled before. `docs/classification-migration-gap.md` accounts for every one of the
-2,159 remaining differences from 2.4.1's `poliovirus_classification` by category — most of them
-epidemiological attribution (`cVDPV` vs `iVDPV` vs `wild`) that no property of a sequence carries,
-which is why this pipeline still ships `VDPV` or blank rather than guessing.
+and none was filled before.
 
-**Two audit views the build could already produce are now written.** `audit/rules.tsv.gz`
-reproduces `final/audit/rules.tsv.gz` byte-for-byte, and `audit/vp1_divergence.tsv.gz` is the VP1
-divergence measurement R-CLASS-2 decides `poliovirus_classification` from — previously computed on
-every build and discarded once the verdict was recorded. Both are new files; no existing column or
-file changes shape.
+**Two audit views the build could already produce were written.** `audit/rules.tsv.gz`
+reproduces `final/audit/rules.tsv.gz` byte-for-byte, and the divergence measurement R-CLASS-2
+decides `poliovirus_classification` from — previously computed on every build and discarded once
+the verdict was recorded — got its own audit view. Both were new files; no existing column or file
+changed shape.
+
+3.3.0 adds one more, to the same rule and the same view. **A capsid (P1: VP4-VP2-VP3-VP1)
+nucleotide fallback for records VP1 alone cannot reach.** 1,911 carved, name-serotyped records have
+no usable VP1; `derive/evidence.compare_capsid_nt` measures divergence over the whole capsid
+instead, over the same published thresholds — the same VP1-first / P1-fallback precedence
+MAD-VDPV's own sequence classifier states outright. 148 records newly resolve, all agreeing with the
+shipped classification wherever 2.4.1 has one to compare against, which is why `audit/
+classification_divergence.tsv.gz` carries that name rather than `vp1_divergence.tsv.gz`: a `basis`
+column now names which region decided each row.
+
+The fallback needed a guard VP1 does not. VP1 in poliovirus has no indels relative to Sabin — a
+measured fact, and the reason an ungapped single-offset comparison is exact there — but that fact
+does not extend to VP4, VP2 or VP3. Two records surfaced this directly: a run of mismatches at the
+unrelated-sequence rate beginning at one exact position, resolved by shifting the query one
+nucleotide from that point on. A real indel in a coding, replicating poliovirus genome must be a
+multiple of three to preserve the reading frame, so a one-nucleotide break is a single bad base
+call in the deposit, not biology. `derive/evidence.py` declines the whole comparison when any
+150 nt chunk of it deviates from the window's own divergence by more than a measured floor — the
+three broken windows this found sit at 21.5, 21.8 and 55.2 percentage points of internal deviation;
+the next-highest genuine one sits at 8.1.
+
+`docs/classification-migration-gap.md` accounts for every one of the 2,011 remaining differences
+from 2.4.1's `poliovirus_classification` by category — mostly epidemiological attribution (`cVDPV`
+vs `iVDPV` vs `wild`) that no property of a sequence carries, which is why this pipeline still ships
+`VDPV` or blank rather than guessing.
 
 ## Why the manifest names hashes rather than a git sha
 
@@ -89,7 +111,7 @@ from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPO
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
-RELEASE_VERSION = "3.2.0"
+RELEASE_VERSION = "3.3.0"
 SCHEMA_VERSION = "2.4.1"
 BASELINE_RELEASE = "2.4.1"
 

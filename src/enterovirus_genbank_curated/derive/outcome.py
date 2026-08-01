@@ -42,6 +42,11 @@ class RecordView:
     strings rather than a typed object because it is written straight into a provenance
     `source_value`, and a rule that reads a number it cannot cite is a rule whose answer cannot be
     checked.
+
+    `reference_titles` holds every GenBank `REFERENCE` block title on the record, concatenated — the
+    cited paper's own title, not the deposit's own fields. It is a study-level statement rather than a
+    depositor's record-level one, which is why no other rule reads it: only the text-classification
+    fallback does, and only for a record with no sequence signal of its own to ask instead.
     """
 
     version: str
@@ -51,6 +56,7 @@ class RecordView:
     decisions: Mapping[str, str]
     byte_identical: tuple[Mapping[str, str], ...] = ()
     evidence: Mapping[str, str] = NO_EVIDENCE
+    reference_titles: str = ""
 
     def qualifier(self, name: str) -> str:
         return self.qualifiers.get(name, "")

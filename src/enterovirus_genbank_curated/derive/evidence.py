@@ -21,7 +21,7 @@ peptides being contiguous. VP4's start also fixes the polyprotein reading frame,
 `polyprotein` CDS start on all three references (743, 748, 743), so the phase is read off the
 `mat_peptide` features rather than joining a second feature key to get it.
 
-## Two distances, because they answer two different questions
+## Three distances, because they answer three different questions
 
 `compare_vp1` measures **nucleotide** divergence over VP1, which is what the WHO classification
 thresholds are defined on. `compare_capsid_aa` measures **amino-acid** p-distance over the capsid,
@@ -30,6 +30,13 @@ saturate: a 1980s patent transcription of a Sabin cDNA clone can sit 20% away in
 protein essentially unchanged, and 20% nt is exactly where the `wild` threshold lives. On the
 protein those same records sit at 0.2-3%. Nucleotide distance would read them as unrelated;
 amino-acid distance reads them as what they are.
+
+`compare_capsid_nt` measures **nucleotide** divergence over the whole capsid (VP4-VP2-VP3-VP1), and
+exists only because VP1 alone is absent or too short on 1,911 carved, name-serotyped records — the
+same fallback MAD-VDPV's own pipeline takes, stated outright in `classify_sequence_tier.py` as
+"VP1-first / P1-fallback". It answers the same question `compare_vp1` does and uses the same
+thresholds; it is not a third kind of evidence, just VP1's question asked over more sequence when
+VP1 itself is not there to answer it.
 
 ## Why k-mer diagonals instead of an alignment
 
@@ -67,6 +74,53 @@ release calls `other_fragment` have complete VP1, complete capsid, or a complete
 So `record_type` is not a function of coverage against Sabin VP1 alone, whatever else it is, and
 fitting thresholds to 86.7% would assert a wrong determination on 1,332 records.
 `sequence_scope` stays in `PENDING_COLUMNS`.
+
+## Why the fallback needs a guard `compare_vp1` did not always need
+
+`compare_vp1` is exact at one fixed offset because VP1 in poliovirus has no indels relative to Sabin
+— a measured fact, not an assumption, and this module's own justification for skipping an aligner.
+That fact rules out one failure mode (a true evolutionary insertion or deletion) but not another: a
+single wrong base call *in the deposited read itself* — a technical artifact of how the sequence was
+determined, not biology, and so not excluded by "VP1 has no indels" at all. Reproducing MAD-VDPV's
+whole-capsid fallback the same way — one diagonal, no gaps — surfaces sequences where this happens;
+lowering `MIN_VP1_NT` far enough surfaces it in VP1 too.
+
+Three carved, name-serotyped records where the naive whole-capsid measurement disagreed with the
+release diagnosed exactly why. `AB162760.1` and `AB162761.1` read >18 percentage points more
+divergent than MAD-VDPV's own alignment reports for the same accessions (9.8-10.1% vs 0.0-0.2%),
+and in both the mismatches begin at one exact position and run at ~74-90% (the unrelated-sequence
+rate) for the rest of the window. Shifting the query by **one nucleotide** from that position on
+restores 98-100% identity. A real indel in a coding, actively-replicating poliovirus genome must be
+a multiple of three to preserve the reading frame — a 1-nt shift is not biology, it is a single bad
+base call in the GenBank deposit, and the single fixed diagonal has no way to know the rest of the
+window sits on the wrong side of it.
+
+At the original 300 nt VP1 floor this class of error was apparently rare enough never to surface: a
+~900 nt region with, evidently, an occasional bad base in the corpus, and 300 nt of it was enough
+sequence to dilute one bad call rather than be defined by it. Lowering `MIN_VP1_NT` to 50 nt (to
+match MAD-VDPV's own floor, 2026-07-31) removed that dilution, and it surfaced exactly this failure
+in VP1 for the first time — `AY320423`, `JN092124` and `AY365233` each read 15-24 percentage points
+more divergent than MAD-VDPV's own alignment over a 171-225 nt window. The same mechanism, now in
+the region this module's own no-indels argument does not protect.
+
+So the fallback needs to detect a window that is not internally consistent, not just decline a
+window that is too short — and now that `MIN_VP1_NT` reaches below 300 nt too, `compare_vp1` needs
+the same check `compare_capsid_nt` does, for windows short enough that the old floor no longer
+protects them by dilution alone.
+
+`_capsid_homogeneous` is that check: split the compared span into 150 nt chunks, and require every
+chunk with at least 30 compared positions to sit within `MAX_CAPSID_CHUNK_DEVIATION_PCT` of the
+whole window's own divergence — and require at least `MIN_HOMOGENEITY_CHUNKS` such chunks, because a
+single chunk trivially "agrees with itself" and a window that short has nothing to check internal
+consistency against. Measured over every record that gets any capsid-nt measurement at the original
+300 nt floor: the three genuinely bad windows sit at 21.5, 21.8 and 55.2 percentage points of
+internal deviation; the next-highest clean one sits at 8.1. That gap, not a fitted number, is where
+`MAX_CAPSID_CHUNK_DEVIATION_PCT` is set, and it is shared by both `compare_vp1` (below 300 nt) and
+`compare_capsid_nt` (always) rather than fitted separately for each.
+
+`compare_vp1` applies this guard only below `VP1_HOMOGENEITY_FLOOR_NT` (300 nt, the old floor): at or
+above it, behavior is unchanged from before the floor was lowered, so none of the measurements this
+stage already shipped are put at risk by a check built to catch a failure discovered afterward.
 """
 
 from __future__ import annotations
@@ -86,9 +140,14 @@ PRODUCT_QUALIFIER = "product"
 # Seed length. Long enough that a 12-mer is rarely shared by chance across 7.4 kb (4^12 = 16.8M
 # possibilities against ~7,400 positions), short enough to survive ~20% divergence.
 SEED = 12
-# A divergence measured over a handful of nucleotides is not a measurement. 300 nt is a third of VP1
-# and the floor below which this stage reports nothing rather than a number.
-MIN_VP1_NT = 300
+# MAD-VDPV's own floor (`build_reference_alignments.MIN_SEROTYPE_COMPARED_NT`), adopted 2026-07-31.
+# It is safe to match exactly, and not merely close, because it rests on a fact specific to VP1: VP1
+# in poliovirus has no indels relative to Sabin (the module docstring's own justification for a
+# single fixed diagonal at any length), so a shorter window is a smaller sample of the same exact
+# measurement, never a different one. Cross-serotype VP1 divergence (~31-37%) vs homotypic (~0-25%)
+# means even 50 nt picks the right serotype with a clear gap, which is `classify_sequence_tier.py`'s
+# own reasoning for the number.
+MIN_VP1_NT = 50
 # Anchors the winning diagonal must carry. Without a floor, a record that does not overlap VP1 at
 # all still wins some diagonal on one chance 12-mer, and the resulting comparison reports ~74%
 # divergence — the value for unrelated sequence — which then reads as `wild`. Measured: 73 records
@@ -100,6 +159,33 @@ MIN_DIAGONAL_ANCHORS = 5
 # being measured. Enterovirus VP1 across *genera* stays well below it; 74% is the unrelated-sequence
 # expectation. A result this far out is reported as no measurement rather than as a large number.
 IMPLAUSIBLE_DIVERGENCE_PCT = 40.0
+
+# Same floor as `MIN_VP1_NT`, matching MAD-VDPV's own `MIN_SEROTYPE_COMPARED_NT`, adopted 2026-07-31
+# — but unlike VP1, this is a fallback over VP4/VP2/VP3 too, and those regions are not established
+# indel-free the way VP1 is, so the floor alone is not the safety argument here; the strengthened
+# `_capsid_homogeneous` below is.
+MIN_CAPSID_NT = 50
+# Chunk size for the homogeneity check below. Large enough that 5 exact 12-mer anchors are ordinary
+# within a genuine match (the same anchor floor `_best_diagonal` already applies over the whole
+# window), small enough to localize a single bad base rather than average it into the whole capsid.
+CAPSID_HOMOGENEITY_CHUNK_NT = 150
+# A chunk shorter than this is too small a sample to judge on its own; it is folded into the overall
+# count but not held to the deviation floor below.
+MIN_HOMOGENEITY_CHUNK_NT = 30
+# At the original 300 nt floor this was implicit: 300 nt is always at least two 150 nt chunks, so the
+# homogeneity check always had two independent samples to compare against each other. Lowering the
+# floor to 50 nt breaks that — a 50-179 nt window is a *single* chunk, which trivially "agrees with
+# itself" and would pass with no check at all. Below `MIN_HOMOGENEITY_CHUNKS`, `_capsid_homogeneous`
+# declines rather than rubber-stamps: it has nothing to check internal consistency against. This adds
+# no restriction anywhere the 300 nt floor already reached — every record that passed before had at
+# least two qualifying chunks already — so it only governs the newly-opened 50-299 nt territory.
+MIN_HOMOGENEITY_CHUNKS = 2
+# Measured, not fitted: over every record that reaches any capsid-nt measurement, the three windows
+# a single bad base call breaks sit at 21.5, 21.8 and 55.2 percentage points of chunk-to-window
+# deviation; the next-highest genuine window sits at 8.1. The threshold sits in that gap.
+MAX_CAPSID_CHUNK_DEVIATION_PCT = 15.0
+
+ACGT = frozenset("ACGT")
 
 _COMPLEMENT = str.maketrans("ACGTacgtNn", "TGCAtgcaNn")
 
@@ -251,6 +337,19 @@ class Vp1Comparison:
     strand: str
 
 
+# Below this, `compare_vp1` holds itself to the same chunked-homogeneity check `compare_capsid_nt`
+# always needed. At or above it, behavior is exactly what it was before `MIN_VP1_NT` was lowered to
+# 50 (a bare mismatch count, no chunking) — the 7,728 VP1 comparisons this stage already ships are
+# untouched. The reason the two regions need different treatment is JN092124/AY320423/AY365233
+# (2026-07-31): three records where lowering the floor to 50 nt let a single bad base call in the
+# deposit (not a real indel — VP1 has none relative to Sabin, but a technical artifact of the read
+# can land anywhere) corrupt a 171-225 nt window the same way `_capsid_homogeneous`'s own module
+# docstring already diagnoses for the capsid case, each landing at 20-34% where MAD-VDPV's own
+# alignment reports 6-11%. A short window is not exempt from the failure that guard exists for; it
+# was only ever *untested* below 300 nt, because nothing shorter used to reach this far.
+VP1_HOMOGENEITY_FLOOR_NT = 300
+
+
 def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
     """Ungapped VP1 divergence at the best-supported offset, or None below `MIN_VP1_NT`.
 
@@ -268,17 +367,117 @@ def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
         compared = last - first
         if compared < MIN_VP1_NT or (best is not None and compared <= best.compared_nt):
             continue
-        mismatches = sum(
-            1
-            for position in range(first, last)
-            if candidate[position - diagonal] != frame.sequence[position]
-        )
-        if mismatches / compared * 100 > IMPLAUSIBLE_DIVERGENCE_PCT:
+        mismatches = 0
+        chunk_divergences: list[float] = []
+        for chunk_start in range(first, last, CAPSID_HOMOGENEITY_CHUNK_NT):
+            chunk_end = min(chunk_start + CAPSID_HOMOGENEITY_CHUNK_NT, last)
+            chunk_mismatches = sum(
+                1
+                for position in range(chunk_start, chunk_end)
+                if candidate[position - diagonal] != frame.sequence[position]
+            )
+            mismatches += chunk_mismatches
+            chunk_length = chunk_end - chunk_start
+            if chunk_length >= MIN_HOMOGENEITY_CHUNK_NT:
+                chunk_divergences.append(chunk_mismatches / chunk_length * 100)
+        divergence = mismatches / compared * 100
+        if divergence > IMPLAUSIBLE_DIVERGENCE_PCT:
+            continue
+        if compared < VP1_HOMOGENEITY_FLOOR_NT and not _capsid_homogeneous(
+            chunk_divergences, divergence
+        ):
             continue
         best = Vp1Comparison(
             serotype=frame.serotype,
             reference_version=frame.version,
-            divergence_pct=mismatches / compared * 100,
+            divergence_pct=divergence,
+            compared_nt=compared,
+            strand=strand,
+        )
+    return best
+
+
+@dataclass(frozen=True)
+class CapsidNtComparison:
+    """Whole-capsid (P1) nucleotide divergence of one record from one Sabin reference.
+
+    Used only as a fallback when `compare_vp1` returns `None`. Answers the same question VP1
+    divergence does — how far this record's Sabin-facing region has diverged — over more sequence,
+    which is both why it can reach records VP1 cannot and why it needs `_capsid_homogeneous`: more
+    sequence is more chances for one bad base call to sit inside the window.
+    """
+
+    serotype: str
+    reference_version: str
+    divergence_pct: float
+    compared_nt: int
+    strand: str
+
+
+def _capsid_homogeneous(chunk_divergences: list[float], whole_window_pct: float) -> bool:
+    """Every sampled chunk within `MAX_CAPSID_CHUNK_DEVIATION_PCT` of the whole window's rate.
+
+    A window that fails this is not "more diverged" — see the module docstring for the two cases
+    that motivated it, where a single bad base call in the deposit put everything downstream of it
+    at the unrelated-sequence rate while everything before it read at zero. Declining is not this
+    function guessing which side is right; it is refusing to average two things that are not the
+    same measurement into one number.
+
+    Fewer than `MIN_HOMOGENEITY_CHUNKS` qualifying chunks is declined outright, not passed: a single
+    chunk trivially "deviates" from itself by zero, so below two chunks this check has nothing to
+    compare and would otherwise rubber-stamp the one case it cannot see inside — a short window with
+    one bad base call spread over too little sequence to localize it.
+    """
+    if len(chunk_divergences) < MIN_HOMOGENEITY_CHUNKS:
+        return False
+    return all(
+        abs(chunk - whole_window_pct) <= MAX_CAPSID_CHUNK_DEVIATION_PCT
+        for chunk in chunk_divergences
+    )
+
+
+def compare_capsid_nt(frame: ReferenceFrame, sequence: str) -> CapsidNtComparison | None:
+    """Ungapped capsid divergence at the best-supported offset, or `None` below the guards.
+
+    Raw-ACGT p-distance, matching the definition the fallback exists to reproduce: a position counts
+    only when both the reference and the query base are unambiguous. `compare_vp1` does not filter
+    this way — measured, it would move 315 of the 7,728 shipped VP1 comparisons, an existing,
+    validated computation this change has no reason to touch. This function has no such history to
+    preserve, and matching the source method's own definition is the more defensible default for it.
+    """
+    best: CapsidNtComparison | None = None
+    for strand, candidate in (("+", sequence.upper()), ("-", reverse_complement(sequence.upper()))):
+        diagonal = _best_diagonal(frame, candidate, frame.capsid_start, frame.capsid_end)
+        if diagonal is None:
+            continue
+        first = max(frame.capsid_start, diagonal)
+        last = min(frame.capsid_end, len(frame.sequence), len(candidate) + diagonal)
+        compared = mismatches = 0
+        chunk_divergences: list[float] = []
+        for chunk_start in range(first, last, CAPSID_HOMOGENEITY_CHUNK_NT):
+            chunk_end = min(chunk_start + CAPSID_HOMOGENEITY_CHUNK_NT, last)
+            chunk_compared = chunk_mismatches = 0
+            for position in range(chunk_start, chunk_end):
+                reference_base = frame.sequence[position]
+                query_base = candidate[position - diagonal]
+                if reference_base in ACGT and query_base in ACGT:
+                    chunk_compared += 1
+                    chunk_mismatches += reference_base != query_base
+            compared += chunk_compared
+            mismatches += chunk_mismatches
+            if chunk_compared >= MIN_HOMOGENEITY_CHUNK_NT:
+                chunk_divergences.append(chunk_mismatches / chunk_compared * 100)
+        if compared < MIN_CAPSID_NT or (best is not None and compared <= best.compared_nt):
+            continue
+        divergence = mismatches / compared * 100
+        if divergence > IMPLAUSIBLE_DIVERGENCE_PCT:
+            continue
+        if not _capsid_homogeneous(chunk_divergences, divergence):
+            continue
+        best = CapsidNtComparison(
+            serotype=frame.serotype,
+            reference_version=frame.version,
+            divergence_pct=divergence,
             compared_nt=compared,
             strand=strand,
         )
@@ -456,18 +655,25 @@ def measure_membership_rescue(
     return rescued
 
 
-# The schema of `audit/vp1_divergence.tsv.gz`, which `export/audit.write_vp1_divergence` writes. It
-# is deliberately not the shipped `final/audit/sequence_evidence.tsv.gz` schema, and the choice of
-# name is argued where the name is chosen rather than here.
+# The schema of `audit/classification_divergence.tsv.gz`, which
+# `export/audit.write_classification_divergence` writes. Basis-neutral names (`divergence_pct`, not
+# `vp1_divergence_pct`), because a row's `basis` column is `VP1` on most rows and `P1_capsid` on the
+# fallback ones, and a column named for one basis while carrying values from another would mislead
+# a reader who skips the `basis` column. Deliberately not the shipped `final/audit/
+# sequence_evidence.tsv.gz` schema, and the choice of name is argued where the name is chosen.
 EVIDENCE_COLUMNS = (
     "accession",
     "version",
-    "vp1_reference_serotype",
-    "vp1_reference_version",
-    "vp1_divergence_pct",
-    "vp1_compared_nt",
-    "vp1_strand",
+    "reference_serotype",
+    "reference_version",
+    "divergence_pct",
+    "compared_nt",
+    "strand",
+    "basis",
 )
+
+BASIS_VP1 = "VP1"
+BASIS_CAPSID = "P1_capsid"
 
 
 def measure_sequence_evidence(
@@ -475,12 +681,18 @@ def measure_sequence_evidence(
     sequences: Mapping[str, str],
     rows: list[dict[str, str]],
 ) -> dict[str, dict[str, str]]:
-    """VP1 evidence for every carved record whose organism name names a serotype.
+    """VP1-first, capsid-fallback divergence for every carved record whose organism name names a
+    serotype — the same precedence MAD-VDPV's own `classify_sequence_tier.py` states outright:
+    "VP1-first / P1-fallback".
 
-    Scoped to those records on purpose. The organism name is what picks the reference — this stage
-    does not serotype by sequence, for the reason the module docstring gives — so a record with no
-    name serotype has nothing to be measured *against*, and measuring it against all three would be
-    inventing the very call that was declined.
+    Scoped to name-serotyped records on purpose. The organism name is what picks the reference —
+    this stage does not serotype by sequence, for the reason the module docstring gives — so a
+    record with no name serotype has nothing to be measured *against*, and measuring it against all
+    three would be inventing the very call that was declined.
+
+    The fallback is tried only when VP1 itself returns nothing, never to override a VP1 measurement
+    that exists: VP1 is the region the WHO thresholds are defined on, and a longer, guarded
+    comparison over more sequence is a fallback for VP1's absence, not a better version of it.
     """
     from enterovirus_genbank_curated.derive.typing import serotype_from_name
 
@@ -494,17 +706,29 @@ def measure_sequence_evidence(
         sequence = sequences.get(row["version"])
         if sequence is None:
             continue
-        comparison = compare_vp1(frame, sequence)
-        if comparison is None:
+        vp1 = compare_vp1(frame, sequence)
+        if vp1 is not None:
+            measured[row["version"]] = {
+                "reference_serotype": vp1.serotype,
+                "reference_version": vp1.reference_version,
+                # Three decimals, so 1/903 nt reads as 0.111 rather than as a float repr that
+                # differs across platforms. The threshold comparison is done on `Decimal` of this
+                # string, so the number the rule decided on is exactly the number cited.
+                "divergence_pct": f"{vp1.divergence_pct:.3f}",
+                "compared_nt": str(vp1.compared_nt),
+                "strand": vp1.strand,
+                "basis": BASIS_VP1,
+            }
+            continue
+        capsid = compare_capsid_nt(frame, sequence)
+        if capsid is None:
             continue
         measured[row["version"]] = {
-            "vp1_reference_serotype": comparison.serotype,
-            "vp1_reference_version": comparison.reference_version,
-            # Three decimals, so 1/903 nt reads as 0.111 rather than as a float repr that differs
-            # across platforms. The threshold comparison is done on `Decimal` of this string, so the
-            # number the rule decided on is exactly the number the provenance row cites.
-            "vp1_divergence_pct": f"{comparison.divergence_pct:.3f}",
-            "vp1_compared_nt": str(comparison.compared_nt),
-            "vp1_strand": comparison.strand,
+            "reference_serotype": capsid.serotype,
+            "reference_version": capsid.reference_version,
+            "divergence_pct": f"{capsid.divergence_pct:.3f}",
+            "compared_nt": str(capsid.compared_nt),
+            "strand": capsid.strand,
+            "basis": BASIS_CAPSID,
         }
     return measured
