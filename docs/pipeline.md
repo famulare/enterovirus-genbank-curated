@@ -23,21 +23,29 @@ current one. They are outputs measured against the 2.4.1 oracle, not replacement
 
 ## Non-negotiable boundaries
 
-1. Existing `final/` files are comparison targets, never pipeline inputs.
+1. Existing `final/` files are never pipeline inputs. Until 2026-08-01 they were comparison
+   targets and the build could not write them either; `final/` is the build's own destination now,
+   and the refusal that remains — enforced by `sandbox.READ_REFUSED_DIRS` — is on *reading* a file
+   the build did not write in this run. That was always the half that carried the property: a build
+   that reads the previous canonical table can reproduce it perfectly and prove nothing.
 2. The build may not read undeclared absolute paths, home directories, private repositories, or
    mutable external workbooks.
 3. Deterministic behavior belongs in versioned rules and code. Human assertions belong only in the
    curation ledger.
 4. Duplicate, conflicting, missing, or ambiguous inputs fail closed.
 5. Every canonical value must have machine-readable projection provenance.
-6. The current baseline release is never regenerated in place or overwritten; a new schema version
-   gets a new `release/<version>/` output tree and a new `releases/<version>/` parity contract, and
-   the prior baseline is retired, not rewritten. The singular and plural directories are unrelated
-   despite the names: `release/<v>/` is what this pipeline produced, `releases/<v>/parity.json` is
-   the contract an upstream release is checked against.
-7. The parity oracle is re-derived from the shipped release on every CI run. Its hashes, counts,
-   and raw-archive identity are recomputed, not taken on trust, so the oracle cannot be edited to
-   accommodate a build that disagrees with it.
+6. A superseded release is retired, not rewritten. 2.4.1's parity contract and its nineteen
+   alignment files are preserved under `releases/2.4.1/`, where `alignment-shape` still measures the
+   declared delta against them. The `release/<version>/` staging tree is gone: it existed so a build
+   could be reviewed without touching an immutable `final/`, and with `final/` as the destination it
+   was a second copy of the same bytes to keep in step.
+7. What is left of the oracle is re-derived on every CI run and cannot be edited to accommodate a
+   build that disagrees with it: the raw archive is authenticated, the build manifest is checked
+   against it, the release manifest's own hashes are recomputed, and the carried files are re-hashed
+   against pins in code. What retired with the promotion is the half that compared `final/` to
+   2.4.1's declared hashes and row counts — `final/` does not hold 2.4.1 any more, so those checks
+   could only have been kept by rewriting the numbers to match the build, and a contract rewritten
+   from the thing it gates is not a contract.
 
 ## Package boundaries
 
@@ -77,11 +85,12 @@ path itself, only import one already declared in `oracle.parity`, which a dedica
 
 ## The alignment layer today
 
-`align/` makes each shipped alignment's row set derivable from `final/canonical/` and
-`final/audit/` alone: `evgc alignment-population` prints all six populations and their tier/family
-breakdowns from metadata, with no aligner installed. The populations are **not** the shipped ones —
-see [`reproducibility.md`](reproducibility.md) for the measured gap and why closing it is the point,
-not a defect. The native toolchain (`mafft`, Infernal) is declared once in `pixi.toml`, pinned twice
+`align/` makes each alignment's row set derivable from `final/canonical/` and `final/audit/` alone:
+`evgc alignment-population` prints all six populations and their tier/family breakdowns from
+metadata, with no aligner installed. Since 2026-08-01 those are 4.0.0's populations — `final/` is
+this pipeline's own release — and they are **not** 2.4.1's; see
+[`reproducibility.md`](reproducibility.md) for the measured delta and why it is the point rather
+than a defect. The native toolchain (`mafft`, Infernal) is declared once in `pixi.toml`, pinned twice
 (statically via conda-meta, dynamically via each binary's own self-report) in
 `registry/toolchain.json`, and checked by `evgc alignment-toolchain`. The ten NCR covariance models
 the structural block needs (four genus-wide, six per-serotype Sabin-anchored) are committed as
@@ -93,10 +102,10 @@ one at a time — concurrent aligner processes are what exhausted memory on a re
 alignment-verify` gates them against metadata-derived populations with no aligner installed, and
 `evgc alignment-shape` writes the shape report and the declared delta against 2.4.1.
 
-Five of the six declared populations are built and committed. `EV_unified`, the 24,301-row
-genus-wide artifact, has never been built, and the five that exist are not one parameter set —
-`POLIO_unified` and `NPEV_unified` carry MAFFT `--ep 0.5` while `PV1`/`PV2`/`PV3` predate that lever.
-Each artifact's `.provenance.json` records which. See
+All six declared populations are built, at one parameter set, from the 4.0.0 canonical table, and
+promoted into `final/alignments/`. The previous state — five artifacts, two parameter sets, no
+`EV_unified` at all — is what made the promotion worth doing rather than a rename. Each artifact's
+`.provenance.json` records its own parameters, row set digest and tool identity. See
 [`derived/alignments/README.md`](../derived/alignments/README.md).
 
 ## Public commands
@@ -164,23 +173,22 @@ of it, leaving two records, and the build now carves 24,308 rows against the shi
    data, regenerating the shipped rule table byte-for-byte. `locality` is projected through the rule
    catalog with its provenance row compared to the release on all nine columns. Only `sequence_scope`
    remains unwritten.
-6. Decision application, disposition, and complete provenance. **Delivered:** 3,190 decision
-   applications from a 3,168-row ledger, 316,004 provenance rows, and 28,392 declined cells
-   collapsed into 302 curation-queue groups.
-7. Dictionaries, references, and reproducible alignments. **Largely delivered:** the alignment
-   layer is built natively by this repository (`evgc alignment-build`) from
+6. Decision application, disposition, and complete provenance. **Delivered:** 6,106 decision
+   applications from a 4,699-row ledger, 316,004 provenance rows, and 25,865 declined cells
+   collapsed into 295 curation-queue groups.
+7. Dictionaries, references, and reproducible alignments. **Delivered, except the dictionaries.**
+   The alignment layer is built natively by this repository (`evgc alignment-build`) from
    `final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft`
    and `cmalign` — segmentation, the codon-aware CDS block, the Sabin-anchored CDS projection, the
    structural NCR block, stitching and the export writer all exist. `evgc alignment-verify` gates
    the result against metadata-derived populations and `evgc alignment-shape` states the declared
-   delta against 2.4.1, both without an aligner. Outputs land in `derived/alignments/`, five of the
-   six declared populations so far and not at one uniform parameter set. Promoting them into a
-   release alongside the site rebuild that depends on it is the remaining work, and it needs the
-   anchor question in [`reproducibility.md`](reproducibility.md) answered first: `release/<version>/`
-   ships no `alignments/`, and the layer reads 2.4.1 rather than the release the pipeline produces.
-   Dictionaries and references are untouched.
+   delta against 2.4.1, both without an aligner. All six populations are built at one parameter set
+   from the 4.0.0 table and promoted into `final/alignments/`; 2.4.1's nineteen files moved to
+   `releases/2.4.1/alignments/`, where they remain the delta baseline. `final/dictionaries/` is the
+   one tree still carried with no producer here.
 8. Full fresh-clone parity and deterministic rebuild gate.
-9. A new pipeline-native release; 2.1.5 remains historical and immutable.
+9. A new pipeline-native release. **Delivered as 4.0.0:** `final/` is the pipeline's own output,
+   and 2.1.5/2.3.0/2.4.1 remain historical and immutable in git and under `releases/`.
 
 ## The two frozen legacy stages, and why neither is ported
 

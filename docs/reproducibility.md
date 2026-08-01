@@ -2,20 +2,25 @@
 
 ## Current state
 
-The current baseline release (2.4.1; see `src/enterovirus_genbank_curated/contracts.py`'s
-`BASELINE_RELEASE`) is a verified, internally consistent data release, and it remains the parity
-oracle. **The pipeline now builds the whole dataset from public inputs alone** — `release/3.2.0/`
-carries canonical, audit and curation trees rebuilt from `raw/` and `registry/` — and it builds its
-own alignments into `derived/alignments/`. The source-layer claim was true of 2.1.5 too and remains
-true across the 2.3.0 and 2.4.1 refreshes: none of them touched the source layer, only canonical
-metadata text on already-shipped records.
+**`final/` is what this pipeline builds.** As of 2026-08-01 it holds release 4.0.0: canonical,
+audit and curation trees written by `evgc build-metadata` from `raw/` and `registry/` alone, and
+alignments written by `evgc alignment-build` from those. It is a build destination now, not a parity
+target, and `build.reject_immutable_output` guards only `raw/` — the frozen input of record, where a
+build that can overwrite its own input has no oracle left at all.
 
-What that does *not* mean: the rebuilt dataset is not the shipped dataset. It carves 24,308 rows
-against the shipped 24,301, it declines values the release asserts, and it supersedes some the
-release got wrong. Every one of those differences is declared as a count or a witness rather than
-absorbed, and the rest of this document is the accounting. Two structural gaps remain open and have
-their own sections: `sequence_scope` is the one canonical column still unwritten, and the alignment
-layer is anchored to 2.4.1 rather than to the release the pipeline produces.
+The 2.4.1 release it replaced is not gone. `releases/2.4.1/parity.json` still describes the raw
+archive, and `releases/2.4.1/alignments/` holds the nineteen carved-in alignment files, which is
+what `evgc alignment-shape` still measures the rebuild's declared delta against. What retired with
+the promotion is the *metadata* parity gate: comparing the build to `final/` cell by cell would now
+read the build's own bytes and pass by construction, and a gate that cannot fail is worse than an
+absent one. `evgc check-declines` replaced it with a claim that needs no oracle — the build declines
+exactly where this repository declares it declines.
+
+What that does *not* mean: 4.0.0 is not 2.4.1 rebuilt. It carves 24,308 rows against the shipped
+24,301, it declines values the release asserts, and it supersedes some the release got wrong. Every
+one of those differences is declared as a count or a witness rather than absorbed, and the rest of
+this document is the accounting. One structural gap remains open and has its own section:
+`sequence_scope` is the one canonical column still unwritten.
 
 **Reproducible today — `final/source/`.** `evgc parity-source` re-authenticates
 `raw/sequence.gb.zip`, reparses all 25,727 records, and compares every one of the twelve
@@ -257,11 +262,14 @@ record drifting in or out of the carve fails rather than being reported as a sli
 The build never reads them — a transport that patched itself against a declared diff would pass
 parity while proving nothing.
 
-**Still not regenerated — `final/dictionaries/`, `final/alignments/`, and most of `final/audit/`.**
-Of `final/audit/` only `rules.tsv.gz` is regenerated. The canonical table itself no longer belongs on
-this list: `release/3.2.0/canonical/` is built from `raw/` and `registry/` alone. What remains is the
-dictionaries, and the alignments — which this repository now builds, but into `derived/alignments/`
-against the 2.4.1 anchor rather than into a release. See "The alignment layer's anchor".
+**Still not regenerated — `final/dictionaries/` and two audit views.** The list is down to six
+files. `final/dictionaries/`'s four tables have no producer in this repository, and
+`final/audit/record_disposition.tsv.gz` and `final/audit/sequence_evidence.tsv.gz` are 2.4.1 audit
+views the new build writes no successor to — the second is the alignment layer's tier oracle, and
+"The alignment layer's anchor" below records why it has no 4.0.0-native replacement and what checks
+it instead. All six are carried with their hashes pinned in code
+(`oracle/release.CARRIED_FINAL_FILES`, `tests/test_carried_files.py`), and every other file under
+`final/` is now written by a verb in this repository.
 
 ### Inherited parse loss
 
@@ -462,56 +470,67 @@ residue loss, Sabin-row recovery), and a human-reviewed shape report — not a h
 
 ### The alignment layer's anchor
 
-The alignment layer reads the frozen 2.4.1 release under `final/`. It was built that way because the
-stages that would produce its inputs natively did not exist. They do now — `derive/` and `curate/`
-build a full canonical table into `release/<version>/` — so reading `final/` has stopped being a gap
-and become a **pinning decision**. Six things follow, and they are written down here because none of
-them is visible from either half alone. Nothing in this list is a defect in the merge: the two halves
-cannot break each other today, precisely because `final/` is immutable and `align/` reads only that.
+**Closed on 2026-08-01, except for one input, and that exception is measured rather than deferred.**
 
-**1. The tier predicate has no native producer.** `align/population.py` splits each population into
-backbone and addon rows using `serotype_sequence_confident` and
-`enterovirus_type_sequence_confident` from `final/audit/sequence_evidence.tsv.gz` — a 21-column
-sidecar. `derive/evidence.py` writes seven columns of VP1 measurement and says in its own comment
-that it "is deliberately not the shipped `final/audit/sequence_evidence.tsv.gz` schema." Neither
-confidence column has a successor. This is not a values difference; the concept the tiering rests on
-was retired. Closing the anchor starts here.
+The layer used to read the frozen 2.4.1 release under `final/` because the stages producing its
+inputs natively did not exist. They do, and `final/` now holds their output, so `align/` reads the
+release this pipeline builds without a single path changing — every one was already declared once,
+in `oracle.parity`, and the tree under them moved. What follows is what that cost and what it
+bought, point by point against the six the previous version of this section left open.
 
-**2. The six `expected_rows` tripwires match `final/` exactly and `release/3.2.0/` on none of the
-six.** Measured: `final/` carries 24,301 rows, 10,084 poliovirus, 14,217 non-polio, and no blank
-`virus_group`; `release/3.2.0/` carries 24,308, 9,929, 12,783, and **1,596 blank**. Per serotype,
-4,427/3,939/1,693 against 4,338/3,791/1,597.
+**1. The tier predicate still has no native producer, and now says so out loud.**
+`align/population.py` splits each population into backbone and addon using
+`serotype_sequence_confident` and `enterovirus_type_sequence_confident` from
+`final/audit/sequence_evidence.tsv.gz`, and `derive/evidence.py` writes a deliberately narrower
+schema with no successor to either column. Two native candidates were measured before being
+rejected: annotated-CDS presence reproduces the shipped tiers on 88.1% of poliovirus records and
+78.7% of non-polio, and an ORF-length floor does no better at any threshold (best: 90.4% and 76.1%).
+A rule scoring 90% here would be the 98.3% mistake this document already records, in a different
+column. So the table stays carried — but `population.assert_evidence_covers_the_carve` now requires
+its coverage gap against the carve to be *exactly* the two residual sets `derive/metadata.py`
+already declares, in both directions. Before that check, nine carved records had no evidence row and
+took `addon` by default, with nothing anywhere saying they had.
 
-**3. Repointing `align/` at `release/` fails immediately rather than quietly.** That is the good
-news. `population.tier_of` raises `ContractError` on the first blank `virus_group`, because
-`TIER_COLUMN_BY_GROUP` has no entry for `""`; `type_sort_key` raises `KeyError` on
-`BLANK_TYPE_SENTINEL_BY_GROUP[""]`. Both are the declined population `derive/partition.py` produces
-by design. The one silent failure mode is `select()`, which filters `virus_group in wanted_groups` and
-would drop all 1,596 without complaint — defeating the "1-to-1 by construction" claim the artifacts
-make. Any repoint has to decide what a declined `virus_group` means to an alignment population before
-it changes a path.
+**2. The six `expected_rows` tripwires are re-derived against 4.0.0.** EV 24,301 -> 24,308,
+POLIO 10,084 -> 10,090, NPEV 14,217 -> 14,218, and the serotype files 4,427/3,939/1,693 ->
+4,337/3,790/1,597. The serotype drop is the consequential one and it is a typing change, not a
+membership change: 366 poliovirus records now carry a blank `virus_type` against 25 before, because
+R-TYPE-2 reads the organism name and declines where the name states no serotype. They are members of
+`POLIO_unified` and `EV_unified` and of no `PV{n}` file. 92 of the 366 are >=3,000 nt, so this is
+not a fragment artifact — a full-length deposit that names no serotype is one this pipeline will not
+type.
 
-**4. Two required inputs and one whole tree do not exist under `release/`.** No
-`audit/sequence_evidence.tsv.gz`, no `audit/record_disposition.tsv.gz`, and no
-`source/normalized_tsv/`, which `align/regions.py` and `align/anchored.py` need for feature tables.
+**3. The blank `virus_group` that would have made a repoint unsafe is gone.** `population.tier_of`
+raises on the first record whose group is neither value, and `select()` would have silently dropped
+1,385 of them — the one failure mode in the list that was not loud. The partition projection closed
+all 1,385 before the repoint, and `UNRESOLVED_PARTITION_ROWS` is now a named zero precisely so this
+cannot come back quietly: a decline there is not a blank cell, it is a broken alignment layer.
 
-**5. `release/<version>/` ships no `alignments/`** where 2.4.1 carried 19 files. Promoting
-`derived/alignments/` into a release also needs `export/release.py`'s file manifest fixed: it is built
-from `output_dir.rglob("*")` as the last step of `build_metadata_layer`, so anything written
-afterwards is unmanifested. That is the same hole `oracle/release.py`'s `CARRIED_FINAL_FILES` exists
-to paper over for 2.4.1, and it would be reproduced in the new format.
+**4. The missing inputs are not missing.** `final/` carries `source/normalized_tsv/`,
+`audit/record_disposition.tsv.gz` and `audit/sequence_evidence.tsv.gz` — the first because the
+source layer never moved, the other two because they are deliberately carried for exactly the two
+consumers that still need them (`align/shape.py` and the tier predicate above).
 
-**6. `release/` is in neither `sandbox.IMMUTABLE_DIRS` nor `READ_REFUSED_DIRS`.** A committed release
-is therefore overwritable by a guarded build where `final/` is not, and the oracle argument at
-`sandbox.py`'s `READ_REFUSED_DIRS` — that a build which reads a shipped canonical table can reproduce
-it perfectly and prove nothing — applies verbatim to reading `release/3.0.0` while building 3.2.0.
-Nothing enforces it. Either the asymmetry is deliberate and should say so, or it should close.
+**5. `final/alignments/` ships the pipeline's own alignments**, and the manifest hole that would
+have made that unmanifested is closed: `export/release.py` declares `BUILD_ARTIFACT_RELATIVES`
+rather than `rglob`-ing its destination, which would have hashed the carried source and alignment
+layers into a manifest claiming they were the metadata build's output. The alignment artifacts are
+covered by `CARRIED_FINAL_FILES` with hashes pinned in `tests/test_carried_files.py` — carried in
+the mechanical sense that `build-metadata` does not write them, not in the provenance sense: they
+come from `evgc alignment-build` in this repository, and their pins move when a rebuild is promoted,
+which is a reviewed act rather than a data edit.
 
-One consequence for the reader: **this repository now holds two canonical tables that disagree.**
-Over the 24,299 records both carve, `virus_group` differs on 1,588 and `virus_type` on 1,320 — 2,014
-records where at least one of the two moved. `align/contract.py`'s membership note
-("Curator decision, settled 2026-07-30 — do not re-litigate") was settled against the older of the
-two. That decision has not been reopened; what needs saying is which table it settles.
+**6. The write/read asymmetry is resolved by there being one release.** `final/` left
+`sandbox.IMMUTABLE_DIRS` and stayed in `READ_REFUSED_DIRS`, which was always the half that carried
+the property: a build that reads the previous canonical table can reproduce it perfectly and prove
+nothing. Writing is a different act. The refusal is now "a file the build did not write in this
+run", so the manifest writer and `export/metadata.py`'s read-back checks work while an
+undeclared read of the previous release still fails — including of `.DS_Store`, which is how the
+first attempt was caught.
+
+And the sentence that motivated the whole exercise no longer holds: **this repository held two
+canonical tables that disagreed, and now holds one.** `align/contract.py`'s membership note
+("Curator decision, settled 2026-07-30 — do not re-litigate") settles against that one.
 
 ## The undeclared-input guard
 
