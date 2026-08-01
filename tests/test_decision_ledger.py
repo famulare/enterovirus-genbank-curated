@@ -89,9 +89,9 @@ CAVA_PARENTAL_ADDITIONS = {
 
 # Three rows landed 2026-07-31 to repair the only three active assertions whose value was outside
 # `poliovirus_classification`'s controlled vocabulary, which `derive.classification` was therefore
-# declining rather than shipping: `CHAT` (the Koprowski strain name, not a tier), a bare `engineered`
-# (the vocabulary has only `engineered/lab`), and `iVPDV` (a transposition of `iVDPV`). The release
-# masked all three by projecting a reconciled field instead of the ledger.
+# declining rather than shipping: `CHAT` (the Koprowski strain name, not a tier), a bare
+# `engineered` (the vocabulary has only `engineered/lab`), and `iVPDV` (a transposition of `iVDPV`).
+# The release masked all three by projecting a reconciled field instead of the ledger.
 #
 # Each is a *repair*, not a reversal: the verdict the curator recorded is carried forward and only
 # the token changes. They are nonetheless `superseded` rather than `retired`, because a retired row
@@ -123,17 +123,18 @@ LEDGER_ONLY_ADDITIONS = (
 #
 # 95 are the cVDPV epidemiological override: two published studies whose circulation claim lives in
 # the paper, not in any deposit's own text — Cameroon (PMID 25542478, 27 records) and European
-# wastewater 2024 (PMID 39850005 on 20 of 68). 20 are strain-identity/provenance decisions divergence
-# alone cannot make: 12 `Sabin` (seed-strain deposits, including this pipeline's own three canonical
-# references AY184219/220/221), 5 `vaccine` (the documented Cox/Lederle/CHAT family map), 3
-# `engineered/lab` (patent JP 2009538603-A). See `docs/classification-migration-gap.md`.
+# wastewater 2024 (PMID 39850005 on 20 of 68). 20 are strain-identity/provenance decisions
+# divergence alone cannot make: 12 `Sabin` (seed-strain deposits, including this pipeline's own
+# three canonical references AY184219/220/221), 5 `vaccine` (the documented Cox/Lederle/CHAT family
+# map), 3 `engineered/lab` (patent JP 2009538603-A). See `docs/classification-migration-gap.md`.
 #
 # 28 more landed the same day, same `source_artifact`, closing the largest remaining discrepancy
 # block (`declined_too_little_sequence`) the same way: 24 `reference_or_lab_text` records traced by
-# MAD-VDPV's own working tree to strain-identity/patent evidence too short to ever reach a divergence
-# measurement (12 `Sabin`, 10 `engineered/lab`, 1 `recombinant/lab`, 1 `reference/lab`), and 4 more
-# `group_A_text_owned` `cVDPV` records. Folded into the same population rather than a second one:
-# same act (a curation decision closing a text-derived classification gap), same source, same day.
+# MAD-VDPV's own working tree to strain-identity/patent evidence too short to ever reach a
+# divergence measurement (12 `Sabin`, 10 `engineered/lab`, 1 `recombinant/lab`, 1 `reference/lab`),
+# and 4 more `group_A_text_owned` `cVDPV` records. Folded into the same population rather than a
+# second one: same act (a curation decision closing a text-derived classification gap), same source,
+# same day.
 CVDPV_AND_STRAIN_IDENTITY_SOURCE = "curator_adjudication_2026-07-31"
 EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS = 115 + 28
 # The other two populations sharing `CVDPV_AND_STRAIN_IDENTITY_SOURCE`, so every filter against it
@@ -402,8 +403,9 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     """
     superseded = [r for r in ledger if r["status"] == "superseded"]
     # Fifth cause, 2026-07-31: the value was outside the controlled vocabulary and a repair replaced
-    # it. Distinguished from every class below by what it does NOT claim — no verdict was overturned,
-    # so the note must say the judgement is carried forward rather than name evidence against it.
+    # it. Distinguished from every class below by what it does NOT claim — no verdict was
+    # overturned, so the note must say the judgement is carried forward rather than name evidence
+    # against it.
     repair_subjects = {subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS}
     repaired_vocabulary = [r for r in superseded if r["subject_key"] in repair_subjects]
     remainder = [r for r in superseded if r["subject_key"] not in repair_subjects]

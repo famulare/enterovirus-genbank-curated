@@ -33,7 +33,16 @@ RECORD_TAXONOMY = FINAL / "source" / "normalized_tsv" / "record_taxonomy.tsv.gz"
 # Carries `retrieval_date` — the day the frozen GenBank snapshot was pulled, which
 # is what "source complete as of" on the page means. Not the build date.
 RAW_MANIFEST = REPO_ROOT / "raw" / "raw_manifest.json"
-MANUAL_DECISIONS = FINAL / "audit" / "manual_decisions.tsv.gz"
+# What became of every recorded curator decision in this build. Replaced
+# `audit/manual_decisions.tsv.gz` on 2026-08-01: that was 2.4.1's synthesized copy of the
+# curation registry, and it is not in the release any more — `final/` is now the pipeline's own
+# output and the pipeline does not write it. This table is strictly better for the one thing the
+# site asks of it (`has_manual_decision`), because it records whether a decision *reached* the
+# record rather than only that one was filed: 3,959 accessions carry an applied decision here
+# against 2,237 accessions in the retired file.
+DECISION_APPLICATIONS = FINAL / "audit" / "decision_applications.tsv.gz"
+DECISION_APPLIED_PREFIX = "applied"
+DECISION_STATUS_COLUMN = "application_status"
 BUILD_MANIFEST = FINAL / "audit" / "build_manifest.json"
 REGION_COORDINATES = FINAL / "alignments" / "reference_region_coordinates.tsv"
 
@@ -448,7 +457,7 @@ def gated_inputs() -> tuple[Path, ...]:
     paths = [
         CANONICAL_METADATA,
         RECORD_TAXONOMY,
-        MANUAL_DECISIONS,
+        DECISION_APPLICATIONS,
         REGION_COORDINATES,
         BUILD_MANIFEST,
         RAW_MANIFEST,

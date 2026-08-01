@@ -118,9 +118,9 @@ internal deviation; the next-highest clean one sits at 8.1. That gap, not a fitt
 `MAX_CAPSID_CHUNK_DEVIATION_PCT` is set, and it is shared by both `compare_vp1` (below 300 nt) and
 `compare_capsid_nt` (always) rather than fitted separately for each.
 
-`compare_vp1` applies this guard only below `VP1_HOMOGENEITY_FLOOR_NT` (300 nt, the old floor): at or
-above it, behavior is unchanged from before the floor was lowered, so none of the measurements this
-stage already shipped are put at risk by a check built to catch a failure discovered afterward.
+`compare_vp1` applies this guard only below `VP1_HOMOGENEITY_FLOOR_NT` (300 nt, the old floor): at
+or above it, behavior is unchanged from before the floor was lowered, so none of the measurements
+this stage already shipped are put at risk by a check built to catch a failure discovered afterward.
 """
 
 from __future__ import annotations
@@ -184,13 +184,14 @@ CAPSID_HOMOGENEITY_CHUNK_NT = 150
 # A chunk shorter than this is too small a sample to judge on its own; it is folded into the overall
 # count but not held to the deviation floor below.
 MIN_HOMOGENEITY_CHUNK_NT = 30
-# At the original 300 nt floor this was implicit: 300 nt is always at least two 150 nt chunks, so the
-# homogeneity check always had two independent samples to compare against each other. Lowering the
-# floor to 50 nt breaks that — a 50-179 nt window is a *single* chunk, which trivially "agrees with
-# itself" and would pass with no check at all. Below `MIN_HOMOGENEITY_CHUNKS`, `_capsid_homogeneous`
-# declines rather than rubber-stamps: it has nothing to check internal consistency against. This adds
-# no restriction anywhere the 300 nt floor already reached — every record that passed before had at
-# least two qualifying chunks already — so it only governs the newly-opened 50-299 nt territory.
+# At the original 300 nt floor this was implicit: 300 nt is always at least two 150 nt chunks, so
+# the homogeneity check always had two independent samples to compare against each other. Lowering
+# the floor to 50 nt breaks that — a 50-179 nt window is a *single* chunk, which trivially "agrees
+# with itself" and would pass with no check at all. Below `MIN_HOMOGENEITY_CHUNKS`,
+# `_capsid_homogeneous` declines rather than rubber-stamps: it has nothing to check internal
+# consistency against. This adds no restriction anywhere the 300 nt floor already reached — every
+# record that passed before had at least two qualifying chunks already — so it only governs the
+# newly-opened 50-299 nt territory.
 MIN_HOMOGENEITY_CHUNKS = 2
 # Measured, not fitted: over every record that reaches any capsid-nt measurement, the three windows
 # a single bad base call breaks sit at 21.5, 21.8 and 55.2 percentage points of chunk-to-window
@@ -679,19 +680,19 @@ def measure_poliovirus_membership_band(
     the GenBank lineage annotation itself excludes. This answers a narrower question, for records
     that are already in the carve: a record named only `Enterovirus C`, `Enterovirus sp.`,
     `unidentified` or `synthetic construct` (`derive.partition.UNINFORMATIVE_ORGANISMS`) sits inside
-    the species that contains poliovirus, but its name alone cannot say whether it *is* poliovirus or
-    one of the species' other members (a coxsackievirus A). The same nearest-capsid-reference
+    the species that contains poliovirus, but its name alone cannot say whether it *is* poliovirus
+    or one of the species' other members (a coxsackievirus A). The same nearest-capsid-reference
     measurement `resolve_poliovirus_membership.py` uses can, over the same catalog parameters
-    `measure_membership_rescue` reads for the rescue half: below `rescue_below_pct` (8.0%) rescues to
-    `poliovirus`; at or above `not_poliovirus_at_or_above_pct` (15.0%) confirms `non_polio_enterovirus`;
-    the 8-15% middle, and anything under `min_codons_compared`, stays undecided — the same
-    "cannot see inside a coin-flip" refusal the divergence homogeneity guard makes, for membership
-    instead of divergence.
+    `measure_membership_rescue` reads for the rescue half: below `rescue_below_pct` (8.0%) rescues
+    to `poliovirus`; at or above `not_poliovirus_at_or_above_pct` (15.0%) confirms
+    `non_polio_enterovirus`; the 8-15% middle, and anything under `min_codons_compared`, stays
+    undecided — the same "cannot see inside a coin-flip" refusal the divergence homogeneity guard
+    makes, for membership instead of divergence.
 
     Scoped to `UNINFORMATIVE_ORGANISMS` on purpose, for the same reason `measure_sequence_evidence`
     is scoped to name-serotyped records: a record whose organism name already determines membership
-    (`poliovirus`, or a specific non-polio type) has nothing here to ask, and asking anyway would let
-    a sequence measurement override a plainer signal that already answered.
+    (`poliovirus`, or a specific non-polio type) has nothing here to ask, and asking anyway would
+    let a sequence measurement override a plainer signal that already answered.
     """
     rescue_below = float(parameters["rescue_below_pct"])
     not_polio_at_or_above = float(parameters["not_poliovirus_at_or_above_pct"])
@@ -752,9 +753,9 @@ BASIS_VP1 = "VP1"
 BASIS_CAPSID = "P1_capsid"
 # The membership-band variants: same measurement, same thresholds, but the serotype it is measured
 # against came from `measure_poliovirus_membership_band`'s nearest-capsid match rather than from the
-# organism name. Distinguished in the audit trail because `poliovirus_classification`'s own docstring
-# states plainly that this stage "does not serotype by sequence" — true for every other row, and
-# worth being able to find the ones where it is not.
+# organism name. Distinguished in the audit trail because `poliovirus_classification`'s own
+# docstring states plainly that this stage "does not serotype by sequence" — true for every other
+# row, and worth being able to find the ones where it is not.
 BASIS_VP1_BY_MEMBERSHIP_BAND = "VP1_serotype_from_membership_band"
 BASIS_CAPSID_BY_MEMBERSHIP_BAND = "P1_capsid_serotype_from_membership_band"
 
@@ -779,9 +780,9 @@ def measure_sequence_evidence(
     `measure_poliovirus_membership_band` may already have identified both its membership *and* its
     serotype from the same nearest-capsid-reference measurement `resolve_poliovirus_membership.py`
     uses — not a guess standing in for the declined name, but a second, independent sequence
-    measurement, gated by the same 8%/15% band and 50-codon floor as the membership call itself. Only
-    a record banded `poliovirus` reaches this fallback; one banded `non_polio_enterovirus` or left
-    undecided has no serotype to measure divergence against, poliovirus or otherwise.
+    measurement, gated by the same 8%/15% band and 50-codon floor as the membership call itself.
+    Only a record banded `poliovirus` reaches this fallback; one banded `non_polio_enterovirus` or
+    left undecided has no serotype to measure divergence against, poliovirus or otherwise.
 
     The fallback is tried only when VP1 itself returns nothing, never to override a VP1 measurement
     that exists: VP1 is the region the WHO thresholds are defined on, and a longer, guarded

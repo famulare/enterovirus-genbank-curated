@@ -211,8 +211,8 @@ def test_the_fourth_engineered_call_is_annotated_and_its_verdict_survives(
 
     The legacy row went `superseded` on 2026-07-31, and that is the reason this test no longer asks
     for `active` on it. The value it carried, a bare `engineered`, is not in
-    `poliovirus_classification`'s controlled vocabulary, so `derive.classification` was declining the
-    record rather than shipping it — the annotation's own conclusion,
+    `poliovirus_classification`'s controlled vocabulary, so `derive.classification` was declining
+    the record rather than shipping it — the annotation's own conclusion,
     "engineered_or_construct=TRUE stands", was not reaching the output at all. The repair asserts
     `engineered/lab`, the vocabulary's only engineered tier. Both halves are checked below: the
     annotation still reads on the superseded row, and the verdict still governs from the active one.
@@ -332,8 +332,8 @@ def test_no_registry_but_one_ever_had_an_opinion_on_dq205099(repository_root: Pa
 
     D2 fired on a contradiction between two registries. Exactly one registry ever asserted anything
     about DQ205099, so there was nothing to contradict it — "no reviewer objected" is the reason it
-    survived, not evidence that anyone checked it. If a second *registry* ever lands on this subject,
-    the annotation's framing needs revisiting and this test says so.
+    survived, not evidence that anyone checked it. If a second *registry* ever lands on this
+    subject, the annotation's framing needs revisiting and this test says so.
 
     Scoped to registries on 2026-07-31, when the vocabulary repair added a second row. That row is
     this project's own adjudication rewriting a value it already held, not an independent opinion

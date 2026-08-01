@@ -26,6 +26,33 @@ The single inversion that makes the rebuilt alignments 1-to-1 with final metadat
 its typing could not resolve confidently was simply absent. Here membership comes from curated
 `virus_group` / `virus_type`, and evidence is used **only** to assign the seed/backbone/addon tier.
 
+## Re-anchored to 4.0.0 on 2026-08-01
+
+Every path below still reads `final/`, and `final/` is now this pipeline's own release rather than
+2.4.1. Nothing in this module changed to make that happen — the paths were always declared once,
+and the tree under them moved — but the populations did:
+
+| artifact | 2.4.1 | 4.0.0 | why |
+|---|---|---|---|
+| `EV_unified` | 24,301 | 24,308 | the carve: +9 `UNDECLARED_EXCLUSIONS`, −2 rescued |
+| `POLIO_unified` | 10,084 | 10,090 | +6, short patent deposits the ledger calls poliovirus |
+| `NPEV_unified` | 14,217 | 14,218 | +1, `AF326751.2` |
+| `PV1_unified` | 4,427 | 4,337 | `virus_type` is now R-TYPE-2's name-derived |
+| `PV2_unified` | 3,939 | 3,790 | column, which declines where 2.4.1 asserted a |
+| `PV3_unified` | 1,693 | 1,597 | serotype from curated data this repo lacks |
+
+The serotype files are the consequential row. **366 poliovirus records now carry a blank
+`virus_type`, against 25 before**, so they are members of `POLIO_unified` and `EV_unified` and of no
+`PV{n}` file. That is the same curator decision recorded below applied to a larger population, not
+a new one: canonical `virus_type` governs the alignment population *including its blanks*, and
+R-TYPE-2 declines rather than guessing a serotype an organism name does not state. 92 of the 366 are
+≥3,000 nt, so this is not only short fragments — a full-length record whose deposit names no
+serotype is a record this pipeline will not type, and the serotype alignments are correspondingly
+smaller and better-evidenced than the shipped ones.
+
+The tier predicate did **not** re-anchor, and could not: see
+`population.assert_evidence_covers_the_carve`.
+
 ## Curator decision, settled 2026-07-30 — do not re-litigate
 
 Canonical `virus_type` governs the alignment population, **including its blanks**. Mike confirmed
@@ -335,7 +362,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="POLIO_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,)),
-        expected_rows=10_084,
+        expected_rows=10_090,
         description=(
             "All-serotype poliovirus whole-genome multiple sequence alignment "
             "(5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
@@ -346,7 +373,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="NPEV_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(NON_POLIO,)),
-        expected_rows=14_217,
+        expected_rows=14_218,
         description=(
             "Non-polio enterovirus whole-genome multiple sequence alignment "
             "(5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
@@ -357,7 +384,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="EV_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS, NON_POLIO)),
-        expected_rows=24_301,
+        expected_rows=24_308,
         description=(
             "All-enterovirus (poliovirus and non-polio) whole-genome multiple sequence "
             "alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
@@ -368,7 +395,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="PV1_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV1",)),
-        expected_rows=4_427,
+        expected_rows=4_337,
         description=(
             "Poliovirus serotype 1 whole-genome multiple sequence alignment, Sabin-anchored"
         ),
@@ -379,7 +406,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="PV2_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV2",)),
-        expected_rows=3_939,
+        expected_rows=3_790,
         description=(
             "Poliovirus serotype 2 whole-genome multiple sequence alignment, Sabin-anchored"
         ),
@@ -390,7 +417,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="PV3_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV3",)),
-        expected_rows=1_693,
+        expected_rows=1_597,
         description=(
             "Poliovirus serotype 3 whole-genome multiple sequence alignment, Sabin-anchored"
         ),

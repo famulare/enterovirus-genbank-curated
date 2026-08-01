@@ -27,7 +27,7 @@ export function renderReleaseBand(summary: Summary): void {
     <strong>Release ${esc(release.version)}</strong>
     <span>${num(release.n_records)} sequences · ${num(release.n_polio)} poliovirus,
       ${num(release.n_npev)} non-polio · ${release.n_fields} curated fields ·
-      contract validation ${esc(release.validation)}</span>
+      schema ${esc(release.schema_version)}</span>
   `;
 }
 
@@ -175,6 +175,6 @@ export function renderIntegrityNotes(summary: Summary): void {
 
 export function renderBuildLine(summary: Summary, buildIdentity: string): void {
   byId("build-line").textContent =
-    `Data release ${summary.release.version}, built ${summary.release.built} · ` +
+    `Data release ${summary.release.version}, code ${summary.release.code_sha256.slice(0, 12)} · ` +
     `site data ${buildIdentity}`;
 }

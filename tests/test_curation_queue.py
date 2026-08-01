@@ -84,21 +84,22 @@ from enterovirus_genbank_curated.derive.partition import (
 # 27,445 the same day, when the reference-title text fallback landed
 # (`needs_other_data_text_fallback`): 708 more `poliovirus_classification` declines resolve — 705
 # agreeing with the shipped classification and 3 (`AF083938`, `HM537010`, `MG212473`) not, a known,
-# documented cost of asking a study title a record-level question (see `oracle/parity.py`). A decline
-# leaving the queue does not require the value to be right, only that the cell is no longer silent.
+# documented cost of asking a study title a record-level question (see `oracle/parity.py`). A
+# decline leaving the queue does not require the value to be right, only that the cell is no longer
+# silent.
 #
 # 27,254 the same day, when isolate-linked inference landed: 191 more `poliovirus_classification`
 # declines resolve by inheriting a sibling accession's measured classification — 190 agreeing with
 # the shipped value and 1 (`X70506`) not, the known `V01149.1` (Mahoney) trap reaching a second
-# record (see `oracle/parity.py`).
-# 27,199, 2026-08-01: the capsid-AA membership band resolves `virus_group` directly for 211 records
-# (`-211`, real work leaving the queue). For the same 211, `sample_origin` and `surveillance_stream`
-# stop declining *on the partition* and start declining, for the ones still short of their own
-# evidence, on their own reason instead — 31 records with no `/host`/specimen text (`+31`) and 125
-# with no surveillance context in the record (`+125`), both newly real work rather than a decline
-# excluded as partition-consequent. `poliovirus_classification` does not move: every one of the 211
-# fully resolves there (a value or a determined blank), so none of them was ever queued work to begin
-# with. Net: 27,254 − 211 + 31 + 125 = 27,199.
+# record (see `oracle/parity.py`). 27,199, 2026-08-01: the capsid-AA membership band resolves
+# `virus_group` directly for 211 records (`-211`, real work leaving the queue). For the same 211,
+# `sample_origin` and `surveillance_stream` stop declining *on the partition* and start declining,
+# for the ones still short of their own evidence, on their own reason instead — 31 records with no
+# `/host`/specimen text (`+31`) and 125 with no surveillance context in the record (`+125`), both
+# newly real work rather than a decline excluded as partition-consequent.
+# `poliovirus_classification` does not move: every one of the 211 fully resolves there (a value or a
+# determined blank), so none of them was ever queued work to begin with. Net: 27,254 − 211 + 31 +
+# 125 = 27,199.
 EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record

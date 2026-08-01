@@ -17,6 +17,10 @@ from pathlib import Path
 
 from enterovirus_genbank_curated.align import contract
 from enterovirus_genbank_curated.contracts import ContractError
+from enterovirus_genbank_curated.derive.metadata import (
+    SEQUENCE_RESCUED_INCLUSIONS,
+    UNDECLARED_EXCLUSIONS,
+)
 from enterovirus_genbank_curated.oracle.release import read_tsv_gz
 
 
@@ -152,10 +156,59 @@ def tier_of(metadata_row: dict[str, str], evidence_row: dict[str, str] | None) -
             f"membership and tiering are both undefined for it"
         )
     if evidence_row is None:
+        # Only reachable for the nine records `assert_evidence_covers_the_carve` declares, all of
+        # them 70-1,181 nt patent fragments plus one 7,378 nt Simian agent 5 genome, none of which
+        # the 2.4.1 evidence pass ever measured. `addon` is the honest tier for a record with no
+        # sequence-typing evidence at all — it is what an explicit FALSE would give — but it must
+        # be reached by declaration rather than by a missing dictionary key, which is what the
+        # caller's check enforces.
         return "addon"
     # A blank third state exists — 125 non-polio records — and falls to addon, which is upstream's
     # `== TRUE`-else-addon behaviour. Made explicit rather than incidental.
     return "backbone" if evidence_row.get(column, "") == contract.BACKBONE_VALUE else "addon"
+
+
+def assert_evidence_covers_the_carve(
+    metadata: dict[str, dict[str, str]], evidence: dict[str, dict[str, str]]
+) -> None:
+    """The tier oracle is a 2.4.1 artifact; its gap against the carve must be the declared one.
+
+    `final/audit/sequence_evidence.tsv.gz` is carried, not rebuilt: `derive/evidence.py` writes a
+    deliberately narrower schema and computes no `*_sequence_confident` predicate, so there is no
+    4.0.0-native successor to it (measured: the best native candidate — annotated CDS presence, or
+    an ORF-length floor — reproduces the shipped tiers only 90% of the time for poliovirus and 79%
+    for non-polio, which is a guess wearing a rule's clothes).
+
+    Carrying it is defensible; carrying it *silently* is not. It covers 24,301 records and the
+    carve holds 24,308, and `tier_of` reads a missing row as `addon` — so nine records would take
+    a tier by default, with nothing saying they had. That is the shape of defect this repository
+    keeps finding: a real decision expressed as an absent key.
+
+    The gap is not arbitrary and does not need a pin of its own. It is exactly the two residual sets
+    `derive/metadata.py` already declares and `oracle` already checks against the release: the nine
+    the carve holds and 2.4.1 excluded, and the two 2.4.1 shipped that the carve cannot reach.
+    Requiring equality means a record drifting out of evidence coverage for any *other* reason fails
+    here instead of quietly becoming an addon.
+    """
+    uncovered = frozenset(
+        metadata[key][contract.VERSION] for key in metadata if key not in evidence
+    )
+    orphaned = frozenset(
+        row[contract.VERSION] for key, row in evidence.items() if key not in metadata
+    )
+    if uncovered != UNDECLARED_EXCLUSIONS:
+        raise ContractError(
+            f"{len(uncovered)} carved records have no row in {contract.SEQUENCE_EVIDENCE} and "
+            f"would take a tier by default. Expected exactly the declared "
+            f"UNDECLARED_EXCLUSIONS; unexpected: {sorted(uncovered - UNDECLARED_EXCLUSIONS)}, "
+            f"newly covered: {sorted(UNDECLARED_EXCLUSIONS - uncovered)}"
+        )
+    if orphaned != SEQUENCE_RESCUED_INCLUSIONS:
+        raise ContractError(
+            f"{contract.SEQUENCE_EVIDENCE} carries rows for records the carve does not hold, "
+            f"beyond the declared SEQUENCE_RESCUED_INCLUSIONS: "
+            f"{sorted(orphaned - SEQUENCE_RESCUED_INCLUSIONS)}"
+        )
 
 
 def load_all_records(repository_root: Path) -> dict[str, AlignedRecord]:
@@ -169,6 +222,8 @@ def load_all_records(repository_root: Path) -> dict[str, AlignedRecord]:
 
     ev_header, ev_rows = read_tsv_gz(repository_root / contract.SEQUENCE_EVIDENCE)
     evidence = _indexed(ev_header, ev_rows, contract.SEQUENCE_EVIDENCE)
+
+    assert_evidence_covers_the_carve(metadata, evidence)
 
     sequences = load_sequences(repository_root / contract.CANONICAL_FASTA)
 

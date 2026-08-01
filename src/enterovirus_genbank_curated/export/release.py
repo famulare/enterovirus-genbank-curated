@@ -7,15 +7,15 @@ gigabytes.
 
 ## The version is 4.0.0
 
-Release 4.0.0 ships the accumulated 3.0.0-3.3.0 line below as one major bump, for two reasons. First,
-it is the release at which reconciliation against the hand-curated 2.4.1 baseline is complete in the
-sense this pipeline can make that claim: every one of the 536 remaining `poliovirus_classification`
-differences is categorized rather than merely counted (see `docs/classification-migration-gap.md`),
-97.8% of the shared carve agrees, and the residue is either an epidemiological judgement no sequence
-property carries or a named, reverted attempt (chimera detection) rather than an unexplained gap.
-Second, this is the version reference multiple-sequence alignments ship under — not yet in this
-build, but the version number is reserved for that pairing rather than incrementing again once they
-land.
+Release 4.0.0 ships the accumulated 3.0.0-3.3.0 line below as one major bump, for two reasons.
+First, it is the release at which reconciliation against the hand-curated 2.4.1 baseline is complete
+in the sense this pipeline can make that claim: every one of the 536 remaining
+`poliovirus_classification` differences is categorized rather than merely counted (see
+`docs/classification-migration-gap.md`), 97.8% of the shared carve agrees, and the residue is either
+an epidemiological judgement no sequence property carries or a named, reverted attempt (chimera
+detection) rather than an unexplained gap. Second, this is the version reference multiple-sequence
+alignments ship under — not yet in this build, but the version number is reserved for that pairing
+rather than incrementing again once they land.
 
 Release 3.0.0 was the major break within that accumulated line. Three properties of it are
 incompatible with 2.4.1 for anyone reading the columns, and all three still hold here:

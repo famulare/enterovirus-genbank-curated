@@ -24,10 +24,10 @@ NO_EVIDENCE: Mapping[str, str] = MappingProxyType({})
 
 # The keys of a `RecordView.membership_evidence` mapping. Declared here, not in `derive/evidence.py`
 # where they are produced or `derive/partition.py` where they are consumed, because those two
-# modules otherwise import each other: `evidence.py` needs `partition.py`'s `UNINFORMATIVE_ORGANISMS`
-# to know which records to measure, and `partition.py` needs `evidence.py`'s keys to read the result.
-# Both already import this module for `RecordView` itself, so the keys live where the cycle cannot
-# form.
+# modules otherwise import each other: `evidence.py` needs `partition.py`'s
+# `UNINFORMATIVE_ORGANISMS` to know which records to measure, and `partition.py` needs
+# `evidence.py`'s keys to read the result. Both already import this module for `RecordView` itself,
+# so the keys live where the cycle cannot form.
 MEMBERSHIP_BAND_KEY = "membership_band"
 MEMBERSHIP_BAND_SEROTYPE_KEY = "reference_serotype"
 MEMBERSHIP_BAND_REFERENCE_KEY = "reference_version"
@@ -56,15 +56,17 @@ class RecordView:
     checked.
 
     `reference_titles` holds every GenBank `REFERENCE` block title on the record, concatenated — the
-    cited paper's own title, not the deposit's own fields. It is a study-level statement rather than a
-    depositor's record-level one, which is why no other rule reads it: only the text-classification
-    fallback does, and only for a record with no sequence signal of its own to ask instead.
+    cited paper's own title, not the deposit's own fields. It is a study-level statement rather than
+    a depositor's record-level one, which is why no other rule reads it: only the
+    text-classification fallback does, and only for a record with no sequence signal of its own to
+    ask instead.
 
     `membership_evidence` holds `derive.evidence.measure_poliovirus_membership_band`'s result for a
     record whose organism name is one of `derive.partition.UNINFORMATIVE_ORGANISMS` — the capsid
     amino-acid distance to the nearest poliovirus reference, banded into `poliovirus` or
-    `non_polio_enterovirus`, or absent if neither band was reached. Only `derive.partition.virus_group`
-    reads it, and only when the organism name itself could not decide membership.
+    `non_polio_enterovirus`, or absent if neither band was reached. Only
+    `derive.partition.virus_group` reads it, and only when the organism name itself could not decide
+    membership.
     """
 
     version: str

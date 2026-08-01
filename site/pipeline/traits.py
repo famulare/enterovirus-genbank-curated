@@ -126,9 +126,19 @@ def parse_collection_date(value: str) -> float | None:
 
 
 def manual_decision_accessions() -> set[str]:
-    with gzip.open(contract.MANUAL_DECISIONS, "rt", newline="") as handle:
+    """Accessions a curator decision actually reached in this build.
+
+    Filtered to the `applied_*` statuses rather than taking every row. The table also records
+    decisions that did *not* move a value — retired, superseded, subject outside the carve, no
+    canonical field — and counting those as "manually decided" would put a badge on a record whose
+    curation the build declined to apply, which is the opposite of what the badge claims.
+    """
+    with gzip.open(contract.DECISION_APPLICATIONS, "rt", newline="") as handle:
         return {
-            row["accession"] for row in csv.DictReader(handle, delimiter="\t") if row["accession"]
+            row["accession"]
+            for row in csv.DictReader(handle, delimiter="\t")
+            if row["accession"]
+            and row[contract.DECISION_STATUS_COLUMN].startswith(contract.DECISION_APPLIED_PREFIX)
         }
 
 

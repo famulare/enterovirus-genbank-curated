@@ -68,7 +68,8 @@ threshold logic below is identical either way.
    record's own text or the cited paper's title (`_group_b_text_fallback`) — MAD-VDPV's own
    `needs_other_data_text_fallback`. `iVDPV`, `cVDPV` and the reference/lab labels are excluded from
    this fallback on purpose; see `_GROUP_B_TEXT_PATTERNS`.
-8. Otherwise decline — too little usable sequence by either basis, and no text label to fall back to.
+8. Otherwise decline — too little usable sequence by either basis, and no text label to fall
+   back to.
 
 `unresolved` is a value in the shipped vocabulary and this rule never emits it. A cell the pipeline
 cannot decide is an unresolved *cell*, carrying its reason into the provenance table and the
@@ -138,11 +139,11 @@ UNRESOLVED_UNCONTROLLED_VALUE = "curated_value_outside_the_controlled_vocabulary
 # Refinements a depositor may state outright. Longest-first, so `cVDPV` is not read as `VDPV`.
 #
 # `iVDPV` matches an immunodeficient *host* as well as the token, because the refinement is a claim
-# about the host and a depositor who writes `isolation_source="... from an immunodeficient individual
-# who received OPV and developed paralysis"` has stated it as plainly as one who writes `iVDPV`. This
-# is the same record-level standard MAD-VDPV settled on: its own text miner gates `iVDPV` on
-# immunodeficiency evidence in record-level fields specifically, after a title-only match was found
-# stamping `iVDPV` onto a paper's wild comparators.
+# about the host and a depositor who writes `isolation_source="... from an immunodeficient
+# individual who received OPV and developed paralysis"` has stated it as plainly as one who writes
+# `iVDPV`. This is the same record-level standard MAD-VDPV settled on: its own text miner gates
+# `iVDPV` on immunodeficiency evidence in record-level fields specifically, after a title-only match
+# was found stamping `iVDPV` onto a paper's wild comparators.
 #
 # `cVDPV` gets no matching widening, and the asymmetry is deliberate. Circulation is a claim about a
 # transmission chain reconstructed across isolates, so no single record's own text can establish it,
@@ -167,12 +168,12 @@ _REFINEMENTS = (
 # `iVDPV`, `cVDPV` and the reference/lab labels (`Sabin`, `vaccine`, `engineered/lab`, ...) are
 # deliberately absent, not merely lower-precedence: MAD-VDPV's own text miner reaches those too, but
 # every record in *this* pipeline's corpus where it does was traced and migrated as an individual
-# ledger decision (`reference_or_lab_text`, `group_A_text_owned`), not automated, because circulation
-# and strain identity are curator calls this pipeline has no automated input for. Restricting the
-# pattern list rather than filtering matches afterward means a record whose text says `cVDPV` is not
-# matched at all here (`\bVDPV\b` does not match inside `cVDPV` — no word boundary precedes the `V`),
-# so it falls through to decline exactly as it did before this rule existed, the same conservative
-# default as finding no text at all.
+# ledger decision (`reference_or_lab_text`, `group_A_text_owned`), not automated, because
+# circulation and strain identity are curator calls this pipeline has no automated input for.
+# Restricting the pattern list rather than filtering matches afterward means a record whose text
+# says `cVDPV` is not matched at all here (`\bVDPV\b` does not match inside `cVDPV` — no word
+# boundary precedes the `V`), so it falls through to decline exactly as it did before this rule
+# existed, the same conservative default as finding no text at all.
 _GROUP_B_TEXT_PATTERNS = (
     (re.compile(r"\bavdpv\b|\bvdpv\b|vaccine[- ]derived poliovirus", re.IGNORECASE), VDPV),
     (re.compile(r"sabin[- ]like", re.IGNORECASE), SABIN_LIKE),
@@ -195,11 +196,11 @@ def _record_text(view: RecordView) -> str:
 def _stated_refinement(text: str, controlled_values: Collection[str]) -> str:
     """The refinement the record states, or empty when it states none this column can carry.
 
-    The vocabulary check is applied here and not only on the ledger path. It used to guard the ledger
-    alone, so `aVDPV` — which the vocabulary does not contain — shipped on `PP481414` from the text
-    path while the identical string asserted by a decision would have been declined. One rule cannot
-    hold two standards for the same column, and the release ships `VDPV` there, which is true of
-    every record in the band.
+    The vocabulary check is applied here and not only on the ledger path. It used to guard the
+    ledger alone, so `aVDPV` — which the vocabulary does not contain — shipped on `PP481414` from
+    the text path while the identical string asserted by a decision would have been declined. One
+    rule cannot hold two standards for the same column, and the release ships `VDPV` there, which is
+    true of every record in the band.
     """
     for pattern, value in _REFINEMENTS:
         if pattern.search(text):
@@ -286,8 +287,8 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
     # `derive.partition.UNINFORMATIVE_ORGANISMS` has none to read here, but
     # `derive.evidence.measure_sequence_evidence` may already have identified one from the same
     # capsid-AA membership band that settled its `virus_group` — see that function's docstring. Only
-    # a genuine VP1/capsid-nt measurement reaches `view.evidence` this way, never a guess standing in
-    # for the declined name.
+    # a genuine VP1/capsid-nt measurement reaches `view.evidence` this way, never a guess standing
+    # in for the declined name.
     serotype = serotype_from_name(view.record.get(ORGANISM_FIELD, "")) or view.evidence.get(
         EVIDENCE_REFERENCE_SEROTYPE, ""
     )
@@ -314,7 +315,9 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
         fallback_text = " ".join(
             (_record_text(view), view.record.get(ORGANISM_FIELD, ""), view.reference_titles)
         )
-        stated, matched_text = _group_b_text_fallback(fallback_text, parameters["controlled_values"])
+        stated, matched_text = _group_b_text_fallback(
+            fallback_text, parameters["controlled_values"]
+        )
         if stated:
             return RuleOutcome(
                 value=stated,

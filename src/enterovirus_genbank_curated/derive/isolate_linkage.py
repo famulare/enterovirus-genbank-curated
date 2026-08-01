@@ -160,7 +160,8 @@ def apply_isolate_linked_inference(
             view.accession, [view_by_version[v].accession for v in agreeing_versions]
         ):
             continue
-        source_field = ISOLATE_QUALIFIER if view.qualifier(ISOLATE_QUALIFIER).strip() else STRAIN_QUALIFIER
+        has_isolate = bool(view.qualifier(ISOLATE_QUALIFIER).strip())
+        source_field = ISOLATE_QUALIFIER if has_isolate else STRAIN_QUALIFIER
         linked[version] = {
             **row,
             "final_value": proposed,

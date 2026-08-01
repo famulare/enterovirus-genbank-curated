@@ -305,13 +305,19 @@ def build(records: list[dict], by_accession: dict, inflation: dict) -> dict:
     return {
         "schema": SCHEMA,
         "release": {
-            # `schema_version` in the build manifest is the data release version;
-            # CITATION.cff carries the same value.
-            "version": release["schema_version"],
-            "built": release["built"],
+            # `release_version`, not `schema_version`: since 4.0.0 the two differ. The schema is
+            # still 2.4.1's — same 26 canonical columns — while the data release it carries is
+            # 4.0.0. CITATION.cff carries the release version.
+            "version": release["release_version"],
+            "schema_version": release["schema_version"],
             "raw_retrieved": raw["retrieval_date"],
-            "validation": release["validation"],
-            "n_source_records": release["source_records"],
+            # No build date, and no `validation: PASS`. The 2.4.1 manifest carried both; the
+            # pipeline's own manifest carries neither, on purpose — a wall-clock timestamp in a
+            # hashed artifact makes identical inputs produce different bytes tomorrow, and a
+            # release cannot certify itself. What identifies this build is what went into it, so
+            # that is what the page shows.
+            "code_sha256": release["code_sha256"],
+            "n_source_records": release["row_counts"]["source_records"],
             "n_records": len(records),
             "n_polio": groups.get(contract.GROUP_POLIO, 0),
             "n_npev": groups.get(contract.GROUP_NPEV, 0),

@@ -404,7 +404,8 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # reference/lab) and 4 more group_A_text_owned cVDPV records.
     cvdpv_and_strain_identity = 115 + 28
     # 1,379 more on 2026-08-01: every record whose `virus_group` the build still declined, filled
-    # with the upstream release's own assignment as `is_poliovirus`. Neither generator produces them.
+    # with the upstream release's own assignment as `is_poliovirus`. Neither generator produces
+    # them.
     upstream_partition = 1385
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS

@@ -198,12 +198,12 @@ def verify_source_parity(repository_root: Path, *, guarded: bool = False) -> dic
 # half above — below 8.0% capsid-AA distance from a poliovirus reference rescues to `poliovirus`
 # (140), at or above 15.0% confirms `non_polio_enterovirus` (71), and the 8-15% middle (or under 50
 # compared codons) stays declined exactly as before. Validated per record against the shipped
-# `virus_group`: all 71 `non_polio_enterovirus` calls agree; of the 140 `poliovirus` calls, 138 agree
-# and the other 2 are not in the 24,299 shared rows at all (not a disagreement — there is nothing on
-# the release side to disagree with). `poliovirus_classification` benefits too: a `poliovirus`-banded
-# record with no name serotype now measures VP1/capsid divergence against the band's own identified
-# serotype (`BASIS_VP1_BY_MEMBERSHIP_BAND`/`BASIS_CAPSID_BY_MEMBERSHIP_BAND` in `derive/evidence.py`),
-# not a name that was never going to state it.
+# `virus_group`: all 71 `non_polio_enterovirus` calls agree; of the 140 `poliovirus` calls, 138
+# agree and the other 2 are not in the 24,299 shared rows at all (not a disagreement — there is
+# nothing on the release side to disagree with). `poliovirus_classification` benefits too: a
+# `poliovirus`-banded record with no name serotype now measures VP1/capsid divergence against the
+# band's own identified serotype (`BASIS_VP1_BY_MEMBERSHIP_BAND`/`BASIS_CAPSID_BY_MEMBERSHIP_BAND`
+# in `derive/evidence.py`), not a name that was never going to state it.
 #
 # 1,385 fell to **0** on 2026-08-01 (commit `c245dd3`). The upstream release already assigns 1,379
 # of them, projected into the ledger as `is_poliovirus` decisions under
@@ -244,8 +244,8 @@ UNRESOLVED_ORIGIN_ROWS = 2902
 # 23 rescued records decline; E01570, E01572 and HV932178 carry an active `sampling_frame` decision.
 #
 # Down a further 56, 2026-08-01, when the capsid-AA membership band resolved `virus_group` directly
-# for 211 more records: 56 of them name a surveillance context in their own text and read it here for
-# the first time; the rest do not and stay declined.
+# for 211 more records: 56 of them name a surveillance context in their own text and read it here
+# for the first time; the rest do not and stay declined.
 #
 # Down a further 1,023 the same day, with the upstream partition projection. Same shape as
 # `sample_origin` above: a scoped record can be asked the question, and 1,023 of the newly-scoped
@@ -307,16 +307,16 @@ UNRESOLVED_TYPE_ROWS = 2216
 # measurements are kept here as the history of how this number got where it is.)
 #
 # Down a further 191 the same day, when isolate-linked inference landed: 192 candidates, 191 applied
-# (one, a short unverified key with no batch corroboration, stays declined). 190 of the 191 landed on
-# the value 2.4.1 shipped; the one that did not was `X70506`.
+# (one, a short unverified key with no batch corroboration, stays declined). 190 of the 191 landed
+# on the value 2.4.1 shipped; the one that did not was `X70506`.
 #
-# Down a further 211, 2026-08-01, when the capsid-AA membership band resolved `virus_group` directly:
-# 71 records banded `non_polio_enterovirus` resolve to a determined blank (`not_applicable_outside_
-# poliovirus`, the same value the release ships for every non-poliovirus row) rather than declining
-# for "following" an undecided partition, and the other 140 banded `poliovirus` now measure VP1/
-# capsid divergence against the band's own identified serotype and resolve outright — 130 of the 140
-# landed on the value 2.4.1 shipped, 8 genuinely disagreed, and 2 were not in the shared carve at
-# all.
+# Down a further 211, 2026-08-01, when the capsid-AA membership band resolved `virus_group`
+# directly: 71 records banded `non_polio_enterovirus` resolve to a determined blank
+# (`not_applicable_outside_ poliovirus`, the same value the release ships for every non-poliovirus
+# row) rather than declining for "following" an undecided partition, and the other 140 banded
+# `poliovirus` now measure VP1/ capsid divergence against the band's own identified serotype and
+# resolve outright — 130 of the 140 landed on the value 2.4.1 shipped, 8 genuinely disagreed, and 2
+# were not in the shared carve at all.
 #
 # Down a further 1,364 on 2026-08-01, when the upstream partition projection closed `virus_group`:
 # this rule declined on 1,385 records for "following" an undecided partition and now follows a

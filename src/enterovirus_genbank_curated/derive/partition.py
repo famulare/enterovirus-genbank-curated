@@ -27,11 +27,11 @@ which the sequence stage now implements for carve membership. Within the carve t
 some: 17 by an explicit `is_poliovirus` decision, and a further 259 because a curated
 *classification* entails membership — see `_membership`. R-MEMBERSHIP-AA-1's own two-sided band
 resolves more of the rest directly: a record named only `Enterovirus C`, `Enterovirus sp.`,
-`unidentified` or `synthetic construct` (`UNINFORMATIVE_ORGANISMS`) whose capsid sits under 8% amino-
-acid distance from the nearest poliovirus reference *is* poliovirus, and one at or above 15% is not —
-`derive.evidence.measure_poliovirus_membership_band`, read here as `RecordView.membership_evidence`.
-The 8-15% middle, and anything below the 50-codon floor, stays declined; nothing here is a guess
-standing in for a name that would not commit.
+`unidentified` or `synthetic construct` (`UNINFORMATIVE_ORGANISMS`) whose capsid sits under 8%
+amino- acid distance from the nearest poliovirus reference *is* poliovirus, and one at or above 15%
+is not — `derive.evidence.measure_poliovirus_membership_band`, read here as
+`RecordView.membership_evidence`. The 8-15% middle, and anything below the 50-codon floor, stays
+declined; nothing here is a guess standing in for a name that would not commit.
 """
 
 from __future__ import annotations

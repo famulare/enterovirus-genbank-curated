@@ -7,10 +7,12 @@
 
 export interface Release {
   version: string;
-  built: string;
+  /** The canonical schema the release conforms to. Differs from `version` since 4.0.0. */
+  schema_version: string;
   /** Day the frozen GenBank snapshot was retrieved, not the day it was built. */
   raw_retrieved: string;
-  validation: string;
+  /** Digest of the code that produced the release. There is deliberately no build date. */
+  code_sha256: string;
   n_source_records: number;
   n_records: number;
   n_polio: number;

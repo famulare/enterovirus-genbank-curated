@@ -70,11 +70,11 @@ SHIPPED_COLUMN_COUNT = 21
 #
 # +45 VP1 = 44 genuinely new + `AJ783799`, already measured at 0.660% via the capsid fallback (303
 # nt, just over the old 300 nt floor), which now measures 0.669% via VP1 alone (299 nt, under the
-# old floor but over the new one) instead — same tier either way, so `Sabin-like` does not move; only
-# which basis reached it does. +16 capsid = 17 genuinely new − the one `AJ783799` no longer needs.
-# Of the 61 genuinely-new accessions (44 + 17), 60 were previously declined and now agree with the
-# shipped classification; the 61st already had an active ledger decision, so its classification was
-# unaffected — it simply has evidence to cite where it had none before.
+# old floor but over the new one) instead — same tier either way, so `Sabin-like` does not move;
+# only which basis reached it does. +16 capsid = 17 genuinely new − the one `AJ783799` no longer
+# needs. Of the 61 genuinely-new accessions (44 + 17), 60 were previously declined and now agree
+# with the shipped classification; the 61st already had an active ledger decision, so its
+# classification was unaffected — it simply has evidence to cite where it had none before.
 EXPECTED_VP1_ROWS = 7773
 EXPECTED_CAPSID_FALLBACK_ROWS = 175
 # 392 VP1 + 7 capsid, 2026-08-01: `measure_poliovirus_membership_band` identifies a serotype by
@@ -169,8 +169,8 @@ def test_the_shipped_sequence_evidence_is_a_different_table(repository_root: Pat
     assert set(header) & set(EVIDENCE_COLUMNS) == SHARED_WITH_SHIPPED
     # And the shipped table covers the whole carve rather than the named-serotype subset, so even a
     # column-name coincidence would not make the two interchangeable. The margin dropped from 3x to
-    # 2x on 2026-08-01, when the membership-band serotype fallback grew `EXPECTED_DIVERGENCE_ROWS` to
-    # within a third of the whole carve; still comfortably true, since this view only ever covers
+    # 2x on 2026-08-01, when the membership-band serotype fallback grew `EXPECTED_DIVERGENCE_ROWS`
+    # to within a third of the whole carve; still comfortably true, since this view only ever covers
     # name- or band-serotyped records and the shipped one covers every carved row.
     assert len(rows) > 2 * EXPECTED_DIVERGENCE_ROWS
 

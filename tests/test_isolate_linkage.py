@@ -256,7 +256,9 @@ def test_same_batch_matches_prefix_width_and_window() -> None:
 
 
 @pytest.mark.slow
-def test_the_real_build_links_the_expected_population(repository_root: Path, tmp_path: Path) -> None:
+def test_the_real_build_links_the_expected_population(
+    repository_root: Path, tmp_path: Path
+) -> None:
     """Pinned so the linked population cannot silently grow or shrink between builds."""
     result = build_metadata_layer(repository_root, tmp_path)
     linked = [
