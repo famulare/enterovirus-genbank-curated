@@ -363,16 +363,17 @@ def test_network_is_still_refused(repository_root: Path, scratch_dirs: tuple[Pat
     )
 
 
-def test_writing_into_final_is_still_refused(
+def test_writing_into_raw_is_still_refused(
     repository_root: Path, scratch_dirs: tuple[Path, Path]
 ) -> None:
+    """`final/` left the immutable set on 2026-08-01; `raw/`, the frozen input, did not."""
     scratch, run_dir = scratch_dirs
     body = """
     se.arm(guard)
-    (ROOT / "final" / "__tool_guard_probe__").write_text("x")
+    (ROOT / "raw" / "__tool_guard_probe__").write_text("x")
     """
     result = run_guarded(repository_root, scratch, run_dir, body)
-    probe = repository_root / "final" / "__tool_guard_probe__"
+    probe = repository_root / "raw" / "__tool_guard_probe__"
     try:
         assert_blocked(result, "immutable release tree")
     finally:

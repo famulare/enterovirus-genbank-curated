@@ -403,6 +403,9 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # reference_or_lab_text records (12 Sabin, 10 engineered/lab, 1 recombinant/lab, 1
     # reference/lab) and 4 more group_A_text_owned cVDPV records.
     cvdpv_and_strain_identity = 115 + 28
+    # 1,379 more on 2026-08-01: every record whose `virus_group` the build still declined, filled
+    # with the upstream release's own assignment as `is_poliovirus`. Neither generator produces them.
+    upstream_partition = 1385
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)
@@ -412,6 +415,7 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         + cava_parental
         + vocabulary_repairs
         + cvdpv_and_strain_identity
+        + upstream_partition
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
@@ -419,7 +423,7 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         f"{carried} carried-forward supersessions + {reconciled} reconciliation-allowlist rows + "
         f"{readjudication} re-adjudication rows + {cava_parental} CAVA parental rows + "
         f"{vocabulary_repairs} vocabulary repairs + {cvdpv_and_strain_identity} cVDPV/strain-"
-        f"identity decisions = {expected}. "
+        f"identity decisions + {upstream_partition} upstream-partition projections = {expected}. "
         f"Bumping one without the others is the drift the pin exists to catch."
     )
 

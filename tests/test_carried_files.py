@@ -1,9 +1,17 @@
-"""Hashes for the twenty files under `final/` that the release manifest does not declare.
+"""Hashes for the files under `final/` that the release manifest does not declare.
 
-`final/audit/release_file_manifest.tsv` covers 38 of the 58 files in `final/`. The other twenty —
-the nineteen carved-in alignments plus the manifest itself — had no hash anywhere, so truncating
-all nineteen to zero bytes, deleting one outright, and replacing shipped tables with the word
-`garbage` left every gate reporting PASS (defect B7).
+`final/audit/release_file_manifest.tsv` covers the 13 files `evgc build-metadata` writes — since
+2026-08-01 `final/` is that build's destination, so the manifest describes the build and nothing
+else. The other 50 are carried from 2.4.1: the nineteen carved-in alignments, the source layer, the
+four dictionaries, and the two audit views the alignment layer still reads. Before this table
+existed the alignments had no hash anywhere, so truncating all nineteen to zero bytes, deleting one
+outright, and replacing shipped tables with the word `garbage` left every gate reporting PASS
+(defect B7).
+
+The source layer and the dictionaries are pinned a second time, in `oracle/release.py`, and that
+duplication is deliberate rather than an oversight: `parity-source` needs those hashes at runtime,
+not only under pytest. `test_the_pinned_set_is_exactly_the_declared_carried_set` requires the two
+declarations to agree.
 
 The hashes live here, in code, rather than in a new key inside `releases/2.4.1/parity.json`. A data
 key would give these files a *single* declaration computed from the very bytes it gates and movable
@@ -33,8 +41,10 @@ import pytest
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.oracle.release import (
     CARRIED_FINAL_FILES,
+    DICTIONARY_HASHES,
     IGNORED_FINAL_NAMES,
     RELEASE_FILE_MANIFEST_PATH,
+    SOURCE_LAYER_HASHES,
     verify_manifest_completeness,
     verify_release_manifest_hashes,
 )
@@ -79,15 +89,75 @@ CARRIED_SHA256 = {
         "41420f9e5a5d3804f6370c0b41fa487365e5dc0a85e1f85c191082f15f9551e1",
     "final/alignments/unified_stockholm_provenance.json":
         "6428df2a82825d729a35606402c36c8ed354ee2049d0b0da198d57ce7fcad872",
-    "final/audit/release_file_manifest.tsv":
-        "4ea3962d441fed1b984f95bf63f8f5632c81260ecd50a1dfb2b699c5c2e37b01",
+    "final/audit/record_disposition.tsv.gz":
+        "2de98c63e822ec5352921a71bb801d99f3ed5639ce4f1020dbe22c88c835871a",
+    "final/audit/sequence_evidence.tsv.gz":
+        "5c5e55a9d38ab9fbb64b5cc204846af941257f7b803c8644f646375c9789c349",
+    "final/dictionaries/audit_data_dictionary.tsv":
+        "222ef799baa1ae7f292cc652237dd1fc9e474199eb8e8d2a76f120a33d0c2098",
+    "final/dictionaries/canonical_data_dictionary.tsv":
+        "8fc475c7ac7482e7602339fb0257ce95a4db9e9fee164570fb9903750651df70",
+    "final/dictionaries/controlled_vocabularies.tsv":
+        "7fb35d08de7796793456c634f343eaa7f55823302052a3940b4bdc9efaeb8d4a",
+    "final/dictionaries/source_schema_dictionary.tsv":
+        "e946d0ea4e77743338195052d8823dab7551e26214f5ecc5302a60b7a99fde1b",
+    "final/source/genbank_source.duckdb":
+        "fd7dbbc7f1c4ee5674aead335196c3019b122da80386d843fb9afb3e16969bb5",
+    "final/source/normalized_tsv/comments.tsv.gz":
+        "92b1b5a1331e71a254f94fbd1417f1e1a763b34446d84811407b63dcf7af8c95",
+    "final/source/normalized_tsv/feature_location_parts.tsv.gz":
+        "e5394a96dd20dfa3e174d2aae1bc5e060c2a6e43c23dd86763c1298c7711ee7b",
+    "final/source/normalized_tsv/feature_qualifiers.tsv.gz":
+        "55bffaefa54d417393750f0adbb187ae6e73aefc89ca81b7946f0fdbd9354a03",
+    "final/source/normalized_tsv/features.tsv.gz":
+        "e9960328759935ba1b3e0ad5aad968190be944b9d1d2337bf5a2ee113d1fa707",
+    "final/source/normalized_tsv/record_accessions.tsv.gz":
+        "3a59b4b566027b48ae443b328dad64283c50b9d3b13ec53d2b1ef08fc4ab182d",
+    "final/source/normalized_tsv/record_keywords.tsv.gz":
+        "57fb5efd58418adcb56e26a4678d9e1851e2bcb25b08e036885f4544250b9831",
+    "final/source/normalized_tsv/record_taxonomy.tsv.gz":
+        "2da64e6af64b6aec0582b7ac7118df795f4e71f78b73f08a6ac17686de19f9b9",
+    "final/source/normalized_tsv/record_xrefs.tsv.gz":
+        "56d88f48f32f03e292caf9b2de089abc179e60e777edfb1f7d218f928aac955c",
+    "final/source/normalized_tsv/records.tsv.gz":
+        "e9f0dac657c3c9daab4d7205c8e82022630e4db9e6a35824fc7df974bfd43b92",
+    "final/source/normalized_tsv/reference_authors.tsv.gz":
+        "913f8f4feb0352dfbb6356ae1c2c38db49c6d334927cd86378c955e0df69b092",
+    "final/source/normalized_tsv/references.tsv.gz":
+        "5cee850ba48e872a19ea76207fb6f58820a5393f6dea83bfa9c59b16cc474f9c",
+    "final/source/normalized_tsv/structured_comment_fields.tsv.gz":
+        "8ee441bf2c5561e7420e826a63dc09487afe6649df94c41f1655982e760bc490",
+    "final/source/parquet/comments.parquet":
+        "d15a6c707ae6756cd7253ba450e90eaa0f39c127997bc51da0bcfdb5ac251045",
+    "final/source/parquet/feature_location_parts.parquet":
+        "528b7a81a590f9305feafa9979f056083260d56a18bbd8a18cfff8343b38c58c",
+    "final/source/parquet/feature_qualifiers.parquet":
+        "86ae6efb1e9856fb569edc5aada955de212bf23d0cd78c87143e6a4dc0e933a0",
+    "final/source/parquet/features.parquet":
+        "b2f469f6e505f9bc77856e8a55796171e5d09beb78173ca73f1fa0f6c000e228",
+    "final/source/parquet/record_accessions.parquet":
+        "4a7dd0d82f0b67b719eca368dad1d547244d7fea89559bef7223fc5ce0ccfd22",
+    "final/source/parquet/record_keywords.parquet":
+        "bed7f82953244dfd722ca08b5fb693d616643e9319b3976b3d51fa58706fc29e",
+    "final/source/parquet/record_taxonomy.parquet":
+        "d14235a6b8ab6aec9d0c907b80407cac49041f364328f47eb6fa55d36bfd9720",
+    "final/source/parquet/record_xrefs.parquet":
+        "8633ca8483966d7378cea9841580edf2575df54552880963c3bb9a5c4a2434d7",
+    "final/source/parquet/records.parquet":
+        "ff4fc93dfd62522064aee29415c7b6d6bd6a35d22f7981dca376b36ad1d07704",
+    "final/source/parquet/reference_authors.parquet":
+        "f455df9d385da3b1600320d93b3999c2442e93da07993ea42a6e2e194f7db29a",
+    "final/source/parquet/references.parquet":
+        "0ea91a27cdc397fbdf084fb8d3d1633fd5c83e324452f321776532c86c13a146",
+    "final/source/parquet/structured_comment_fields.parquet":
+        "e2607a616cf9e5231d1946214d558f4e38b265ebdb35f2664be79aabd32b0c32",
 }
 
 # Counts that make the completeness claim checkable rather than assertable. Each is re-derived in
 # test_the_carried_set_is_exactly_final_minus_the_manifest.
-EXPECTED_FINAL_FILES = 58
-EXPECTED_MANIFEST_ROWS = 38
-EXPECTED_FILE_BYTES_ROWS = 37
+EXPECTED_FINAL_FILES = 63
+EXPECTED_MANIFEST_ROWS = 13
+EXPECTED_FILE_BYTES_ROWS = 12
 
 
 def sha256(path: Path) -> str:
@@ -155,16 +225,22 @@ def test_the_pinned_set_is_exactly_the_declared_carried_set() -> None:
     assert set(CARRIED_SHA256) == set(CARRIED_FINAL_FILES)
 
 
-def test_this_file_is_the_sole_record_of_all_twenty(repository_root: Path) -> None:
+def test_this_file_is_the_sole_record_of_every_carried_file(repository_root: Path) -> None:
     """One witness per hash, deliberately, and the limit of that stated rather than implied.
 
     A local site build regenerates `site/data/manifest.json`, which used to carry an independent
     declaration for seven of these. If it is present here, do not read that as a standing witness —
     it is a build artifact, not a committed cross-check, and the position is unchanged: this file is
-    authoritative for all twenty.
+    authoritative for every carried file.
+
+    The exception is the source layer and the dictionaries, which `oracle/release.py` also pins
+    because `parity-source` reads them outside pytest; the assertion below requires the two to
+    agree rather than treating either as the copy.
     """
-    assert len(CARRIED_SHA256) == 20
+    assert len(CARRIED_SHA256) == EXPECTED_FINAL_FILES - EXPECTED_MANIFEST_ROWS
     assert set(CARRIED_SHA256) == set(CARRIED_FINAL_FILES)
+    for relative, declared in {**SOURCE_LAYER_HASHES, **DICTIONARY_HASHES}.items():
+        assert CARRIED_SHA256[f"final/{relative}"] == declared
 
 
 # --- the completeness derivation --------------------------------------------------------------

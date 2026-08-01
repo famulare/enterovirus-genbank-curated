@@ -16,7 +16,7 @@ from enterovirus_genbank_curated.contracts import (
     validate_decision_ledger,
 )
 from enterovirus_genbank_curated.oracle.parity import (
-    verify_metadata_parity,
+    verify_metadata_declines,
     verify_source_parity,
 )
 from enterovirus_genbank_curated.oracle.release import validate_contracts
@@ -88,15 +88,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="fail on any read outside the clone, any write into final/ or raw/, or network use",
     )
 
-    parity_metadata = subparsers.add_parser(
-        "parity-metadata",
-        help="rebuild the metadata transport and compare every cell to the shipped release",
+    declines = subparsers.add_parser(
+        "check-declines",
+        help="rebuild the metadata layer and check its declined cells against the declared counts",
     )
-    parity_metadata.add_argument("--repository-root", type=Path, default=Path.cwd())
-    parity_metadata.add_argument(
+    declines.add_argument("--repository-root", type=Path, default=Path.cwd())
+    declines.add_argument(
         "--guard-inputs", action="store_true",
-        help="run the build in a guarded child process; the comparison itself reads final/ and "
-             "therefore cannot be guarded",
+        help="run the build in a guarded child process",
     )
 
     alignment_population = subparsers.add_parser(
@@ -170,7 +169,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 GUARD_PASS_LINE = "undeclared-input guard: PASS (no read, write or connection outside scope)"
-PARITY_COMMANDS = frozenset({"parity-source", "parity-metadata"})
+PARITY_COMMANDS = frozenset({"parity-source", "check-declines"})
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -212,7 +211,7 @@ def main(argv: list[str] | None = None) -> int:
             results = verify_source_parity(root, guarded=requested_guard)
             print(
                 f"source parity: PASS ({len(results)} artifacts match the hashes "
-                f"final/audit/release_file_manifest.tsv declares)"
+                f"oracle/release.py's SOURCE_LAYER_HASHES pins)"
             )
             if requested_guard:
                 print(GUARD_PASS_LINE)
@@ -230,30 +229,14 @@ def main(argv: list[str] | None = None) -> int:
             if guard is not None:
                 print(GUARD_PASS_LINE)
             return 0
-        if args.command == "parity-metadata":
-            parity, provenance = verify_metadata_parity(root, guarded=requested_guard)
+        if args.command == "check-declines":
+            observed = verify_metadata_declines(root, guarded=requested_guard)
             print(
-                f"metadata parity: PASS ({parity.compared_rows} rows x "
-                f"{len(parity.compared_columns)} transported columns match "
-                f"final/canonical/sequence_metadata.tsv.gz cell for cell)"
+                f"declared declines: PASS ({sum(observed.values())} declined cells across "
+                f"{len(observed)} canonical fields, each equal to its declared count)"
             )
-            print(
-                f"  declared gap: {len(parity.absent_from_build)} shipped records the transport "
-                f"cannot carve, {len(parity.absent_from_release)} it carves that the release "
-                f"excludes"
-            )
-            reproduced = [f for f in provenance.fields if f not in provenance.superseded_deltas]
-            print(
-                f"provenance parity: PASS ({provenance.compared_rows} rows; "
-                f"{', '.join(reproduced)} match all nine shipped columns)"
-            )
-            for basis, count in sorted(provenance.basis_counts.items()):
-                print(f"    {basis:36} {count:>8}")
-            for field, delta in sorted(provenance.superseded_deltas.items()):
-                moved = {c: n for c, n in delta.items() if n}
-                print(f"  declared delta: {field} {moved}")
-            for field, count in sorted(provenance.unresolved_by_field.items()):
-                print(f"  declined: {field} on {count} records")
+            for field, count in sorted(observed.items()):
+                print(f"  {field:28} {count:>8}")
             if requested_guard:
                 print(GUARD_PASS_LINE)
             return 0

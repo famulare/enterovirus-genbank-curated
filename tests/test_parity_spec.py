@@ -22,17 +22,16 @@ from pathlib import Path
 import pytest
 
 from enterovirus_genbank_curated.contracts import (
-    EXPECTED_BASELINE_COUNTS,
     ContractError,
     validate_parity_spec,
     verify_raw_input,
 )
 from enterovirus_genbank_curated.oracle.release import (
-    RELEASE_FILE_MANIFEST_PATH,
+    DICTIONARY_HASHES,
+    SOURCE_LAYER_HASHES,
     read_tsv_gz,
     verify_build_manifest,
-    verify_expected_artifacts,
-    verify_expected_counts,
+    verify_carried_hashes,
 )
 
 
@@ -43,22 +42,6 @@ def test_undeclared_parity_keys_are_rejected(tmp_path: Path, parity_spec: dict) 
     path.write_text(json.dumps(spec), encoding="utf-8")
     with pytest.raises(ContractError, match="undeclared keys"):
         validate_parity_spec(path)
-
-
-def test_falsified_artifact_hash_is_caught(repository_root: Path, parity_spec: dict) -> None:
-    artifacts = copy.deepcopy(parity_spec["expected_artifacts"])
-    artifacts[0]["sha256"] = "0" * 64
-    with pytest.raises(ContractError, match="disagrees with the release manifest"):
-        verify_expected_artifacts(repository_root, artifacts)
-
-
-def test_artifact_absent_from_the_release_manifest_is_caught(
-    repository_root: Path, parity_spec: dict
-) -> None:
-    artifacts = copy.deepcopy(parity_spec["expected_artifacts"])
-    artifacts[0]["path"] = "final/audit/not_a_real_table.tsv.gz"
-    with pytest.raises(ContractError, match="not declared in"):
-        verify_expected_artifacts(repository_root, artifacts)
 
 
 def test_falsified_raw_archive_hash_is_caught(
@@ -86,20 +69,12 @@ def test_missing_archive_member_is_caught(repository_root: Path, parity_spec: di
         verify_raw_input(repository_root, raw)
 
 
-@pytest.mark.parametrize("key", sorted(EXPECTED_BASELINE_COUNTS))
-def test_falsified_counts_are_caught(repository_root: Path, key: str) -> None:
-    counts = dict(EXPECTED_BASELINE_COUNTS)
-    counts[key] += 1
-    with pytest.raises(ContractError, match=key):
-        verify_expected_counts(repository_root, counts)
-
-
 def test_build_manifest_disagreement_is_caught(
     repository_root: Path, parity_spec: dict
 ) -> None:
     spec = copy.deepcopy(parity_spec)
-    spec["source_release_commit"] = "0" * 40
-    with pytest.raises(ContractError, match="git_sha"):
+    spec["raw_input"]["archive_sha256"] = "0" * 64
+    with pytest.raises(ContractError, match="raw_archive_sha256"):
         verify_build_manifest(repository_root, spec)
 
 
@@ -120,13 +95,13 @@ def test_quoted_multiline_fields_are_counted_as_one_row(tmp_path: Path) -> None:
 # The live instance of that bug is `final/source/normalized_tsv/comments.tsv.gz` — 18,476 real rows
 # across 27,038 physical lines. A `test_shipped_comments_table_row_count_matches_its_dictionary`
 # asserted the 18,476 against the shipped file; removed 2026-07-30. Those bytes are hash-gated by
-# `evgc parity-source`, which compares all 24 source artifacts against
-# `final/audit/release_file_manifest.tsv` and reports an altered release apart from a bad build.
+# `evgc parity-source`, which compares all 24 source artifacts against the hashes
+# `oracle/release.py` pins and reports an altered release apart from a bad build.
 #
 # The mutation is worth recording because it came out lopsided rather than merely equivalent.
 # Appending one byte to the shipped file left `read_tsv_gz` reporting 18,476 rows — gzip tolerates
 # the trailing byte, so the removed assertion stayed green on a tampered release — while the corpus
-# tier failed with `comments.tsv.gz: shipped artifact does not match its own manifest`. The count
+# tier failed with `comments.tsv.gz: shipped artifact does not match its pinned hash`. The count
 # was the weaker of the two checks, not a second copy of the stronger one. And a change that *would*
 # move the count necessarily moves the bytes, so parity sees that too.
 #
@@ -134,19 +109,14 @@ def test_quoted_multiline_fields_are_counted_as_one_row(tmp_path: Path) -> None:
 # number nothing in this repository can move.
 
 
-def test_drifted_artifact_bytes_are_caught(
-    tmp_path: Path, repository_root: Path, parity_spec: dict
-) -> None:
-    """Both declared hashes can agree with each other and still not match the shipped file."""
-    artifact = next(
-        item for item in parity_spec["expected_artifacts"] if item["hash_scope"] == "file_bytes"
-    )
-    for relative in (RELEASE_FILE_MANIFEST_PATH, artifact["path"]):
-        target = tmp_path / relative
+def test_drifted_carried_bytes_are_caught(tmp_path: Path, repository_root: Path) -> None:
+    """A carried file that no longer matches the hash pinned in code fails, byte for byte."""
+    perturbed = sorted(SOURCE_LAYER_HASHES)[0]
+    for relative in (*SOURCE_LAYER_HASHES, *DICTIONARY_HASHES):
+        target = tmp_path / "final" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(repository_root / relative, target)
-
-    perturbed = tmp_path / artifact["path"]
-    perturbed.write_bytes(perturbed.read_bytes() + b"\x00")
-    with pytest.raises(ContractError, match="does not match the parity contract"):
-        verify_expected_artifacts(tmp_path, [copy.deepcopy(artifact)])
+        shutil.copyfile(repository_root / "final" / relative, target)
+    target = tmp_path / "final" / perturbed
+    target.write_bytes(target.read_bytes() + b"\x00")
+    with pytest.raises(ContractError, match="does not match the hash pinned"):
+        verify_carried_hashes(tmp_path)

@@ -14,7 +14,12 @@ Cheap on purpose: it re-hashes the four determinants and compares, without rebui
 does not mean the release is wrong, it means nobody has demonstrated it is right — so the remedy is
 always the same, rebuild it and commit the result:
 
-    evgc build-metadata --output release/<version> --guard-inputs
+    evgc build-metadata --output final --guard-inputs
+
+The destination moved on 2026-08-01. The release used to be staged under `release/<version>/` while
+`final/` held 2.4.1; `final/` is now the build's own destination, so that is where the manifest this
+test reads lives, and `release/4.0.0/` — a byte-identical staging copy — was deleted rather than
+left as a second thing to keep in step.
 """
 
 from __future__ import annotations
@@ -34,7 +39,7 @@ from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
 
 def released_manifest(repository_root: Path) -> dict:
-    path = repository_root / "release" / RELEASE_VERSION / BUILD_MANIFEST_RELATIVE
+    path = repository_root / "final" / BUILD_MANIFEST_RELATIVE
     assert path.is_file(), (
         f"{path} does not exist, so RELEASE_VERSION {RELEASE_VERSION} names a release that was "
         f"never built. Bumping the constant is not shipping the release."
@@ -47,9 +52,8 @@ def test_the_committed_release_was_built_by_the_committed_code(repository_root: 
     """The determinant that actually drifts. Code changes daily; the archive never does."""
     manifest = released_manifest(repository_root)
     assert manifest["code_sha256"] == code_digest(repository_root), (
-        f"release/{RELEASE_VERSION}/ was built by different code than is in the tree now. Rebuild "
-        f"it before committing: evgc build-metadata --output release/{RELEASE_VERSION} "
-        f"--guard-inputs"
+        "final/ was built by different code than is in the tree now. Rebuild it before "
+        "committing: evgc build-metadata --output final --guard-inputs"
     )
 
 
@@ -64,10 +68,10 @@ def test_the_committed_release_was_built_from_the_committed_registry(
     manifest = released_manifest(repository_root)
     assert manifest["inputs"]["decisions_sha256"] == sha256_file(
         repository_root / DECISIONS_LEDGER_PATH
-    ), f"the decision ledger has changed since release/{RELEASE_VERSION}/ was built"
+    ), f"the decision ledger has changed since final/ ({RELEASE_VERSION}) was built"
     assert manifest["inputs"]["rules_sha256"] == sha256_file(
         repository_root / RULES_CATALOG_PATH
-    ), f"the rule catalog has changed since release/{RELEASE_VERSION}/ was built"
+    ), f"the rule catalog has changed since final/ ({RELEASE_VERSION}) was built"
 
 
 def test_the_release_states_its_own_version(repository_root: Path) -> None:
@@ -84,22 +88,22 @@ def test_every_file_the_release_declares_is_present_and_unaltered(repository_roo
     declare means the release shipped a file nothing vouches for.
     """
     from enterovirus_genbank_curated.export.release import FILE_MANIFEST_RELATIVE
-    from enterovirus_genbank_curated.oracle.release import load_release_file_manifest
+    from enterovirus_genbank_curated.oracle.release import (
+        load_release_file_manifest,
+        verify_manifest_completeness,
+    )
 
-    root = repository_root / "release" / RELEASE_VERSION
+    root = repository_root / "final"
     declared = load_release_file_manifest(root / FILE_MANIFEST_RELATIVE)
     for relative, (scope, expected) in sorted(declared.items()):
         artifact = root / relative
         assert artifact.is_file(), f"{relative} is declared but absent"
         if scope != "file_bytes":
-            continue
+            continue  # the manifest's own `self` row, which cannot carry its own digest
         assert sha256_file(artifact) == expected, f"{relative} does not match its declared hash"
 
-    present = {
-        path.relative_to(root).as_posix()
-        for path in root.rglob("*")
-        if path.is_file()
-    }
-    assert present == set(declared), (
-        f"undeclared artifacts in release/{RELEASE_VERSION}/: {sorted(present - set(declared))}"
-    )
+    # The reverse direction is `verify_manifest_completeness`, which is the check that knows about
+    # the carried 2.4.1 files still sitting under `final/`. A bare `present == declared` over the
+    # tree was right while the release was staged in a directory of its own and would now fail on
+    # every carried file.
+    verify_manifest_completeness(repository_root)

@@ -87,7 +87,10 @@ from enterovirus_genbank_curated.validation.invariants import (
     assert_locality_basis_invariant,
 )
 
-IMMUTABLE_DIRS = ("final", "raw")
+# `final/` was here until 2026-08-01, when the pipeline's own output was promoted into it. It is a
+# build destination now, not a parity target. `raw/` stays: it is the frozen input of record, and a
+# build that can overwrite its own input has no oracle left at all.
+IMMUTABLE_DIRS = ("raw",)
 
 # The rule whose parameters decide carve membership for records the GenBank lineage rejects. Looked
 # up in the catalog rather than hardcoded here, so its thresholds stay declared data.
@@ -109,12 +112,12 @@ def _same_file(a: Path, b: Path) -> bool:
 
 
 def reject_immutable_output(repository_root: Path, output_dir: Path) -> None:
-    """Refuse to build into the shipped release.
+    """Refuse to build into an immutable tree — now `raw/` alone.
 
-    Path equality is not enough. On a case-insensitive filesystem `final/SOURCE` resolves to a
-    different string but the *same inode* as `final/source`, so an equality check waves it through
-    and the build overwrites all twelve shipped tables. Containment is checked against every
-    immutable tree, by resolved path and by inode, for the target and each of its parents.
+    Path equality is not enough. On a case-insensitive filesystem `raw/ARCHIVE` resolves to a
+    different string but the *same inode* as `raw/archive`, so an equality check waves it through
+    and the build overwrites its own frozen input. Containment is checked against every immutable
+    tree, by resolved path and by inode, for the target and each of its parents.
     """
     root = repository_root.resolve()
     target = output_dir.resolve()

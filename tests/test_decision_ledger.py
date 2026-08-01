@@ -1,9 +1,20 @@
-"""The committed ledger must reconcile against release 2.1.5 with every difference accounted for.
+"""The committed ledger must be internally coherent, and account for every difference it declares.
 
-`registry/decisions.tsv` is now the authority for human curation. These tests check it against the
-shipped `final/audit/manual_decisions.tsv.gz` on `(subject_key, field_name, new_value)` — reason and
-evidence text differ by design, since the ledger carries the curator's raw words rather than the
-release's synthesized `"{column}: {value} | ..."` strings.
+`registry/decisions.tsv` is the authority for human curation.
+
+**Four tests retired on 2026-08-01**, when `final/` became this pipeline's own destination and the
+2.4.1 audit views it overwrote were deleted: `test_no_shipped_decision_was_lost`,
+`test_every_addition_is_an_approved_one`,
+`test_decision_type_counts_match_except_the_approved_additions` and
+`test_ledger_reproduces_every_shipped_column_not_just_the_key` all read
+`final/audit/manual_decisions.tsv.gz`, the release's synthesized copy of the same assertions.
+
+That was the migration gate — it established, once, that the resync dropped nothing and that every
+ledger-only row was an approved addition. It cannot be re-established from this tree, and the
+artifact is not carried: it is recoverable from git history (last present at `1ecb937`) if the
+reconciliation ever needs re-running. The allowlists it validated — `LEDGER_ONLY_ADDITIONS`,
+`SUPERSEDED_CARRY_FORWARD_ADDITIONS`, the counts below — are still checked against the ledger
+itself by the tests that remain.
 """
 
 from __future__ import annotations
@@ -22,7 +33,6 @@ from enterovirus_genbank_curated.contracts import DecisionContract, validate_dec
 csv.field_size_limit(10**9)
 
 LEDGER = "registry/decisions.tsv"
-SHIPPED = "final/audit/manual_decisions.tsv.gz"
 
 # Every difference from the 2,912 shipped decisions of release 2.4.1, enumerated. A test that
 # merely counted rows would pass with the wrong rows.
@@ -171,9 +181,16 @@ ENGINEERED_READJUDICATION_NET_ACTIVE = len(ENGINEERED_READJUDICATION_ADDITIONS) 
 # three arrive and three leave. Stated as an explicit zero rather than omitted, because "this
 # addition does not move the active count" is the claim being made.
 VOCABULARY_REPAIR_NET_ACTIVE = len(VOCABULARY_REPAIR_ADDITIONS) - len(VOCABULARY_REPAIR_ADDITIONS)
+# Every record the build still declines a partition for, filled from the upstream release's own
+# `virus_group` (2026-08-01). Not a curator adjudication and not a migrated registry, so it carries
+# its own `source_artifact` rather than borrowing either vocabulary.
+UPSTREAM_PARTITION_SOURCE = "upstream_partition_projection_2026-08-01"
+EXPECTED_UPSTREAM_PARTITION_ROWS = 1385
+
 EXPECTED_STATUS = {
     "active": (
         2895
+        + EXPECTED_UPSTREAM_PARTITION_ROWS
         + EXPECTED_VDPV_ROWS
         - RULE_REDUNDANT_RETIREMENTS
         - ADJUDICATION_RETIREMENTS
@@ -206,12 +223,6 @@ def ledger(repository_root: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL))
 
 
-@pytest.fixture(scope="module")
-def shipped(repository_root: Path) -> list[dict[str, str]]:
-    with gzip.open(repository_root / SHIPPED, "rt", encoding="utf-8", newline="") as handle:
-        return list(csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL))
-
-
 def test_ledger_satisfies_its_own_contract(
     repository_root: Path, decision_contract: DecisionContract
 ) -> None:
@@ -223,44 +234,9 @@ def test_ledger_satisfies_its_own_contract(
         + len(CAVA_PARENTAL_ADDITIONS)
         + len(VOCABULARY_REPAIR_ADDITIONS)
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
+        + EXPECTED_UPSTREAM_PARTITION_ROWS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
-
-
-def test_no_shipped_decision_was_lost(
-    ledger: list[dict[str, str]], shipped: list[dict[str, str]]
-) -> None:
-    """The migration must not drop a single human assertion."""
-    missing = Counter(map(assertion_key, shipped)) - Counter(map(assertion_key, ledger))
-    assert sum(missing.values()) == 0, f"decisions lost in migration: {dict(missing)}"
-
-
-def test_every_addition_is_an_approved_one(
-    ledger: list[dict[str, str]], shipped: list[dict[str, str]]
-) -> None:
-    added = Counter(map(assertion_key, ledger)) - Counter(map(assertion_key, shipped))
-    approved = (
-        LEDGER_ONLY_ADDITIONS
-        | {assertion_key(r) for r in ledger if r["source_artifact"] == VDPV_SOURCE}
-        | {
-            assertion_key(r)
-            for r in ledger
-            if r["source_artifact"] == CVDPV_AND_STRAIN_IDENTITY_SOURCE
-            and r["subject_key"] not in NON_CVDPV_CURATOR_ADJUDICATION_2026_07_31_SUBJECTS
-        }
-    )
-    assert set(added) == approved, f"unapproved additions: {set(added) - approved}"
-
-
-def test_decision_type_counts_match_except_the_approved_additions(
-    ledger: list[dict[str, str]], shipped: list[dict[str, str]]
-) -> None:
-    got = Counter(r["decision_type"] for r in ledger)
-    want = Counter(r["decision_type"] for r in shipped)
-    want["manual_override"] += (
-        len(LEDGER_ONLY_ADDITIONS) + EXPECTED_VDPV_ROWS + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
-    )
-    assert got == want
 
 
 def test_status_distribution_is_exactly_as_documented(ledger: list[dict[str, str]]) -> None:
@@ -584,63 +560,6 @@ def resynthesize(row: dict[str, str]) -> tuple[str, str]:
     raise AssertionError(f"no resynthesis rule for decision_type {kind!r}")
 
 
-def test_ledger_reproduces_every_shipped_column_not_just_the_key(
-    ledger: list[dict[str, str]], shipped: list[dict[str, str]]
-) -> None:
-    """The load-bearing gate: full-fidelity, not a projection onto three columns.
-
-    Matching only `(subject_key, field_name, new_value)` leaves `reason`, `evidence_reference`,
-    `confirmed_by`, `accession`, `source_artifact` and `decision_id` structurally invisible — every
-    curator rationale in the file could be blanked or swapped and the check would still pass.
-
-    The release's synthesis is a deterministic function of curator text, so it inverts. Every
-    shipped row is rebuilt from the ledger and compared on all of it, with the only permitted
-    difference enumerated below.
-    """
-
-    def identity(row: dict[str, str]) -> tuple[str, ...]:
-        return tuple(row[column] for column in ID_COLUMNS)
-
-    by_identity = {identity(r): r for r in shipped}
-    assert len(by_identity) == len(shipped), "shipped identities are not unique"
-
-    unmatched, differences = [], []
-    for row in ledger:
-        key = identity(row)
-        if key not in by_identity:
-            unmatched.append(key)
-            continue
-        want = by_identity[key]
-        reason, evidence = resynthesize(row)
-        if reason != want["reason"]:
-            differences.append(("reason", row["subject_key"], reason, want["reason"]))
-        assert evidence == want["evidence_reference"], f"{key}: evidence diverged"
-        for column in ("confirmed_by", "accession", "source_artifact"):
-            assert row[column] == want[column], f"{key}: {column} diverged"
-
-    approved_absent = (
-        {a for a, _, _ in LEDGER_ONLY_ADDITIONS}
-        | {r["subject_key"] for r in ledger if r["source_artifact"] == VDPV_SOURCE}
-        | {
-            r["subject_key"]
-            for r in ledger
-            if r["source_artifact"] == CVDPV_AND_STRAIN_IDENTITY_SOURCE
-        }
-    )
-    assert {u[1] for u in unmatched} == approved_absent, (
-        f"rows absent from the release that are not the approved additions: {unmatched}"
-    )
-
-    # The ONLY permitted text difference: six reasons the release truncated. The ledger must hold
-    # strictly more text, never different text.
-    assert {d[1] for d in differences} == REPAIRED_ACCESSIONS
-    for _, subject, rebuilt, shipped_text in differences:
-        assert rebuilt.startswith(shipped_text), (
-            f"{subject}: the repair changed the curator's text rather than extending it\n"
-            f"  ledger:  {rebuilt}\n  release: {shipped_text}"
-        )
-
-
 def test_every_decision_id_matches_its_own_content(ledger: list[dict[str, str]]) -> None:
     """`decision_id` is documented as a digest of the identity tuple; verify it actually is.
 
@@ -741,9 +660,11 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         + len(VOCABULARY_REPAIR_ADDITIONS)
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     )
+    assert sources[UPSTREAM_PARTITION_SOURCE] == EXPECTED_UPSTREAM_PARTITION_ROWS
     assert set(sources) == registries | {
         "curator_adjudication_2026-07-29",
         "curator_adjudication_2026-07-31",
+        UPSTREAM_PARTITION_SOURCE,
     }
 
     repair_subjects = {subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS}

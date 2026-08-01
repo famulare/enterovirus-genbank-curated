@@ -130,6 +130,27 @@ FILE_MANIFEST_RELATIVE = "audit/release_file_manifest.tsv"
 FILE_MANIFEST_COLUMNS = ("path", "hash_scope", "sha256", "authoritative", "notes")
 FILE_BYTES = "file_bytes"
 
+# Every artifact this build writes, declared rather than discovered. The manifest writer used to
+# `rglob` its destination, which was harmless while the destination was always an empty scratch
+# directory and wrong the moment the build was pointed at `final/`: it would have hashed the carried
+# alignment layer, the source layer and a stray `.DS_Store` into a manifest claiming they were this
+# build's output. Declaring the list also turns a writer that silently stopped emitting something
+# into a failed build rather than a shorter manifest.
+BUILD_ARTIFACT_RELATIVES = (
+    "audit/build_manifest.json",
+    "audit/classification_divergence.tsv.gz",
+    "audit/decision_applications.tsv.gz",
+    "audit/membership_rescue.tsv",
+    "audit/projection_provenance.tsv.gz",
+    "audit/rules.tsv.gz",
+    "canonical/metadata_transport_coverage.json",
+    "canonical/sequence_metadata.tsv.gz",
+    "canonical/sequence_metadata_transport.tsv.gz",
+    "canonical/sequence_metadata_vouched.tsv.gz",
+    "canonical/sequences.fasta.gz",
+    "curation/curation_queue.tsv",
+)
+
 
 def code_digest(repository_root: Path) -> str:
     """One digest over every `.py` file under `src/`, identifying the code that produced the build.
@@ -272,12 +293,12 @@ def write_release_manifests(
         handle.write(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
 
     entries = []
-    for artifact in sorted(output_dir.rglob("*")):
+    for relative in BUILD_ARTIFACT_RELATIVES:
+        artifact = output_dir / relative
         if not artifact.is_file():
-            continue
-        relative = artifact.relative_to(output_dir).as_posix()
-        if relative == FILE_MANIFEST_RELATIVE:
-            continue
+            raise ContractError(
+                f"refusing to stamp a release missing its own declared artifact {relative}"
+            )
         entries.append(
             {
                 "path": relative,

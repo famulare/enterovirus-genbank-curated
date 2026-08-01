@@ -104,7 +104,10 @@ MUTATION_EVENTS: dict[str, tuple[int, ...]] = {
     "shutil.unpack_archive": (1,),
 }
 
-IMMUTABLE_DIRS = ("final", "raw")
+# Write-refused trees. `final/` left this tuple on 2026-08-01 when the pipeline's output was
+# promoted into it; it stays in `READ_REFUSED_DIRS` below, which is the half that was ever
+# load-bearing. `raw/` is the frozen input of record and stays refused for both.
+IMMUTABLE_DIRS = ("raw",)
 
 # Carried for provenance, read by nothing. `registry/legacy/` holds the frozen output of two private
 # stages whose inputs no longer exist; a build that read it would silently reintroduce the
@@ -112,12 +115,11 @@ IMMUTABLE_DIRS = ("final", "raw")
 # grepping the source makes it independent of how a future caller spells the path.
 FROZEN_DIRS = ("registry/legacy",)
 
-# Trees a build may not READ at all. `FROZEN_DIRS` for the reason above, plus `final/`, which is the
-# comparison target (`docs/pipeline.md` boundary 1). Refusing to *write* `final/` was never enough:
-# a build that reads the shipped canonical table can reproduce it perfectly and prove nothing, and
-# that read is exactly the mistake a derive stage makes while someone calibrates a rule against the
-# oracle. The parity comparison legitimately reads `final/`, which is why the comparison runs in the
-# unguarded parent and the build runs in a guarded child — see `oracle/parity.py`.
+# Trees a build may not READ at all. `FROZEN_DIRS` for the reason above, plus `final/`, which the
+# build now *writes* but must still never read (`docs/pipeline.md` boundary 1). This is the half
+# that mattered: a build that reads the previous canonical table can reproduce it perfectly and
+# prove nothing, and that read is exactly the mistake a derive stage makes while someone calibrates
+# a rule against the last release. Writing is a different act and is now allowed; reading is not.
 READ_REFUSED_DIRS = (*FROZEN_DIRS, "final")
 
 _WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC
@@ -143,6 +145,12 @@ class InputGuard:
     allowed_read_roots: tuple[str, ...]
     allowed_write_roots: tuple[str, ...]
     violations: list[str] = field(default_factory=list)
+    # Paths this process opened for writing. A read-refused tree is refused as an *input*; once the
+    # build has written a file there in this run, reading it back is reading its own output, which
+    # is what the file manifest and `export/metadata.py`'s read-back checks do. Recorded rather
+    # than inferred from the destination directory, so writing into `final/` does not silently
+    # readmit the twenty-odd files the build did not produce.
+    written: set[str] = field(default_factory=set)
 
     def record(self, message: str) -> None:
         if message not in self.violations:
@@ -361,6 +369,11 @@ def install_input_guard(
                     trouble = _mutation_problem(path, rules)
                     if trouble:
                         found.append(f"{event} would mutate an undeclared path: {trouble}")
+                    else:
+                        # `deterministic_text_writer` publishes by `scratch.replace(path)`, so the
+                        # destination is never opened for writing and would not otherwise count as
+                        # this build's own output.
+                        guard.written.add(path)
                 for message in found:
                     guard.record(message)
             finally:
@@ -387,10 +400,14 @@ def install_input_guard(
                     f"the frozen legacy registries are carried for provenance and read by nothing; "
                     f"the build may not open them: {_describe(path)}"
                 )
-            elif not writing and _within(path, rules.read_refused):
+            elif (
+                not writing
+                and _within(path, rules.read_refused)
+                and path not in guard.written
+            ):
                 problem = (
-                    f"the shipped release is a comparison target, never a pipeline input; the "
-                    f"build may not read it: {_describe(path)}"
+                    f"the release tree is a build destination, never a pipeline input; the build "
+                    f"may not read a file it did not write in this run: {_describe(path)}"
                 )
             elif os.path.isdir(path) and (
                 _within(path, rules.immutable) or _within(path, rules.frozen)
@@ -419,6 +436,8 @@ def install_input_guard(
                 problem = f"read of an undeclared path outside the clone: {_describe(path)}"
             if problem:
                 guard.record(problem)
+            elif writing:
+                guard.written.add(path)
         finally:
             local.busy = False
 

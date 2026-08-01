@@ -108,15 +108,30 @@ def assert_absent(target: Path) -> None:
         target.unlink(missing_ok=True)
 
 
-def test_writing_into_the_immutable_release_fails(
-    repository_root: Path, probe_name: str
-) -> None:
+def test_writing_into_final_is_allowed_now(repository_root: Path, probe_name: str) -> None:
+    """The inverse of what this asserted until 2026-08-01: `final/` is the build's destination.
+
+    Kept as a positive control rather than deleted. The write rule and the read rule for `final/`
+    used to be one decision; they are now two, and the read refusal below is the one that carries
+    the property. A test that only checked the refusal would pass just as well if the guard had
+    been switched off entirely for that tree.
+    """
     target = repository_root / "final" / probe_name
     try:
-        body = f"open(str(ROOT / 'final' / {probe_name!r}), 'w').write('x')"
-        assert_blocked(run_guarded(repository_root, body), "immutable release tree")
+        body = textwrap.dedent(f"""
+            open(str(ROOT / 'final' / {probe_name!r}), 'w').write('x')
+            assert_no_violations(guard)
+            print('OK')
+        """)
+        result = run_guarded(repository_root, body)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "OK" in result.stdout
+        # The probe is expected to exist here — that is the point — so it is removed rather than
+        # asserted absent. `assert_absent` is for the refusal tests, where a surviving file is the
+        # failure.
+        assert target.is_file()
     finally:
-        assert_absent(target)
+        target.unlink(missing_ok=True)
 
 
 def test_writing_into_raw_fails(repository_root: Path, probe_name: str) -> None:
@@ -181,16 +196,16 @@ def test_a_symlink_inside_scratch_cannot_write_outside_the_clone(
         assert_absent(target)
 
 
-def test_a_symlink_into_the_release_tree_cannot_be_written(
+def test_a_symlink_into_the_raw_tree_cannot_be_written(
     repository_root: Path, probe_name: str
 ) -> None:
     """The immutable-tree rule has to survive aliasing too, not just the clone boundary."""
-    target = repository_root / "final" / probe_name
+    target = repository_root / "raw" / probe_name
     try:
         body = textwrap.dedent(f"""
             import os, tempfile
             shim = os.path.join(tempfile.gettempdir(), {probe_name + "-fshim"!r})
-            os.symlink(str(ROOT / 'final' / {probe_name!r}), shim)
+            os.symlink(str(ROOT / 'raw' / {probe_name!r}), shim)
             try:
                 open(shim, 'w').write('x')
             finally:
@@ -282,7 +297,7 @@ def test_a_bare_fork_cannot_be_used_to_escape(repository_root: Path) -> None:
 
 
 def test_removing_a_file_from_the_immutable_tree_is_refused(repository_root: Path) -> None:
-    body = "import os; os.remove(str(ROOT / 'final' / 'probe-absent'))"
+    body = "import os; os.remove(str(ROOT / 'raw' / 'probe-absent'))"
     assert_blocked(run_guarded(repository_root, body), "immutable release tree")
 
 
@@ -297,7 +312,7 @@ def test_atomically_replacing_a_released_artifact_is_refused(repository_root: Pa
     body = textwrap.dedent("""
         import os, tempfile
         source = os.path.join(tempfile.gettempdir(), 'probe-absent')
-        os.replace(source, str(ROOT / 'final' / 'canonical' / 'sequences.fasta.gz'))
+        os.replace(source, str(ROOT / 'raw' / 'sequence.gb.zip'))
     """)
     assert_blocked(run_guarded(repository_root, body), "immutable release tree")
 
@@ -313,7 +328,7 @@ def test_creating_a_directory_in_the_raw_tree_is_refused(repository_root: Path) 
 
 
 def test_truncating_a_released_artifact_is_refused(repository_root: Path) -> None:
-    body = "import os; os.truncate(str(ROOT / 'final' / 'probe-absent'), 0)"
+    body = "import os; os.truncate(str(ROOT / 'raw' / 'probe-absent'), 0)"
     assert_blocked(run_guarded(repository_root, body), "immutable release tree")
 
 
@@ -323,7 +338,7 @@ def test_symlinking_outside_the_clone_is_refused(repository_root: Path) -> None:
 
 
 def test_recursively_deleting_a_released_tree_is_refused(repository_root: Path) -> None:
-    body = "import shutil; shutil.rmtree(str(ROOT / 'final' / 'probe-absent'))"
+    body = "import shutil; shutil.rmtree(str(ROOT / 'raw' / 'probe-absent'))"
     assert_blocked(run_guarded(repository_root, body), "immutable release tree")
 
 
@@ -416,13 +431,16 @@ def test_reading_inside_the_clone_is_allowed(repository_root: Path) -> None:
 
 
 def test_reading_the_shipped_release_is_refused(repository_root: Path) -> None:
-    """`final/` is a comparison target, so a guarded build may not read it either.
+    """A guarded build may not read a `final/` file it did not itself write.
 
-    This inverts what the guard used to allow. Refusing only *writes* left the failure that matters
-    wide open: a derive stage that reads the shipped canonical table can reproduce it perfectly and
-    prove nothing, and calibrating a rule against the oracle is exactly when someone reaches for
-    that read. Parity still needs it, which is why `oracle/parity.py` compares in the unguarded
-    parent and builds in a guarded child rather than doing both in one process.
+    This is the half of the old `final/` rule that carried the property, and it outlived the write
+    refusal. Refusing only *writes* left the failure that matters wide open: a derive stage that
+    reads the previous canonical table can reproduce it perfectly and prove nothing, and
+    calibrating a rule against the last release is exactly when someone reaches for that read.
+
+    `build_manifest.json` is the right probe precisely because the build also *writes* a file by
+    that name: reading the one already on disk, before this run has written it, is the read being
+    refused.
     """
     body = textwrap.dedent("""
         open(str(ROOT / 'final' / 'audit' / 'build_manifest.json')).read()
@@ -430,7 +448,7 @@ def test_reading_the_shipped_release_is_refused(repository_root: Path) -> None:
     """)
     result = run_guarded(repository_root, body)
     assert result.returncode != 0
-    assert "comparison target, never a pipeline input" in result.stderr
+    assert "never a pipeline input" in result.stderr
 
 
 def test_reading_the_frozen_raw_archive_is_still_allowed(repository_root: Path) -> None:

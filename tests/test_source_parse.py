@@ -248,15 +248,18 @@ def test_parse_source_tables_rejects_a_non_path(tmp_path: Path) -> None:
 
 
 def test_build_refuses_to_write_into_the_immutable_trees(repository_root: Path) -> None:
-    """Case-only variants resolve differently but hit the same inode on a case-insensitive disk."""
+    """Case-only variants resolve differently but hit the same inode on a case-insensitive disk.
+
+    `final/` left `IMMUTABLE_DIRS` on 2026-08-01 — it is the metadata build's destination now — so
+    the tree under test is `raw/`, the frozen input of record. The aliasing cases are the reason
+    this test exists and they move with it.
+    """
     for candidate in (
-        "final/source",
-        "final/SOURCE",
-        "final",
-        "final/source/normalized_tsv",
-        "final/source/..",
         "raw",
-        "./final/source/.",
+        "RAW",
+        "raw/nested",
+        "raw/nested/..",
+        "./raw/.",
     ):
         with pytest.raises(ContractError, match="immutable parity target"):
             reject_immutable_output(repository_root, repository_root / candidate)
@@ -264,6 +267,11 @@ def test_build_refuses_to_write_into_the_immutable_trees(repository_root: Path) 
 
 def test_build_allows_an_ordinary_destination(repository_root: Path, tmp_path: Path) -> None:
     reject_immutable_output(repository_root, tmp_path / "out")
+
+
+def test_build_allows_final_as_a_destination(repository_root: Path) -> None:
+    """The positive control for the change above, so the tree cannot be re-frozen unnoticed."""
+    reject_immutable_output(repository_root, repository_root / "final")
 
 
 def test_partial_write_leaves_no_file(tmp_path: Path) -> None:
