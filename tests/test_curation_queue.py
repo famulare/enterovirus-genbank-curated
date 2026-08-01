@@ -75,7 +75,12 @@ from enterovirus_genbank_curated.derive.partition import (
 # 28,213 when the reference_or_lab_text (24) and group_A_text_owned (4) decisions landed the same
 # day: 28 more `poliovirus_classification` declines resolve and leave the queue, closing the
 # largest remaining discrepancy block (`declined_too_little_sequence`).
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28
+#
+# 28,153 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (matching MAD-VDPV's own
+# `MIN_SEROTYPE_COMPARED_NT`) with a chunked-homogeneity guard extended to VP1 for the newly-opened
+# sub-300 nt territory: 60 more `poliovirus_classification` declines resolve, every one agreeing
+# with the shipped classification.
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -114,6 +119,9 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28
 # same day: all 28 shared the single `too_little_sequence_compared_to_measure_divergence`,
 # no-source-value group under `poliovirus_classification` with the 1,381 records that remain
 # declined for the same reason — one group shrinking, not a group disappearing.
+#
+# Still 299 when the VP1/capsid floor dropped to 50 nt the same day: the 60 newly-resolved records
+# shared that same single group with the 1,321 that remain declined.
 EXPECTED_QUEUE_GROUPS = 302 - 3
 
 

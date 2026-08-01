@@ -337,7 +337,11 @@ UNRESOLVED_TYPE_ROWS = 2216
 # 1 `recombinant/lab`, 1 `reference/lab` — strain-identity/patent deposits too short to reach a
 # divergence measurement) and 4 more `group_A_text_owned` `cVDPV` records, none of which had a prior
 # decision, so all 28 leave the declined population for the first time.
-UNRESOLVED_CLASSIFICATION_ROWS = 3010
+#
+# Down a further 60 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (MAD-VDPV's own
+# `MIN_SEROTYPE_COMPARED_NT`), guarded by extending the chunked-homogeneity check to VP1 below its
+# old 300 nt floor. Every one of the 60 agrees with the shipped classification.
+UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -403,7 +407,10 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         # from 169 to 54. The digest had to move along with the count: 115 records left the
         # disagreeing set entirely.
         "final_value": "9186eacd41e1de67",
-        "source_value": "dcf033c8df13df9a",
+        # Re-witnessed again 2026-07-31 when the VP1/capsid floor dropped to 50 nt: 60 more records
+        # join the agreeing `source_value` set, each a newly-measured divergence with no prior
+        # composed string to compare.
+        "source_value": "b8a0f21f392c491f",
         # Re-witnessed again the same day when the 28 reference_or_lab_text/group_A_text_owned
         # decisions joined `manual_override` at the same count-preserving position (386, up from
         # 358): the set of *which* records carry the flag grew even though `final_value`'s own
@@ -698,8 +705,16 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # deposits, and the 4 further `cVDPV` calls). All are declines-turned-resolved, and none of
         # them touches `final_value`: every one lands on the value 2.4.1 already ships, so nothing
         # there is a value reversal, only a growing comparable set.
-        "winning_rule_id": 21297,
-        "evidence_basis": 21297,
+        #
+        # 21,357 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (MAD-VDPV's own
+        # `MIN_SEROTYPE_COMPARED_NT`), with the chunked-homogeneity guard extended to VP1 for the
+        # newly-opened sub-300 nt territory: 60 more records newly measure, and every one of the 60
+        # lands on the value 2.4.1 already ships — the guard is why: it declined the three records
+        # (`AY320423`, `JN092124`, `AY365233`) where a single bad base in the deposit, not a real
+        # indel, corrupted a 171-225 nt window the same way the module docstring already diagnoses
+        # for the capsid case, rather than shipping them as a wrong `wild`.
+        "winning_rule_id": 21357,
+        "evidence_basis": 21357,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
         # field or `divergence_pct`. The 19,113 agreeing on `source_value` are the curated rows,
         # where both record the asserted value itself — down from 19,228 because the 2026-07-31
@@ -707,8 +722,13 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # `source_value`'s composed string even on rows whose `final_value` was already correct.
         # This count does not move with the +28: those 28 were previously blank/declined (no
         # composed `source_value` to compare at all), not a row that used to agree and now doesn't.
-        "source_field": 21297,
-        "source_value": 19113,
+        #
+        # +60 the same day, unlike the +28 above: these 60 *do* move `source_value`, because each is
+        # a newly-measured divergence whose composed string (`"X% over Y nt of ..."`) did not exist
+        # before at all — a genuinely new agreeing comparison, not a decision changing how an
+        # existing one is attributed.
+        "source_field": 21357,
+        "source_value": 19173,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,

@@ -60,8 +60,9 @@ threshold logic below is identical either way.
 2. An undecided partition declines: nothing can be said until membership is settled.
 3. An active `verified_classification` or `classification` decision wins outright.
 4. A refinement named in the record's own text wins over the bare band.
-5. Otherwise the divergence band, VP1 if at least 300 nt of VP1 was compared, else the capsid
-   fallback if it clears its own guards (`derive/evidence.compare_capsid_nt`).
+5. Otherwise the divergence band, VP1 if at least 50 nt of VP1 was compared (below 300 nt, only if
+   it also clears the chunked-homogeneity guard), else the capsid fallback over the same floor and
+   guard (`derive/evidence.compare_capsid_nt`).
 6. Otherwise decline — no serotype in the organism name to pick a reference with, or too little
    usable sequence by either basis.
 

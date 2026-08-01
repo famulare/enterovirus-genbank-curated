@@ -73,10 +73,10 @@
     "localities_without_geography": 2055,
     "curation_queue_groups": 299,
     "decision_applications": 3336,
-    "curation_queue_records": 28213,
+    "curation_queue_records": 28153,
     "canonical_rows": 24308,
     "vouched_rows": 9929,
     "rules_in_baseline_view": 28,
-    "classification_divergence_rows": 7887
+    "classification_divergence_rows": 7948
   }
 }

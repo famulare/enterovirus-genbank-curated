@@ -75,12 +75,15 @@ So `record_type` is not a function of coverage against Sabin VP1 alone, whatever
 fitting thresholds to 86.7% would assert a wrong determination on 1,332 records.
 `sequence_scope` stays in `PENDING_COLUMNS`.
 
-## Why the capsid-nt fallback needs a guard `compare_vp1` does not
+## Why the fallback needs a guard `compare_vp1` did not always need
 
 `compare_vp1` is exact at one fixed offset because VP1 in poliovirus has no indels relative to Sabin
 — a measured fact, not an assumption, and this module's own justification for skipping an aligner.
-That fact is specific to VP1. It does not extend to VP4, VP2 or VP3: reproducing MAD-VDPV's
-whole-capsid fallback the same way — one diagonal, no gaps — surfaces sequences where it fails.
+That fact rules out one failure mode (a true evolutionary insertion or deletion) but not another: a
+single wrong base call *in the deposited read itself* — a technical artifact of how the sequence was
+determined, not biology, and so not excluded by "VP1 has no indels" at all. Reproducing MAD-VDPV's
+whole-capsid fallback the same way — one diagonal, no gaps — surfaces sequences where this happens;
+lowering `MIN_VP1_NT` far enough surfaces it in VP1 too.
 
 Three carved, name-serotyped records where the naive whole-capsid measurement disagreed with the
 release diagnosed exactly why. `AB162760.1` and `AB162761.1` read >18 percentage points more
@@ -92,18 +95,32 @@ a multiple of three to preserve the reading frame — a 1-nt shift is not biolog
 base call in the GenBank deposit, and the single fixed diagonal has no way to know the rest of the
 window sits on the wrong side of it.
 
-VP1 rarely contains one of these: it is ~900 nt of a genome with, evidently, an occasional
-single-base error in it. The whole capsid is ~2,200 nt — 2.4x the length, and 2.4x the chance of
-catching one. So the fallback needs to detect a window that is not internally consistent, not just
-decline a window that is too short.
+At the original 300 nt VP1 floor this class of error was apparently rare enough never to surface: a
+~900 nt region with, evidently, an occasional bad base in the corpus, and 300 nt of it was enough
+sequence to dilute one bad call rather than be defined by it. Lowering `MIN_VP1_NT` to 50 nt (to
+match MAD-VDPV's own floor, 2026-07-31) removed that dilution, and it surfaced exactly this failure
+in VP1 for the first time — `AY320423`, `JN092124` and `AY365233` each read 15-24 percentage points
+more divergent than MAD-VDPV's own alignment over a 171-225 nt window. The same mechanism, now in
+the region this module's own no-indels argument does not protect.
+
+So the fallback needs to detect a window that is not internally consistent, not just decline a
+window that is too short — and now that `MIN_VP1_NT` reaches below 300 nt too, `compare_vp1` needs
+the same check `compare_capsid_nt` does, for windows short enough that the old floor no longer
+protects them by dilution alone.
 
 `_capsid_homogeneous` is that check: split the compared span into 150 nt chunks, and require every
-chunk with at least 30 compared positions to sit within `MAX_CHUNK_DEVIATION_PCT` of the whole
-window's own divergence. Measured over every one of the 366 records that get any capsid-nt
-measurement at all: the three genuinely bad windows sit at 21.5, 21.8 and 55.2 percentage points of
+chunk with at least 30 compared positions to sit within `MAX_CAPSID_CHUNK_DEVIATION_PCT` of the
+whole window's own divergence — and require at least `MIN_HOMOGENEITY_CHUNKS` such chunks, because a
+single chunk trivially "agrees with itself" and a window that short has nothing to check internal
+consistency against. Measured over every record that gets any capsid-nt measurement at the original
+300 nt floor: the three genuinely bad windows sit at 21.5, 21.8 and 55.2 percentage points of
 internal deviation; the next-highest clean one sits at 8.1. That gap, not a fitted number, is where
-the threshold is set. Below it, every one of the 159 records that pass agrees with the shipped
-classification wherever the release has one to compare against.
+`MAX_CAPSID_CHUNK_DEVIATION_PCT` is set, and it is shared by both `compare_vp1` (below 300 nt) and
+`compare_capsid_nt` (always) rather than fitted separately for each.
+
+`compare_vp1` applies this guard only below `VP1_HOMOGENEITY_FLOOR_NT` (300 nt, the old floor): at or
+above it, behavior is unchanged from before the floor was lowered, so none of the measurements this
+stage already shipped are put at risk by a check built to catch a failure discovered afterward.
 """
 
 from __future__ import annotations
@@ -123,9 +140,14 @@ PRODUCT_QUALIFIER = "product"
 # Seed length. Long enough that a 12-mer is rarely shared by chance across 7.4 kb (4^12 = 16.8M
 # possibilities against ~7,400 positions), short enough to survive ~20% divergence.
 SEED = 12
-# A divergence measured over a handful of nucleotides is not a measurement. 300 nt is a third of VP1
-# and the floor below which this stage reports nothing rather than a number.
-MIN_VP1_NT = 300
+# MAD-VDPV's own floor (`build_reference_alignments.MIN_SEROTYPE_COMPARED_NT`), adopted 2026-07-31.
+# It is safe to match exactly, and not merely close, because it rests on a fact specific to VP1: VP1
+# in poliovirus has no indels relative to Sabin (the module docstring's own justification for a
+# single fixed diagonal at any length), so a shorter window is a smaller sample of the same exact
+# measurement, never a different one. Cross-serotype VP1 divergence (~31-37%) vs homotypic (~0-25%)
+# means even 50 nt picks the right serotype with a clear gap, which is `classify_sequence_tier.py`'s
+# own reasoning for the number.
+MIN_VP1_NT = 50
 # Anchors the winning diagonal must carry. Without a floor, a record that does not overlap VP1 at
 # all still wins some diagonal on one chance 12-mer, and the resulting comparison reports ~74%
 # divergence — the value for unrelated sequence — which then reads as `wild`. Measured: 73 records
@@ -138,10 +160,11 @@ MIN_DIAGONAL_ANCHORS = 5
 # expectation. A result this far out is reported as no measurement rather than as a large number.
 IMPLAUSIBLE_DIVERGENCE_PCT = 40.0
 
-# Same absolute floor as `MIN_VP1_NT`, for the same reason: a divergence measured over a handful of
-# nucleotides is not a measurement. Applied to the capsid rather than to VP1, since this comparison
-# is a fallback for records where VP1 itself does not reach that floor.
-MIN_CAPSID_NT = 300
+# Same floor as `MIN_VP1_NT`, matching MAD-VDPV's own `MIN_SEROTYPE_COMPARED_NT`, adopted 2026-07-31
+# — but unlike VP1, this is a fallback over VP4/VP2/VP3 too, and those regions are not established
+# indel-free the way VP1 is, so the floor alone is not the safety argument here; the strengthened
+# `_capsid_homogeneous` below is.
+MIN_CAPSID_NT = 50
 # Chunk size for the homogeneity check below. Large enough that 5 exact 12-mer anchors are ordinary
 # within a genuine match (the same anchor floor `_best_diagonal` already applies over the whole
 # window), small enough to localize a single bad base rather than average it into the whole capsid.
@@ -149,6 +172,14 @@ CAPSID_HOMOGENEITY_CHUNK_NT = 150
 # A chunk shorter than this is too small a sample to judge on its own; it is folded into the overall
 # count but not held to the deviation floor below.
 MIN_HOMOGENEITY_CHUNK_NT = 30
+# At the original 300 nt floor this was implicit: 300 nt is always at least two 150 nt chunks, so the
+# homogeneity check always had two independent samples to compare against each other. Lowering the
+# floor to 50 nt breaks that — a 50-179 nt window is a *single* chunk, which trivially "agrees with
+# itself" and would pass with no check at all. Below `MIN_HOMOGENEITY_CHUNKS`, `_capsid_homogeneous`
+# declines rather than rubber-stamps: it has nothing to check internal consistency against. This adds
+# no restriction anywhere the 300 nt floor already reached — every record that passed before had at
+# least two qualifying chunks already — so it only governs the newly-opened 50-299 nt territory.
+MIN_HOMOGENEITY_CHUNKS = 2
 # Measured, not fitted: over every record that reaches any capsid-nt measurement, the three windows
 # a single bad base call breaks sit at 21.5, 21.8 and 55.2 percentage points of chunk-to-window
 # deviation; the next-highest genuine window sits at 8.1. The threshold sits in that gap.
@@ -306,6 +337,19 @@ class Vp1Comparison:
     strand: str
 
 
+# Below this, `compare_vp1` holds itself to the same chunked-homogeneity check `compare_capsid_nt`
+# always needed. At or above it, behavior is exactly what it was before `MIN_VP1_NT` was lowered to
+# 50 (a bare mismatch count, no chunking) — the 7,728 VP1 comparisons this stage already ships are
+# untouched. The reason the two regions need different treatment is JN092124/AY320423/AY365233
+# (2026-07-31): three records where lowering the floor to 50 nt let a single bad base call in the
+# deposit (not a real indel — VP1 has none relative to Sabin, but a technical artifact of the read
+# can land anywhere) corrupt a 171-225 nt window the same way `_capsid_homogeneous`'s own module
+# docstring already diagnoses for the capsid case, each landing at 20-34% where MAD-VDPV's own
+# alignment reports 6-11%. A short window is not exempt from the failure that guard exists for; it
+# was only ever *untested* below 300 nt, because nothing shorter used to reach this far.
+VP1_HOMOGENEITY_FLOOR_NT = 300
+
+
 def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
     """Ungapped VP1 divergence at the best-supported offset, or None below `MIN_VP1_NT`.
 
@@ -323,17 +367,30 @@ def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
         compared = last - first
         if compared < MIN_VP1_NT or (best is not None and compared <= best.compared_nt):
             continue
-        mismatches = sum(
-            1
-            for position in range(first, last)
-            if candidate[position - diagonal] != frame.sequence[position]
-        )
-        if mismatches / compared * 100 > IMPLAUSIBLE_DIVERGENCE_PCT:
+        mismatches = 0
+        chunk_divergences: list[float] = []
+        for chunk_start in range(first, last, CAPSID_HOMOGENEITY_CHUNK_NT):
+            chunk_end = min(chunk_start + CAPSID_HOMOGENEITY_CHUNK_NT, last)
+            chunk_mismatches = sum(
+                1
+                for position in range(chunk_start, chunk_end)
+                if candidate[position - diagonal] != frame.sequence[position]
+            )
+            mismatches += chunk_mismatches
+            chunk_length = chunk_end - chunk_start
+            if chunk_length >= MIN_HOMOGENEITY_CHUNK_NT:
+                chunk_divergences.append(chunk_mismatches / chunk_length * 100)
+        divergence = mismatches / compared * 100
+        if divergence > IMPLAUSIBLE_DIVERGENCE_PCT:
+            continue
+        if compared < VP1_HOMOGENEITY_FLOOR_NT and not _capsid_homogeneous(
+            chunk_divergences, divergence
+        ):
             continue
         best = Vp1Comparison(
             serotype=frame.serotype,
             reference_version=frame.version,
-            divergence_pct=mismatches / compared * 100,
+            divergence_pct=divergence,
             compared_nt=compared,
             strand=strand,
         )
@@ -365,7 +422,14 @@ def _capsid_homogeneous(chunk_divergences: list[float], whole_window_pct: float)
     at the unrelated-sequence rate while everything before it read at zero. Declining is not this
     function guessing which side is right; it is refusing to average two things that are not the
     same measurement into one number.
+
+    Fewer than `MIN_HOMOGENEITY_CHUNKS` qualifying chunks is declined outright, not passed: a single
+    chunk trivially "deviates" from itself by zero, so below two chunks this check has nothing to
+    compare and would otherwise rubber-stamp the one case it cannot see inside — a short window with
+    one bad base call spread over too little sequence to localize it.
     """
+    if len(chunk_divergences) < MIN_HOMOGENEITY_CHUNKS:
+        return False
     return all(
         abs(chunk - whole_window_pct) <= MAX_CAPSID_CHUNK_DEVIATION_PCT
         for chunk in chunk_divergences

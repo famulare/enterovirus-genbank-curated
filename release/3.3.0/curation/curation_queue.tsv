@@ -120,7 +120,7 @@ Q-6fc775673105	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-70d2dcae171e	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	Kiryat Gat Treatment Plant	7	KJ013424.1 KJ013440.1 KJ013446.1	rule_parameter
 Q-7142683d809c	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	segev shalom west trunk line	1	KP004244.1	decision
 Q-71a1dbb45f14	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	envirnmental sample	1	KM225628.1	rule_parameter
-Q-72b29ee90590	poliovirus_classification	poliovirus_classification	R-CLASS-2	too_little_sequence_compared_to_measure_divergence		1381	A01868.1 AB053583.1 AB053590.1	decision
+Q-72b29ee90590	poliovirus_classification	poliovirus_classification	R-CLASS-2	too_little_sequence_compared_to_measure_divergence		1321	A01868.1 AB053583.1 AB053593.1	decision
 Q-74758a15c2b4	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	VAPP patient on day 60 from paralysis onset	1	AY649328.1	rule_parameter
 Q-75203860b899	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	VAPP patient on day 3 from paralysis onset	1	AY649327.1	rule_parameter
 Q-7546b2e0c7c4	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	Horashim Tretment Plant	2	KJ013459.1 KJ013460.1	rule_parameter
