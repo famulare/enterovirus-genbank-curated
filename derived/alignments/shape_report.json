@@ -1,9 +1,11 @@
 {
   "artifacts": {
-    "PV3_unified": {
+    "POLIO_unified": {
       "delta_vs_2_4_1": {
         "added": [
           "A03852",
+          "A06086",
+          "A06087",
           "A07258",
           "A07259",
           "A07260",
@@ -14,133 +16,65 @@
           "A07265",
           "A07271",
           "A07272",
+          "A08076",
           "A09237",
-          "AF380615",
-          "AF380624",
-          "AJ248524",
-          "AJ248526",
-          "AJ248527",
-          "AJ248529",
-          "AJ248530",
-          "AJ248531",
-          "AJ248532",
-          "AJ248533",
-          "AJ248534",
-          "AJ248535",
-          "AJ248536",
-          "AJ248537",
-          "AJ248539",
-          "AJ248540",
-          "AJ248541",
-          "AJ248542",
-          "AJ248543",
-          "AJ248544",
-          "AJ248545",
-          "AJ277195",
-          "AJ277196",
-          "AJ277197",
-          "AJ277198",
-          "AJ277199",
-          "AJ277200",
-          "AJ277201",
-          "AJ277202",
-          "AJ635238",
-          "AJ783738",
-          "AJ783739",
-          "AJ783770",
-          "AJ783771",
-          "AJ783772",
-          "AJ783773",
-          "AJ783774",
-          "AJ783785",
-          "AJ783786",
-          "AJ783787",
-          "AM774339",
-          "AM774342",
-          "AM774347",
-          "AM774350",
-          "AM774351",
-          "AM774354",
-          "D00256",
-          "D00258",
-          "D00259",
-          "D00262",
-          "D00263",
-          "DQ167414",
-          "EF628408",
-          "EF628409",
-          "EF628410",
-          "EF628429",
-          "EF628430",
-          "EF628431",
-          "EF634009",
-          "EF634010",
-          "EF634011",
-          "EU598466",
-          "EU598468",
-          "EU598469",
-          "EU598470",
-          "EU598471",
-          "EU598473",
-          "EU598474",
-          "EU598477",
-          "EU598486",
-          "EU598487",
-          "FB743423",
-          "FJ609747",
-          "FJ609748",
-          "FJ609749",
-          "FJ609760",
-          "FJ839688",
-          "FJ842182",
-          "FJ842183",
-          "FJ842184",
-          "FJ842185",
-          "FJ842186",
-          "FJ842194",
-          "FJ842195",
-          "FJ842196",
-          "FJ842197",
-          "FJ842202",
-          "FJ842203",
-          "FJ842204",
-          "FJ842205",
-          "FJ842206",
-          "FJ842207",
-          "FJ842208",
-          "FJ842209",
-          "FJ842210",
-          "FJ842211",
-          "FJ842212",
-          "FJ842213",
-          "FJ842214",
-          "FJ842215",
-          "FJ842216",
-          "FJ842217",
-          "FJ842218",
-          "FJ842219",
-          "FJ842220",
-          "FJ842221",
-          "FJ842222",
-          "FJ842223",
-          "FJ842224",
-          "FJ842225",
-          "FJ842226",
-          "FJ842227",
-          "FJ842228",
-          "FJ842229",
-          "FJ842230",
-          "FJ842231",
-          "FJ842232",
-          "FJ842233",
-          "FJ842234",
-          "FJ842235",
-          "FJ842236",
-          "FJ842237",
-          "FJ842238",
-          "FJ842239",
-          "FJ842240",
-          "FJ842241",
+          "A09238",
+          "A09239",
+          "A34014",
+          "A34017",
+          "AF233165",
+          "AF233166",
+          "AF233167",
+          "AF233168",
+          "AF233169",
+          "AF233170",
+          "AF233171",
+          "AF233172",
+          "AF233173",
+          "AF233174",
+          "AF233175",
+          "AF233176",
+          "AF233177",
+          "AF233178",
+          "AF233179",
+          "AF233180",
+          "AF233181",
+          "AF233182",
+          "AF233183",
+          "AF233184",
+          "AF233185",
+          "AF233186",
+          "AF233187",
+          "AF233188",
+          "AF233189",
+          "AF233190",
+          "AF233191",
+          "AF233192",
+          "AF233193",
+          "AJ290787",
+          "AJ290788",
+          "AJ290789",
+          "AJ290790",
+          "AJ290791",
+          "AJ290792",
+          "AJ290793",
+          "AJ290794",
+          "AJ290795",
+          "AJ290796",
+          "AJ290797",
+          "AJ290798",
+          "AJ290799",
+          "AJ290800",
+          "AJ290801",
+          "AJ290802",
+          "AJ290803",
+          "AJ290804",
+          "AJ290805",
+          "AJ290806",
+          "AJ290807",
+          "AJ290808",
+          "AX348200",
+          "AX348201",
           "FJ842242",
           "FJ842243",
           "FJ842244",
@@ -160,546 +94,143 @@
           "FJ842258",
           "FJ842259",
           "FJ842260",
-          "FR715554",
-          "GN353734",
-          "GN353735",
+          "GM709485",
           "GN353736",
           "GN353737",
-          "GN353738",
-          "GN353739",
-          "GN353740",
-          "GN353741",
-          "GN353742",
-          "GN353743",
-          "GQ331952",
-          "GU236312",
-          "GU236313",
-          "GU236314",
-          "GU380272",
-          "GU380273",
-          "GU380274",
-          "GU380275",
-          "GU380276",
-          "GU380282",
-          "GU380283",
-          "GU380284",
-          "GU380285",
-          "GU380286",
-          "J02283",
-          "JN812693",
-          "JN812694",
-          "JN812695",
-          "JN812696",
-          "JN812697",
-          "JN812698",
-          "JN812699",
-          "JN812700",
-          "JN812701",
-          "JN812702",
-          "JN812703",
-          "JN812704",
-          "JN812705",
-          "JN812706",
-          "JN812707",
-          "JN812708",
-          "JN812709",
-          "JN812710",
-          "JN812711",
-          "JN812742",
-          "JN812743",
-          "JN812744",
-          "JN812745",
-          "JN812746",
-          "JN812747",
-          "JN812748",
-          "JN812749",
-          "JN812750",
-          "JN812751",
-          "JN812752",
-          "JN812753",
-          "JN812754",
-          "JN812755",
-          "JN812756",
-          "JN812757",
-          "JN812758",
-          "JN812759",
-          "JN812760",
-          "JN812761",
-          "JN812762",
-          "JN812763",
-          "JN812764",
-          "JN812765",
-          "JN812766",
-          "JN812767",
-          "JN812768",
-          "JN812769",
-          "JN812770",
-          "JX179291",
-          "JX179294",
-          "KJ852631",
-          "KJ852632",
-          "KJ852633",
-          "KJ852646",
-          "KJ852647",
-          "KJ852648",
-          "KU708513",
-          "KU708514",
-          "KU738882",
-          "KU738884",
-          "KU738886",
-          "KU738887",
-          "L76394",
-          "L76405",
-          "L76406",
-          "L76407",
-          "L76408",
-          "L76410",
-          "L76411",
-          "L76413",
-          "MG212473",
-          "MG808053",
-          "MG808054",
-          "OR208596",
-          "OR208605",
-          "OR538733",
-          "OR538734",
-          "OR538739",
-          "OR538740",
-          "X70507"
+          "HW505760",
+          "HW505761",
+          "HW505772",
+          "HW505773",
+          "HW505774",
+          "JF343828",
+          "M30220",
+          "S65446",
+          "S65447",
+          "S65449",
+          "S72981",
+          "S72984"
         ],
         "dropped": [
           {
-            "accession": "AB205395",
-            "reason": "virus_type_lost"
+            "accession": "E00765",
+            "reason": "absent_from_canonical"
           },
           {
-            "accession": "AH004344",
-            "reason": "carve_excluded"
+            "accession": "E01571",
+            "reason": "absent_from_canonical"
           },
           {
-            "accession": "AY297766",
-            "reason": "serotype_relabelled"
-          },
-          {
-            "accession": "DD214218",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "DD214223",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "DD214224",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "E00769",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "E01572",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "FR715541",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "FR715542",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "FR715543",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "HM537010",
-            "reason": "serotype_relabelled"
-          },
-          {
-            "accession": "HQ738291",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "HQ738296",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "HQ738297",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "HQ738298",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "HQ738299",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "HQ738300",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "HQ738301",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "HQ738302",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KJ768682",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KJ768683",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KJ768684",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KJ768685",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KJ768686",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KJ768687",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KX656921",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KX856919",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KX856921",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KX941077",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "KY703697",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "LY501107",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "LY501108",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "LZ216102",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "LZ216103",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MN396001",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MN396042",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MN396043",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957178",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957180",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957181",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957183",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957186",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957190",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957191",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957193",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957196",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957198",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957200",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957203",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MT957207",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "MZ313558",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856893",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856894",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856895",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856896",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856897",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856898",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856899",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856900",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856901",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856902",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856903",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856904",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856905",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856906",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856907",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856908",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856909",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856910",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856911",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856912",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856913",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856914",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856915",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856916",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856917",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856918",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856919",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856920",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856921",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856922",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856923",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856924",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "OP856925",
-            "reason": "virus_type_lost"
+            "accession": "JX181922",
+            "reason": "group_moved"
           },
           {
             "accession": "OR538735",
             "reason": "group_moved"
-          },
-          {
-            "accession": "PP972258",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "PQ467716",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "PQ467717",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "PQ467718",
-            "reason": "virus_type_lost"
-          },
-          {
-            "accession": "PQ467719",
-            "reason": "virus_type_lost"
           }
         ],
         "dropped_by_reason": {
-          "carve_excluded": 1,
-          "group_moved": 1,
-          "serotype_relabelled": 2,
-          "virus_type_lost": 87
+          "absent_from_canonical": 2,
+          "group_moved": 2
         },
-        "n_added": 263,
-        "n_dropped": 91,
-        "name": "PV3_unified",
-        "rebuilt_rows": 1597,
-        "shipped_rows": 1425
+        "n_added": 106,
+        "n_dropped": 4,
+        "name": "POLIO_unified",
+        "rebuilt_rows": 10090,
+        "shipped_rows": 9988
       },
       "shape": {
         "absence_reasons": {
-          "3ncr:below_pop_min": 2,
-          "3ncr:empty_fragment": 1119,
-          "3ncr:inferred_no_ncr": 155,
-          "3ncr:no_cds_untranslatable": 33,
-          "5ncr:empty_fragment": 1082,
-          "5ncr:inferred_no_ncr": 155,
-          "5ncr:no_cds_untranslatable": 33,
-          "cds:no_cds_overlap": 86,
-          "cds:no_cds_untranslatable": 8
+          "3ncr:annotated_rejected_untranslatable": 32,
+          "3ncr:below_pop_min": 33,
+          "3ncr:empty_fragment": 7121,
+          "3ncr:excluded_oversized": 7,
+          "3ncr:inferred_no_ncr": 929,
+          "3ncr:no_cds_untranslatable": 66,
+          "5ncr:annotated_rejected_untranslatable": 32,
+          "5ncr:empty_fragment": 7027,
+          "5ncr:inferred_no_ncr": 929,
+          "5ncr:no_cds_untranslatable": 66,
+          "cds:annotated_rejected_untranslatable": 32,
+          "cds:no_cds_untranslatable": 66
         },
         "block_widths": {
-          "3ncr": 69,
-          "5ncr": 742,
-          "cds": 6621
+          "3ncr": 70,
+          "5ncr": 746,
+          "cds": 6864
         },
         "blocks_present": {
-          "3ncr": 288,
-          "5ncr": 327,
-          "cds": 1503
+          "3ncr": 1902,
+          "5ncr": 2036,
+          "cds": 9992
         },
         "cds_translation": {
-          "near_complete_rows": 330,
-          "no_internal_stop": 330,
+          "near_complete_rows": 2024,
+          "no_internal_stop": 2024,
           "with_internal_stop": []
         },
         "families": {
-          "PV": 1597
+          "PV": 9724,
+          "unknown": 366
         },
         "insertion_attribution": {
-          "accessions_owning_singleton_columns": 0,
-          "cds_columns": 6621,
-          "codons_above_sparse_floor": 2207,
-          "columns_above_sparse_floor": 6621,
-          "singleton_columns": 0,
-          "sparse_columns": 0,
-          "top_owners": []
+          "accessions_owning_singleton_columns": 6,
+          "cds_columns": 6864,
+          "codons_above_sparse_floor": 2217,
+          "columns_above_sparse_floor": 6651,
+          "singleton_columns": 72,
+          "sparse_columns": 213,
+          "top_owners": [
+            {
+              "accession": "OR538732",
+              "codons": 10,
+              "singleton_columns": 30
+            },
+            {
+              "accession": "OR208612",
+              "codons": 5,
+              "singleton_columns": 15
+            },
+            {
+              "accession": "OR208596",
+              "codons": 3,
+              "singleton_columns": 9
+            },
+            {
+              "accession": "OR538740",
+              "codons": 3,
+              "singleton_columns": 9
+            },
+            {
+              "accession": "OR208609",
+              "codons": 2,
+              "singleton_columns": 6
+            },
+            {
+              "accession": "KC784368",
+              "codons": 1,
+              "singleton_columns": 3
+            }
+          ]
         },
         "residue_occupancy": {
-          "max": 7432,
-          "median": 900,
+          "max": 7442,
+          "median": 906,
           "min": 0,
-          "p10": 150,
-          "p90": 7400
+          "p10": 246,
+          "p90": 7413
         },
-        "rows": 1597,
+        "rows": 10090,
         "tiers": {
-          "addon": 246,
-          "backbone": 1351
+          "addon": 1354,
+          "backbone": 8736
         },
         "types": {
-          "PV3": 1597
+          "PV1": 4337,
+          "PV2": 3790,
+          "PV3": 1597,
+          "PV?": 366
         },
-        "width_nt": 7432
+        "width_nt": 7680
       }
     }
   },

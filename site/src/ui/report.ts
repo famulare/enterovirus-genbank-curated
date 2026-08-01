@@ -50,8 +50,8 @@ export function renderFacts(summary: Summary): void {
     [
       "Human curation",
       num(release.n_manual_decisions),
-      `Records touched by at least one recorded curation decision. Each is traceable to a
-       field-level assertion in the release audit trail.`,
+      `Records where at least one recorded curation decision was applied by the build. Each is
+       traceable to a field-level assertion in the release audit trail.`,
     ],
     [
       "Reference alignments",
