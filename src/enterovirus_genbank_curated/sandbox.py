@@ -124,6 +124,31 @@ READ_REFUSED_DIRS = (*FROZEN_DIRS, "final")
 
 _WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC
 
+# Whether an `open` produces the file's content, as opposed to merely opening it for writing. The
+# distinction matters for `InputGuard.written`: appending to, or opening `r+` on, a file that
+# already exists does not make its prior content this build's own output, so it must not unlock
+# reading it back.
+#
+# `O_CREAT` alone will not do, and the test that proves it was written first: mode `a` compiles to
+# `O_APPEND | O_CREAT | O_WRONLY`, so a flags-only check on `O_CREAT` marks an append as authorship
+# and hands back exactly the read this guard refuses. The mode string is authoritative when the
+# caller passed one, and `O_APPEND` disqualifies when it did not.
+def _creates_content(mode: object, flags: object) -> bool:
+    if isinstance(mode, str) and mode:
+        return any(character in mode for character in "wx")
+    if isinstance(flags, int):
+        if flags & os.O_APPEND:
+            return False
+        return bool(flags & (os.O_TRUNC | os.O_EXCL | os.O_CREAT))
+    return False
+
+# Mutation events whose *destination* argument index produces new content there. Deliberately not
+# every event in `MUTATION_EVENTS`: `os.link`, `os.chmod` and `os.utime` name a path they do not
+# author, and recording those would let `os.link(final/shipped, scratch/alias)` mark a pre-existing
+# release file as this build's output and unlock reading it — the exact read the guard exists to
+# refuse, reachable through a call that only claims to make a link.
+PUBLISH_EVENT_DESTINATIONS = {"os.rename": 1, "shutil.move": 1, "shutil.copyfile": 1}
+
 
 class UndeclaredInputError(ContractError):
     """The build touched something outside its declared inputs."""
@@ -369,7 +394,7 @@ def install_input_guard(
                     trouble = _mutation_problem(path, rules)
                     if trouble:
                         found.append(f"{event} would mutate an undeclared path: {trouble}")
-                    else:
+                    elif PUBLISH_EVENT_DESTINATIONS.get(event) == index:
                         # `deterministic_text_writer` publishes by `scratch.replace(path)`, so the
                         # destination is never opened for writing and would not otherwise count as
                         # this build's own output.
@@ -436,7 +461,7 @@ def install_input_guard(
                 problem = f"read of an undeclared path outside the clone: {_describe(path)}"
             if problem:
                 guard.record(problem)
-            elif writing:
+            elif writing and _creates_content(mode, flags):
                 guard.written.add(path)
         finally:
             local.busy = False

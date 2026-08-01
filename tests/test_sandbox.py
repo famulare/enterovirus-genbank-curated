@@ -451,6 +451,80 @@ def test_reading_the_shipped_release_is_refused(repository_root: Path) -> None:
     assert "never a pipeline input" in result.stderr
 
 
+def test_a_hardlink_cannot_launder_a_release_file_into_the_builds_own_output(
+    repository_root: Path, probe_name: str
+) -> None:
+    """The hole the "read back what you wrote" relaxation opens if it trusts the wrong events.
+
+    `final/` is writable now, and a read is permitted once the build has written that path in this
+    run. `os.link(final/shipped, scratch/alias)` names a release file as a mutation argument
+    without authoring it, so recording every mutated path would mark a shipped file as this
+    build's own output and unlock reading it — through a call that only claims to make a link.
+    `PUBLISH_EVENT_DESTINATIONS` is why it does not: only rename/move/copy *destinations* count.
+    """
+    alias = repository_root / "final" / probe_name
+    try:
+        body = textwrap.dedent(f"""
+            import os
+            shipped = str(ROOT / 'final' / 'audit' / 'build_manifest.json')
+            os.link(shipped, str(ROOT / 'final' / {probe_name!r}))
+            open(shipped).read()
+            print('NOT REACHED')
+        """)
+        result = run_guarded(repository_root, body)
+        assert result.returncode != 0
+        assert "NOT REACHED" not in result.stdout
+        assert "never a pipeline input" in result.stderr
+    finally:
+        alias.unlink(missing_ok=True)
+
+
+def test_appending_to_a_release_file_does_not_unlock_reading_it(
+    repository_root: Path, probe_name: str
+) -> None:
+    """Same rule, the other way in: `a` and `r+` open a file whose content already exists.
+
+    Only a create or a truncate makes the content this build's, so appending must not admit a
+    read-back of what was there before.
+    """
+    target = repository_root / "final" / probe_name
+    target.write_text("seed\n", encoding="utf-8")
+    try:
+        body = textwrap.dedent(f"""
+            path = str(ROOT / 'final' / {probe_name!r})
+            open(path, 'a').write('x')
+            open(path).read()
+            print('NOT REACHED')
+        """)
+        result = run_guarded(repository_root, body)
+        assert result.returncode != 0
+        assert "NOT REACHED" not in result.stdout
+        assert "never a pipeline input" in result.stderr
+    finally:
+        target.unlink(missing_ok=True)
+
+
+def test_a_file_the_build_wrote_can_be_read_back(
+    repository_root: Path, probe_name: str
+) -> None:
+    """The positive control. Without this the two refusals above pass by refusing everything, and
+    the file manifest — which hashes what the build just wrote — could not run at all."""
+    target = repository_root / "final" / probe_name
+    try:
+        body = textwrap.dedent(f"""
+            path = str(ROOT / 'final' / {probe_name!r})
+            open(path, 'w').write('x')
+            assert open(path).read() == 'x'
+            assert_no_violations(guard)
+            print('OK')
+        """)
+        result = run_guarded(repository_root, body)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "OK" in result.stdout
+    finally:
+        target.unlink(missing_ok=True)
+
+
 def test_reading_the_frozen_raw_archive_is_still_allowed(repository_root: Path) -> None:
     """The negative control for the rule above: `raw/` is immutable but it is a declared input.
 
