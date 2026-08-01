@@ -3,7 +3,7 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "b590ed958d39681ad43083aff4c04c320767bb527a6dfb761d1b1dbd87bc34ac",
+  "code_sha256": "7f72ba59caee048c3d6818ddf77c47e25079fd469e9a65d748191a2f4e22464f",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
@@ -22,7 +22,7 @@
     "localities_without_geography": 2055,
     "curation_queue_groups": 299,
     "decision_applications": 3336,
-    "curation_queue_records": 28153,
+    "curation_queue_records": 27445,
     "canonical_rows": 24308,
     "vouched_rows": 9929,
     "rules_in_baseline_view": 28,
@@ -31,9 +31,9 @@
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 173,
-    "applied_changed": 31,
-    "applied_unchanged": 24,
-    "applied_filled_unresolved": 2783,
+    "applied_changed": 522,
+    "applied_unchanged": 25,
+    "applied_filled_unresolved": 2291,
     "not_in_force_superseded": 13,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6
@@ -47,7 +47,7 @@
     ],
     "columns_with_declined_cells": {
       "curation_status": 1596,
-      "poliovirus_classification": 2950,
+      "poliovirus_classification": 2242,
       "sample_origin": 3682,
       "specimen_type": 12700,
       "surveillance_stream": 8650,
@@ -120,9 +120,9 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 8575,
-      "blank": 15733,
-      "declined": 2950,
+      "filled": 9283,
+      "blank": 15025,
+      "declined": 2242,
       "rules": [
         "R-CLASS-2"
       ]

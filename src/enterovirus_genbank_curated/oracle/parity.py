@@ -341,7 +341,13 @@ UNRESOLVED_TYPE_ROWS = 2216
 # Down a further 60 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (MAD-VDPV's own
 # `MIN_SEROTYPE_COMPARED_NT`), guarded by extending the chunked-homogeneity check to VP1 below its
 # old 300 nt floor. Every one of the 60 agrees with the shipped classification.
-UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60
+#
+# Down a further 708 the same day, when the reference-title text fallback landed
+# (`needs_other_data_text_fallback`): every one of the 708 had no divergence measurement by either
+# basis and so was declined before; 705 land on the value 2.4.1 ships and 3 do not (see the
+# `final_value` count in `SUPERSEDED_FIELD_DELTAS` above) — a decline turned into a value either way,
+# which is what leaves the declined population.
+UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60 - 708
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -406,11 +412,18 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         # Re-witnessed 2026-07-31 when the 115 cVDPV/strain-identity decisions cut `final_value`
         # from 169 to 54. The digest had to move along with the count: 115 records left the
         # disagreeing set entirely.
-        "final_value": "9186eacd41e1de67",
+        #
+        # Re-witnessed again the same day when the reference-title text fallback added 3 wrong
+        # values (`AF083938`, `HM537010`, `MG212473` — see the count comment above) on top of the
+        # 54: a different, larger disagreeing set even though the direction of movement (up, not
+        # down) is itself notable enough to be commented at the count.
+        "final_value": "b1cfd0e3b83d612d",
         # Re-witnessed again 2026-07-31 when the VP1/capsid floor dropped to 50 nt: 60 more records
         # join the agreeing `source_value` set, each a newly-measured divergence with no prior
         # composed string to compare.
-        "source_value": "b8a0f21f392c491f",
+        #
+        # Re-witnessed again the same day when the text fallback added 707 more agreeing records.
+        "source_value": "735d4e715c0af71c",
         # Re-witnessed again the same day when the 28 reference_or_lab_text/group_A_text_owned
         # decisions joined `manual_override` at the same count-preserving position (386, up from
         # 358): the set of *which* records carry the flag grew even though `final_value`'s own
@@ -696,7 +709,21 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # What remains is exactly the `chimera` gap: 4 records recombination-detection would resolve
         # (2.4.1 computes `chimera` from a Sabin/wild junction, not from text this rule reads) plus
         # ~50 ordinary threshold-adjacent disagreements — see `docs/classification-migration-gap.md`.
-        "final_value": 54,
+        # 57, up from 54: the reference-title text fallback (below) is a plausible-text guess, not a
+        # measurement, and it is wrong on 3 records it cannot tell apart from a real one —
+        # `AF083938`, `HM537010`, `MG212473`. All three carry a cited-paper title naming
+        # `vaccine-derived poliovirus` (a VDPV-emergence study that also sequenced its own Sabin-like
+        # parental/reference isolate), while MAD-VDPV's own alignment measures each at 0.000-0.333%
+        # over VP1 — `Sabin-like`, not the `VDPV` the title states. This pipeline's own `compare_vp1`
+        # cannot reach any of the three: each finds a diagonal with enough anchor support to pass
+        # `MIN_DIAGONAL_ANCHORS`, but the offset is wrong (44% mismatches on `MG212473`, the
+        # unrelated-sequence rate, over a *complete genome* where a real alignment reads near-zero).
+        # That is a gap in the diagonal search — not investigated further here since it affects only
+        # these 3 of the 24,308 carved records and fixing a seed-and-vote aligner is a different
+        # project than the text fallback — so text is asked, and for these 3 it answers a study-level
+        # question rather than a record-level one. 705 of the 708 the fallback newly resolves still
+        # land on the value 2.4.1 ships; these 3 are the honest cost of the other 705.
+        "final_value": 57,
         # 21,297 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
         # capsid fallback newly resolves + 3 the vocabulary repairs newly resolve (`AJ416942`,
         # `DQ205099`, `FJ517648`, whose ledger values were outside the controlled vocabulary and so
@@ -713,8 +740,13 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # (`AY320423`, `JN092124`, `AY365233`) where a single bad base in the deposit, not a real
         # indel, corrupted a 171-225 nt window the same way the module docstring already diagnoses
         # for the capsid case, rather than shipping them as a wrong `wild`.
-        "winning_rule_id": 21357,
-        "evidence_basis": 21357,
+        #
+        # 22,065 the same day, when the reference-title text fallback landed (`needs_other_data_
+        # text_fallback`): 708 more records resolve where neither VP1 nor the capsid fallback
+        # measures anything at all, 705 of them landing on the value 2.4.1 ships (see `final_value`
+        # above for the 3 that do not).
+        "winning_rule_id": 22065,
+        "evidence_basis": 22065,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
         # field or `divergence_pct`. The 19,113 agreeing on `source_value` are the curated rows,
         # where both record the asserted value itself — down from 19,228 because the 2026-07-31
@@ -727,8 +759,14 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # a newly-measured divergence whose composed string (`"X% over Y nt of ..."`) did not exist
         # before at all — a genuinely new agreeing comparison, not a decision changing how an
         # existing one is attributed.
-        "source_field": 21357,
-        "source_value": 19173,
+        #
+        # +707 the same day, when the text fallback landed: 708 new fallback rows, each citing the
+        # matched text substring as `source_value` where nothing was composed before; 707 of the 708
+        # happen to agree with 2.4.1's own recorded `source_value` for that row (not the same count
+        # as the 705 agreeing on `final_value` above — the two are different comparisons, and a row
+        # can match one without the other).
+        "source_field": 22065,
+        "source_value": 19880,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,

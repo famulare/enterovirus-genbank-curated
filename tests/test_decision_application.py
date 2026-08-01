@@ -75,12 +75,20 @@ EXPECTED_TALLY = {
     # +28 the same day: the reference_or_lab_text (24) and group_A_text_owned (4) decisions closing
     # the largest remaining `poliovirus_classification` discrepancy block, every one of those also
     # filling a cell the rule had been declining for want of usable sequence.
-    "applied_filled_unresolved": 2640 + 115 + 28,
+    # −492 the same day, when the reference-title text fallback landed: the counterfactual (ledger
+    # withheld) used to be blank for every one of these 492 `poliovirus_classification` decisions —
+    # the rule had nothing to say without the decision — and now the fallback gives it something to
+    # say instead. 491 move to `applied_changed` (the fallback's text guess differs from what the
+    # curator decided) and 1 to `applied_unchanged` (the guess happens to agree). Neither reverses a
+    # decision: the ledger still wins for the real column value, exactly as before. This is the
+    # counterfactual doing its job — revealing that curator judgment on these 492 records was doing
+    # real work a plausible-but-cruder text read would not have replicated.
+    "applied_filled_unresolved": 2640 + 115 + 28 - 492,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,
-    "applied_changed": 31,
-    "applied_unchanged": 24,
+    "applied_changed": 31 + 491,
+    "applied_unchanged": 24 + 1,
     "subject_outside_carve": 6,
     # +3 on 2026-07-31: the vocabulary repairs superseded the three active decisions whose value was
     # outside the controlled vocabulary (`CHAT`, a bare `engineered`, `iVPDV`).

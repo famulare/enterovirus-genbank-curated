@@ -80,7 +80,13 @@ from enterovirus_genbank_curated.derive.partition import (
 # `MIN_SEROTYPE_COMPARED_NT`) with a chunked-homogeneity guard extended to VP1 for the newly-opened
 # sub-300 nt territory: 60 more `poliovirus_classification` declines resolve, every one agreeing
 # with the shipped classification.
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60
+#
+# 27,445 the same day, when the reference-title text fallback landed
+# (`needs_other_data_text_fallback`): 708 more `poliovirus_classification` declines resolve — 705
+# agreeing with the shipped classification and 3 (`AF083938`, `HM537010`, `MG212473`) not, a known,
+# documented cost of asking a study title a record-level question (see `oracle/parity.py`). A decline
+# leaving the queue does not require the value to be right, only that the cell is no longer silent.
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -122,6 +128,10 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60
 #
 # Still 299 when the VP1/capsid floor dropped to 50 nt the same day: the 60 newly-resolved records
 # shared that same single group with the 1,321 that remain declined.
+#
+# Still 299 when the text fallback landed the same day: the 708 newly-resolved records shared that
+# same single `too_little_sequence_compared_to_measure_divergence`, no-source-value group with the
+# 613 that remain declined for the same reason.
 EXPECTED_QUEUE_GROUPS = 302 - 3
 
 
