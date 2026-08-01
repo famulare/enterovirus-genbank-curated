@@ -24,8 +24,14 @@ its disagreements rather than by its inputs is the mistake this docstring exists
 
 Upstream resolved these by capsid amino-acid distance to a poliovirus reference (R-MEMBERSHIP-AA-1),
 which the sequence stage now implements for carve membership. Within the carve the ledger resolves
-them: 17 by an explicit `is_poliovirus` decision, and a further 259 because a curated
-*classification* entails membership — see `_membership`. The rest are declined.
+some: 17 by an explicit `is_poliovirus` decision, and a further 259 because a curated
+*classification* entails membership — see `_membership`. R-MEMBERSHIP-AA-1's own two-sided band
+resolves more of the rest directly: a record named only `Enterovirus C`, `Enterovirus sp.`,
+`unidentified` or `synthetic construct` (`UNINFORMATIVE_ORGANISMS`) whose capsid sits under 8% amino-
+acid distance from the nearest poliovirus reference *is* poliovirus, and one at or above 15% is not —
+`derive.evidence.measure_poliovirus_membership_band`, read here as `RecordView.membership_evidence`.
+The 8-15% middle, and anything below the 50-codon floor, stays declined; nothing here is a guess
+standing in for a name that would not commit.
 """
 
 from __future__ import annotations
@@ -33,7 +39,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from enterovirus_genbank_curated.derive.outcome import RecordView, RuleOutcome
+from enterovirus_genbank_curated.derive.outcome import (
+    MEMBERSHIP_BAND_CODONS_KEY,
+    MEMBERSHIP_BAND_DISTANCE_KEY,
+    MEMBERSHIP_BAND_KEY,
+    MEMBERSHIP_BAND_REFERENCE_KEY,
+    MEMBERSHIP_BAND_SEROTYPE_KEY,
+    RecordView,
+    RuleOutcome,
+)
 from enterovirus_genbank_curated.registry.rules import rule_implementation
 
 POLIOVIRUS = "poliovirus"
@@ -51,6 +65,8 @@ PARTITION_LABELS = {
 
 BASIS_PARTITION = "partition"
 BASIS_RELEASE_POLICY = "release_policy"
+# R-MEMBERSHIP-AA-1's two-sided band, consulted only when the organism name itself decided nothing.
+BASIS_MEMBERSHIP_AA = "capsid_aa_membership_band"
 UNRESOLVED_UNINFORMATIVE = "organism_name_does_not_determine_membership"
 # `curation_status` declines only because `virus_group` did. Naming that distinctly keeps it out of
 # the curation queue, which would otherwise ask for the same decision twice under two field names.
@@ -93,8 +109,11 @@ LEDGER_MEMBERSHIP_VALUES = frozenset({"TRUE", "FALSE"})
 LEDGER_CLASSIFICATION_FIELDS = ("verified_classification", "classification")
 
 
-def _membership(view: RecordView) -> tuple[str, bool]:
-    """`(partition, came_from_a_decision)`, or `("", False)` when nothing determines it.
+def _membership(view: RecordView) -> tuple[str, bool, Mapping[str, str] | None]:
+    """`(partition, came_from_a_decision, membership_evidence)`, or `("", False, None)` when nothing
+    determines it. `membership_evidence` is set only when the partition came from
+    `RecordView.membership_evidence` rather than from a decision or the organism name — see the band
+    check at the bottom of this function.
 
     The ledger is consulted first. A curator who has adjudicated membership has adjudicated it: a
     text predicate that overrode them would make the decision ornamental, which is the D2 failure.
@@ -133,7 +152,7 @@ def _membership(view: RecordView) -> tuple[str, bool]:
                 f"{view.version}: {LEDGER_MEMBERSHIP_FIELD}={asserted!r} is not one of "
                 f"{sorted(LEDGER_MEMBERSHIP_VALUES)}"
             )
-        return (POLIOVIRUS if asserted == "TRUE" else NON_POLIO_ENTEROVIRUS), True
+        return (POLIOVIRUS if asserted == "TRUE" else NON_POLIO_ENTEROVIRUS), True, None
 
     # `False`, not `True`, and the parity gate is what established that. Returning `True` marked
     # `manual_override` on all 2,046 records carrying a classification decision, against a shipped
@@ -143,14 +162,20 @@ def _membership(view: RecordView) -> tuple[str, bool]:
     # distinction `curation_status` already draws for the vouching policy that follows from
     # membership. `is_poliovirus` above still reports `True`, because that decision does state it.
     if any(view.decisions.get(field) for field in LEDGER_CLASSIFICATION_FIELDS):
-        return POLIOVIRUS, False
+        return POLIOVIRUS, False, None
 
     organism = view.record.get("organism_name", "")
     if any(fragment in organism.lower() for fragment in POLIO_NAME_FRAGMENTS):
-        return POLIOVIRUS, False
+        return POLIOVIRUS, False, None
     if organism in UNINFORMATIVE_ORGANISMS:
-        return "", False
-    return NON_POLIO_ENTEROVIRUS, False
+        # The name cannot decide it, but R-MEMBERSHIP-AA-1's capsid band might: see
+        # `derive.evidence.measure_poliovirus_membership_band`. Absent (no compared codons, or the
+        # 8-15% band neither side of the threshold reaches) leaves this exactly the prior "", False.
+        band = view.membership_evidence.get(MEMBERSHIP_BAND_KEY, "")
+        if band:
+            return band, False, view.membership_evidence
+        return "", False, None
+    return NON_POLIO_ENTEROVIRUS, False, None
 
 
 def resolved_partition(view: RecordView) -> str:
@@ -159,17 +184,17 @@ def resolved_partition(view: RecordView) -> str:
     Public because the epi rules are partition-scoped: `sample_origin` is curated for poliovirus and
     out of scope elsewhere, and a record whose membership is undecided cannot be scoped either way.
     """
-    partition, _ = _membership(view)
+    partition, _, _ = _membership(view)
     return partition
 
 
 @rule_implementation(
     "derive.partition.virus_group",
     parameters=("groups",),
-    evidence_bases=(BASIS_PARTITION,),
+    evidence_bases=(BASIS_PARTITION, BASIS_MEMBERSHIP_AA),
 )
 def virus_group(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
-    partition, from_decision = _membership(view)
+    partition, from_decision, membership_evidence = _membership(view)
     if not partition:
         return RuleOutcome(
             value="",
@@ -184,6 +209,17 @@ def virus_group(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     declared = parameters["groups"]
     if partition not in declared:
         raise ValueError(f"{partition!r} is not one of the declared groups {declared}")
+    if membership_evidence:
+        distance = membership_evidence[MEMBERSHIP_BAND_DISTANCE_KEY]
+        codons = membership_evidence[MEMBERSHIP_BAND_CODONS_KEY]
+        serotype = membership_evidence[MEMBERSHIP_BAND_SEROTYPE_KEY]
+        reference = membership_evidence[MEMBERSHIP_BAND_REFERENCE_KEY]
+        return RuleOutcome(
+            value=partition,
+            evidence_basis=BASIS_MEMBERSHIP_AA,
+            source_field=MEMBERSHIP_BAND_DISTANCE_KEY,
+            source_value=f"{distance}% over {codons} capsid codons vs {serotype} ({reference})",
+        )
     return RuleOutcome(
         value=partition,
         evidence_basis=BASIS_PARTITION,
@@ -205,7 +241,7 @@ def curation_status(parameters: Mapping[str, Any], view: RecordView) -> RuleOutc
     matching the release: the curator adjudicated membership, not the vouching policy that follows
     from it.
     """
-    partition, _ = _membership(view)
+    partition, _, _ = _membership(view)
     if not partition:
         return RuleOutcome(
             value="",

@@ -27,6 +27,7 @@ def build_record_views(
     versions: Iterable[str],
     decisions: Mapping[str, Mapping[str, str]] | None = None,
     evidence: Mapping[str, Mapping[str, str]] | None = None,
+    membership_evidence: Mapping[str, Mapping[str, str]] | None = None,
 ) -> list[RecordView]:
     """One view per requested version, in the corpus order the parser emitted.
 
@@ -71,6 +72,7 @@ def build_record_views(
 
     ledger = decisions or {}
     measured = evidence or {}
+    membership_measured = membership_evidence or {}
     return [
         RecordView(
             version=record["version"],
@@ -81,6 +83,7 @@ def build_record_views(
             byte_identical=tuple(by_digest[record["sequence_sha256"]]),
             evidence=measured.get(record["version"], NO_EVIDENCE),
             reference_titles=" | ".join(titles.get(record["version"], ())),
+            membership_evidence=membership_measured.get(record["version"], NO_EVIDENCE),
         )
         for record in tables["records"]
         if record["version"] in wanted

@@ -234,9 +234,22 @@ classification (never a decision or the text fallback — propagating either wou
 one is wrong) agrees on one label: 191 more resolve, 190 agreeing (the one that does not is the
 known Mahoney/Sabin-1 trap below, reaching a second record through the link).
 
+A fourth mechanism closes most of what `virus_group` itself was still declining. `R-MEMBERSHIP-AA-1`
+was already active for carve membership — a record's capsid under 8% amino-acid distance from a
+poliovirus reference rescues it into the carve even when GenBank's own lineage annotation excludes
+it. The catalog always declared the rule's other half too: the same two-sided band (below 8% rescues
+to `poliovirus`, at or above 15% confirms `non_polio_enterovirus`) for a carved record whose organism
+name only reaches `Enterovirus C`, `Enterovirus sp.`, `unidentified` or `synthetic construct` —
+`derive.evidence.measure_poliovirus_membership_band`, built 2026-08-01, implements it. 211 records
+resolve, 209 of them agreeing with the shipped `virus_group` (2 are not in the shared carve at all).
+`poliovirus_classification` benefits too: a `poliovirus`-banded record has no name serotype by
+definition, but the band's own nearest-capsid match already identified one, and the classification
+rule now measures VP1/capsid divergence against it exactly as it would a name-stated serotype — 138
+more records resolve, 130 agreeing with the shipped classification.
+
 [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
-one of the 666 remaining differences from 2.4.1's `poliovirus_classification` by category — 97.3%
-of the shared carve agrees, and 608 of the 666 are a decline rather than a contradiction. The
+one of the 536 remaining differences from 2.4.1's `poliovirus_classification` by category — 97.8%
+of the shared carve agrees, and 470 of the 536 are a decline rather than a contradiction. The
 epidemiological refinement `cVDPV`/`iVDPV` is now emitted wherever the record itself states it,
 including from `isolation_source` and `note`; the 95 that were not are two published environmental
 studies whose circulation claim lives in the paper rather than in any deposit, and a further 28

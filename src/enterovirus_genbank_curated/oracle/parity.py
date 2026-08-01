@@ -252,8 +252,9 @@ def compare_metadata_to_release(
 # `derive/metadata.py` predate this file and should move here too.
 #
 # `virus_group` declines on every record whose organism name cannot determine polio membership — the
-# polio-containing species at species level, the bare genus, or a non-identification. Upstream
-# resolved these by capsid amino-acid distance (R-MEMBERSHIP-AA-1).
+# polio-containing species at species level, the bare genus, or a non-identification, and that R-
+# MEMBERSHIP-AA-1's own capsid-AA two-sided band does not settle either. Upstream resolved these by
+# capsid amino-acid distance (R-MEMBERSHIP-AA-1).
 #
 # The count is the *input* population, not the population where a default would have landed wrong.
 # That second number is 414, and an earlier draft of this work mistook it for the size of the
@@ -276,7 +277,19 @@ def compare_metadata_to_release(
 # surprise: a record is rescued *because* its organism name is `unidentified`, `synthetic construct`
 # or `Homo sapiens`, which is exactly the name the partition rule cannot decide from. The sequence
 # settles membership in the carve; it does not write the column — R-PARTITION-2 reads the name.
-UNRESOLVED_PARTITION_ROWS = 1596
+#
+# 1,596 fell to 1,385 on 2026-08-01: `derive.evidence.measure_poliovirus_membership_band` resolves
+# 211 of them directly, using the parameters R-MEMBERSHIP-AA-1 already declares for the carve-rescue
+# half above — below 8.0% capsid-AA distance from a poliovirus reference rescues to `poliovirus`
+# (140), at or above 15.0% confirms `non_polio_enterovirus` (71), and the 8-15% middle (or under 50
+# compared codons) stays declined exactly as before. Validated per record against the shipped
+# `virus_group`: all 71 `non_polio_enterovirus` calls agree; of the 140 `poliovirus` calls, 138 agree
+# and the other 2 are not in the 24,299 shared rows at all (not a disagreement — there is nothing on
+# the release side to disagree with). `poliovirus_classification` benefits too: a `poliovirus`-banded
+# record with no name serotype now measures VP1/capsid divergence against the band's own identified
+# serotype (`BASIS_VP1_BY_MEMBERSHIP_BAND`/`BASIS_CAPSID_BY_MEMBERSHIP_BAND` in `derive/evidence.py`),
+# not a name that was never going to state it.
+UNRESOLVED_PARTITION_ROWS = 1385
 # `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: those where no keyword matches
 # `/isolation_source` and 4 where two categories match, naming two specimens rather than one. All 23
 # rescued records decline — patent deposits carry no `/isolation_source` — so this moved with them.
@@ -288,12 +301,21 @@ UNRESOLVED_SPECIMEN_ROWS = 12700
 # MA400487 non-human). Down 30 from 3,712 when the curated-classification entailment landed: those
 # 30 records are now scoped as poliovirus and read their `/host`, 26 of them into the already-
 # declared `human` vs shipped `unknown` disagreement and 4 into agreement.
-UNRESOLVED_ORIGIN_ROWS = 3682
+#
+# Down a further 21, 2026-08-01, when the capsid-AA membership band resolved `virus_group` directly
+# for 140 more records: 21 of them deposit a `/host` and so read it here for the first time; the
+# other 119 have none and stay declined. See `SUPERSEDED_FIELD_DELTAS["sample_origin"]`.
+UNRESOLVED_ORIGIN_ROWS = 3661
 # `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
 # its values — plus those whose partition is undecided and so cannot be scoped either way. 20 of the
 # 23 rescued records decline; E01570, E01572 and HV932178 carry an active `sampling_frame` decision.
-UNRESOLVED_STREAM_ROWS = 8650
+#
+# Down a further 56, 2026-08-01, when the capsid-AA membership band resolved `virus_group` directly
+# for 211 more records: 56 of them name a surveillance context in their own text and read it here for
+# the first time; the rest do not and stay declined. See
+# `SUPERSEDED_FIELD_DELTAS["surveillance_stream"]`.
+UNRESOLVED_STREAM_ROWS = 8594
 # `engineered_or_construct` now declines on nothing. It declined on `LY501105` and `LZ216100`, the
 # CAVA cold-adaptation pair Appendix B of the re-adjudication recorded as open in either direction,
 # and the curator closed both FALSE on 2026-07-31 on the precedent already set inside patent
@@ -351,7 +373,15 @@ UNRESOLVED_TYPE_ROWS = 2216
 # Down a further 191 the same day, when isolate-linked inference landed: 192 candidates, 191 applied
 # (one, a short unverified key with no batch corroboration, stays declined). 190 of the 191 land on
 # the value 2.4.1 ships; the one that does not, `X70506`, is counted in `final_value` above.
-UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60 - 708 - 191
+#
+# Down a further 211, 2026-08-01, when the capsid-AA membership band resolved `virus_group` directly:
+# 71 records banded `non_polio_enterovirus` resolve to a determined blank (`not_applicable_outside_
+# poliovirus`, the same value the release ships for every non-poliovirus row) rather than declining
+# for "following" an undecided partition, and the other 140 banded `poliovirus` now measure VP1/
+# capsid divergence against the band's own identified serotype and resolve outright — 130 of the 140
+# land on the value 2.4.1 ships; the other 10 are counted in `final_value` above (8 genuine
+# disagreements, 2 not in the shared carve at all).
+UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60 - 708 - 191 - 211
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -389,12 +419,16 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
     "locality": {"evidence_basis": "082c3e6e214b1f23"},
     "surveillance_stream": {
         "final_value": "882f2bb66d1a407b",
-        "source_value": "6cd27e18d13b5cd9",
+        # Re-witnessed 2026-08-01 when the capsid-AA membership band scoped 56 more records into
+        # comparison (see the count comment above).
+        "source_value": "0c18c1406e301ad3",
         "manual_override": "7f1c4a18e070b024",
     },
     "sample_origin": {
-        "final_value": "5e4032bf2e999dd8",
-        "source_value": "868400a414c83dad",
+        # Re-witnessed 2026-08-01 when the capsid-AA membership band scoped 21 more records into
+        # `sample_origin` (see the count comment above).
+        "final_value": "e8427f99c5a277ea",
+        "source_value": "e3309486c6f0cb6a",
         "manual_override": "74441f560e198627",
     },
     "specimen_type": {
@@ -424,7 +458,10 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         #
         # Re-witnessed again the same day when isolate-linked inference added one more, `X70506`
         # (see the count comment above): 54 -> 57 -> 58, each step a different disagreeing set.
-        "final_value": "bb99d3f701d8aa62",
+        #
+        # Re-witnessed 2026-08-01 when the membership-band serotype fallback added 8 more (see the
+        # count comment above): 58 -> 66.
+        "final_value": "3b01c33276934904",
         # `source_value` here counts *mismatches*, not agreements — see the reading note above the
         # count declarations. Re-witnessed 2026-07-31 when the VP1/capsid floor dropped to 50 nt: 60
         # more records join the mismatching set, each a newly-measured divergence whose composed
@@ -433,12 +470,22 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         # Re-witnessed again the same day when the text fallback added 707 more mismatching records.
         #
         # Re-witnessed again the same day when isolate-linked inference added 191 more.
-        "source_value": "4093e70d8c20ea74",
+        #
+        # Re-witnessed 2026-08-01 when the membership-band serotype fallback added 138 more.
+        "source_value": "66f821821277bd0c",
         # Re-witnessed again the same day when the 28 reference_or_lab_text/group_A_text_owned
         # decisions joined `manual_override` at the same count-preserving position (386, up from
         # 358): the set of *which* records carry the flag grew even though `final_value`'s own
         # disagreeing set did not move.
         "manual_override": "f563a7137f64b399",
+    },
+    "virus_group": {
+        # Added 2026-08-01, the same day the capsid-AA membership band started resolving
+        # `virus_group` directly for organism-uninformative records. See the count comment beside
+        # `SUPERSEDED_FIELD_DELTAS["virus_group"]` below.
+        "source_field": "6990d202a54ea41d",
+        "source_value": "187976241ff530d5",
+        "evidence_basis": "651bee50fb8f78a3",
     },
 }
 
@@ -489,17 +536,27 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         #          entailment scopes 30 previously-undecided records into poliovirus, so they now
         #          read their `/host`: 26 land on `human` where the release ships `unknown` — the
         #          very disagreement the 11,617 term declares — and 4 agree outright.
-        "final_value": 11793,
+        #
+        # 11,798 = the 11,793 above + 5 more, 2026-08-01: the capsid-AA membership band scopes 21 of
+        #          its 140 newly-poliovirus records into `sample_origin` (the other 119 have no
+        #          `/host` to read and stay declined, never compared), and 5 of those 21 land on
+        #          `human` where the release ships `unknown` — the same shape of disagreement, not a
+        #          new kind.
+        "final_value": 11798,
         # 20,625 = 20,591 + the 4 rescued records that resolve an origin at all (E01570 and E01572
         #          `vaccine`, HV932178 `human`, MA400487 `non-human`, each from an active
         #          `origin_class` decision) + the 30 the entailment brings into scope. The other 19
         #          rescued records decline and so are never compared.
-        "winning_rule_id": 20625,
-        "evidence_basis": 20625,
+        #
+        # 20,646 = 20,625 + the 21 the membership band brings into scope, 2026-08-01.
+        "winning_rule_id": 20646,
+        "evidence_basis": 20646,
         # The rule records the input it read — the host, the specimen text, or the partition it
         # scoped by — where the release recorded the curated `origin_class` it projected. The 242
         # agreeing rows are where the host string already was the origin, plus the ledger overrides.
-        "source_value": 20517,
+        #
+        # 20,538 = 20,517 + 21, 2026-08-01: none of the 21 newly-scoped rows happens to coincide.
+        "source_value": 20538,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
@@ -553,9 +610,15 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "final_value": 3487,
         # 15,657 = 15,654 + the 3 rescued records carrying an active `sampling_frame` decision
         #          (E01570, E01572, HV932178). The other 20 decline and are never compared.
-        "winning_rule_id": 15657,
-        "evidence_basis": 15657,
-        "source_value": 15334,
+        #
+        # 15,713 = 15,657 + 56, 2026-08-01: the capsid-AA membership band scopes 56 more records into
+        #          comparison (of the 211 banded, 56 have text this rule can read; the rest decline
+        #          and are never compared). `final_value` does not move, so every one of the 56
+        #          agrees with the shipped value.
+        "winning_rule_id": 15713,
+        "evidence_basis": 15713,
+        # 15,390 = 15,334 + 56, 2026-08-01: none of the 56 newly-compared rows happens to coincide.
+        "source_value": 15390,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
@@ -756,7 +819,15 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # separate the wild parent from its own vaccine derivative; see
         # `docs/classification-migration-gap.md`). Not a new failure mode, just the existing one
         # reaching a second record through a new path.
-        "final_value": 58,
+        #
+        # 66, up from 58, 2026-08-01: the membership-band serotype fallback (below) newly measures
+        # 138 records, and 8 of them disagree — 4 more `Sabin`-seed-strain deposits divergence alone
+        # cannot tell from their own descendants (`E00766`-`E00769`, the same known limitation
+        # `shipped_class_outside_sequence_reach` already names) and 4 more ordinary threshold-adjacent
+        # disagreements (`HC025129`, `KY026068`, `MT957183`, `MT957186`), the same shape as the ~50
+        # already in `sequence_band_disagrees_with_release`. Not a new failure class, the same two
+        # already-documented ones reaching a few more records now that they measure at all.
+        "final_value": 66,
         # 21,297 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
         # capsid fallback newly resolves + 3 the vocabulary repairs newly resolve (`AJ416942`,
         # `DQ205099`, `FJ517648`, whose ledger values were outside the controlled vocabulary and so
@@ -779,7 +850,12 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         #
         # 22,256 the same day, when isolate-linked inference landed: 191 more records resolve by
         # inheriting a sibling accession's measured classification, and all 191 mismatch here too.
-        "winning_rule_id": 22256,
+        #
+        # 22,465, 2026-08-01: the capsid-AA membership band identifies a serotype for 138 records
+        # whose organism name never named one, and those 138 now measure VP1/capsid divergence for
+        # the first time (`BASIS_VP1_BY_MEMBERSHIP_BAND`/`BASIS_CAPSID_BY_MEMBERSHIP_BAND` in
+        # `derive/evidence.py`) — all 138 mismatch here too, same reason as every other row.
+        "winning_rule_id": 22465,
         # `evidence_basis` tracks `winning_rule_id` exactly through 22,065 (same reason: this
         # pipeline's own branch-label vocabulary, e.g. `vp1_divergence_below_sabin_like_threshold`,
         # essentially never coincides with 2.4.1's), and then diverges from it:
@@ -790,7 +866,13 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # 163 of the 191 newly-comparable rows agree here rather than mismatch, and only 28 add to
         # the count. `winning_rule_id` has no such coincidence available to it, since 2.4.1 does not
         # record a rule id under any name.
-        "evidence_basis": 22093,
+        #
+        # 22,302, up from 22,093: the 138 membership-band rows above are newly comparable and
+        # mismatch for the same generic reason as almost every other row — `evidence_basis` here is
+        # the tier label (`vp1_divergence_below_sabin_like_threshold` and its siblings), not the
+        # VP1/capsid basis string (that lives only in `source_value`, below), so there is no
+        # coincidence available to these 138 the way isolate-linked inference happened to have.
+        "evidence_basis": 22302,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
         # field or `divergence_pct` — different vocabulary, so a mismatch here is the default too.
         # 19,228 before the 2026-07-31 decisions, down to 19,113 after the 115 cVDPV/strain-identity
@@ -812,8 +894,12 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # 20,071 by isolate-linked inference: 191 new rows citing the linked sibling accession(s) as
         # `source_value` (e.g. `AY082689.1;V01149.1`) — no coincidence available here either, so all
         # 191 mismatch 2.4.1's own record for the row.
-        "source_field": 22256,
-        "source_value": 20071,
+        #
+        # 20,280, 2026-08-01: 138 new rows citing a VP1/capsid divergence measured against the
+        # membership band's own identified serotype — composed the same way every other divergence
+        # citation is, and mismatching 2.4.1's own record for the same reason.
+        "source_field": 22465,
+        "source_value": 20280,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
@@ -838,6 +924,31 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "evidence_basis": 19033,
         "source_field": 0,
         "source_value": 0,
+        "accession": 0,
+        "version": 0,
+        "canonical_field": 0,
+        "manual_override": 0,
+    },
+    "virus_group": {
+        # Added 2026-08-01: the capsid-AA membership band resolves `virus_group` directly for 211
+        # organism-uninformative records — 209 of them compared against a shipped value (the other 2
+        # are not in the 24,299 shared rows at all). Every one of the 209 agrees on `final_value` —
+        # see the count above `UNRESOLVED_PARTITION_ROWS` for the 138/71 split. Unlike every other
+        # entry in this dict, `winning_rule_id` genuinely agrees over all 22,920 compared rows: this
+        # field's own rule id (`R-PARTITION-1`) happens to equal the release's recorded value
+        # already, on the rows this pipeline resolved before today as well as the 209 new ones —
+        # nothing here supersedes a *different* rule the way every other field in this table does.
+        "final_value": 0,
+        "winning_rule_id": 0,
+        # `source_field`/`source_value`/`evidence_basis` disagree on all 209 new rows and no others:
+        # the release's own bookkeeping for this field is `dataset_partition`/`partition` on every
+        # row, and only these 209 name the measurement instead
+        # (`capsid_aa_distance_pct`/`capsid_aa_membership_band`), with a composed `source_value`
+        # citing the distance, codon count and reference — a different string from the release's own
+        # `poliovirus`/`enterovirus_excluding_confirmed_poliovirus` label on every one of the 209.
+        "source_field": 209,
+        "source_value": 209,
+        "evidence_basis": 209,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
