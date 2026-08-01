@@ -71,12 +71,12 @@
     "provenance_rows": 316004,
     "dates_not_applicable": 4573,
     "localities_without_geography": 2055,
-    "curation_queue_groups": 299,
+    "curation_queue_groups": 302,
     "decision_applications": 3336,
-    "curation_queue_records": 27254,
+    "curation_queue_records": 27199,
     "canonical_rows": 24308,
-    "vouched_rows": 9929,
+    "vouched_rows": 10069,
     "rules_in_baseline_view": 28,
-    "classification_divergence_rows": 7948
+    "classification_divergence_rows": 8347
   }
 }

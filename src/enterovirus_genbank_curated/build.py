@@ -46,6 +46,7 @@ from enterovirus_genbank_curated.curate.queue import build_queue
 from enterovirus_genbank_curated.derive.apply import build_record_views, project_field
 from enterovirus_genbank_curated.derive.evidence import (
     measure_membership_rescue,
+    measure_poliovirus_membership_band,
     measure_sequence_evidence,
 )
 from enterovirus_genbank_curated.derive.isolate_linkage import apply_isolate_linked_inference
@@ -231,16 +232,25 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     rescued = measure_membership_rescue(tables, sequences, excluded, membership.parameters)
     transport = transport_metadata(tables, excluded, frozenset(rescued))
 
+    # R-MEMBERSHIP-AA-1's other half: the same catalog parameters, read again for the two-sided band
+    # (`derive.evidence.measure_poliovirus_membership_band`) that settles `virus_group` for a carved
+    # record whose organism name only reaches `Enterovirus C` or one of
+    # `derive.partition.UNINFORMATIVE_ORGANISMS`'s other entries.
+    membership_band = measure_poliovirus_membership_band(
+        tables, sequences, transport.rows, membership.parameters
+    )
+
     # Provenance for every canonical field whose rule is implemented, over the carved rows only. The
     # value and its provenance row come from the same `RuleOutcome`, so a canonical value without a
     # provenance row is not expressible — boundary 5 held structurally rather than by convention.
-    evidence = measure_sequence_evidence(tables, sequences, transport.rows)
+    evidence = measure_sequence_evidence(tables, sequences, transport.rows, membership_band)
 
     views = build_record_views(
         tables,
         (row["version"] for row in transport.rows),
         load_active_decisions(ledger_path),
         evidence,
+        membership_band,
     )
     bound = bind_rules(catalog)
     provenance = [

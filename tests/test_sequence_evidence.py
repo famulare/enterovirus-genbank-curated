@@ -25,7 +25,13 @@ from enterovirus_genbank_curated.derive.classification import (
     DEFINITION_FIELD,
     EVIDENCE_DIVERGENCE,
 )
-from enterovirus_genbank_curated.derive.evidence import BASIS_CAPSID, BASIS_VP1, EVIDENCE_COLUMNS
+from enterovirus_genbank_curated.derive.evidence import (
+    BASIS_CAPSID,
+    BASIS_CAPSID_BY_MEMBERSHIP_BAND,
+    BASIS_VP1,
+    BASIS_VP1_BY_MEMBERSHIP_BAND,
+    EVIDENCE_COLUMNS,
+)
 from enterovirus_genbank_curated.export.audit import (
     CLASSIFICATION_DIVERGENCE_RELATIVE,
     write_classification_divergence,
@@ -71,7 +77,24 @@ SHIPPED_COLUMN_COUNT = 21
 # unaffected — it simply has evidence to cite where it had none before.
 EXPECTED_VP1_ROWS = 7773
 EXPECTED_CAPSID_FALLBACK_ROWS = 175
-EXPECTED_DIVERGENCE_ROWS = EXPECTED_VP1_ROWS + EXPECTED_CAPSID_FALLBACK_ROWS
+# 392 VP1 + 7 capsid, 2026-08-01: `measure_poliovirus_membership_band` identifies a serotype by
+# capsid-AA distance for every organism-uninformative record that clears its 8%/15% band, and
+# `measure_sequence_evidence` measures VP1/capsid divergence against that serotype wherever the name
+# never named one — 470 records banded, 399 of them `poliovirus`-banded with enough sequence to
+# measure. Far more than the 138 records this actually changes a `poliovirus_classification` value
+# for: most of the 399 already carry an active ledger classification decision, which still wins
+# ahead of this measurement in `derive/classification.py`'s own precedence, so the measurement is
+# computed and cited in the audit trail but does not decide the value. Measuring it anyway is the
+# same "no ledger-awareness" choice `measure_sequence_evidence` already makes for every name-
+# serotyped record with an active decision.
+EXPECTED_MEMBERSHIP_BAND_VP1_ROWS = 392
+EXPECTED_MEMBERSHIP_BAND_CAPSID_ROWS = 7
+EXPECTED_DIVERGENCE_ROWS = (
+    EXPECTED_VP1_ROWS
+    + EXPECTED_CAPSID_FALLBACK_ROWS
+    + EXPECTED_MEMBERSHIP_BAND_VP1_ROWS
+    + EXPECTED_MEMBERSHIP_BAND_CAPSID_ROWS
+)
 
 
 def read_view(path: Path) -> tuple[list[str], list[dict[str, str]]]:
@@ -145,8 +168,11 @@ def test_the_shipped_sequence_evidence_is_a_different_table(repository_root: Pat
     # under a name this table could be read as filling.
     assert set(header) & set(EVIDENCE_COLUMNS) == SHARED_WITH_SHIPPED
     # And the shipped table covers the whole carve rather than the named-serotype subset, so even a
-    # column-name coincidence would not make the two interchangeable.
-    assert len(rows) > 3 * EXPECTED_DIVERGENCE_ROWS
+    # column-name coincidence would not make the two interchangeable. The margin dropped from 3x to
+    # 2x on 2026-08-01, when the membership-band serotype fallback grew `EXPECTED_DIVERGENCE_ROWS` to
+    # within a third of the whole carve; still comfortably true, since this view only ever covers
+    # name- or band-serotyped records and the shipped one covers every carved row.
+    assert len(rows) > 2 * EXPECTED_DIVERGENCE_ROWS
 
 
 @pytest.mark.slow
@@ -168,11 +194,18 @@ def test_the_real_build_writes_the_measurement_r_class_2_cited(
     assert tuple(header) == EVIDENCE_COLUMNS
     assert len(rows) == EXPECTED_DIVERGENCE_ROWS
 
-    by_basis = {BASIS_VP1: 0, BASIS_CAPSID: 0}
+    by_basis = {
+        BASIS_VP1: 0,
+        BASIS_CAPSID: 0,
+        BASIS_VP1_BY_MEMBERSHIP_BAND: 0,
+        BASIS_CAPSID_BY_MEMBERSHIP_BAND: 0,
+    }
     for row in rows:
         by_basis[row["basis"]] += 1
     assert by_basis[BASIS_VP1] == EXPECTED_VP1_ROWS
     assert by_basis[BASIS_CAPSID] == EXPECTED_CAPSID_FALLBACK_ROWS
+    assert by_basis[BASIS_VP1_BY_MEMBERSHIP_BAND] == EXPECTED_MEMBERSHIP_BAND_VP1_ROWS
+    assert by_basis[BASIS_CAPSID_BY_MEMBERSHIP_BAND] == EXPECTED_MEMBERSHIP_BAND_CAPSID_ROWS
 
     # Every measured record is a carved record, and they appear in the carve's own row order.
     measured = [row["version"] for row in rows]

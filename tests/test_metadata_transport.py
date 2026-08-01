@@ -145,13 +145,23 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
     # there and is not a shared row. That difference is exactly the kind of thing a single total
     # would hide, and it is why each field carries its own correction term.
     #
-    # `ALL_NINE` and `EIGHT_OF_NINE` are the only two shapes that occur, and the split is one
-    # record: AF326751.2 is the sole undeclared exclusion whose organism name decides a partition
-    # (`Enterovirus betacoxsackie` — a species, so non-poliovirus), which resolves `virus_group`,
-    # `curation_status` and everything scoped by them. The other eight are the membership rescues,
-    # whose organism names decide nothing.
+    # `ALL_NINE`, `EIGHT_OF_NINE` and `SIX_OF_NINE` are the three shapes that occur. AF326751.2 is
+    # the one undeclared exclusion whose organism name decides a partition (`Enterovirus
+    # betacoxsackie` — a species, so non-poliovirus), which resolves `virus_group`, `curation_status`
+    # and everything scoped by them; the other eight are the membership rescues, whose organism names
+    # decide nothing on their own — `EIGHT_OF_NINE` is the shape everywhere that stays true.
+    #
+    # `virus_group`, `curation_status` and `poliovirus_classification` are not among them since
+    # 2026-08-01: two of those eight, `A06086.1` and `A06087.1`, are `synthetic construct` patent
+    # deposits the capsid-AA membership band bands `poliovirus` (2.32%, 2.10% from Sabin 1 — see
+    # `derive/metadata.py`'s own docstring for `UNDECLARED_EXCLUSIONS`), so they now resolve
+    # `virus_group` directly, `curation_status` follows it, and `poliovirus_classification` measures
+    # VP1/capsid divergence against the band's own identified serotype. Neither deposits a `/host` or
+    # names a surveillance context, so `sample_origin` and `surveillance_stream` stay at
+    # `EIGHT_OF_NINE` — only three of the nine now resolve `virus_group`-shaped fields.
     ALL_NINE = len(UNDECLARED_EXCLUSIONS)
     EIGHT_OF_NINE = ALL_NINE - 1
+    SIX_OF_NINE = ALL_NINE - 3
     resolved_per_field = {
         "locality": SHARED_ROWS,
         "collection_date": SHARED_ROWS,
@@ -160,8 +170,8 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         # absence. Their values and bases match the release on every row.
         "collection_year_earliest": SHARED_ROWS,
         "collection_year_latest": SHARED_ROWS,
-        "virus_group": SHARED_ROWS - (UNRESOLVED_PARTITION_ROWS - EIGHT_OF_NINE),
-        "curation_status": SHARED_ROWS - (UNRESOLVED_PARTITION_ROWS - EIGHT_OF_NINE),
+        "virus_group": SHARED_ROWS - (UNRESOLVED_PARTITION_ROWS - SIX_OF_NINE),
+        "curation_status": SHARED_ROWS - (UNRESOLVED_PARTITION_ROWS - SIX_OF_NINE),
         # All nine: none deposits an `/isolation_source`, AF326751.2 included.
         "specimen_type": SHARED_ROWS - (UNRESOLVED_SPECIMEN_ROWS - ALL_NINE),
         "sample_origin": SHARED_ROWS - (UNRESOLVED_ORIGIN_ROWS - EIGHT_OF_NINE),
@@ -174,7 +184,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         # records are `unidentified` or `synthetic construct`.
         "virus_type": SHARED_ROWS - (UNRESOLVED_TYPE_ROWS - ALL_NINE),
         "poliovirus_classification": (
-            SHARED_ROWS - (UNRESOLVED_CLASSIFICATION_ROWS - EIGHT_OF_NINE)
+            SHARED_ROWS - (UNRESOLVED_CLASSIFICATION_ROWS - SIX_OF_NINE)
         ),
     }
     assert set(resolved_per_field) == set(provenance.fields)
@@ -193,6 +203,10 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
     #      engineered_or_construct) = 54, plus AF326751.2 alone resolving virus_group,
     #      curation_status, sample_origin, surveillance_stream and poliovirus_classification = 5.
     #      `specimen_type` and `virus_type` decline on all nine and so contribute nothing.
+    #
+    # 65, 2026-08-01: `A06086.1` and `A06087.1` each add 3 more (`virus_group`, `curation_status`,
+    # `poliovirus_classification`, resolved by the capsid-AA membership band — see the comment above
+    # `SIX_OF_NINE`), for 54 + 5 + 6 = 65.
     assert len(UNDECLARED_EXCLUSIONS) == 9
     never_declines = {
         "collection_date",
@@ -202,7 +216,7 @@ def test_metadata_transport_matches_the_shipped_canonical(repository_root: Path)
         "locality",
         "engineered_or_construct",
     }
-    assert provenance.absent_from_release == len(UNDECLARED_EXCLUSIONS) * len(never_declines) + 5
+    assert provenance.absent_from_release == len(UNDECLARED_EXCLUSIONS) * len(never_declines) + 5 + 6
 
     # Both partition columns decline on the same population, and never on a different one.
     #

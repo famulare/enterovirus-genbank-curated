@@ -108,6 +108,7 @@ EVIDENCE_DIVERGENCE = "divergence_pct"
 EVIDENCE_COMPARED = "compared_nt"
 EVIDENCE_REFERENCE = "reference_version"
 EVIDENCE_BASIS = "basis"
+EVIDENCE_REFERENCE_SEROTYPE = "reference_serotype"
 
 LEDGER_VERIFIED = "verified_classification"
 LEDGER_CLASSIFICATION = "classification"
@@ -281,7 +282,15 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
             manual_override=True,
         )
 
-    serotype = serotype_from_name(view.record.get(ORGANISM_FIELD, ""))
+    # The name is not the only source of a serotype. A record whose organism name is one of
+    # `derive.partition.UNINFORMATIVE_ORGANISMS` has none to read here, but
+    # `derive.evidence.measure_sequence_evidence` may already have identified one from the same
+    # capsid-AA membership band that settled its `virus_group` — see that function's docstring. Only
+    # a genuine VP1/capsid-nt measurement reaches `view.evidence` this way, never a guess standing in
+    # for the declined name.
+    serotype = serotype_from_name(view.record.get(ORGANISM_FIELD, "")) or view.evidence.get(
+        EVIDENCE_REFERENCE_SEROTYPE, ""
+    )
     if not serotype:
         return RuleOutcome(
             value="",

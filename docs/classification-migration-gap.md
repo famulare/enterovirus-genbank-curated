@@ -10,29 +10,29 @@ investigations, and 1,506 of the ledger's active rows already cite a PMID for ex
 **A coarsened value is a lost judgement, not a conservative one**, and this file names precisely
 which ones are still lost so they can be migrated rather than rediscovered.
 
-`docs/classification-migration-gap.tsv` is the machine-readable list — **all 666 differing
+`docs/classification-migration-gap.tsv` is the machine-readable list — **all 536 differing
 records**, one row each, with the value 2.4.1 ships, the value this pipeline emits, the
 `unresolved_reason` if it declined, and a category. Every row has a category; the count of
 uncategorised rows is asserted to be zero, because "we looked at the big buckets" is how a residue
 of unexplained differences survives a review.
 
-Over the 24,299 records both datasets carve, the column now **agrees on 23,633 (97.3%)**.
+Over the 24,299 records both datasets carve, the column now **agrees on 23,763 (97.8%)**.
 
 An earlier version of this file covered only the 1,161 rows where 2.4.1 ships a *refinement* or
 `wild`. That was the interesting subset, not the whole difference, and scoping a reconciliation to
 the interesting subset is how the remaining 998 would have gone unnoticed.
 
-## All 666, by category
+## All 536, by category
 
 | category | n | what it means |
 |---|---:|---|
 | `declined_too_little_sequence` | 422 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over, and no text or sibling to fall back to |
-| `declined_membership_undecided` | 153 | organism name cannot settle poliovirus membership |
-| `sequence_band_disagrees_with_release` | 42 | both resolved, divergence lands in a different band |
-| `declined_no_serotype_in_name` | 33 | no serotype in the organism name to pick a Sabin reference |
+| `sequence_band_disagrees_with_release` | 46 | both resolved, divergence lands in a different band |
+| `declined_no_serotype_in_name` | 33 | no serotype in the organism name, or in a sequence-identified membership band, to pick a Sabin reference |
+| `declined_membership_undecided` | 15 | organism name cannot settle poliovirus membership, and neither can the capsid-AA band (no capsid overlap, or the 8-15% band neither side of the threshold reaches) |
 | `record_text_refines_beyond_the_release` | 8 | the record's own text is *finer* than 2.4.1 |
+| `shipped_class_outside_sequence_reach` | 8 | 4 shipped `chimera` — a Sabin/wild recombination junction, computed by 2.4.1, not read from text; 4 shipped `Sabin` — seed-strain deposits divergence alone cannot tell from their own descendants |
 | `ledger_refines_beyond_the_release` | 4 | the ledger is *finer* than 2.4.1 |
-| `shipped_class_outside_sequence_reach` | 4 | shipped `chimera` — a Sabin/wild recombination junction, computed by 2.4.1, not read from text |
 
 The last two categories are worth noticing: on twelve records this pipeline is **more** specific than
 the release, not less. A reconciliation that only counted losses would have reported them as noise.
@@ -42,6 +42,20 @@ lowering the divergence floor, 708 by a reference-title text fallback, and 191 b
 inference, all four traced by decomposing this single largest category into MAD-VDPV's own named
 mechanisms; see
 "[Inside the largest block: what MAD-VDPV's own mechanism labels show](#inside-the-largest-block-what-mad-vdpvs-own-mechanism-labels-show)".
+
+`declined_membership_undecided` fell from 153 to 15 on 2026-08-01, when the capsid-AA membership
+band (`R-MEMBERSHIP-AA-1`'s other half) started resolving `virus_group` directly for
+organism-uninformative records — see
+"[Membership by capsid-AA distance: R-MEMBERSHIP-AA-1's other half](#membership-by-capsid-aa-distance-r-membership-aa-1s-other-half)".
+138 of those 138 newly-`poliovirus` records then measure a VP1/capsid divergence for the first time
+too, since `poliovirus_classification` reads the same identified serotype where the organism name
+never named one — 130 of the 138 land on the value 2.4.1 ships; 8 do not (4 join
+`shipped_class_outside_sequence_reach`, the seed-strain-identity limitation reaching a few more
+records; 4 join `sequence_band_disagrees_with_release`, the same shape of threshold-adjacent
+disagreement already there). `declined_no_serotype_in_name` is unchanged at 33: none of the newly
+`poliovirus`-banded records lack a capsid-AA-identified serotype, so none of them land there — the 33
+are the same population as before, name-serotyped-nothing records whose membership was never in
+question.
 
 Three categories that appeared in earlier versions of this file are gone entirely, all closed by
 decisions landed 2026-07-31 rather than by a rule:
@@ -277,10 +291,50 @@ title is right.
 
 ### Membership is fully understood, and it is a cleaner story
 
-`virus_group` and `curation_status` differ on 1,588 shared rows each, and **every single one is a
-decline** — `organism_name_does_not_determine_membership`, and `follows_unresolved_virus_group`
-downstream of it. There is not one row where this pipeline asserts a membership that contradicts
-2.4.1. 1,435 of them the release calls `non_polio_enterovirus` and 153 `poliovirus`.
+`virus_group` and `curation_status` differ on 1,379 shared rows each (down from 1,588 on
+2026-08-01 — see the next section), and **every single one is a decline** —
+`organism_name_does_not_determine_membership`, and `follows_unresolved_virus_group` downstream of
+it. There is not one row where this pipeline asserts a membership that contradicts 2.4.1. 1,364 of
+them the release calls `non_polio_enterovirus` and 15 `poliovirus`.
+
+### Membership by capsid-AA distance: R-MEMBERSHIP-AA-1's other half
+
+`R-MEMBERSHIP-AA-1` was already active for carve membership — `derive.evidence.
+measure_membership_rescue` rescues a record the GenBank lineage annotation excludes when its capsid
+sits under 8.0% amino-acid distance from a poliovirus reference. The catalog declares the *other*
+half of the same rule too (`registry/rules.json`'s `poliovirus_membership_aa_band`, a two-sided
+band: below 8.0% rescues to `poliovirus`, at or above 15.0% confirms `non_polio_enterovirus`), for a
+narrower population that is already in the carve: a record named only `Enterovirus C`, `Enterovirus
+sp.`, `unidentified` or `synthetic construct` — `derive.partition.UNINFORMATIVE_ORGANISMS` — whose
+name alone cannot say whether it is poliovirus or one of the species' other members (a
+coxsackievirus A). Built 2026-08-01, in `derive.evidence.measure_poliovirus_membership_band`.
+
+Of 1,596 previously-undecided `virus_group` rows, 211 now resolve: 140 `poliovirus`, 71
+`non_polio_enterovirus`. Validated per record against the shipped `virus_group`: all 71
+`non_polio_enterovirus` calls agree; of the 140 `poliovirus` calls, 138 agree and the other 2 are not
+in the 24,299 shared rows at all (not a disagreement — nothing on the release side to compare
+against).
+
+`poliovirus_classification` benefits from the same measurement, not just `virus_group`. A record
+banded `poliovirus` has no organism-name serotype by definition, but the band's own nearest-capsid
+match already names one (`PV1`/`PV2`/`PV3`) — the same identification
+`resolve_poliovirus_membership.py` makes in one step. `derive.classification.
+poliovirus_classification` now reads that identified serotype wherever the organism name never
+named one, and measures VP1/capsid-nt divergence against it exactly as it would against a
+name-stated serotype (`BASIS_VP1_BY_MEMBERSHIP_BAND`/`BASIS_CAPSID_BY_MEMBERSHIP_BAND` in
+`derive/evidence.py`, so the audit trail can always tell the two apart). This reaches 138 records —
+matching 140 minus the 2 not in the shared set — and 130 of the 138 land on the value 2.4.1 ships.
+The 8 that do not are not a new failure mode: 4 are `Sabin` seed-strain deposits divergence alone
+cannot tell from their own descendants (`E00766`-`E00769`, joining `shipped_class_outside_sequence_
+reach`, the same limitation already documented for 12 other records below), and 4 are ordinary
+threshold-adjacent disagreements (`HC025129`, `KY026068`, `MT957183`, `MT957186`, joining `sequence_
+band_disagrees_with_release`, the same shape as the ~40 already there).
+
+Only a genuine capsid-AA measurement feeds this — never a guess standing in for the declined name.
+The 15 records still `declined_membership_undecided` are exactly the ones this measurement cannot
+reach: no capsid overlap at all in the reference reading frame (13 of the 15), or fewer than 50
+compared codons. All 15 are short Sabin/Sabin-like fragments, the same shape of limitation the VP1
+floor and capsid fallback already documented elsewhere in this file.
 
 ## What is already recovered, and how
 
@@ -321,6 +375,15 @@ seed strain from its own descendants, and one nucleotide decides the band.
 The 5 `vaccine` decisions have ledger precedent already: `AJ293918` (USOL-D-bac), `AY359875` (Fox)
 and `AJ416942` (CHAT) are all classified `vaccine` on the same strain-family reasoning.
 
+**4 more `Sabin` joined this row on 2026-08-01, not yet migrated as decisions.** `E00766`-`E00769`
+are the same shape of seed-strain-identity deposit as the 12 above, only reached now because the
+capsid-AA membership band identifies their serotype where their organism name (`Enterovirus C`)
+never did — `E00767` measures 0.000% VP1 divergence from Sabin 1, exactly the "one nucleotide (or
+zero) decides the band" trap `X00595` already illustrates above. Closeable the same way, by a
+per-record decision citing the strain identity rather than a coarsened divergence band; not done
+here because it is curation, not migration, per "Why these needed a decision and not a migration"
+above.
+
 ### `chimera`: an attempted rule, reverted
 
 A recombination-detection rule was built and tested against these four records
@@ -342,25 +405,29 @@ chimera threshold precisely was not achievable from the one-paragraph rule descr
 against. The four records stay `wild`/`VDPV` here rather than risk a rule that would misclassify
 roughly fifty times as many records as it fixes.
 
-## The 104 where a curated refinement or `wild` is the thing lost
+## The 101 where a curated refinement or `wild` is the thing lost
 
 | 2.4.1 ships | this pipeline emits | why | n |
 |---|---|---|---:|
 | `wild` | *(blank)* | too little usable sequence, by any basis, to measure or fall back over | 70 |
-| `wild` | `VDPV` | divergence lands in the 1–15% band | 13 |
-| `wild` | `Sabin-like` | divergence under 1% (includes `X70506`, the isolate-linked Mahoney trap) | 5 |
-| `wild` | *(blank)* | partition undecided | 5 |
+| `wild` | `VDPV` | divergence lands in the 1–15% band | 14 |
+| `wild` | `Sabin-like` | divergence under 1% (includes `X70506`, the isolate-linked Mahoney trap, and `HC025129`, reached by the membership band) | 6 |
 | `cVDPV` | `cVDPV-n` | **finer**: the depositor's `note` says `cVDPV2-n` | 5 |
 | `iVDPV` | `wild` | divergence at or above 15% | 4 |
 | `cVDPV` | `Sabin-like` | divergence under 1% | 2 |
 
-Every one is a distinct accession, so 104 rows would close this subset (the 4 `chimera` records are
-a separate mechanism, not this one, and are covered above); the full 666 is in the TSV, and the
-categories above say which of them a ledger row is even the right instrument for. Five of the 104
+Every one is a distinct accession, so 101 rows would close this subset (the 4 `chimera` records are
+a separate mechanism, not this one, and are covered above); the full 536 is in the TSV, and the
+categories above say which of them a ledger row is even the right instrument for. Five of the 101
 are a gain rather than a loss (the `cVDPV-n` row). The `wild -> (blank)` row has fallen from 781
 (before the capsid fallback) to 750 (after it) to 719 (after the 2026-07-31 decisions and the 50 nt
 floor) to **70** (after the text fallback and isolate-linked inference) — the `cVDPV -> (blank)` row
-that used to sit at 4 is gone entirely, closed by the `group_A_text_owned` decisions above.
+that used to sit at 4 is gone entirely, closed by the `group_A_text_owned` decisions above. The
+`wild -> (blank), partition undecided` row (5, as of 2026-07-31) is gone entirely as of 2026-08-01:
+of the 22 records this pipeline now emits `wild` for whose organism name is one of
+`UNINFORMATIVE_ORGANISMS`, 20 land on the value 2.4.1 also ships, and only 2 (`HC025129`,
+`KY026068`, both above) do not — the same known threshold-adjacent shape as the rest of this table,
+reached now instead of staying silently undecided.
 
 The `cVDPV` and `iVDPV` rows that used to dominate this table are gone entirely: all 46 `iVDPV`
 records stated immunodeficiency in their own record, and the 99 `cVDPV` records now trace to
@@ -393,8 +460,12 @@ What remains after the 2026-07-31/2026-08-01 work is `declined_too_little_sequen
 where 2.4.1 also declines under its own `unresolved_*` reason codes; 99 `group_B_sequence` records
 neither the 50 nt floor nor a sibling link reaches, chiefly ones failing the chunked-homogeneity
 guard below 180 nt; 45 `needs_other_data_text_fallback` and 4 `isolate_linked_inference` where
-MAD-VDPV's own aligner or linkage reaches further than this pipeline's does), `declined_
-membership_undecided` (153, needs the membership question settled first), `declined_no_serotype_
-in_name` (33), `sequence_band_disagrees_with_release` (42, genuine threshold disagreements, now
-including `X70506`) and the 4 `chimera` records above, which need a correctly validated
-recombination rule rather than a decision.
+MAD-VDPV's own aligner or linkage reaches further than this pipeline's does), `sequence_band_
+disagrees_with_release` (46, genuine threshold disagreements, now including `HC025129` and
+`KY026068` alongside `X70506`), `declined_no_serotype_in_name` (33), `shipped_class_outside_
+sequence_reach` (8 — the 4 `chimera` records above, which need a correctly validated recombination
+rule rather than a decision, and 4 `Sabin` seed-strain deposits, closeable by a decision the same way
+the 12 already migrated were), `declined_membership_undecided` (15, the population the capsid-AA
+membership band's own 50-codon floor and 8-15% ambiguous middle cannot reach) and `record_text_
+refines_beyond_the_release`/`ledger_refines_beyond_the_release` (8 and 4, where this pipeline is
+already the more specific of the two and nothing needs migrating).

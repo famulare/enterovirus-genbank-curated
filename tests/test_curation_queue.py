@@ -91,7 +91,15 @@ from enterovirus_genbank_curated.derive.partition import (
 # declines resolve by inheriting a sibling accession's measured classification — 190 agreeing with
 # the shipped value and 1 (`X70506`) not, the known `V01149.1` (Mahoney) trap reaching a second
 # record (see `oracle/parity.py`).
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191
+# 27,199, 2026-08-01: the capsid-AA membership band resolves `virus_group` directly for 211 records
+# (`-211`, real work leaving the queue). For the same 211, `sample_origin` and `surveillance_stream`
+# stop declining *on the partition* and start declining, for the ones still short of their own
+# evidence, on their own reason instead — 31 records with no `/host`/specimen text (`+31`) and 125
+# with no surveillance context in the record (`+125`), both newly real work rather than a decline
+# excluded as partition-consequent. `poliovirus_classification` does not move: every one of the 211
+# fully resolves there (a value or a determined blank), so none of them was ever queued work to begin
+# with. Net: 27,254 − 211 + 31 + 125 = 27,199.
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -141,7 +149,12 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191
 # Still 299 when isolate-linked inference landed the same day: the 191 newly-resolved records shared
 # that same single group with the 422 that remain declined for the same reason (no divergence
 # measurement and no isolate link either).
-EXPECTED_QUEUE_GROUPS = 302 - 3
+# 302, 2026-08-01: the membership band's 211 newly-decided records shed their `virus_group` group
+# entirely (every uninformative-organism-name group these records sat in also had other, still-
+# undecided members) and mostly land in `sample_origin`/`surveillance_stream` groups that already
+# existed for other records (no new group), except a handful of `surveillance_stream` group keys
+# (e.g. `opv`, `human feces`) that no undecided-partition record had ever populated before — net +3.
+EXPECTED_QUEUE_GROUPS = 302 - 3 + 3  # 299 (2026-07-31 baseline) + 3 (2026-08-01, above)
 
 
 def declined(

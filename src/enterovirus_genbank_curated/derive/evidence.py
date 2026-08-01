@@ -130,6 +130,18 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from enterovirus_genbank_curated.derive.metadata import ENTEROVIRUS_GENUS_TAXON
+from enterovirus_genbank_curated.derive.outcome import (
+    MEMBERSHIP_BAND_CODONS_KEY,
+    MEMBERSHIP_BAND_DISTANCE_KEY,
+    MEMBERSHIP_BAND_KEY,
+    MEMBERSHIP_BAND_REFERENCE_KEY,
+    MEMBERSHIP_BAND_SEROTYPE_KEY,
+)
+from enterovirus_genbank_curated.derive.partition import (
+    NON_POLIO_ENTEROVIRUS,
+    POLIOVIRUS,
+    UNINFORMATIVE_ORGANISMS,
+)
 
 SABIN_REFERENCES = {"PV1": "AY184219.1", "PV2": "AY184220.1", "PV3": "AY184221.1"}
 VP1_PRODUCT = "VP1"
@@ -655,6 +667,70 @@ def measure_membership_rescue(
     return rescued
 
 
+def measure_poliovirus_membership_band(
+    tables: Mapping[str, list[dict[str, str]]],
+    sequences: Mapping[str, str],
+    rows: list[dict[str, str]],
+    parameters: Mapping[str, str],
+) -> dict[str, dict[str, str]]:
+    """`R-MEMBERSHIP-AA-1`'s other half — the two-sided band, not the one-sided rescue.
+
+    `measure_membership_rescue` above answers "is this record even Enterovirus", scoped to records
+    the GenBank lineage annotation itself excludes. This answers a narrower question, for records
+    that are already in the carve: a record named only `Enterovirus C`, `Enterovirus sp.`,
+    `unidentified` or `synthetic construct` (`derive.partition.UNINFORMATIVE_ORGANISMS`) sits inside
+    the species that contains poliovirus, but its name alone cannot say whether it *is* poliovirus or
+    one of the species' other members (a coxsackievirus A). The same nearest-capsid-reference
+    measurement `resolve_poliovirus_membership.py` uses can, over the same catalog parameters
+    `measure_membership_rescue` reads for the rescue half: below `rescue_below_pct` (8.0%) rescues to
+    `poliovirus`; at or above `not_poliovirus_at_or_above_pct` (15.0%) confirms `non_polio_enterovirus`;
+    the 8-15% middle, and anything under `min_codons_compared`, stays undecided — the same
+    "cannot see inside a coin-flip" refusal the divergence homogeneity guard makes, for membership
+    instead of divergence.
+
+    Scoped to `UNINFORMATIVE_ORGANISMS` on purpose, for the same reason `measure_sequence_evidence`
+    is scoped to name-serotyped records: a record whose organism name already determines membership
+    (`poliovirus`, or a specific non-polio type) has nothing here to ask, and asking anyway would let
+    a sequence measurement override a plainer signal that already answered.
+    """
+    rescue_below = float(parameters["rescue_below_pct"])
+    not_polio_at_or_above = float(parameters["not_poliovirus_at_or_above_pct"])
+    min_codons = int(parameters["min_codons_compared"])
+
+    frames = build_reference_frames(tables, sequences)
+    banded: dict[str, dict[str, str]] = {}
+    for row in rows:
+        if row.get("organism_name", "") not in UNINFORMATIVE_ORGANISMS:
+            continue
+        sequence = sequences.get(row["version"])
+        if sequence is None:
+            continue
+        calls = [
+            call
+            for call in (compare_capsid_aa(frame, sequence) for frame in frames.values())
+            if call
+        ]
+        if not calls:
+            continue
+        best = min(calls, key=lambda call: (call.distance_pct, -call.compared_codons))
+        if best.compared_codons < min_codons:
+            continue
+        if best.distance_pct < rescue_below:
+            band = POLIOVIRUS
+        elif best.distance_pct >= not_polio_at_or_above:
+            band = NON_POLIO_ENTEROVIRUS
+        else:
+            continue
+        banded[row["version"]] = {
+            MEMBERSHIP_BAND_KEY: band,
+            MEMBERSHIP_BAND_SEROTYPE_KEY: best.serotype,
+            MEMBERSHIP_BAND_REFERENCE_KEY: best.reference_version,
+            MEMBERSHIP_BAND_DISTANCE_KEY: f"{best.distance_pct:.3f}",
+            MEMBERSHIP_BAND_CODONS_KEY: str(best.compared_codons),
+        }
+    return banded
+
+
 # The schema of `audit/classification_divergence.tsv.gz`, which
 # `export/audit.write_classification_divergence` writes. Basis-neutral names (`divergence_pct`, not
 # `vp1_divergence_pct`), because a row's `basis` column is `VP1` on most rows and `P1_capsid` on the
@@ -674,21 +750,38 @@ EVIDENCE_COLUMNS = (
 
 BASIS_VP1 = "VP1"
 BASIS_CAPSID = "P1_capsid"
+# The membership-band variants: same measurement, same thresholds, but the serotype it is measured
+# against came from `measure_poliovirus_membership_band`'s nearest-capsid match rather than from the
+# organism name. Distinguished in the audit trail because `poliovirus_classification`'s own docstring
+# states plainly that this stage "does not serotype by sequence" — true for every other row, and
+# worth being able to find the ones where it is not.
+BASIS_VP1_BY_MEMBERSHIP_BAND = "VP1_serotype_from_membership_band"
+BASIS_CAPSID_BY_MEMBERSHIP_BAND = "P1_capsid_serotype_from_membership_band"
 
 
 def measure_sequence_evidence(
     tables: Mapping[str, list[dict[str, str]]],
     sequences: Mapping[str, str],
     rows: list[dict[str, str]],
+    membership_band: Mapping[str, Mapping[str, str]] | None = None,
 ) -> dict[str, dict[str, str]]:
     """VP1-first, capsid-fallback divergence for every carved record whose organism name names a
     serotype — the same precedence MAD-VDPV's own `classify_sequence_tier.py` states outright:
     "VP1-first / P1-fallback".
 
-    Scoped to name-serotyped records on purpose. The organism name is what picks the reference —
-    this stage does not serotype by sequence, for the reason the module docstring gives — so a
-    record with no name serotype has nothing to be measured *against*, and measuring it against all
+    Scoped to name-serotyped records, with one narrow exception. The organism name is what picks the
+    reference — this stage does not serotype by sequence in general, so a record with no name
+    serotype and no other input has nothing to be measured *against*, and measuring it against all
     three would be inventing the very call that was declined.
+
+    The exception is `membership_band`: a record whose organism name is `Enterovirus C` or one of
+    `derive.partition.UNINFORMATIVE_ORGANISMS`'s other entries has no name serotype, but
+    `measure_poliovirus_membership_band` may already have identified both its membership *and* its
+    serotype from the same nearest-capsid-reference measurement `resolve_poliovirus_membership.py`
+    uses — not a guess standing in for the declined name, but a second, independent sequence
+    measurement, gated by the same 8%/15% band and 50-codon floor as the membership call itself. Only
+    a record banded `poliovirus` reaches this fallback; one banded `non_polio_enterovirus` or left
+    undecided has no serotype to measure divergence against, poliovirus or otherwise.
 
     The fallback is tried only when VP1 itself returns nothing, never to override a VP1 measurement
     that exists: VP1 is the region the WHO thresholds are defined on, and a longer, guarded
@@ -697,9 +790,16 @@ def measure_sequence_evidence(
     from enterovirus_genbank_curated.derive.typing import serotype_from_name
 
     frames = build_reference_frames(tables, sequences)
+    banded = membership_band or {}
     measured: dict[str, dict[str, str]] = {}
     for row in rows:
         serotype = serotype_from_name(row.get("organism_name", ""))
+        from_membership_band = False
+        if not serotype:
+            band = banded.get(row["version"])
+            if band and band[MEMBERSHIP_BAND_KEY] == POLIOVIRUS:
+                serotype = band[MEMBERSHIP_BAND_SEROTYPE_KEY]
+                from_membership_band = True
         frame = frames.get(serotype)
         if frame is None:
             continue
@@ -717,7 +817,7 @@ def measure_sequence_evidence(
                 "divergence_pct": f"{vp1.divergence_pct:.3f}",
                 "compared_nt": str(vp1.compared_nt),
                 "strand": vp1.strand,
-                "basis": BASIS_VP1,
+                "basis": BASIS_VP1_BY_MEMBERSHIP_BAND if from_membership_band else BASIS_VP1,
             }
             continue
         capsid = compare_capsid_nt(frame, sequence)
@@ -729,6 +829,6 @@ def measure_sequence_evidence(
             "divergence_pct": f"{capsid.divergence_pct:.3f}",
             "compared_nt": str(capsid.compared_nt),
             "strand": capsid.strand,
-            "basis": BASIS_CAPSID,
+            "basis": BASIS_CAPSID_BY_MEMBERSHIP_BAND if from_membership_band else BASIS_CAPSID,
         }
     return measured
