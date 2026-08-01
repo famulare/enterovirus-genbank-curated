@@ -326,7 +326,13 @@ UNRESOLVED_TYPE_ROWS = 2216
 # only 148 newly resolve here. All 148 agree with the shipped classification wherever 2.4.1 has one
 # to compare against — the same measured floor and homogeneity guard `derive/evidence.py` documents,
 # applied to the real corpus rather than to the three records that motivated it.
-UNRESOLVED_CLASSIFICATION_ROWS = 3041
+#
+# Down a further 3 on 2026-07-31 when the vocabulary repairs resolved `AJ416942`, `DQ205099` and
+# `FJ517648`, whose active decisions the rule was declining rather than shipping (an out-of-
+# vocabulary asserted value) until each was repaired to a value the controlled vocabulary contains.
+# The 115 cVDPV/strain-identity decisions the same day do not move this count: every one of those
+# 115 already had a resolved value before the decision, just the wrong one, so none was declined.
+UNRESOLVED_CLASSIFICATION_ROWS = 3038
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -388,12 +394,12 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         "source_value": "3ecf43454058cfeb",
     },
     "poliovirus_classification": {
-        # Re-witnessed when `_record_text` widened to `isolation_source`/`note` cut `final_value`
-        # from 413 to 169. The count and the digest both had to move: 248 records left the set and 4
-        # entered it, so a count-only pin would have been satisfied by the wrong 169.
-        "final_value": "870bb4f0b13630a0",
-        "source_value": "888d7245360cc5fc",
-        "manual_override": "8b68cdaac2368907",
+        # Re-witnessed 2026-07-31 when the 115 cVDPV/strain-identity decisions cut `final_value`
+        # from 169 to 54. The digest had to move along with the count: 115 records left the
+        # disagreeing set entirely.
+        "final_value": "9186eacd41e1de67",
+        "source_value": "dcf033c8df13df9a",
+        "manual_override": "4e3f1979389588bc",
     },
 }
 
@@ -664,7 +670,17 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
     # measurement. Those records do not overlap VP1 at all and one chance 12-mer was winning the
     # diagonal vote. `MIN_DIAGONAL_ANCHORS` closed it; 2 of the 73 remain.
     "poliovirus_classification": {
-        "final_value": 169,
+        # 54, down from 169: 115 curator decisions landed 2026-07-31 — the 95-record cVDPV
+        # epidemiological override (two published studies, Cameroon PMID 25542478 and European
+        # wastewater PMID 39850005, whose circulation claim lives in the paper and not in any one
+        # deposit's own text) and 20 strain-identity/provenance decisions (12 `Sabin` seed-strain
+        # deposits divergence alone cannot tell from their own descendants, 5 `vaccine` from the
+        # documented Cox/Lederle/CHAT family map, 3 `engineered/lab` patent deposits). All 115 land
+        # on the value 2.4.1 already ships, so this is 115 more declines resolved, not a reversal.
+        # What remains is exactly the `chimera` gap: 4 records recombination-detection would resolve
+        # (2.4.1 computes `chimera` from a Sabin/wild junction, not from text this rule reads) plus
+        # ~50 ordinary threshold-adjacent disagreements — see `docs/classification-migration-gap.md`.
+        "final_value": 54,
         # 21,269 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
         # capsid fallback newly resolves + 3 the vocabulary repairs newly resolve (`AJ416942`,
         # `DQ205099`, `FJ517648`, whose ledger values were outside the controlled vocabulary and so
@@ -674,17 +690,20 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         "winning_rule_id": 21269,
         "evidence_basis": 21269,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
-        # field or `divergence_pct`. The 19,228 agreeing on `source_value` are the curated rows,
-        # where both record the asserted value itself.
+        # field or `divergence_pct`. The 19,113 agreeing on `source_value` are the curated rows,
+        # where both record the asserted value itself — down from 19,228 because the 115 new
+        # decisions changed *how* the value is reached (ledger, not the band), which moves
+        # `source_value`'s composed string even on rows whose `final_value` was already correct.
         "source_field": 21269,
-        "source_value": 19228,
+        "source_value": 19113,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
-        # 243 = the locked VDPV/wild reconciliation allowlist migrated on 2026-07-30. Those rows now
-        # reach the column as decisions, where the release recorded them as `group_B_sequence_tier`
-        # with no override flag — the value is the same and the attribution is not.
-        "manual_override": 243,
+        # 358 = 243 (the locked VDPV/wild reconciliation allowlist migrated on 2026-07-30) + 115
+        # (the 2026-07-31 cVDPV and strain-identity decisions above). All 358 reach the column as
+        # decisions, where the release recorded them as `group_B_sequence_tier`/`classification_
+        # reconciled` with no override flag — the value is the same and the attribution is not.
+        "manual_override": 358,
     },
     "locality": {
         # No value moves: every blank stays blank and every non-blank was already correct. The whole

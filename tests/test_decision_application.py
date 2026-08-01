@@ -70,14 +70,18 @@ from enterovirus_genbank_curated.curate.apply import (
 # R-CONSTRUCT-2 declined on both until 2026-07-31, so their new FALSE rows fill a cell that was
 # unresolved — the queue-and-ledger loop closing on the two records that were the queue's point.
 EXPECTED_TALLY = {
-    "applied_filled_unresolved": 2640,
+    # +115 on 2026-07-31: the 95-record cVDPV epidemiological override and 20 strain-identity/
+    # provenance decisions, every one filling a cell the rule had been declining.
+    "applied_filled_unresolved": 2640 + 115,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,
     "applied_changed": 31,
     "applied_unchanged": 24,
     "subject_outside_carve": 6,
-    "not_in_force_superseded": 10,
+    # +3 on 2026-07-31: the vocabulary repairs superseded the three active decisions whose value was
+    # outside the controlled vocabulary (`CHAT`, a bare `engineered`, `iVPDV`).
+    "not_in_force_superseded": 10 + 3,
 }
 
 

@@ -3,12 +3,12 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "e8a86918414485e1644ddb81df2a017f2533786b0d7e4918a5ccabd051993282",
+  "code_sha256": "f33e3ca70d58790d722715ba5485d70fb7fac92887f611c4ba9d3a78d19a3420",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "75c3e37d6022693ce03b6bfd70cf1f954fd09ad16fbf061bd7610b9f74c3de29",
+    "decisions_sha256": "c60672583e2909e8958b369da4ce1e1453197352d1ee44b4c091600e5d44e7fe",
     "rules_sha256": "6c29c28e49ba2c740fbacfe65025a8069c05bac1ef55b15dad360d47ccf179e7"
   },
   "row_counts": {
@@ -21,7 +21,7 @@
     "dates_not_applicable": 4573,
     "localities_without_geography": 2055,
     "curation_queue_groups": 299,
-    "decision_applications": 3193,
+    "decision_applications": 3308,
     "curation_queue_records": 28241,
     "canonical_rows": 24308,
     "vouched_rows": 9929,
@@ -33,7 +33,7 @@
     "applied_exclusion": 173,
     "applied_changed": 31,
     "applied_unchanged": 24,
-    "applied_filled_unresolved": 2640,
+    "applied_filled_unresolved": 2755,
     "not_in_force_superseded": 13,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6

@@ -102,6 +102,35 @@ LEDGER_ONLY_ADDITIONS = (
     | VOCABULARY_REPAIR_ADDITIONS
 )
 
+# 115 rows landed 2026-07-31, the same day and under the same `source_artifact` as the vocabulary
+# repairs and the CAVA parental pair above but a different act: not a repair of a malformed value
+# and not an engineered_or_construct call, a curation decision closing a classification gap traced
+# by reading MAD-VDPV's own working tree. Not enumerated as 115 literal tuples, for the same reason
+# the VDPV_SOURCE allowlist below is not: identified by `source_artifact`, excluding the 3
+# vocabulary-repair and 2 CAVA-parental subjects that share it, and pinned by count, value
+# distribution, and agreement with the shipped column — a fabricated or altered row fails against
+# `final/`, not against a list this file could also have been edited to accept.
+#
+# 95 are the cVDPV epidemiological override: two published studies whose circulation claim lives in
+# the paper, not in any deposit's own text — Cameroon (PMID 25542478, 27 records) and European
+# wastewater 2024 (PMID 39850005 on 20 of 68). 20 are strain-identity/provenance decisions divergence
+# alone cannot make: 12 `Sabin` (seed-strain deposits, including this pipeline's own three canonical
+# references AY184219/220/221), 5 `vaccine` (the documented Cox/Lederle/CHAT family map), 3
+# `engineered/lab` (patent JP 2009538603-A). See `docs/classification-migration-gap.md`.
+CVDPV_AND_STRAIN_IDENTITY_SOURCE = "curator_adjudication_2026-07-31"
+EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS = 115
+# The other two populations sharing `CVDPV_AND_STRAIN_IDENTITY_SOURCE`, so every filter against it
+# excludes both rather than trusting each call site to remember both exclusions separately.
+NON_CVDPV_CURATOR_ADJUDICATION_2026_07_31_SUBJECTS = {
+    subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS
+} | {subject for subject, _, _ in CAVA_PARENTAL_ADDITIONS}
+EXPECTED_CVDPV_AND_STRAIN_IDENTITY_VALUES = {
+    "cVDPV": 95,
+    "Sabin": 12,
+    "vaccine": 5,
+    "engineered/lab": 3,
+}
+
 # The locked VDPV/wild reconciliation allowlist, migrated 2026-07-30 by
 # `scripts/migrate_vdpv_reconciliation.py`. These are not enumerated as 243 literal tuples; they are
 # identified by `source_artifact` and then pinned three ways — count, value distribution, and
@@ -142,6 +171,7 @@ EXPECTED_STATUS = {
         + ENGINEERED_READJUDICATION_NET_ACTIVE
         + len(CAVA_PARENTAL_ADDITIONS)
         + VOCABULARY_REPAIR_NET_ACTIVE
+        + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     ),
     "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
     "superseded": 10 + len(VOCABULARY_REPAIR_ADDITIONS),
@@ -183,6 +213,7 @@ def test_ledger_satisfies_its_own_contract(
         + len(ENGINEERED_READJUDICATION_ADDITIONS)
         + len(CAVA_PARENTAL_ADDITIONS)
         + len(VOCABULARY_REPAIR_ADDITIONS)
+        + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -199,9 +230,16 @@ def test_every_addition_is_an_approved_one(
     ledger: list[dict[str, str]], shipped: list[dict[str, str]]
 ) -> None:
     added = Counter(map(assertion_key, ledger)) - Counter(map(assertion_key, shipped))
-    approved = LEDGER_ONLY_ADDITIONS | {
-        assertion_key(r) for r in ledger if r["source_artifact"] == VDPV_SOURCE
-    }
+    approved = (
+        LEDGER_ONLY_ADDITIONS
+        | {assertion_key(r) for r in ledger if r["source_artifact"] == VDPV_SOURCE}
+        | {
+            assertion_key(r)
+            for r in ledger
+            if r["source_artifact"] == CVDPV_AND_STRAIN_IDENTITY_SOURCE
+            and r["subject_key"] not in NON_CVDPV_CURATOR_ADJUDICATION_2026_07_31_SUBJECTS
+        }
+    )
     assert set(added) == approved, f"unapproved additions: {set(added) - approved}"
 
 
@@ -210,7 +248,9 @@ def test_decision_type_counts_match_except_the_approved_additions(
 ) -> None:
     got = Counter(r["decision_type"] for r in ledger)
     want = Counter(r["decision_type"] for r in shipped)
-    want["manual_override"] += len(LEDGER_ONLY_ADDITIONS) + EXPECTED_VDPV_ROWS
+    want["manual_override"] += (
+        len(LEDGER_ONLY_ADDITIONS) + EXPECTED_VDPV_ROWS + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
+    )
     assert got == want
 
 
@@ -249,6 +289,44 @@ def test_the_reconciliation_allowlist_agrees_with_the_shipped_column(
     assert not disagreements, (
         f"allowlist rows the release does not already reflect: {disagreements}"
     )
+
+
+def test_the_cvdpv_and_strain_identity_decisions_agree_with_the_shipped_column(
+    repository_root: Path, ledger: list[dict[str, str]]
+) -> None:
+    """Same shape as the VDPV/wild allowlist above, for the 2026-07-31 additions.
+
+    Every one of these 115 values was chosen because 2.4.1 already ships it; the two published
+    studies behind the 95 cVDPV rows and the strain-identity reasoning behind the other 20 are the
+    *why*, and this is the check that the *what* is not a fabrication — a wrong row here fails
+    against `final/`, the same load-bearing property the VDPV allowlist check has.
+    """
+    rows = [
+        r
+        for r in ledger
+        if r["source_artifact"] == CVDPV_AND_STRAIN_IDENTITY_SOURCE
+        and r["subject_key"] not in NON_CVDPV_CURATOR_ADJUDICATION_2026_07_31_SUBJECTS
+    ]
+    assert len(rows) == EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
+    assert Counter(r["new_value"] for r in rows) == Counter(
+        EXPECTED_CVDPV_AND_STRAIN_IDENTITY_VALUES
+    )
+    assert {r["field_name"] for r in rows} == {"classification"}
+    assert {r["status"] for r in rows} == {"active"}
+
+    with gzip.open(
+        repository_root / CANONICAL_METADATA, "rt", encoding="utf-8", newline=""
+    ) as handle:
+        shipped = {
+            r["accession"]: r["poliovirus_classification"]
+            for r in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
+        }
+    disagreements = {
+        r["accession"]: (r["new_value"], shipped.get(r["accession"]))
+        for r in rows
+        if shipped.get(r["accession"]) != r["new_value"]
+    }
+    assert not disagreements, f"decisions the release does not already reflect: {disagreements}"
 
 
 def test_decision_ids_are_unique_without_source_artifact_in_the_hash(
@@ -530,9 +608,15 @@ def test_ledger_reproduces_every_shipped_column_not_just_the_key(
         for column in ("confirmed_by", "accession", "source_artifact"):
             assert row[column] == want[column], f"{key}: {column} diverged"
 
-    approved_absent = {a for a, _, _ in LEDGER_ONLY_ADDITIONS} | {
-        r["subject_key"] for r in ledger if r["source_artifact"] == VDPV_SOURCE
-    }
+    approved_absent = (
+        {a for a, _, _ in LEDGER_ONLY_ADDITIONS}
+        | {r["subject_key"] for r in ledger if r["source_artifact"] == VDPV_SOURCE}
+        | {
+            r["subject_key"]
+            for r in ledger
+            if r["source_artifact"] == CVDPV_AND_STRAIN_IDENTITY_SOURCE
+        }
+    )
     assert {u[1] for u in unmatched} == approved_absent, (
         f"rows absent from the release that are not the approved additions: {unmatched}"
     )
@@ -642,8 +726,10 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     assert sources["curator_adjudication_2026-07-29"] == len(D2_ADDITIONS) + len(
         ENGINEERED_READJUDICATION_ADDITIONS
     )
-    assert sources["curator_adjudication_2026-07-31"] == len(CAVA_PARENTAL_ADDITIONS) + len(
-        VOCABULARY_REPAIR_ADDITIONS
+    assert sources["curator_adjudication_2026-07-31"] == (
+        len(CAVA_PARENTAL_ADDITIONS)
+        + len(VOCABULARY_REPAIR_ADDITIONS)
+        + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     )
     assert set(sources) == registries | {
         "curator_adjudication_2026-07-29",
@@ -651,13 +737,20 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     }
 
     repair_subjects = {subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS}
+    cvdpv_and_strain_identity_subjects = {
+        r["subject_key"]
+        for r in ledger
+        if r["source_artifact"] == CVDPV_AND_STRAIN_IDENTITY_SOURCE
+        and r["subject_key"] not in NON_CVDPV_CURATOR_ADJUDICATION_2026_07_31_SUBJECTS
+    }
+    classification_subjects = repair_subjects | cvdpv_and_strain_identity_subjects
     for row in ledger:
         if row["source_artifact"].startswith("curator_adjudication_"):
-            # `engineered_or_construct` for every adjudication row until 2026-07-31, when the
-            # vocabulary repairs made the adjudications author `classification` too. Named as two
-            # explicit populations rather than widened to "any field", so a third field arriving by
-            # accident still fails here.
-            if row["subject_key"] in repair_subjects:
+            # `engineered_or_construct` for every adjudication row except the ones that assert
+            # `classification` instead — the three vocabulary repairs and, since 2026-07-31, the 115
+            # cVDPV/strain-identity decisions. Named as two explicit populations rather than widened
+            # to "any field", so a third field arriving by accident still fails here.
+            if row["subject_key"] in classification_subjects:
                 assert row["field_name"] == "classification"
             else:
                 assert row["field_name"] == "engineered_or_construct"

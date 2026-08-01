@@ -66,7 +66,12 @@ from enterovirus_genbank_curated.derive.partition import (
 # `poliovirus_classification` for want of usable sequence now resolve, and that is the whole
 # movement — every other field's declines are untouched by a rule that only ever *fills* a cell VP1
 # could not reach.
-EXPECTED_QUEUE_WORK_ITEMS = 28244
+# 28,241 when the vocabulary repairs landed 2026-07-31: 3 `poliovirus_classification` declines
+# (`AJ416942`, `DQ205099`, `FJ517648`, whose active decisions asserted a value outside the
+# controlled vocabulary) resolve and leave the queue. The 115 cVDPV/strain-identity decisions the
+# same day do not move this count: every one of those already had a resolved value, just the wrong
+# one, so none was ever queued.
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -93,7 +98,14 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244
 # `too_little_sequence_compared_to_measure_divergence`, no-source-value group under
 # `poliovirus_classification`, which had 1,557 records in it before and has 1,409 now — one group
 # shrinking, not a group disappearing or a new one appearing.
-EXPECTED_QUEUE_GROUPS = 302
+#
+# 299 when the vocabulary repairs landed 2026-07-31: three one-record groups disappear under
+# `poliovirus_classification`'s `curated_value_outside_the_controlled_vocabulary` reason, one per
+# distinct malformed source_value (`CHAT`, `engineered`, `iVPDV`) — groups are keyed by the exact
+# input the rule declined on, so three different malformed values were always three groups, not
+# one. The 115 cVDPV/strain-identity decisions the same day touch no group: every one of those
+# records already had a resolved value, so none was ever queued.
+EXPECTED_QUEUE_GROUPS = 302 - 3
 
 
 def declined(

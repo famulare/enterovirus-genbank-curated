@@ -394,6 +394,11 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # active assertions whose `classification` value was outside the controlled vocabulary, each
     # repaired by a new row that supersedes the malformed one. Neither generator produces them.
     vocabulary_repairs = 3
+    # 115 more the same day: the 95-record cVDPV epidemiological override (Cameroon PMID 25542478,
+    # European wastewater PMID 39850005) and 20 strain-identity/provenance decisions (Sabin seed
+    # strains, the Cox/Lederle/CHAT vaccine family, three engineered/lab patent deposits). Neither
+    # generator produces these either.
+    cvdpv_and_strain_identity = 115
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)
@@ -402,13 +407,15 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         + readjudication
         + cava_parental
         + vocabulary_repairs
+        + cvdpv_and_strain_identity
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
         f"{mig.EXPECTED_BASELINE_DECISIONS} baseline + {len(mig.D2_ACCESSIONS)} D2 additions + "
         f"{carried} carried-forward supersessions + {reconciled} reconciliation-allowlist rows + "
         f"{readjudication} re-adjudication rows + {cava_parental} CAVA parental rows + "
-        f"{vocabulary_repairs} vocabulary repairs = {expected}. "
+        f"{vocabulary_repairs} vocabulary repairs + {cvdpv_and_strain_identity} cVDPV/strain-"
+        f"identity decisions = {expected}. "
         f"Bumping one without the others is the drift the pin exists to catch."
     )
 

@@ -213,11 +213,14 @@ chunk of it deviates from the window's own divergence by more than a measured fl
 broken windows this found sit at 21.5, 21.8 and 55.2 percentage points of internal deviation; the
 next-highest genuine one sits at 8.1.
 [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
-one of the 1,764 remaining differences from 2.4.1's `poliovirus_classification` by category — 92.7%
-of the shared carve agrees, and 1,595 of the 1,764 are a decline rather than a contradiction. The
+one of the 1,649 remaining differences from 2.4.1's `poliovirus_classification` by category — 93.2%
+of the shared carve agrees, and 1,595 of the 1,649 are a decline rather than a contradiction. The
 epidemiological refinement `cVDPV`/`iVDPV` is now emitted wherever the record itself states it,
-including from `isolation_source` and `note`; the 95 still coarsened are two published environmental
-studies whose circulation claim lives in the paper rather than in any deposit.
+including from `isolation_source` and `note`; the 95 that were not are two published environmental
+studies whose circulation claim lives in the paper rather than in any deposit, now recorded as
+decisions. Only the 4 `chimera` records remain outside the sequence rule's reach — a
+recombination-detection rule was built and reverted after it misclassified 192 other records, see
+the migration-gap doc for why.
 
 It carries no wall-clock timestamp. `audit/build_manifest.json` identifies the build by the hashes of
 its four determinants — the frozen archive, the decision ledger, the rule catalog, and the code — so
