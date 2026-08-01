@@ -221,9 +221,22 @@ over a 171-225 nt window), because the old 300 nt floor had always been enough s
 bad call rather than be defined by it. `compare_vp1` now shares `compare_capsid_nt`'s
 chunked-homogeneity guard below the old floor, unchanged at or above it.
 
+Two more mechanisms close most of what was left. A reference-title text fallback
+(`derive.classification._group_b_text_fallback`) reads the cited paper's title — a new
+`RecordView.reference_titles` input, never read anywhere else — for `wild`/`VDPV`/`Sabin-like` only,
+and fires only where no divergence measurement exists at all: 708 records resolve, 705 agreeing with
+the shipped value (3 do not, traced to a diagonal-search bug on those specific records rather than a
+text-matching error — see `oracle/parity.py`). Isolate-linked inference
+(`derive/isolate_linkage.py`) is a whole-corpus pass, not a per-record rule — it runs once every
+`poliovirus_classification` row is projected and inherits a value from a sibling accession sharing
+the depositor's own `isolate`/`strain` name and serotype, when every such sibling with a *measured*
+classification (never a decision or the text fallback — propagating either would compound whichever
+one is wrong) agrees on one label: 191 more resolve, 190 agreeing (the one that does not is the
+known Mahoney/Sabin-1 trap below, reaching a second record through the link).
+
 [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
-one of the 1,561 remaining differences from 2.4.1's `poliovirus_classification` by category — 93.6%
-of the shared carve agrees, and 1,507 of the 1,561 are a decline rather than a contradiction. The
+one of the 666 remaining differences from 2.4.1's `poliovirus_classification` by category — 97.3%
+of the shared carve agrees, and 608 of the 666 are a decline rather than a contradiction. The
 epidemiological refinement `cVDPV`/`iVDPV` is now emitted wherever the record itself states it,
 including from `isolation_source` and `note`; the 95 that were not are two published environmental
 studies whose circulation claim lives in the paper rather than in any deposit, and a further 28

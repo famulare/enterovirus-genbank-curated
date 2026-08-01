@@ -10,25 +10,25 @@ investigations, and 1,506 of the ledger's active rows already cite a PMID for ex
 **A coarsened value is a lost judgement, not a conservative one**, and this file names precisely
 which ones are still lost so they can be migrated rather than rediscovered.
 
-`docs/classification-migration-gap.tsv` is the machine-readable list — **all 1,561 differing
+`docs/classification-migration-gap.tsv` is the machine-readable list — **all 666 differing
 records**, one row each, with the value 2.4.1 ships, the value this pipeline emits, the
 `unresolved_reason` if it declined, and a category. Every row has a category; the count of
 uncategorised rows is asserted to be zero, because "we looked at the big buckets" is how a residue
 of unexplained differences survives a review.
 
-Over the 24,299 records both datasets carve, the column now **agrees on 22,738 (93.6%)**.
+Over the 24,299 records both datasets carve, the column now **agrees on 23,633 (97.3%)**.
 
 An earlier version of this file covered only the 1,161 rows where 2.4.1 ships a *refinement* or
 `wild`. That was the interesting subset, not the whole difference, and scoping a reconciliation to
 the interesting subset is how the remaining 998 would have gone unnoticed.
 
-## All 1,561, by category
+## All 666, by category
 
 | category | n | what it means |
 |---|---:|---|
-| `declined_too_little_sequence` | 1,321 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over |
+| `declined_too_little_sequence` | 422 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over, and no text or sibling to fall back to |
 | `declined_membership_undecided` | 153 | organism name cannot settle poliovirus membership |
-| `sequence_band_disagrees_with_release` | 38 | both resolved, divergence lands in a different band |
+| `sequence_band_disagrees_with_release` | 42 | both resolved, divergence lands in a different band |
 | `declined_no_serotype_in_name` | 33 | no serotype in the organism name to pick a Sabin reference |
 | `record_text_refines_beyond_the_release` | 8 | the record's own text is *finer* than 2.4.1 |
 | `ledger_refines_beyond_the_release` | 4 | the ledger is *finer* than 2.4.1 |
@@ -37,9 +37,10 @@ the interesting subset is how the remaining 998 would have gone unnoticed.
 The last two categories are worth noticing: on twelve records this pipeline is **more** specific than
 the release, not less. A reconciliation that only counted losses would have reported them as noise.
 
-`declined_too_little_sequence` fell again on 2026-07-31, from 1,409 to 1,321 — 28 closed by decisions
-(below) and 60 by lowering the divergence floor (further below), both traced by decomposing this
-single largest category into MAD-VDPV's own named mechanisms; see
+`declined_too_little_sequence` fell from 1,409 to 422 over 2026-07-31 — 28 closed by decisions, 60 by
+lowering the divergence floor, 708 by a reference-title text fallback, and 191 by isolate-linked
+inference, all four traced by decomposing this single largest category into MAD-VDPV's own named
+mechanisms; see
 "[Inside the largest block: what MAD-VDPV's own mechanism labels show](#inside-the-largest-block-what-mad-vdpvs-own-mechanism-labels-show)".
 
 Three categories that appeared in earlier versions of this file are gone entirely, all closed by
@@ -200,15 +201,46 @@ VP1, 17 capsid, minus one (`AJ783799`) that already had a capsid-based value and
 now-reachable VP1 window without changing it — and **every one of the 60 agrees with the shipped
 classification.**
 
-**`needs_other_data_text_fallback` (548) and `isolate_linked_inference` (167) — not yet built.**
-Both are real, MAD-VDPV-published mechanisms this pipeline does not reproduce: reading the record's
-cited-paper title (a signal `derive/classification._record_text` never reads — it reads `definition`,
-`strain`, `isolate`, `isolation_source`, `note`, all record-level qualifiers, never the GenBank
-`REFERENCE` block), and inheriting a classification from a sibling accession sharing the same
-`isolate`/`strain` qualifier and serotype where MAD-VDPV's own `resolve_isolate_linked_inference.py`
-finds a single unambiguous capsid-resolved label to inherit from, confidence-tiered by key-collision
-risk. Building either is a new evidence source and, for the second, a new whole-corpus post-processing
-stage rather than a per-record rule — real work, not yet done.
+**`needs_other_data_text_fallback` — built 2026-08-01.** Reads the record's cited-paper title, a
+signal `derive/classification._record_text` never reached (it reads `definition`, `strain`,
+`isolate`, `isolation_source`, `note` — all record-level qualifiers, never the GenBank `REFERENCE`
+block). `RecordView.reference_titles` is the new input, threaded from `tables["references"]`
+through `derive/apply.py`; `_group_b_text_fallback` mines it (plus the existing record-level fields)
+for `wild`/`VDPV`/`Sabin-like` only, fires only when this pipeline's own `compare_vp1`/
+`compare_capsid_nt` measured nothing at all, and deliberately excludes `iVDPV`, `cVDPV` and the
+reference/lab labels — those were traced and migrated as individual decisions this session, not
+automated, because circulation and strain identity are curator calls with no automated input here.
+
+Because this pipeline's own sequence-measurement method draws the "no signal at all" boundary in a
+different place than MAD-VDPV's (a weaker, ungapped fixed-diagonal search against MAD-VDPV's real
+aligner), the fallback fires on 708 records, not MAD-VDPV's 548. 705 agree with the shipped
+classification; **3 are wrong** — `AF083938`, `HM537010`, `MG212473` all cite a paper title naming
+`vaccine-derived poliovirus` (a VDPV-emergence study that also sequenced its own Sabin-like
+parental/reference isolate), while MAD-VDPV's own alignment measures each at 0.000–0.333% over VP1.
+This pipeline's `compare_vp1` cannot reach any of the three itself: each finds a diagonal with enough
+anchor support to pass `MIN_DIAGONAL_ANCHORS`, but the offset is wrong (44% mismatches on
+`MG212473`, the unrelated-sequence rate, over a *complete genome* where a real alignment reads
+near-zero) — a gap in the diagonal search, not investigated further since it affects only these 3 of
+24,308 carved records and fixing a seed-and-vote aligner is a different project than the text
+fallback. For these 3, text answers a study-level question rather than a record-level one; the other
+705 are the reason it is asked at all.
+
+**`isolate_linked_inference` — built 2026-08-01.** A whole-corpus post-processing pass
+(`derive/isolate_linkage.py`), not a per-record rule — it runs once, after every
+`poliovirus_classification` row has already been projected, and inherits a classification from a
+sibling accession sharing the same `isolate` (preferred) or `strain` qualifier and serotype,
+mirroring MAD-VDPV's own `resolve_isolate_linked_inference.py`: a sibling counts only if its own
+classification came from a real divergence measurement (not a decision, and not the fallback above —
+propagating either would compound whichever one is wrong rather than carry forward an actual
+measurement), applied only when every qualifying sibling agrees on one label, and a short key (three
+alphanumeric characters or fewer — `L1`, `P05`, `V14`) is honoured only with the same batch-accession
+corroboration MAD-VDPV uses (same prefix, same digit width, within 200 accession numbers).
+
+Of 192 candidates, 191 link. 190 agree with the shipped classification; **1 does not** — `X70506`
+links to `V01149.1` (Mahoney) among its qualifying siblings and inherits `Sabin-like`, the same known,
+unfixable-by-sequence trap already on record two sections below (Sabin 1 *is* attenuated Mahoney, so
+VP1 distance to Sabin cannot separate the wild parent from its own vaccine derivative) — not a new
+failure mode, the existing one reaching a second record through a new path.
 
 ### `text_wild_override`: investigated, not reproduced
 
@@ -310,25 +342,25 @@ chimera threshold precisely was not achievable from the one-paragraph rule descr
 against. The four records stay `wild`/`VDPV` here rather than risk a rule that would misclassify
 roughly fifty times as many records as it fixes.
 
-## The 752 where a curated refinement or `wild` is the thing lost
+## The 104 where a curated refinement or `wild` is the thing lost
 
 | 2.4.1 ships | this pipeline emits | why | n |
 |---|---|---|---:|
-| `wild` | *(blank)* | too little usable sequence, by either basis, to measure over | 719 |
+| `wild` | *(blank)* | too little usable sequence, by any basis, to measure or fall back over | 70 |
 | `wild` | `VDPV` | divergence lands in the 1–15% band | 13 |
+| `wild` | `Sabin-like` | divergence under 1% (includes `X70506`, the isolate-linked Mahoney trap) | 5 |
 | `wild` | *(blank)* | partition undecided | 5 |
 | `cVDPV` | `cVDPV-n` | **finer**: the depositor's `note` says `cVDPV2-n` | 5 |
-| `wild` | `Sabin-like` | divergence under 1% | 4 |
 | `iVDPV` | `wild` | divergence at or above 15% | 4 |
 | `cVDPV` | `Sabin-like` | divergence under 1% | 2 |
 
-Every one is a distinct accession, so 752 rows would close this subset (the 4 `chimera` records are
-a separate mechanism, not this one, and are covered above); the full 1,561 is in the TSV, and the
-categories above say which of them a ledger row is even the right instrument for. Five of the 752
+Every one is a distinct accession, so 104 rows would close this subset (the 4 `chimera` records are
+a separate mechanism, not this one, and are covered above); the full 666 is in the TSV, and the
+categories above say which of them a ledger row is even the right instrument for. Five of the 104
 are a gain rather than a loss (the `cVDPV-n` row). The `wild -> (blank)` row has fallen from 781
-(before the capsid fallback) to 750 (after it) to **719** (after the 2026-07-31 decisions and the
-50 nt floor) — the `cVDPV -> (blank)` row that used to sit at 4 is gone entirely, closed by the
-`group_A_text_owned` decisions above.
+(before the capsid fallback) to 750 (after it) to 719 (after the 2026-07-31 decisions and the 50 nt
+floor) to **70** (after the text fallback and isolate-linked inference) — the `cVDPV -> (blank)` row
+that used to sit at 4 is gone entirely, closed by the `group_A_text_owned` decisions above.
 
 The `cVDPV` and `iVDPV` rows that used to dominate this table are gone entirely: all 46 `iVDPV`
 records stated immunodeficiency in their own record, and the 99 `cVDPV` records now trace to
@@ -357,12 +389,12 @@ git -C ../MAD-VDPV archive <release-build-commit> data/genbank/working \
   | tar -x -C /tmp/evgc-registries --strip-components=3
 ```
 
-What remains after the 2026-07-31 work is `declined_too_little_sequence` (1,321 — 274 where 2.4.1
-also declines, 201 `text_wild_override` (157 where the sequence, if this pipeline could reach it,
-would agree anyway; 44 the known short-fragment trap above), 131 `group_B_sequence` records the
-floor still does not reach (chiefly the ones failing the chunked-homogeneity guard below 180 nt),
-548 `needs_other_data_text_fallback` and 167 `isolate_linked_inference` — the last two real,
-MAD-VDPV-published mechanisms this pipeline does not yet reproduce), `declined_membership_undecided`
-(153, needs the membership question settled first), `declined_no_serotype_in_name` (33),
-`sequence_band_disagrees_with_release` (38, genuine threshold disagreements) and the 4 `chimera`
-records above, which need a correctly validated recombination rule rather than a decision.
+What remains after the 2026-07-31/2026-08-01 work is `declined_too_little_sequence` (422 — 274
+where 2.4.1 also declines under its own `unresolved_*` reason codes; 99 `group_B_sequence` records
+neither the 50 nt floor nor a sibling link reaches, chiefly ones failing the chunked-homogeneity
+guard below 180 nt; 45 `needs_other_data_text_fallback` and 4 `isolate_linked_inference` where
+MAD-VDPV's own aligner or linkage reaches further than this pipeline's does), `declined_
+membership_undecided` (153, needs the membership question settled first), `declined_no_serotype_
+in_name` (33), `sequence_band_disagrees_with_release` (42, genuine threshold disagreements, now
+including `X70506`) and the 4 `chimera` records above, which need a correctly validated
+recombination rule rather than a decision.
