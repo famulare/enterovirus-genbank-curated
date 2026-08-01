@@ -5,10 +5,20 @@ build citable in the same way — a build manifest naming its inputs and its cov
 manifest hashing every artifact — so a consumer can tell one build from another without diffing
 gigabytes.
 
-## The version is 3.3.0, and why four rounds of additive fills are still a minor bump
+## The version is 4.0.0
 
-Release 3.0.0 was the major one. Three properties of it are incompatible with 2.4.1 for anyone
-reading the columns, and all three still hold here:
+Release 4.0.0 ships the accumulated 3.0.0-3.3.0 line below as one major bump, for two reasons. First,
+it is the release at which reconciliation against the hand-curated 2.4.1 baseline is complete in the
+sense this pipeline can make that claim: every one of the 536 remaining `poliovirus_classification`
+differences is categorized rather than merely counted (see `docs/classification-migration-gap.md`),
+97.8% of the shared carve agrees, and the residue is either an epidemiological judgement no sequence
+property carries or a named, reverted attempt (chimera detection) rather than an unexplained gap.
+Second, this is the version reference multiple-sequence alignments ship under — not yet in this
+build, but the version number is reserved for that pairing rather than incrementing again once they
+land.
+
+Release 3.0.0 was the major break within that accumulated line. Three properties of it are
+incompatible with 2.4.1 for anyone reading the columns, and all three still hold here:
 
 * `engineered_or_construct` moves TRUE to FALSE on 511 records, because 2.4.1's predicate matched
   the database division code as free text and reported where a sequence was deposited;
@@ -111,7 +121,7 @@ from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPO
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
-RELEASE_VERSION = "3.3.0"
+RELEASE_VERSION = "4.0.0"
 SCHEMA_VERSION = "2.4.1"
 BASELINE_RELEASE = "2.4.1"
 

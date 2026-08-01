@@ -57,7 +57,7 @@ releases/2.4.1/       Immutable parity contract for the current release (release
                       and releases/2.3.0/ are retained as historical records, no longer
                       verified against the tree — see src/enterovirus_genbank_curated/
                       contracts.py's module docstring).
-release/3.2.0/        What this pipeline produces: the same canonical/audit/curation shape
+release/4.0.0/        What this pipeline produces: the same canonical/audit/curation shape
                       as final/, rebuilt from raw/ and registry/ alone. Singular release/
                       holds outputs; plural releases/ holds the parity contracts an
                       upstream release is checked against — the two are unrelated.
@@ -104,7 +104,7 @@ into `final/` or `raw/`, which are immutable.
 
 ```bash
 evgc parity-metadata                          # 24,299 rows: 13 transported columns + 12 projected
-evgc build-metadata --output release/3.3.0    # write the whole dataset, manifests included
+evgc build-metadata --output release/4.0.0    # write the whole dataset, manifests included
 ```
 
 From `raw/` and `registry/` alone this carves the canonical row set and fills **25 of the 26
@@ -160,10 +160,17 @@ assertion sitting in the ledger for two releases while the pipeline quietly reco
 of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
 canonical column now reaches a rule that projects it.
 
-### Release 3.3.0
+### Release 4.0.0
 
-`release/3.3.0/` is the dataset this pipeline produces end to end from public inputs. 3.0.0 was the
-**major** break: `engineered_or_construct` flips TRUE to FALSE on 511 records (2.4.1's predicate
+`release/4.0.0/` is the dataset this pipeline produces end to end from public inputs. It ships the
+accumulated 3.0.0-3.3.0 line below as one major bump: reconciliation against the hand-curated 2.4.1
+baseline is now complete in the sense this pipeline can make that claim (every one of the 536
+remaining `poliovirus_classification` differences is categorized, not just counted — see
+[`docs/classification-migration-gap.md`](docs/classification-migration-gap.md)), and 4.0.0 is the
+version number reserved for pairing this metadata release with the reference multiple-sequence
+alignments — not included in this build yet.
+
+3.0.0 was the **major** break within that accumulated line: `engineered_or_construct` flips TRUE to FALSE on 511 records (2.4.1's predicate
 matched the database division code as free text, so it largely reported *where* a sequence was
 deposited); `sequence_scope` is empty; and several thousand cells are blank-because-undetermined where
 2.4.1 filled them from inputs this pipeline does not have.
