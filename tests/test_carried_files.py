@@ -51,44 +51,56 @@ from enterovirus_genbank_curated.oracle.release import (
 
 # sha256 of each carried file, measured from the shipped 2.4.1 release.
 CARRIED_SHA256 = {
+    "final/alignments/EV_unified.coverage.tsv.gz":
+        "96b0c918af84193a32ce87c68a38a48aa918c4ad5dde66e8fc1894a1bc3dede1",
     "final/alignments/EV_unified.provenance.json":
-        "680a0830cb2cd29cdcc353924d3cb67e45ed42303c78cd76b9411bb9797fb3ad",
+        "109c1e915f289327f5b795e768a8205ef87d3c56059ec587218160c61b6da6bc",
     "final/alignments/EV_unified.sto.gz":
-        "32600d33fada27ea6ea8f9675d59c9247659512d00e2612a9a248c27f19375cf",
+        "0874154c783d5e11cbdb128b21276e0375948c416ebed86de3ce1213c98a02d5",
     "final/alignments/EV_unified_aln.fasta.gz":
-        "b3d02f1b5c9eaa778f28f377d34ed19af325e740aec053baa92ec3ba5aadf355",
+        "ba994182fb7c81e47944f4eeb4b8093076d4b38c0ae54127dd9c485e01e0218c",
+    "final/alignments/NPEV_unified.coverage.tsv.gz":
+        "c09511e12719342d189102356c8e5e569bad59d38fcaee83332b85ff8fd910c5",
     "final/alignments/NPEV_unified.provenance.json":
-        "ff870a1c257818fd5492d329ff42744c0f26f903d0c6da8a016660b618ad99b7",
+        "63fa11eda0dd769a6af511f1682d37d13c4ff0e74f7f470581098f92de451968",
     "final/alignments/NPEV_unified.sto.gz":
-        "eea7ae3e318d813800dd5b73b809ccbfd248fe6b4db2d3562a976933248234f6",
+        "ea62b62a8c0f770dc8d8906d24d6f3a7dfe07f64b31ee890786a8ce9cbf8953c",
     "final/alignments/NPEV_unified_aln.fasta.gz":
-        "ed75de17f879046ee1136ba6fcafe149bf02bb6840c9c7540e04725cef757309",
+        "9dcb1c4c692a41f2ef671072445ba331bf68a80639c8e0c385d9b04f4f14552f",
+    "final/alignments/POLIO_unified.coverage.tsv.gz":
+        "b12f8c0c4377d59f64556cd2ca5e631bed2be2cc1a09fa06c2f25391af71366e",
     "final/alignments/POLIO_unified.provenance.json":
-        "06a8fc2c5ccc5ea7116d3c7c44629ae0219cc8f4789bacbd633f78ef165d5dd8",
+        "0d510b09f9b34459a854e89d3f84eb46c15847d73d3e3893c1b8d8fb6af20d96",
     "final/alignments/POLIO_unified.sto.gz":
-        "a22ab105556ed9a8eecdd33f8cae3b062e8b5643134f1429a4be4d6d8372a009",
+        "22149c8a721a5b7d03d6fbd3290c4ff33c150ac906595f3660cd4f3d8c40407e",
     "final/alignments/POLIO_unified_aln.fasta.gz":
-        "66ebea8d67c0404f6c3d0c1385330ecd67b55459b35a889568c95278d768ed7e",
+        "2e2110dd1bf142739b7d75aaf86e026510c7b0d086c69853f590e987fa33ab58",
+    "final/alignments/PV1_unified.coverage.tsv.gz":
+        "9ced9cd3701c2af893ad1e1c0c587651de125b9ab2b0e4ef380c36216cc8b09f",
+    "final/alignments/PV1_unified.provenance.json":
+        "438f9e9320d81098ff69568c9133f48ee286e96febf793e126beb4646b04c846",
     "final/alignments/PV1_unified.sto.gz":
-        "b9db50b0c622c8d64acd214337b908caf2ea49395b042494c137b8820a72f36d",
+        "efb8def9a879be3a0812c641fe07e15a7a5d6d2aca88d03825c6a7ff37d565a8",
     "final/alignments/PV1_unified_aln.fasta.gz":
-        "c478040dc4dceb03ffee5df1b9a51d0f448557136dc7aad48b12b18091c1c03e",
+        "8a874fc9201883a921346892c7fce1ea9a39842ba0927a10339bd699d60fa282",
+    "final/alignments/PV2_unified.coverage.tsv.gz":
+        "63bd0593149d607ec1316423da33be94725c9e2ce403d67abe491f0c309ea289",
+    "final/alignments/PV2_unified.provenance.json":
+        "419d61b72ac401c708ebb2753ce03213088e67c64cbdc7d05ee78692eecea516",
     "final/alignments/PV2_unified.sto.gz":
-        "0191b8e886e60396b8a2f9bc5bfacf45f8482dfcff95e5144c6b11e1f87cf98c",
+        "6de4ebf6eaf4db28b559bb58819222b3f362b19a97d7739727f5c4aa5e6ab223",
     "final/alignments/PV2_unified_aln.fasta.gz":
-        "422dd98a4c1eecdad4652b47152a03479e6cc99a582feda39406a4bb8a1a5221",
+        "52ba1ea51be63f65281e9b3b0ebde7bb88ac05351b6b7f13dbad8fbc57ae31e0",
+    "final/alignments/PV3_unified.coverage.tsv.gz":
+        "cb35947f01b399c8e612a5ef409a1b9a88746b34704f079c928e6110d8bbc267",
+    "final/alignments/PV3_unified.provenance.json":
+        "b4b75f93c300721f99b83e8e88bd37cfd0376f77b04bf6fd6ba734e8ad99f2fa",
     "final/alignments/PV3_unified.sto.gz":
-        "2d695a0334a8ca6ac4630639ed272004f480776f174289ea258feeb839caa2e7",
+        "f78f2d31bf3480d7666d025d175b01f3c28fddf4e60e36360d26bad88904a53e",
     "final/alignments/PV3_unified_aln.fasta.gz":
-        "9f613ee111ba9b89f9ef15f2b53b152d0fbb837e27330ec2c28065ecfc2d23ed",
-    "final/alignments/reference_alignment_provenance.json":
-        "e063bdfa40d89837e0311079c8fe4b1c6c9bbb9277f1d15ef1c4ad97f54d9261",
-    "final/alignments/reference_msa_provenance.json":
-        "ccdaa427a9269be6b1d25436b7162404e2f7ad241e1ade9e2d301461fbec9c9b",
+        "ce0ef1ba12a365524aa930cb1a7fbff0646241fd67160eec541e7b0ce34333f1",
     "final/alignments/reference_region_coordinates.tsv":
         "41420f9e5a5d3804f6370c0b41fa487365e5dc0a85e1f85c191082f15f9551e1",
-    "final/alignments/unified_stockholm_provenance.json":
-        "6428df2a82825d729a35606402c36c8ed354ee2049d0b0da198d57ce7fcad872",
     "final/audit/record_disposition.tsv.gz":
         "2de98c63e822ec5352921a71bb801d99f3ed5639ce4f1020dbe22c88c835871a",
     "final/audit/sequence_evidence.tsv.gz":
@@ -155,7 +167,7 @@ CARRIED_SHA256 = {
 
 # Counts that make the completeness claim checkable rather than assertable. Each is re-derived in
 # test_the_carried_set_is_exactly_final_minus_the_manifest.
-EXPECTED_FINAL_FILES = 63
+EXPECTED_FINAL_FILES = 69
 EXPECTED_MANIFEST_ROWS = 13
 EXPECTED_FILE_BYTES_ROWS = 12
 

@@ -5,7 +5,8 @@ literal copied from the same place it came from. Where a literal does appear it 
 its derivation next to it, which is the repository's rule: no number without a derivation living
 beside it.
 
-The shipped alignments in `final/alignments/` are read here as a **comparison oracle only**. That is
+The 2.4.1 alignments in `releases/2.4.1/alignments/` are read here as a **comparison oracle
+only** — they moved out of `final/` when the natively-built set was promoted into it. That is
 what `docs/pipeline.md` boundary 1 permits — they are never pipeline inputs, and
 `align.population` does not open them.
 """
@@ -20,7 +21,7 @@ import pytest
 from enterovirus_genbank_curated.align import contract, population
 from enterovirus_genbank_curated.contracts import ContractError
 
-SHIPPED = "final/alignments/{name}.sto.gz"
+SHIPPED = "releases/2.4.1/alignments/{name}.sto.gz"
 
 # Deltas between the shipped artifacts and the metadata-derived populations, measured 2026-07-30.
 # `added` rows are canonical records the shipped alignment lacks; `dropped` rows are shipped rows

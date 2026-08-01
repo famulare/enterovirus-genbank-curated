@@ -32,7 +32,7 @@ def test_shipped_row_ids_tolerates_the_anchored_dialect(tmp_path: Path) -> None:
 
 
 def test_shipped_row_ids_reads_the_real_shipped_pv3(repository_root: Path) -> None:
-    ids = shape.shipped_row_ids(repository_root / "final/alignments/PV3_unified.sto.gz")
+    ids = shape.shipped_row_ids(repository_root / "releases/2.4.1/alignments/PV3_unified.sto.gz")
     assert len(ids) == len(set(ids))
     assert len(ids) == 1425, "the shipped PV3_unified row count is a fixed historical fact"
 

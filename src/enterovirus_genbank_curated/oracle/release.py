@@ -36,8 +36,12 @@ RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
 # `BUILD_ARTIFACT_RELATIVES`), because as of 2026-08-01 `final/` *is* that build's destination.
 # Everything else under `final/` is carried from an earlier release and is listed here:
 #
-# * the nineteen carved-in alignments, produced by a private pipeline whose scripts are not in this
-#   repository;
+# * the twenty-four alignment artifacts and `reference_region_coordinates.tsv`. "Carried" here means
+#   only that `build-metadata` does not write them — they are this repository's own output, from
+#   `evgc alignment-build`, promoted into the release on 2026-08-01. Their pins move when a rebuild
+#   is promoted, which is a reviewed act rather than a data edit. (2.4.1's nineteen files, produced
+#   by a private pipeline whose scripts are not here, moved to `releases/2.4.1/alignments/`, where
+#   `alignment-shape` measures the declared delta against them.)
 # * the source layer and the four dictionaries, whose hashes are pinned in `SOURCE_LAYER_HASHES`
 #   and `DICTIONARY_HASHES` below rather than only in tests, because `parity-source` compares a
 #   rebuild against them;
@@ -53,25 +57,31 @@ RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
 #
 # Do not add to it for a file this repository produces — that is what the manifest is for.
 CARRIED_FINAL_FILES = frozenset({
+    "final/alignments/EV_unified.coverage.tsv.gz",
     "final/alignments/EV_unified.provenance.json",
     "final/alignments/EV_unified.sto.gz",
     "final/alignments/EV_unified_aln.fasta.gz",
+    "final/alignments/NPEV_unified.coverage.tsv.gz",
     "final/alignments/NPEV_unified.provenance.json",
     "final/alignments/NPEV_unified.sto.gz",
     "final/alignments/NPEV_unified_aln.fasta.gz",
+    "final/alignments/POLIO_unified.coverage.tsv.gz",
     "final/alignments/POLIO_unified.provenance.json",
     "final/alignments/POLIO_unified.sto.gz",
     "final/alignments/POLIO_unified_aln.fasta.gz",
+    "final/alignments/PV1_unified.coverage.tsv.gz",
+    "final/alignments/PV1_unified.provenance.json",
     "final/alignments/PV1_unified.sto.gz",
     "final/alignments/PV1_unified_aln.fasta.gz",
+    "final/alignments/PV2_unified.coverage.tsv.gz",
+    "final/alignments/PV2_unified.provenance.json",
     "final/alignments/PV2_unified.sto.gz",
     "final/alignments/PV2_unified_aln.fasta.gz",
+    "final/alignments/PV3_unified.coverage.tsv.gz",
+    "final/alignments/PV3_unified.provenance.json",
     "final/alignments/PV3_unified.sto.gz",
     "final/alignments/PV3_unified_aln.fasta.gz",
-    "final/alignments/reference_alignment_provenance.json",
-    "final/alignments/reference_msa_provenance.json",
     "final/alignments/reference_region_coordinates.tsv",
-    "final/alignments/unified_stockholm_provenance.json",
     "final/audit/record_disposition.tsv.gz",  # 2.4.1; still read by align/shape.py
     "final/audit/sequence_evidence.tsv.gz",
     "final/dictionaries/audit_data_dictionary.tsv",

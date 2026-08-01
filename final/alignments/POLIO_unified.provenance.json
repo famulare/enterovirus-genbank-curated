@@ -1,73 +1,95 @@
 {
-  "artifact": "POLIO_unified",
-  "description": "All-serotype poliovirus whole-genome Stockholm MSA (anchor-free consensus-RF)",
-  "built_from": "data/genbank/final/curated/poliovirus_metadata_v1.tsv",
-  "n_rows": 9988,
-  "width_nt": 8928,
+  "absence_reasons": {
+    "3ncr:annotated_rejected_untranslatable": 32,
+    "3ncr:below_pop_min": 33,
+    "3ncr:empty_fragment": 7121,
+    "3ncr:excluded_oversized": 7,
+    "3ncr:inferred_no_ncr": 929,
+    "3ncr:no_cds_untranslatable": 66,
+    "5ncr:annotated_rejected_untranslatable": 32,
+    "5ncr:empty_fragment": 7027,
+    "5ncr:inferred_no_ncr": 929,
+    "5ncr:no_cds_untranslatable": 66,
+    "cds:annotated_rejected_untranslatable": 32,
+    "cds:no_cds_untranslatable": 66
+  },
+  "artifact_sha256": {
+    "coverage": "b12f8c0c4377d59f64556cd2ca5e631bed2be2cc1a09fa06c2f25391af71366e",
+    "fasta": "2e2110dd1bf142739b7d75aaf86e026510c7b0d086c69853f590e987fa33ab58",
+    "stockholm": "22149c8a721a5b7d03d6fbd3290c4ff33c150ac906595f3660cd4f3d8c40407e"
+  },
   "block_widths": {
+    "3ncr": 70,
     "5ncr": 746,
-    "cds": 8112,
-    "3ncr": 70
+    "cds": 6864
   },
-  "rows_with_5ncr": 2036,
-  "rows_with_3ncr": 1902,
-  "tiers": {
-    "addon": 1252,
-    "backbone": 8736
+  "blocks_present": {
+    "3ncr": 1902,
+    "5ncr": 2036,
+    "cds": 9992
   },
-  "types": {
-    "PV1": 4392,
-    "PV2": 3915,
-    "PV3": 1661,
-    "PV?": 20
-  },
-  "rf": "per-column majority nucleotide per block (consensus reference; NOT the Sabin hand-RF true-coordinate convention of PV{1,2,3}_unified)",
-  "ss_cons": "5'NCR + 3'NCR structure-aware (RNAalifold consensus via cmbuild CM); CDS is all-'.' (protein-coding)",
-  "cds_block": {
-    "block": "cds_codon_msa",
-    "n_rows": 9988,
-    "width_nt": 8112,
-    "width_aa": 2704,
-    "tiers": {
-      "seed": 6,
-      "backbone_rest": 8730,
-      "addon": 1252
-    },
-    "seed_min_aa": 2000,
-    "seed_per_type": 2,
-    "pass1_gap_open": 3.0,
+  "blocks_present_cds": 9992,
+  "cds_codons": 2288,
+  "cds_width_is_whole_codons": true,
+  "codon": {
+    "accept_annotated_max_internal_stops": 1,
+    "accept_annotated_min_aa": 20,
+    "gap_extend": 0.5,
+    "infer_max_x_fraction": 0.4,
+    "infer_min_aa": 20,
+    "keeplength": false,
+    "pass1_gap_open": 4.5,
     "pass2_gap_open": 6.0,
-    "mafft_threads": 8,
-    "seed_mode": "mafft-linsi --anysymbol",
-    "pass1_mode": "mafft --add --op 3.0 (backbone)",
-    "pass2_mode": "mafft --addfragments --op 6.0 (addon, steeper gaps; residues preserved)"
+    "pass2_local_gap_open": -24.0,
+    "seed_min_aa": 2000,
+    "seed_per_type": 2
   },
-  "ncr_block": {
-    "block": "ncr_structural",
-    "sides": {
-      "5p": {
-        "side": "5p",
-        "population": 2036,
-        "seed": 80,
-        "block_width": 746,
-        "block_rows": 2036,
-        "ss_cons_pairs": 35
-      },
-      "3p": {
-        "side": "3p",
-        "population": 1902,
-        "seed": 100,
-        "block_width": 70,
-        "block_rows": 1902,
-        "ss_cons_pairs": 0
-      }
+  "covariance_models": {
+    "3p": {
+      "cm_path": "registry/alignment_seeds/polio_ncr_3p.cm",
+      "cm_sha256": "dfdda296eec95ae8b6e1c754da901a397745c2f7b2e73685dd3b60dab39e1d92",
+      "pop_max_nt": 150,
+      "pop_min_nt": 20
+    },
+    "5p": {
+      "cm_path": "registry/alignment_seeds/polio_ncr_5p.cm",
+      "cm_sha256": "0a4a6ee9d1e1a2feb6afa3783fb919043d05dea3233b675d6b1e9638c26e192f",
+      "pop_max_nt": 1000,
+      "pop_min_nt": 50
     }
   },
-  "md5_sto": "f0abf890071986c7007b7e31c64bc157",
-  "producers": [
-    "build_polio_segmentation.py",
-    "build_polio_cds_codon_msa.py",
-    "build_polio_ncr_structural.py",
-    "build_polio_unified_stockholm.py"
-  ]
+  "description": "All-serotype poliovirus whole-genome multiple sequence alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)",
+  "expected_rows": 10090,
+  "families": {
+    "PV": 9724,
+    "unknown": 366
+  },
+  "name": "POLIO_unified",
+  "parameter_departures": {
+    "gap_extend": "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat at the default 0.123 through every build, which is what let a single unalignable fragment open a wide insertion block: opening the gap is paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at --ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best.",
+    "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
+    "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
+  },
+  "population_sha256": "04ee7378b28fa2eb179a4a0bf4b840c02fa5834903044be66933263bfaff26c1",
+  "rows": 10090,
+  "schema": 1,
+  "seconds": 1556.1,
+  "stack": "unified",
+  "threads": 8,
+  "tiers": {
+    "addon": 1354,
+    "backbone": 8736
+  },
+  "tool_identity": {
+    "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
+    "mafft": "mafft 7.526 h99b78c6_0",
+    "mafft-linsi": "mafft 7.526 h99b78c6_0"
+  },
+  "types": {
+    "PV1": 4337,
+    "PV2": 3790,
+    "PV3": 1597,
+    "PV?": 366
+  },
+  "width_nt": 7680
 }

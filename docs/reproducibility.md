@@ -396,13 +396,28 @@ alignment, so 2,169 private columns — 30% of its own length — is a placement
 `MG692415` and `MG692413` were already like this and are unchanged; this is one record newly
 shredded.
 
-**The likely mechanism, stated as a hypothesis because it is not verified.** The only population
-change is `AF326751.2`, the Simian agent 5 genome the membership rescue admits — and it is an
-*addon*, as is `PX242045` (`enterovirus_type_sequence_confident=FALSE` for both). Addons are placed
-in one shared MAFFT `--addfragments` call, so fragments interact: a divergent addon can displace
-another. Confirming it costs one 75-minute rebuild with `AF326751.2` withheld, which has not been
-run. Do not read the table above as more than it says — it establishes *that* one record moved and
-*when*, not why.
+**`EV_unified` settles half the question at no extra cost.** It contains every `NPEV_unified` row
+plus the 10,090 poliovirus records, built at the same parameters in the same run — and there
+`PX242045` occupies **0** columns alone. The same record, the same settings, a superset of the same
+corpus, placed correctly. So this is not an unalignable deposit: the NPEV placement is the artifact,
+and a claim that the record is simply divergent would be false.
+
+| | NPEV_unified | EV_unified |
+|---|---|---|
+| rows | 14,218 | 24,308 |
+| CDS columns | 14,598 | 12,942 |
+| single-row columns | 5,205 | 2,994 |
+| `PX242045` private columns | 2,169 | **0** |
+| `MG692415` | 2,022 | 1,926 |
+| `AF326751` | 0 | 48 |
+
+**What remains a hypothesis is the trigger.** `PX242045` and the one newly-added record
+`AF326751.2` are both *addons* (`enterovirus_type_sequence_confident=FALSE`), and addons are placed
+in one shared MAFFT `--addfragments` call where fragments interact — so a divergent addon displacing
+another is the obvious reading. Confirming *that* costs one 75-minute NPEV rebuild with
+`AF326751.2` withheld, which has not been run. What is established is narrower and still useful:
+addon placement is a property of the addon *set*, not of the record, and `NPEV_unified` is the
+artifact where it went wrong.
 
 Nothing was tuned to make the number smaller. `--ep 0.5`, `--op 4.5` and `--lop -24.0` are the
 measured settings recorded in `parameter_departures`, and reaching for them to flatten a single

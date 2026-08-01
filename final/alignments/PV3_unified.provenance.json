@@ -1,0 +1,103 @@
+{
+  "absence_reasons": {
+    "3ncr:below_pop_min": 2,
+    "3ncr:empty_fragment": 1119,
+    "3ncr:inferred_no_ncr": 155,
+    "3ncr:no_cds_untranslatable": 33,
+    "5ncr:empty_fragment": 1082,
+    "5ncr:inferred_no_ncr": 155,
+    "5ncr:no_cds_untranslatable": 33,
+    "cds:no_cds_overlap": 86,
+    "cds:no_cds_untranslatable": 8
+  },
+  "anchor": {
+    "aa_guard_increase_pp": 30.0,
+    "length_cap": 7700,
+    "pdist_guard_bypass": [
+      "OR538733"
+    ],
+    "pdist_guard_increase_pp": 2.0,
+    "reference_accession": "AY184221",
+    "serotype": "PV3"
+  },
+  "anchored_audit": {
+    "frameshift_recovered": 1,
+    "frameshift_recovery_failed": 9,
+    "methods": {
+      "codon": 1409,
+      "codon_ref_inferred": 80,
+      "nt_better": 3,
+      "nt_cds_fallback": 9,
+      "nt_fallback": 95,
+      "recovered": 1
+    },
+    "rows_with_internal_stop": 10,
+    "rows_with_misphased_cds_gap": 0,
+    "rows_with_non_multiple_of_three_cds_gap": 2,
+    "strands": {
+      "forward": 1589,
+      "reverse_complement": 8
+    }
+  },
+  "artifact_sha256": {
+    "coverage": "cb35947f01b399c8e612a5ef409a1b9a88746b34704f079c928e6110d8bbc267",
+    "fasta": "ce0ef1ba12a365524aa930cb1a7fbff0646241fd67160eec541e7b0ce34333f1",
+    "stockholm": "f78f2d31bf3480d7666d025d175b01f3c28fddf4e60e36360d26bad88904a53e"
+  },
+  "block_widths": {
+    "3ncr": 69,
+    "5ncr": 742,
+    "cds": 6621
+  },
+  "blocks_present": {
+    "3ncr": 288,
+    "5ncr": 327,
+    "cds": 1503
+  },
+  "covariance_models": {
+    "3p": {
+      "cm_path": "registry/alignment_seeds/pv3_ncr_3p.cm",
+      "cm_sha256": "9706baf5a97c54ca45881d4fec18567440d70ca781d151fa7f545f36efcf865e",
+      "pop_max_nt": 150,
+      "pop_min_nt": 20
+    },
+    "5p": {
+      "cm_path": "registry/alignment_seeds/pv3_ncr_5p.cm",
+      "cm_sha256": "05230cff27d2b454dc30a79828bf33157924a2460f7f9c3e362cc1c96a6aa9ec",
+      "pop_max_nt": 1000,
+      "pop_min_nt": 50
+    }
+  },
+  "description": "Poliovirus serotype 3 whole-genome multiple sequence alignment, Sabin-anchored",
+  "expected_rows": 1597,
+  "families": {
+    "PV": 1597
+  },
+  "n_reference_columns": 7432,
+  "name": "PV3_unified",
+  "over_length_cap": [],
+  "parameter_departures": {
+    "gap_extend": "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat at the default 0.123 through every build, which is what let a single unalignable fragment open a wide insertion block: opening the gap is paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at --ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best.",
+    "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
+    "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
+  },
+  "population_sha256": "86a872b2a5af0505e0492bf2f2c639da2a8e60511eac26b39f155442e8690c67",
+  "rows": 1597,
+  "schema": 1,
+  "seconds": 443.1,
+  "stack": "anchored",
+  "threads": 8,
+  "tiers": {
+    "addon": 246,
+    "backbone": 1351
+  },
+  "tool_identity": {
+    "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
+    "mafft": "mafft 7.526 h99b78c6_0",
+    "mafft-linsi": "mafft 7.526 h99b78c6_0"
+  },
+  "types": {
+    "PV3": 1597
+  },
+  "width_nt": 7432
+}

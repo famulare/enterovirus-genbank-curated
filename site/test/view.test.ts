@@ -315,21 +315,49 @@ test("divergence offers coding regions only; distance adds both non-coding regio
   );
 });
 
-test("P1 is fully populated in every selection, because typing requires a capsid", () => {
+// "P1 is fully populated in every selection, because typing requires a capsid" was true while
+// membership was evidence-gated: 2.4.1's PV1 alignment held 3,732 rows and all 3,732 had P1.
+// Release 4.0.0 types from the organism name instead (R-TYPE-2), so a deposit named
+// "Poliovirus 1" joins PV1 whether or not it carries a capsid — and 714 of PV1's 4,337 rows now
+// have no P1, against 717 rows the 4.0.0 population added. The premise changed; the claim worth
+// keeping is what P1 coverage is *for*, which is that it dominates the other coding regions.
+test("P1 remains by far the best-populated coding region in every selection", () => {
   for (const selection of summary.selections) {
-    const p1 = population(summary, { ...defaultView(summary), selection: selection.id, region: "P1" });
-    assert.ok(
-      p1.n / p1.ofAligned > 0.86,
-      `${selection.id} P1 holds ${p1.n} of ${p1.ofAligned} aligned rows`,
+    const view = { ...defaultView(summary), selection: selection.id };
+    const p1 = population(summary, { ...view, region: "P1" });
+    for (const region of ["P2", "P3"]) {
+      const other = population(summary, { ...view, region });
+      assert.ok(
+        p1.n > other.n * 1.5,
+        `${selection.id}: P1 holds ${p1.n} rows, ${region} holds ${other.n}`,
+      );
+    }
+  }
+});
+
+test("P1 coverage per selection is pinned, so a population change cannot pass unnoticed", () => {
+  // PV1 is the lowest and that is the name-derived-typing effect stated above, not a build defect:
+  // the serotype files admit fragments 2.4.1's evidence gate excluded.
+  const expected: Record<string, number> = {
+    PV1: 3623, PV2: 3434, PV3: 1367, NPEV: 12968, all: 22202,
+  };
+  for (const [selection, n] of Object.entries(expected)) {
+    assert.equal(
+      population(summary, { ...defaultView(summary), selection, region: "P1" }).n,
+      n,
+      `${selection} P1`,
     );
   }
 });
 
 test("population counts match the release figures established during investigation", () => {
+  // Re-measured against release 4.0.0's own alignments, promoted 2026-08-01. The serotype
+  // populations grew (PV1 3,732 -> 4,337 rows) while P1 coverage did not, for the reason the test
+  // above states; P2 and P3 move with the row set.
   const expected: Record<string, Record<string, number>> = {
-    PV1: { P1: 3732, P2: 753, P3: 423 },
-    PV2: { P1: 3604, P2: 1365, P3: 1256 },
-    PV3: { P1: 1425, P2: 460, P3: 369 },
+    PV1: { P1: 3623, P2: 853, P3: 744 },
+    PV2: { P1: 3434, P2: 1391, P3: 1369 },
+    PV3: { P1: 1367, P2: 492, P3: 412 },
   };
   for (const [selection, regions] of Object.entries(expected)) {
     for (const [region, n] of Object.entries(regions)) {

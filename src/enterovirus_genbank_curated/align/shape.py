@@ -34,7 +34,12 @@ from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.oracle.parity import SHIPPED_RECORD_DISPOSITION
 from enterovirus_genbank_curated.oracle.release import read_tsv_gz
 
-SHIPPED_ALIGNMENT_DIR = "alignments"
+# The retired release's alignments, which are what the declared delta is measured against. They
+# moved out of `final/alignments/` on 2026-08-01, when the natively-built set was promoted into it:
+# a baseline is retired, not overwritten, and comparing the rebuild to its own bytes would report
+# +0/-0 forever. `releases/2.4.1/` already held that release's parity contract; it now holds its
+# alignments too.
+SHIPPED_ALIGNMENT_DIR = "releases/2.4.1/alignments"
 GAP = "-"
 
 # Why a shipped row is not in the rebuild. Closed, because "some other reason" is how a real
@@ -144,7 +149,7 @@ def compute_delta(
     records: dict[str, population_module.AlignedRecord],
 ) -> Delta:
     spec = contract.ARTIFACTS[name]
-    shipped_path = repository_root / "final" / SHIPPED_ALIGNMENT_DIR / f"{name}.sto.gz"
+    shipped_path = repository_root / SHIPPED_ALIGNMENT_DIR / f"{name}.sto.gz"
     if not shipped_path.is_file():
         raise ContractError(f"no shipped alignment to compare against: {shipped_path}")
     shipped = shipped_row_ids(shipped_path)

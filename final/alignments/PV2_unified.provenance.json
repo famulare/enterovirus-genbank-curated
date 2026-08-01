@@ -1,0 +1,104 @@
+{
+  "absence_reasons": {
+    "3ncr:below_pop_min": 18,
+    "3ncr:empty_fragment": 2199,
+    "3ncr:excluded_oversized": 7,
+    "3ncr:inferred_no_ncr": 339,
+    "3ncr:no_cds_untranslatable": 27,
+    "5ncr:empty_fragment": 2177,
+    "5ncr:inferred_no_ncr": 339,
+    "5ncr:no_cds_untranslatable": 27,
+    "cds:no_cds_overlap": 111,
+    "cds:no_cds_untranslatable": 24
+  },
+  "anchor": {
+    "aa_guard_increase_pp": 30.0,
+    "length_cap": 7700,
+    "pdist_guard_bypass": [
+      "OR538733"
+    ],
+    "pdist_guard_increase_pp": 2.0,
+    "reference_accession": "AY184220",
+    "serotype": "PV2"
+  },
+  "anchored_audit": {
+    "frameshift_recovered": 2,
+    "frameshift_recovery_failed": 7,
+    "methods": {
+      "codon": 3414,
+      "codon_ref_inferred": 226,
+      "nt_better": 5,
+      "nt_cds_fallback": 7,
+      "nt_fallback": 136,
+      "recovered": 2
+    },
+    "rows_with_internal_stop": 9,
+    "rows_with_misphased_cds_gap": 0,
+    "rows_with_non_multiple_of_three_cds_gap": 3,
+    "strands": {
+      "forward": 3784,
+      "reverse_complement": 6
+    }
+  },
+  "artifact_sha256": {
+    "coverage": "63bd0593149d607ec1316423da33be94725c9e2ce403d67abe491f0c309ea289",
+    "fasta": "52ba1ea51be63f65281e9b3b0ebde7bb88ac05351b6b7f13dbad8fbc57ae31e0",
+    "stockholm": "6de4ebf6eaf4db28b559bb58819222b3f362b19a97d7739727f5c4aa5e6ab223"
+  },
+  "block_widths": {
+    "3ncr": 68,
+    "5ncr": 747,
+    "cds": 6624
+  },
+  "blocks_present": {
+    "3ncr": 1200,
+    "5ncr": 1247,
+    "cds": 3655
+  },
+  "covariance_models": {
+    "3p": {
+      "cm_path": "registry/alignment_seeds/pv2_ncr_3p.cm",
+      "cm_sha256": "c225717d22169c1518c2cc1a5b31d92424f65fcf776900719d0876b21dccadc9",
+      "pop_max_nt": 150,
+      "pop_min_nt": 20
+    },
+    "5p": {
+      "cm_path": "registry/alignment_seeds/pv2_ncr_5p.cm",
+      "cm_sha256": "3e013f65d68d69366dab89647262e0842edc802d16a74ddfd1b4910855f9d460",
+      "pop_max_nt": 1000,
+      "pop_min_nt": 50
+    }
+  },
+  "description": "Poliovirus serotype 2 whole-genome multiple sequence alignment, Sabin-anchored",
+  "expected_rows": 3790,
+  "families": {
+    "PV": 3790
+  },
+  "n_reference_columns": 7439,
+  "name": "PV2_unified",
+  "over_length_cap": [],
+  "parameter_departures": {
+    "gap_extend": "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat at the default 0.123 through every build, which is what let a single unalignable fragment open a wide insertion block: opening the gap is paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at --ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best.",
+    "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
+    "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
+  },
+  "population_sha256": "92cb2abee5c427ffff9a006e1721f59364fe46c304ddbcb7421ed6affe64c160",
+  "rows": 3790,
+  "schema": 1,
+  "seconds": 1495.8,
+  "stack": "anchored",
+  "threads": 8,
+  "tiers": {
+    "addon": 356,
+    "backbone": 3434
+  },
+  "tool_identity": {
+    "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
+    "mafft": "mafft 7.526 h99b78c6_0",
+    "mafft-linsi": "mafft 7.526 h99b78c6_0"
+  },
+  "types": {
+    "PV2": 3790
+  },
+  "width_nt": 7439
+}
