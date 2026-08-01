@@ -234,13 +234,14 @@ def load_release_file_manifest(path: Path) -> dict[str, tuple[str, str]]:
 def verify_release_manifest_hashes(repository_root: Path) -> int:
     """Recompute every `file_bytes` hash `final/audit/release_file_manifest.tsv` declares.
 
-    `verify_expected_artifacts` only ever recomputed the `file_bytes` entries named in
-    `expected_artifacts`. That left the rest of the manifest's declared hashes — e.g.
-    `audit/build_manifest.json`, `audit/canonical_projection_provenance.tsv.gz`,
-    `audit/sequence_evidence.tsv.gz`, the four `dictionaries/*.tsv` — computed by nothing, so
-    replacing any of them with the word `garbage` passed every gate (backlog B7). Recomputing all
-    of them here subsumes the split rather than adding a fourth place that has to remember which
-    subset it owns.
+    The retired `verify_expected_artifacts` only ever recomputed the `file_bytes` entries named in
+    the parity spec's `expected_artifacts`. That left the rest of the manifest's declared hashes
+    computed by nothing, so replacing any of them with the word `garbage` passed every gate
+    (backlog B7). Recomputing all of them here subsumes the split rather than adding a fourth place
+    that has to remember which subset it owns — and it is why the manifest shrinking to the build's
+    own twelve artifacts did not reopen the hole: the files that left it gained pins in code
+    (`SOURCE_LAYER_HASHES`, `DICTIONARY_HASHES`, `tests/test_carried_files.py`) rather than losing
+    a hash.
 
     `logical_content` entries are skipped, and deliberately: no code in this repository computes a
     logical digest, so a check here would either be a no-op or invent a definition (backlog B6).
