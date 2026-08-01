@@ -71,7 +71,11 @@ from enterovirus_genbank_curated.derive.partition import (
 # controlled vocabulary) resolve and leave the queue. The 115 cVDPV/strain-identity decisions the
 # same day do not move this count: every one of those already had a resolved value, just the wrong
 # one, so none was ever queued.
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3
+#
+# 28,213 when the reference_or_lab_text (24) and group_A_text_owned (4) decisions landed the same
+# day: 28 more `poliovirus_classification` declines resolve and leave the queue, closing the
+# largest remaining discrepancy block (`declined_too_little_sequence`).
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -105,6 +109,11 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3
 # input the rule declined on, so three different malformed values were always three groups, not
 # one. The 115 cVDPV/strain-identity decisions the same day touch no group: every one of those
 # records already had a resolved value, so none was ever queued.
+#
+# Still 299 when the reference_or_lab_text (24) and group_A_text_owned (4) decisions landed the
+# same day: all 28 shared the single `too_little_sequence_compared_to_measure_divergence`,
+# no-source-value group under `poliovirus_classification` with the 1,381 records that remain
+# declined for the same reason — one group shrinking, not a group disappearing.
 EXPECTED_QUEUE_GROUPS = 302 - 3
 
 

@@ -117,18 +117,27 @@ LEDGER_ONLY_ADDITIONS = (
 # alone cannot make: 12 `Sabin` (seed-strain deposits, including this pipeline's own three canonical
 # references AY184219/220/221), 5 `vaccine` (the documented Cox/Lederle/CHAT family map), 3
 # `engineered/lab` (patent JP 2009538603-A). See `docs/classification-migration-gap.md`.
+#
+# 28 more landed the same day, same `source_artifact`, closing the largest remaining discrepancy
+# block (`declined_too_little_sequence`) the same way: 24 `reference_or_lab_text` records traced by
+# MAD-VDPV's own working tree to strain-identity/patent evidence too short to ever reach a divergence
+# measurement (12 `Sabin`, 10 `engineered/lab`, 1 `recombinant/lab`, 1 `reference/lab`), and 4 more
+# `group_A_text_owned` `cVDPV` records. Folded into the same population rather than a second one:
+# same act (a curation decision closing a text-derived classification gap), same source, same day.
 CVDPV_AND_STRAIN_IDENTITY_SOURCE = "curator_adjudication_2026-07-31"
-EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS = 115
+EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS = 115 + 28
 # The other two populations sharing `CVDPV_AND_STRAIN_IDENTITY_SOURCE`, so every filter against it
 # excludes both rather than trusting each call site to remember both exclusions separately.
 NON_CVDPV_CURATOR_ADJUDICATION_2026_07_31_SUBJECTS = {
     subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS
 } | {subject for subject, _, _ in CAVA_PARENTAL_ADDITIONS}
 EXPECTED_CVDPV_AND_STRAIN_IDENTITY_VALUES = {
-    "cVDPV": 95,
-    "Sabin": 12,
+    "cVDPV": 95 + 4,
+    "Sabin": 12 + 12,
     "vaccine": 5,
-    "engineered/lab": 3,
+    "engineered/lab": 3 + 10,
+    "recombinant/lab": 1,
+    "reference/lab": 1,
 }
 
 # The locked VDPV/wild reconciliation allowlist, migrated 2026-07-30 by
@@ -296,10 +305,11 @@ def test_the_cvdpv_and_strain_identity_decisions_agree_with_the_shipped_column(
 ) -> None:
     """Same shape as the VDPV/wild allowlist above, for the 2026-07-31 additions.
 
-    Every one of these 115 values was chosen because 2.4.1 already ships it; the two published
-    studies behind the 95 cVDPV rows and the strain-identity reasoning behind the other 20 are the
-    *why*, and this is the check that the *what* is not a fabrication — a wrong row here fails
-    against `final/`, the same load-bearing property the VDPV allowlist check has.
+    Every one of these 143 values was chosen because 2.4.1 already ships it; the two published
+    studies behind the 99 cVDPV rows, the strain-identity reasoning behind the 24 `Sabin`, and the
+    patent/reference-lab evidence behind the rest are the *why*, and this is the check that the
+    *what* is not a fabrication — a wrong row here fails against `final/`, the same load-bearing
+    property the VDPV allowlist check has.
     """
     rows = [
         r
@@ -747,7 +757,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     for row in ledger:
         if row["source_artifact"].startswith("curator_adjudication_"):
             # `engineered_or_construct` for every adjudication row except the ones that assert
-            # `classification` instead — the three vocabulary repairs and, since 2026-07-31, the 115
+            # `classification` instead — the three vocabulary repairs and, since 2026-07-31, the 143
             # cVDPV/strain-identity decisions. Named as two explicit populations rather than widened
             # to "any field", so a third field arriving by accident still fails here.
             if row["subject_key"] in classification_subjects:

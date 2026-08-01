@@ -398,7 +398,11 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # European wastewater PMID 39850005) and 20 strain-identity/provenance decisions (Sabin seed
     # strains, the Cox/Lederle/CHAT vaccine family, three engineered/lab patent deposits). Neither
     # generator produces these either.
-    cvdpv_and_strain_identity = 115
+    #
+    # 28 more the same day, closing the largest remaining discrepancy block: 24
+    # reference_or_lab_text records (12 Sabin, 10 engineered/lab, 1 recombinant/lab, 1
+    # reference/lab) and 4 more group_A_text_owned cVDPV records.
+    cvdpv_and_strain_identity = 115 + 28
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)

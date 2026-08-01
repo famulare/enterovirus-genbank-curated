@@ -72,7 +72,10 @@ from enterovirus_genbank_curated.curate.apply import (
 EXPECTED_TALLY = {
     # +115 on 2026-07-31: the 95-record cVDPV epidemiological override and 20 strain-identity/
     # provenance decisions, every one filling a cell the rule had been declining.
-    "applied_filled_unresolved": 2640 + 115,
+    # +28 the same day: the reference_or_lab_text (24) and group_A_text_owned (4) decisions closing
+    # the largest remaining `poliovirus_classification` discrepancy block, every one of those also
+    # filling a cell the rule had been declining for want of usable sequence.
+    "applied_filled_unresolved": 2640 + 115 + 28,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,

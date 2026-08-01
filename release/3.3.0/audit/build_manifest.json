@@ -8,7 +8,7 @@
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "c60672583e2909e8958b369da4ce1e1453197352d1ee44b4c091600e5d44e7fe",
+    "decisions_sha256": "1ae58a9aa7719d4da13af34a46b357ef04d0361038fd1dc41bd4af91e8530a6a",
     "rules_sha256": "6c29c28e49ba2c740fbacfe65025a8069c05bac1ef55b15dad360d47ccf179e7"
   },
   "row_counts": {
@@ -21,8 +21,8 @@
     "dates_not_applicable": 4573,
     "localities_without_geography": 2055,
     "curation_queue_groups": 299,
-    "decision_applications": 3308,
-    "curation_queue_records": 28241,
+    "decision_applications": 3336,
+    "curation_queue_records": 28213,
     "canonical_rows": 24308,
     "vouched_rows": 9929,
     "rules_in_baseline_view": 28,
@@ -33,7 +33,7 @@
     "applied_exclusion": 173,
     "applied_changed": 31,
     "applied_unchanged": 24,
-    "applied_filled_unresolved": 2755,
+    "applied_filled_unresolved": 2783,
     "not_in_force_superseded": 13,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6
@@ -47,7 +47,7 @@
     ],
     "columns_with_declined_cells": {
       "curation_status": 1596,
-      "poliovirus_classification": 3038,
+      "poliovirus_classification": 3010,
       "sample_origin": 3682,
       "specimen_type": 12700,
       "surveillance_stream": 8650,
@@ -120,9 +120,9 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 8487,
-      "blank": 15821,
-      "declined": 3038,
+      "filled": 8515,
+      "blank": 15793,
+      "declined": 3010,
       "rules": [
         "R-CLASS-2"
       ]

@@ -332,7 +332,12 @@ UNRESOLVED_TYPE_ROWS = 2216
 # vocabulary asserted value) until each was repaired to a value the controlled vocabulary contains.
 # The 115 cVDPV/strain-identity decisions the same day do not move this count: every one of those
 # 115 already had a resolved value before the decision, just the wrong one, so none was declined.
-UNRESOLVED_CLASSIFICATION_ROWS = 3038
+#
+# Down a further 28 the same day: 24 reference_or_lab_text records (12 `Sabin`, 10 `engineered/lab`,
+# 1 `recombinant/lab`, 1 `reference/lab` — strain-identity/patent deposits too short to reach a
+# divergence measurement) and 4 more `group_A_text_owned` `cVDPV` records, none of which had a prior
+# decision, so all 28 leave the declined population for the first time.
+UNRESOLVED_CLASSIFICATION_ROWS = 3010
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -399,7 +404,11 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         # disagreeing set entirely.
         "final_value": "9186eacd41e1de67",
         "source_value": "dcf033c8df13df9a",
-        "manual_override": "4e3f1979389588bc",
+        # Re-witnessed again the same day when the 28 reference_or_lab_text/group_A_text_owned
+        # decisions joined `manual_override` at the same count-preserving position (386, up from
+        # 358): the set of *which* records carry the flag grew even though `final_value`'s own
+        # disagreeing set did not move.
+        "manual_override": "f563a7137f64b399",
     },
 }
 
@@ -681,29 +690,35 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # (2.4.1 computes `chimera` from a Sabin/wild junction, not from text this rule reads) plus
         # ~50 ordinary threshold-adjacent disagreements — see `docs/classification-migration-gap.md`.
         "final_value": 54,
-        # 21,269 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
+        # 21,297 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
         # capsid fallback newly resolves + 3 the vocabulary repairs newly resolve (`AJ416942`,
         # `DQ205099`, `FJ517648`, whose ledger values were outside the controlled vocabulary and so
-        # were being declined). All are declines-turned-resolved, and none of the 148 touches
-        # `final_value` or `manual_override`: every one lands on the value 2.4.1 already ships, so
-        # nothing there is a value reversal, only a growing comparable set.
-        "winning_rule_id": 21269,
-        "evidence_basis": 21269,
+        # were being declined) + 28 the reference_or_lab_text/group_A_text_owned decisions below
+        # newly resolve (`Sabin`/`engineered/lab`/`recombinant/lab`/`reference/lab` strain-identity
+        # deposits, and the 4 further `cVDPV` calls). All are declines-turned-resolved, and none of
+        # them touches `final_value`: every one lands on the value 2.4.1 already ships, so nothing
+        # there is a value reversal, only a growing comparable set.
+        "winning_rule_id": 21297,
+        "evidence_basis": 21297,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
         # field or `divergence_pct`. The 19,113 agreeing on `source_value` are the curated rows,
-        # where both record the asserted value itself — down from 19,228 because the 115 new
+        # where both record the asserted value itself — down from 19,228 because the 2026-07-31
         # decisions changed *how* the value is reached (ledger, not the band), which moves
         # `source_value`'s composed string even on rows whose `final_value` was already correct.
-        "source_field": 21269,
+        # This count does not move with the +28: those 28 were previously blank/declined (no
+        # composed `source_value` to compare at all), not a row that used to agree and now doesn't.
+        "source_field": 21297,
         "source_value": 19113,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,
-        # 358 = 243 (the locked VDPV/wild reconciliation allowlist migrated on 2026-07-30) + 115
-        # (the 2026-07-31 cVDPV and strain-identity decisions above). All 358 reach the column as
+        # 386 = 243 (the locked VDPV/wild reconciliation allowlist migrated on 2026-07-30) + 115
+        # (the 2026-07-31 cVDPV and strain-identity decisions) + 28 (the same day's
+        # reference_or_lab_text and group_A_text_owned decisions: 12 `Sabin`, 10 `engineered/lab`,
+        # 1 `recombinant/lab`, 1 `reference/lab`, 4 more `cVDPV`). All 386 reach the column as
         # decisions, where the release recorded them as `group_B_sequence_tier`/`classification_
         # reconciled` with no override flag — the value is the same and the attribution is not.
-        "manual_override": 358,
+        "manual_override": 386,
     },
     "locality": {
         # No value moves: every blank stays blank and every non-blank was already correct. The whole
