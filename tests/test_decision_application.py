@@ -83,7 +83,13 @@ EXPECTED_TALLY = {
     # decision: the ledger still wins for the real column value, exactly as before. This is the
     # counterfactual doing its job — revealing that curator judgment on these 492 records was doing
     # real work a plausible-but-cruder text read would not have replicated.
-    "applied_filled_unresolved": 2640 + 115 + 28 - 492,
+    # +2,770 on 2026-08-01: the upstream partition projection (1,379 rows) and the six short patent
+    # deposits fill `is_poliovirus` for every record the build still declined a partition for, and
+    # each one cascades — `virus_group` and `curation_status` directly, then `sample_origin`,
+    # `surveillance_stream` and `poliovirus_classification` wherever the newly-scoped record has its
+    # own evidence to read. 1,385 decisions filling 2,770 previously-declined cells is the shape of
+    # a partition being the gate on four other columns.
+    "applied_filled_unresolved": 2640 + 115 + 28 - 492 + 2770,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,

@@ -53,18 +53,13 @@ def alignment_sto(name: str) -> Path:
     return ALIGNMENT_DIR / f"{name}.sto.gz"
 
 
-# The three per-serotype alignments were built as one artifact and share a single
-# provenance record; the genus-wide alignment has its own.
-ALIGNMENT_PROVENANCE = {
-    "PV1_unified": "unified_stockholm_provenance.json",
-    "PV2_unified": "unified_stockholm_provenance.json",
-    "PV3_unified": "unified_stockholm_provenance.json",
-    "EV_unified": "EV_unified.provenance.json",
-}
-
-
+# One provenance record per artifact. 2.4.1 shipped the three per-serotype alignments as a single
+# build and gave them one shared `unified_stockholm_provenance.json`, which carried no
+# `block_widths`; that was survivable because the serotype figures use the Sabin frame, which does
+# not need them, and only `EV_unified` — which had its own file — takes the projected frame. Since
+# 4.0.0 every artifact is built separately and writes its own record, block widths included.
 def alignment_provenance(name: str) -> Path:
-    return ALIGNMENT_DIR / ALIGNMENT_PROVENANCE[name]
+    return ALIGNMENT_DIR / f"{name}.provenance.json"
 
 
 # `NPEV_unified` is deliberately unused. It carries no poliovirus reference row,

@@ -2,12 +2,12 @@
   "absence_reasons": {
     "3ncr:annotated_rejected_untranslatable": 29,
     "3ncr:below_pop_min": 11,
-    "3ncr:empty_fragment": 3619,
-    "3ncr:inferred_no_ncr": 375,
+    "3ncr:empty_fragment": 3562,
+    "3ncr:inferred_no_ncr": 343,
     "3ncr:no_cds_untranslatable": 6,
     "5ncr:annotated_rejected_untranslatable": 29,
-    "5ncr:empty_fragment": 3582,
-    "5ncr:inferred_no_ncr": 375,
+    "5ncr:empty_fragment": 3527,
+    "5ncr:inferred_no_ncr": 343,
     "5ncr:no_cds_untranslatable": 6,
     "cds:no_cds_overlap": 239,
     "cds:no_cds_untranslatable": 5
@@ -24,27 +24,27 @@
   },
   "anchored_audit": {
     "frameshift_recovered": 6,
-    "frameshift_recovery_failed": 12,
+    "frameshift_recovery_failed": 11,
     "methods": {
-      "codon": 4045,
-      "codon_ref_inferred": 118,
-      "nt_better": 2,
-      "nt_cds_fallback": 12,
+      "codon": 3987,
+      "codon_ref_inferred": 88,
+      "nt_better": 1,
+      "nt_cds_fallback": 11,
       "nt_fallback": 244,
       "recovered": 6
     },
-    "rows_with_internal_stop": 18,
+    "rows_with_internal_stop": 17,
     "rows_with_misphased_cds_gap": 0,
-    "rows_with_non_multiple_of_three_cds_gap": 1,
+    "rows_with_non_multiple_of_three_cds_gap": 0,
     "strands": {
-      "forward": 4422,
+      "forward": 4332,
       "reverse_complement": 5
     }
   },
   "artifact_sha256": {
-    "coverage": "08f9b281362dbd5be43f97674d184eff24df456b96455d5770f95b179486c954",
-    "fasta": "80f09d16f7bd8cee3d5c97a1a7c57fef385fabfb9c0e4e0df59469cd9c8721ef",
-    "stockholm": "41ac109abd47102deb84093ba7914569b2814a4dfc9c532fc669d8b420de36f3"
+    "coverage": "9ced9cd3701c2af893ad1e1c0c587651de125b9ab2b0e4ef380c36216cc8b09f",
+    "fasta": "8a874fc9201883a921346892c7fce1ea9a39842ba0927a10339bd699d60fa282",
+    "stockholm": "efb8def9a879be3a0812c641fe07e15a7a5d6d2aca88d03825c6a7ff37d565a8"
   },
   "block_widths": {
     "3ncr": 69,
@@ -52,9 +52,9 @@
     "cds": 6630
   },
   "blocks_present": {
-    "3ncr": 387,
-    "5ncr": 435,
-    "cds": 4183
+    "3ncr": 386,
+    "5ncr": 432,
+    "cds": 4093
   },
   "covariance_models": {
     "3p": {
@@ -71,26 +71,27 @@
     }
   },
   "description": "Poliovirus serotype 1 whole-genome multiple sequence alignment, Sabin-anchored",
-  "expected_rows": 4427,
+  "expected_rows": 4337,
   "families": {
-    "PV": 4427
+    "PV": 4337
   },
   "n_reference_columns": 7441,
   "name": "PV1_unified",
   "over_length_cap": [],
   "parameter_departures": {
+    "gap_extend": "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat at the default 0.123 through every build, which is what let a single unalignable fragment open a wide insertion block: opening the gap is paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at --ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best.",
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
-  "population_sha256": "e80aa87f07d56af7e02fc6a7ca1a5f0d96976813ad5e6087e36d7ea7d0fd3340",
-  "rows": 4427,
+  "population_sha256": "4e87ca562380a5b3adcd0831db9d0455569b572fcea42c28798f303dda3f677c",
+  "rows": 4337,
   "schema": 1,
-  "seconds": 1337.1,
+  "seconds": 808.0,
   "stack": "anchored",
   "threads": 8,
   "tiers": {
     "addon": 717,
-    "backbone": 3710
+    "backbone": 3620
   },
   "tool_identity": {
     "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
@@ -98,7 +99,7 @@
     "mafft-linsi": "mafft 7.526 h99b78c6_0"
   },
   "types": {
-    "PV1": 4427
+    "PV1": 4337
   },
   "width_nt": 7441
 }

@@ -100,7 +100,12 @@ from enterovirus_genbank_curated.derive.partition import (
 # `poliovirus_classification` does not move: every one of the 211 fully resolves there (a value or a
 # determined blank), so none of them was ever queued work to begin with. Net: 27,254 − 211 + 31 +
 # 125 = 27,199.
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125
+# 25,865, 2026-08-01: the upstream partition projection closes `virus_group` on the remaining 1,385
+# records, and the queue shrinks by 1,334 rather than by 1,385 — the difference is the same shape as
+# the 211 above. A record whose partition is decided stops being queued for the partition and starts
+# being queued, where it still has no evidence of its own, for `sample_origin` or
+# `surveillance_stream` on their own reasons. Real work leaves; real work also becomes visible.
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -155,7 +160,13 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125
 # undecided members) and mostly land in `sample_origin`/`surveillance_stream` groups that already
 # existed for other records (no new group), except a handful of `surveillance_stream` group keys
 # (e.g. `opv`, `human feces`) that no undecided-partition record had ever populated before — net +3.
-EXPECTED_QUEUE_GROUPS = 302 - 3 + 3  # 299 (2026-07-31 baseline) + 3 (2026-08-01, above)
+# 295, 2026-08-01: the partition projection closes `virus_group`, and with it the seven groups that
+# existed only because a partition was undecided — the `is_polio_undetermined` keys under
+# `origin_class` and `surveillance_stream`. What is left is 295 groups over five registry fields
+# (specimen_type 145, surveillance_stream 57, virus_type 48, origin_class 33,
+# poliovirus_classification 12), every one of them a question about the record's own text rather
+# than about a partition that has since been settled.
+EXPECTED_QUEUE_GROUPS = 302 - 3 + 3 - 7  # 299 (2026-07-31) + 3 (partition band) - 7 (projection)
 
 
 def declined(

@@ -4,32 +4,32 @@
     "3ncr:below_pop_min": 33,
     "3ncr:empty_fragment": 7121,
     "3ncr:excluded_oversized": 7,
-    "3ncr:inferred_no_ncr": 923,
+    "3ncr:inferred_no_ncr": 929,
     "3ncr:no_cds_untranslatable": 66,
     "5ncr:annotated_rejected_untranslatable": 32,
     "5ncr:empty_fragment": 7027,
-    "5ncr:inferred_no_ncr": 923,
+    "5ncr:inferred_no_ncr": 929,
     "5ncr:no_cds_untranslatable": 66,
     "cds:annotated_rejected_untranslatable": 32,
     "cds:no_cds_untranslatable": 66
   },
   "artifact_sha256": {
-    "coverage": "8f45030eec1792b43f21f6dad81604659e80ec0d634c8d25e7304d5b9e6b56dd",
-    "fasta": "0f08e44d13a8fbb75a9a285070dfdfa62a61cdc5435bc6af76265a5129d9439d",
-    "stockholm": "4a65decaaa39f34ef521bf1f6d9c02320dce75d54e54e83e24181076b22d051e"
+    "coverage": "b12f8c0c4377d59f64556cd2ca5e631bed2be2cc1a09fa06c2f25391af71366e",
+    "fasta": "2e2110dd1bf142739b7d75aaf86e026510c7b0d086c69853f590e987fa33ab58",
+    "stockholm": "22149c8a721a5b7d03d6fbd3290c4ff33c150ac906595f3660cd4f3d8c40407e"
   },
   "block_widths": {
     "3ncr": 70,
     "5ncr": 746,
-    "cds": 6909
+    "cds": 6864
   },
   "blocks_present": {
     "3ncr": 1902,
     "5ncr": 2036,
-    "cds": 9986
+    "cds": 9992
   },
-  "blocks_present_cds": 9986,
-  "cds_codons": 2303,
+  "blocks_present_cds": 9992,
+  "cds_codons": 2288,
   "cds_width_is_whole_codons": true,
   "codon": {
     "accept_annotated_max_internal_stops": 1,
@@ -59,10 +59,10 @@
     }
   },
   "description": "All-serotype poliovirus whole-genome multiple sequence alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)",
-  "expected_rows": 10084,
+  "expected_rows": 10090,
   "families": {
-    "PV": 10059,
-    "unknown": 25
+    "PV": 9724,
+    "unknown": 366
   },
   "name": "POLIO_unified",
   "parameter_departures": {
@@ -70,15 +70,15 @@
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
-  "population_sha256": "ce43c66bec9bf6f1ffa6e0ad062e1a3f3a1fa2f14a5c7c4a4846a69d001c4552",
-  "rows": 10084,
+  "population_sha256": "04ee7378b28fa2eb179a4a0bf4b840c02fa5834903044be66933263bfaff26c1",
+  "rows": 10090,
   "schema": 1,
-  "seconds": 2027.3,
+  "seconds": 1556.1,
   "stack": "unified",
   "threads": 8,
   "tiers": {
-    "addon": 1346,
-    "backbone": 8738
+    "addon": 1354,
+    "backbone": 8736
   },
   "tool_identity": {
     "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
@@ -86,10 +86,10 @@
     "mafft-linsi": "mafft 7.526 h99b78c6_0"
   },
   "types": {
-    "PV1": 4427,
-    "PV2": 3939,
-    "PV3": 1693,
-    "PV?": 25
+    "PV1": 4337,
+    "PV2": 3790,
+    "PV3": 1597,
+    "PV?": 366
   },
-  "width_nt": 7725
+  "width_nt": 7680
 }

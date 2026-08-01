@@ -12,11 +12,6 @@ population counts that size each deliberate break against the release.
 
 from __future__ import annotations
 
-import csv
-import gzip
-from collections import Counter
-from pathlib import Path
-
 import pytest
 
 from enterovirus_genbank_curated.contracts import ContractError
@@ -49,15 +44,6 @@ from enterovirus_genbank_curated.registry.rules import (
     RuleImplementation,
     RuleSpec,
 )
-
-SHIPPED_PROVENANCE = "final/audit/canonical_projection_provenance.tsv.gz"
-CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
-
-# Records the release labels `duplicate_of_admin1_suppressed` that had nothing to suppress: 16,987
-# deposited a country and no region, 2,048 deposited no `/geo_loc_name` at all. The rewrite gives
-# each its own basis; these pin the populations so the correction cannot silently change size.
-SHIPPED_SUPPRESSED_WITHOUT_ADMIN1 = 16987
-SHIPPED_SUPPRESSED_WITHOUT_GEOGRAPHY = 2048
 
 
 def view(**qualifiers: str) -> RecordView:
@@ -242,43 +228,15 @@ def test_curation_status_follows_the_partition_without_claiming_an_override() ->
     assert not curation_status(parameters, partition_view("unidentified")).resolved
 
 
-@pytest.mark.slow
-def test_the_shipped_locality_basis_conflates_three_populations(repository_root: Path) -> None:
-    """Sizes the correction against the release, so it cannot silently change shape.
-
-    The release has two locality bases; the rewrite has four. This pins what the shipped
-    `duplicate_of_admin1_suppressed` actually contained, which is the evidence for splitting it: of
-    23,268 rows, only 4,233 were suppressions.
-    """
-    with gzip.open(repository_root / SHIPPED_PROVENANCE, "rt", newline="") as handle:
-        locality_rows = [
-            row
-            for row in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
-            if row["canonical_field"] == "locality"
-        ]
-    assert Counter(r["evidence_basis"] for r in locality_rows) == Counter(
-        {BASIS_SUPPRESSED: 23268, BASIS_PARSED: 1033}
-    )
-
-    # A blank canonical `country` means no `/geo_loc_name` was deposited at all — the qualifier's
-    # presence and a non-blank country coincide exactly across the corpus. `source_value` will not
-    # do here: it is also blank for a country-only string like `China`, which did deposit geography.
-    with gzip.open(repository_root / CANONICAL_METADATA, "rt", newline="") as handle:
-        canonical = list(csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL))
-    no_geography = {row["version"] for row in canonical if not row["country"]}
-    no_admin1 = {row["version"] for row in canonical if row["country"] and not row["admin1"]}
-
-    assert len(no_geography) == SHIPPED_SUPPRESSED_WITHOUT_GEOGRAPHY
-    assert len(no_admin1) == SHIPPED_SUPPRESSED_WITHOUT_ADMIN1
-    # Every one of those 19,035 ships as a suppression, and none of them suppressed anything.
-    overstated = no_geography | no_admin1
-    assert all(
-        row["evidence_basis"] == BASIS_SUPPRESSED
-        for row in locality_rows
-        if row["version"] in overstated
-    )
-    genuine = len(locality_rows) - len(overstated) - 1033
-    assert genuine == 4233
+# `test_the_shipped_locality_basis_conflates_three_populations` was retired on 2026-08-01. It read
+# `final/audit/canonical_projection_provenance.tsv.gz` — 2.4.1's provenance table — to size the
+# locality-basis correction against the release: of the 23,268 rows the release labelled
+# `duplicate_of_admin1_suppressed`, only 4,233 were suppressions, and the other 19,035 either
+# deposited no geography at all or deposited a country with no admin1. That measurement is what
+# justified splitting one shipped basis into four, and it has served its purpose: the four bases are
+# what the pipeline writes, and the table it was measured against is no longer in the tree (git
+# history at `1ecb937`). The rules themselves are covered by the closed-form cases above, which need
+# no release to check.
 
 
 # --- specimen_type: the keyword rule, and the two defects its disagreements exposed --------------

@@ -27,13 +27,19 @@ SHIPPED = "final/alignments/{name}.sto.gz"
 # the rebuild legitimately loses. Both are re-derived per artifact in the delta tests, so these
 # are tripwires: they fail when the underlying data moves, which is the point.
 EXPECTED_DELTA = {
-    "POLIO_unified": (98, 2),
-    "NPEV_unified": (167, 0),
-    "EV_unified": (263, 0),
-    "PV1_unified": (715, 20),
-    "PV2_unified": (358, 23),
-    "PV3_unified": (270, 2),
+    "POLIO_unified": (106, 4),
+    "NPEV_unified": (168, 0),
+    "EV_unified": (272, 2),
+    "PV1_unified": (717, 112),
+    "PV2_unified": (357, 171),
+    "PV3_unified": (263, 91),
 }
+
+# Re-measured 2026-08-01 against the 4.0.0 canonical table. The three serotype files are where the
+# delta moved: `dropped` went 20/23/2 to 112/171/91, and 332 of the 374 dropped rows are
+# `virus_type_lost` — 2.4.1 asserted a serotype from curated data, R-TYPE-2 derives it from the
+# organism name and declines where the name does not state one. The rest are 37 relabels, 3 carve
+# exclusions and 2 records the partition moved out of poliovirus.
 
 # The two records whose `virus_group` changed since the shipped alignment was built. They are the
 # only such records, so a silent regression here would look like a build bug rather than a data
@@ -198,6 +204,10 @@ def test_the_substituted_column_reproduces_the_shipped_tiers_exactly(
     `population.tier_of`, because `tier_of` selects the column from canonical `virus_group` and for
     two records canonical disagrees with the partition the shipped file was built under — which the
     next test measures instead of glossing.
+
+    Unchanged by the 4.0.0 re-anchor, and that is the point of stating it per column: this claim is
+    about the evidence table and the shipped row set, neither of which moved. The *next* test, which
+    goes through canonical, does move.
     """
     shipped = shipped_row_ids(repository_root, name)
     assert tier_by_column(repository_root, records, shipped, column) == {
@@ -208,7 +218,7 @@ def test_the_substituted_column_reproduces_the_shipped_tiers_exactly(
 
 @pytest.mark.parametrize(
     ("name", "backbone", "addon"),
-    [("POLIO_unified", 8737, 1251), ("NPEV_unified", 10418, 3632), ("EV_unified", 19155, 4883)],
+    [("POLIO_unified", 8735, 1251), ("NPEV_unified", 10418, 3632), ("EV_unified", 19153, 4883)],
 )
 def test_the_rebuilds_own_rule_differs_from_shipped_only_by_the_reclassified_records(
     repository_root: Path,
@@ -220,17 +230,23 @@ def test_the_rebuilds_own_rule_differs_from_shipped_only_by_the_reclassified_rec
     """The rebuild keys the tier column on canonical `virus_group`, so two records change column.
 
     Shipped provenance: POLIO 8,736/1,252, NPEV 10,418/3,632, EV 19,154/4,884. Under the rebuild's
-    rule POLIO becomes 8,737/1,251 and EV becomes 19,155/4,883, both by one record; NPEV is
-    unaffected because neither reclassified record was in it. The mover is `JX181922`, whose two
-    confidence columns disagree (`serotype_sequence_confident=FALSE`,
-    `enterovirus_type_sequence_confident=TRUE`), so switching which column governs flips it
-    backbone-ward. Deriving this is honest; asserting exactness on all three would assert something
-    false.
+    rule one record changes column — `JX181922`, whose two confidence columns disagree
+    (`serotype_sequence_confident=FALSE`, `enterovirus_type_sequence_confident=TRUE`), so switching
+    which column governs flips it backbone-ward. Two more shipped rows simply are not in the 4.0.0
+    carve (`SEQUENCE_RESCUED_INCLUSIONS`), which is why POLIO reads 8,735/1,251 and EV 19,153/4,883
+    rather than one above the shipped figures. Deriving this is honest; asserting exactness on all
+    three would assert something false.
     """
     shipped = shipped_row_ids(repository_root, name)
     counts = {"backbone": 0, "addon": 0}
+    absent = 0
     for row_id in shipped:
-        counts[records[row_id].tier] += 1
+        record = records.get(row_id)
+        if record is None:
+            absent += 1
+            continue
+        counts[record.tier] += 1
+    assert absent == (2 if name in {"POLIO_unified", "EV_unified"} else 0)
     assert counts == {"backbone": backbone, "addon": addon}
 
 
@@ -242,7 +258,8 @@ def test_the_tier_difference_is_attributable_to_jx181922(
     movers = [
         row_id
         for row_id in shipped_polio
-        if records[row_id].virus_group != contract.POLIOVIRUS
+        if row_id in records
+        and records[row_id].virus_group != contract.POLIOVIRUS
         and records[row_id].tier == "backbone"
     ]
     assert movers == ["JX181922"]
@@ -287,7 +304,14 @@ def test_every_dropped_pv_row_has_a_reason_in_the_closed_vocabulary(
     records: dict[str, population.AlignedRecord],
     populations: dict[str, population.AlignmentPopulation],
 ) -> None:
-    """45 shipped PV rows leave. Adjudicated is not invisible: each needs a classifiable reason."""
+    """374 shipped PV rows leave. Adjudicated is not invisible: each needs a classifiable reason.
+
+    45 before the 4.0.0 re-anchor. The growth is one category: `virus_type_lost` went from 10 to
+    332, because 2.4.1's `virus_type` came from curated data and R-TYPE-2 derives it from the
+    organism name, declining where the name states no serotype. Those rows are still poliovirus and
+    still in `POLIO_unified` and `EV_unified`; what they are not in is a serotype file, because this
+    pipeline will not assert a serotype it cannot read off the deposit.
+    """
     reasons: dict[str, str] = {}
     for n in (1, 2, 3):
         name = f"PV{n}_unified"
@@ -301,21 +325,20 @@ def test_every_dropped_pv_row_has_a_reason_in_the_closed_vocabulary(
                 reasons[row_id] = "virus_type_lost"
             else:
                 reasons[row_id] = "serotype_relabelled"
-    assert len(reasons) == 45
+    assert len(reasons) == 374
     assert set(reasons.values()) <= set(contract.DROP_REASONS)
     tally = {
         reason: sum(1 for v in reasons.values() if v == reason) for reason in set(reasons.values())
     }
-    # Reasons are assigned most-specific first, so `OR538735` — which both changed group and lost
-    # its type — counts once, as `group_moved`. That is why this is 2/10 and not 1/11: the two
-    # classifications overlap on one record, and the precedence is declared rather than incidental.
+    # Reasons are assigned most-specific first, so a record that both changed group and lost its
+    # type counts once, as `group_moved`. The precedence is declared rather than incidental.
     assert tally == {
-        "serotype_relabelled": 32,
-        "virus_type_lost": 10,
+        "serotype_relabelled": 37,
+        "virus_type_lost": 332,
         "group_moved": 2,
-        "carve_excluded": 1,
+        "carve_excluded": 3,
     }
-    assert sum(tally.values()) == 45
+    assert sum(tally.values()) == 374
     assert reasons[CARVE_EXCLUDED_IN_SHIPPED] == "carve_excluded"
     for accession in RECLASSIFIED_TO_NON_POLIO:
         assert reasons.get(accession) == "group_moved"
@@ -368,9 +391,13 @@ def test_the_family_rule_reproduces_the_shipped_counts_given_the_shipped_rows(
     # Families upstream and canonical agree on exactly.
     for family in ("EV-A", "EV-D", "RV-A", "RV-B", "RV-C"):
         assert counts[family] == shipped_families[family], family
-    # Everything gained is exactly what `unknown` lost.
-    gained = sum(counts[f] - shipped_families[f] for f in counts if counts[f] > shipped_families[f])
-    assert gained == shipped_families["unknown"] - counts["unknown"]
+    # Everything `unknown` gains is exactly what the resolved families lose, less the two records
+    # the partition moved into poliovirus — they leave the non-polio families for `PV`, which is a
+    # membership change rather than a typing one, so it is subtracted rather than absorbed.
+    moved_to_polio = counts.pop("PV")
+    assert moved_to_polio == 2
+    lost = sum(shipped_families[f] - counts[f] for f in counts if counts[f] < shipped_families[f])
+    assert counts["unknown"] - shipped_families["unknown"] == lost - moved_to_polio
 
 
 # --- the blank-type sentinel ---------------------------------------------------------------------
@@ -379,16 +406,23 @@ def test_the_family_rule_reproduces_the_shipped_counts_given_the_shipped_rows(
 def test_blank_types_take_the_sentinel_for_their_own_group(
     populations: dict[str, population.AlignmentPopulation],
 ) -> None:
-    """Regression: a shared sentinel labelled 877 non-polio rows `PV?`, asserting they are polio."""
+    """Regression: a shared sentinel labelled 877 non-polio rows `PV?`, asserting they are polio.
+
+    25/877 before the 4.0.0 re-anchor, 366/1,850 after, for the same reason the serotype files
+    shrank: R-TYPE-2 declines a type the organism name does not state. The sentinel distinction is
+    what makes that growth safe to ship — `PV?` says "poliovirus, serotype unresolved" and
+    `unknown` says "not poliovirus, no type resolved", and 1,850 rows is a lot of records to
+    mislabel as poliovirus by sharing one sentinel.
+    """
     polio_blanks = [r for r in populations["POLIO_unified"].records if not r.virus_type]
     npev_blanks = [r for r in populations["NPEV_unified"].records if not r.virus_type]
     assert {r.type_sort_key for r in polio_blanks} == {"PV?"}
     assert {r.type_sort_key for r in npev_blanks} == {"unknown"}
-    assert len(polio_blanks) == 25
-    assert len(npev_blanks) == 877
+    assert len(polio_blanks) == 366
+    assert len(npev_blanks) == 1850
     ev_labels = populations["EV_unified"].type_counts()
-    assert ev_labels["PV?"] == 25
-    assert ev_labels["unknown"] == 877
+    assert ev_labels["PV?"] == 366
+    assert ev_labels["unknown"] == 1850
 
 
 def test_the_blank_polio_records_are_in_no_serotype_artifact(
