@@ -347,7 +347,11 @@ UNRESOLVED_TYPE_ROWS = 2216
 # basis and so was declined before; 705 land on the value 2.4.1 ships and 3 do not (see the
 # `final_value` count in `SUPERSEDED_FIELD_DELTAS` above) — a decline turned into a value either way,
 # which is what leaves the declined population.
-UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60 - 708
+#
+# Down a further 191 the same day, when isolate-linked inference landed: 192 candidates, 191 applied
+# (one, a short unverified key with no batch corroboration, stays declined). 190 of the 191 land on
+# the value 2.4.1 ships; the one that does not, `X70506`, is counted in `final_value` above.
+UNRESOLVED_CLASSIFICATION_ROWS = 3010 - 60 - 708 - 191
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 # Fields the rewrite deliberately produces differently from the release. For these, requiring nine
@@ -417,13 +421,19 @@ SUPERSEDED_FIELD_WITNESSES: dict[str, dict[str, str]] = {
         # values (`AF083938`, `HM537010`, `MG212473` — see the count comment above) on top of the
         # 54: a different, larger disagreeing set even though the direction of movement (up, not
         # down) is itself notable enough to be commented at the count.
-        "final_value": "b1cfd0e3b83d612d",
-        # Re-witnessed again 2026-07-31 when the VP1/capsid floor dropped to 50 nt: 60 more records
-        # join the agreeing `source_value` set, each a newly-measured divergence with no prior
-        # composed string to compare.
         #
-        # Re-witnessed again the same day when the text fallback added 707 more agreeing records.
-        "source_value": "735d4e715c0af71c",
+        # Re-witnessed again the same day when isolate-linked inference added one more, `X70506`
+        # (see the count comment above): 54 -> 57 -> 58, each step a different disagreeing set.
+        "final_value": "bb99d3f701d8aa62",
+        # `source_value` here counts *mismatches*, not agreements — see the reading note above the
+        # count declarations. Re-witnessed 2026-07-31 when the VP1/capsid floor dropped to 50 nt: 60
+        # more records join the mismatching set, each a newly-measured divergence whose composed
+        # string never existed before to compare at all.
+        #
+        # Re-witnessed again the same day when the text fallback added 707 more mismatching records.
+        #
+        # Re-witnessed again the same day when isolate-linked inference added 191 more.
+        "source_value": "4093e70d8c20ea74",
         # Re-witnessed again the same day when the 28 reference_or_lab_text/group_A_text_owned
         # decisions joined `manual_override` at the same count-preserving position (386, up from
         # 358): the set of *which* records carry the flag grew even though `final_value`'s own
@@ -698,6 +708,20 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
     # `wild` at 73-74% divergence, which is the unrelated-sequence expectation rather than a
     # measurement. Those records do not overlap VP1 at all and one chance 12-mer was winning the
     # diagonal vote. `MIN_DIAGONAL_ANCHORS` closed it; 2 of the 73 remain.
+    # A reading note before the numbers below: every field in this dict is a *mismatch* count —
+    # `compare_provenance_to_release` increments it when `row[column] != shipped[column]`, the same
+    # test the strict (non-superseded) columns use to fail the build outright. `final_value` is the
+    # one column where a small mismatch count is the actual goal (a true classification
+    # disagreement). The other four — `source_field`, `source_value`, `winning_rule_id`,
+    # `evidence_basis` — are internal bookkeeping this pipeline names for itself
+    # (`too_little_sequence_compared_to_measure_divergence`, `R-CLASS-2`, ...) and 2.4.1 never had a
+    # reason to spell the same way, so a mismatch on *those* four is the ordinary case, not a
+    # problem: resolving a decline adds one row to the comparable set, and that row almost always
+    # mismatches on the internal-naming columns even when `final_value` agrees perfectly. The counts
+    # below climb with every batch of newly-resolved records for exactly that reason — more rows
+    # comparable, not more rows wrong — except where a coincidence (both sides naming the same
+    # mechanism, or both citing the asserted value itself) makes a batch mismatch on fewer than its
+    # own size would suggest; those coincidences are called out explicitly where they happen.
     "poliovirus_classification": {
         # 54, down from 169: 115 curator decisions landed 2026-07-31 — the 95-record cVDPV
         # epidemiological override (two published studies, Cameroon PMID 25542478 and European
@@ -705,10 +729,11 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # deposit's own text) and 20 strain-identity/provenance decisions (12 `Sabin` seed-strain
         # deposits divergence alone cannot tell from their own descendants, 5 `vaccine` from the
         # documented Cox/Lederle/CHAT family map, 3 `engineered/lab` patent deposits). All 115 land
-        # on the value 2.4.1 already ships, so this is 115 more declines resolved, not a reversal.
+        # on the value 2.4.1 already ships, so this is 115 fewer true disagreements, not a reversal.
         # What remains is exactly the `chimera` gap: 4 records recombination-detection would resolve
         # (2.4.1 computes `chimera` from a Sabin/wild junction, not from text this rule reads) plus
         # ~50 ordinary threshold-adjacent disagreements — see `docs/classification-migration-gap.md`.
+        #
         # 57, up from 54: the reference-title text fallback (below) is a plausible-text guess, not a
         # measurement, and it is wrong on 3 records it cannot tell apart from a real one —
         # `AF083938`, `HM537010`, `MG212473`. All three carry a cited-paper title naming
@@ -723,50 +748,72 @@ SUPERSEDED_FIELD_DELTAS: dict[str, dict[str, int]] = {
         # project than the text fallback — so text is asked, and for these 3 it answers a study-level
         # question rather than a record-level one. 705 of the 708 the fallback newly resolves still
         # land on the value 2.4.1 ships; these 3 are the honest cost of the other 705.
-        "final_value": 57,
+        #
+        # 58, up from 57: isolate-linked inference below (192 candidates, 191 applied) is wrong on
+        # exactly one, `X70506`, which links to `V01149.1` (Mahoney) among its qualifying siblings
+        # and inherits `Sabin-like` — the same known, unfixable-by-sequence trap already on record
+        # for `V01149.1` itself (Sabin 1 *is* attenuated Mahoney, so VP1 distance to Sabin cannot
+        # separate the wild parent from its own vaccine derivative; see
+        # `docs/classification-migration-gap.md`). Not a new failure mode, just the existing one
+        # reaching a second record through a new path.
+        "final_value": 58,
         # 21,297 = 20,859 + 259 the curated-classification entailment brought into scope + 148 the
         # capsid fallback newly resolves + 3 the vocabulary repairs newly resolve (`AJ416942`,
         # `DQ205099`, `FJ517648`, whose ledger values were outside the controlled vocabulary and so
         # were being declined) + 28 the reference_or_lab_text/group_A_text_owned decisions below
         # newly resolve (`Sabin`/`engineered/lab`/`recombinant/lab`/`reference/lab` strain-identity
-        # deposits, and the 4 further `cVDPV` calls). All are declines-turned-resolved, and none of
-        # them touches `final_value`: every one lands on the value 2.4.1 already ships, so nothing
-        # there is a value reversal, only a growing comparable set.
+        # deposits, and the 4 further `cVDPV` calls). All 28 are declines-turned-resolved rows
+        # joining the comparable set for the first time — mismatching here, same as almost every
+        # other resolved row, because `winning_rule_id` is this pipeline's own rule-catalog ID
+        # (`R-CLASS-2`) and 2.4.1 does not record one at all.
         #
         # 21,357 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (MAD-VDPV's own
         # `MIN_SEROTYPE_COMPARED_NT`), with the chunked-homogeneity guard extended to VP1 for the
-        # newly-opened sub-300 nt territory: 60 more records newly measure, and every one of the 60
-        # lands on the value 2.4.1 already ships — the guard is why: it declined the three records
-        # (`AY320423`, `JN092124`, `AY365233`) where a single bad base in the deposit, not a real
-        # indel, corrupted a 171-225 nt window the same way the module docstring already diagnoses
-        # for the capsid case, rather than shipping them as a wrong `wild`.
+        # newly-opened sub-300 nt territory: 60 more records newly measure and join the comparable
+        # set — every one of the 60 mismatches here too (same reason), even though all 60 land on
+        # the value 2.4.1 already ships (see `final_value`).
         #
         # 22,065 the same day, when the reference-title text fallback landed (`needs_other_data_
         # text_fallback`): 708 more records resolve where neither VP1 nor the capsid fallback
-        # measures anything at all, 705 of them landing on the value 2.4.1 ships (see `final_value`
-        # above for the 3 that do not).
-        "winning_rule_id": 22065,
-        "evidence_basis": 22065,
+        # measures anything at all, and all 708 join the mismatching set here for the same reason.
+        #
+        # 22,256 the same day, when isolate-linked inference landed: 191 more records resolve by
+        # inheriting a sibling accession's measured classification, and all 191 mismatch here too.
+        "winning_rule_id": 22256,
+        # `evidence_basis` tracks `winning_rule_id` exactly through 22,065 (same reason: this
+        # pipeline's own branch-label vocabulary, e.g. `vp1_divergence_below_sabin_like_threshold`,
+        # essentially never coincides with 2.4.1's), and then diverges from it:
+        #
+        # 22,093, not 22065 + 191, when isolate-linked inference landed: MAD-VDPV's own recorded
+        # basis for these same rows is *also* named `isolate_linked_inference` — the one mechanism
+        # in this column where both pipelines happen to use the same word for the same thing — so
+        # 163 of the 191 newly-comparable rows agree here rather than mismatch, and only 28 add to
+        # the count. `winning_rule_id` has no such coincidence available to it, since 2.4.1 does not
+        # record a rule id under any name.
+        "evidence_basis": 22093,
         # Every row: the release named `classification_reconciled`, and R-CLASS-2 names the ledger
-        # field or `divergence_pct`. The 19,113 agreeing on `source_value` are the curated rows,
-        # where both record the asserted value itself — down from 19,228 because the 2026-07-31
-        # decisions changed *how* the value is reached (ledger, not the band), which moves
-        # `source_value`'s composed string even on rows whose `final_value` was already correct.
-        # This count does not move with the +28: those 28 were previously blank/declined (no
-        # composed `source_value` to compare at all), not a row that used to agree and now doesn't.
+        # field or `divergence_pct` — different vocabulary, so a mismatch here is the default too.
+        # 19,228 before the 2026-07-31 decisions, down to 19,113 after the 115 cVDPV/strain-identity
+        # decisions: the one place this column gets a coincidence, because a decision's own
+        # `source_value` is the asserted value itself, which is sometimes exactly what 2.4.1 also
+        # recorded for the field it reconciled from. Unchanged by the 28 reference_or_lab_text/
+        # group_A_text_owned decisions the same day — those 28 were previously blank/declined (no
+        # composed `source_value` to compare at all), not a row that used to mismatch and now
+        # doesn't.
         #
-        # +60 the same day, unlike the +28 above: these 60 *do* move `source_value`, because each is
-        # a newly-measured divergence whose composed string (`"X% over Y nt of ..."`) did not exist
-        # before at all — a genuinely new agreeing comparison, not a decision changing how an
-        # existing one is attributed.
+        # 19,173, up from 19,113, after the 50 nt floor: all 60 newly-measured rows mismatch —
+        # `source_value` here is this pipeline's own composed string (`"X% over Y nt of ..."`), and
+        # 2.4.1's own recorded value for the same row is shaped differently, so there was no
+        # coincidence to gain the way the ledger rows above had one.
         #
-        # +707 the same day, when the text fallback landed: 708 new fallback rows, each citing the
-        # matched text substring as `source_value` where nothing was composed before; 707 of the 708
-        # happen to agree with 2.4.1's own recorded `source_value` for that row (not the same count
-        # as the 705 agreeing on `final_value` above — the two are different comparisons, and a row
-        # can match one without the other).
-        "source_field": 22065,
-        "source_value": 19880,
+        # 19,880 by the text fallback: 708 new fallback rows citing the matched text substring, 707
+        # of which mismatch 2.4.1's own recorded `source_value` for that row (1 happens to coincide).
+        #
+        # 20,071 by isolate-linked inference: 191 new rows citing the linked sibling accession(s) as
+        # `source_value` (e.g. `AY082689.1;V01149.1`) — no coincidence available here either, so all
+        # 191 mismatch 2.4.1's own record for the row.
+        "source_field": 22256,
+        "source_value": 20071,
         "accession": 0,
         "version": 0,
         "canonical_field": 0,

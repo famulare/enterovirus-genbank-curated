@@ -48,6 +48,7 @@ from enterovirus_genbank_curated.derive.evidence import (
     measure_membership_rescue,
     measure_sequence_evidence,
 )
+from enterovirus_genbank_curated.derive.isolate_linkage import apply_isolate_linked_inference
 from enterovirus_genbank_curated.derive.metadata import transport_metadata
 from enterovirus_genbank_curated.export.audit import (
     write_classification_divergence,
@@ -248,6 +249,12 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         if rule.implementation is not None
         for row in project_field(rule, views)
     ]
+
+    # A whole-corpus pass, not a rule: it resolves a `poliovirus_classification` decline by way of
+    # a *sibling's* resolved value, which no single `RecordView` can see. Runs after every rule has
+    # projected (it needs the rest of the corpus's own answers) and before the queue and canonical
+    # table are assembled from `provenance` (so a newly-resolved cell reaches both).
+    provenance = apply_isolate_linked_inference(views, provenance)
 
     # Cross-column invariants, before anything is written. A rule can be individually right and the
     # table still incoherent, and no single rule can see two columns.

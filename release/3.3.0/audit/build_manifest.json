@@ -3,7 +3,7 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "7f72ba59caee048c3d6818ddf77c47e25079fd469e9a65d748191a2f4e22464f",
+  "code_sha256": "b0dd6983aeb2c10ab20b4d4199a8f41f4adef1cfe3d04e648efed419a82855af",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
@@ -22,7 +22,7 @@
     "localities_without_geography": 2055,
     "curation_queue_groups": 299,
     "decision_applications": 3336,
-    "curation_queue_records": 27445,
+    "curation_queue_records": 27254,
     "canonical_rows": 24308,
     "vouched_rows": 9929,
     "rules_in_baseline_view": 28,
@@ -47,7 +47,7 @@
     ],
     "columns_with_declined_cells": {
       "curation_status": 1596,
-      "poliovirus_classification": 2242,
+      "poliovirus_classification": 2051,
       "sample_origin": 3682,
       "specimen_type": 12700,
       "surveillance_stream": 8650,
@@ -120,9 +120,9 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 9283,
-      "blank": 15025,
-      "declined": 2242,
+      "filled": 9474,
+      "blank": 14834,
+      "declined": 2051,
       "rules": [
         "R-CLASS-2"
       ]

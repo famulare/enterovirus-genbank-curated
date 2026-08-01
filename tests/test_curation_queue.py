@@ -86,7 +86,12 @@ from enterovirus_genbank_curated.derive.partition import (
 # agreeing with the shipped classification and 3 (`AF083938`, `HM537010`, `MG212473`) not, a known,
 # documented cost of asking a study title a record-level question (see `oracle/parity.py`). A decline
 # leaving the queue does not require the value to be right, only that the cell is no longer silent.
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708
+#
+# 27,254 the same day, when isolate-linked inference landed: 191 more `poliovirus_classification`
+# declines resolve by inheriting a sibling accession's measured classification — 190 agreeing with
+# the shipped value and 1 (`X70506`) not, the known `V01149.1` (Mahoney) trap reaching a second
+# record (see `oracle/parity.py`).
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -132,6 +137,10 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708
 # Still 299 when the text fallback landed the same day: the 708 newly-resolved records shared that
 # same single `too_little_sequence_compared_to_measure_divergence`, no-source-value group with the
 # 613 that remain declined for the same reason.
+#
+# Still 299 when isolate-linked inference landed the same day: the 191 newly-resolved records shared
+# that same single group with the 422 that remain declined for the same reason (no divergence
+# measurement and no isolate link either).
 EXPECTED_QUEUE_GROUPS = 302 - 3
 
 
