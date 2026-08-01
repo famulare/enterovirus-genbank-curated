@@ -202,25 +202,36 @@ VP1-first / P1-fallback precedence MAD-VDPV's own sequence classifier states out
 newly resolve, every one agreeing with the shipped classification wherever 2.4.1 has one to compare
 against.
 
-The fallback needed a guard VP1 alone does not. VP1 in poliovirus has no indels relative to Sabin —
-measured, and the reason an ungapped single-offset comparison is exact there — but that fact does
-not extend to VP4, VP2 or VP3, and two records surfaced it directly: a run of mismatches at the
-unrelated-sequence rate beginning at one exact position, resolved by shifting the query **one
-nucleotide** from that point on. A real indel in a coding, replicating poliovirus genome must be a
-multiple of three to preserve the reading frame, so a one-nucleotide break is a single bad base call
-in the deposit, not biology. `derive/evidence.py` declines the whole comparison when any 150 nt
-chunk of it deviates from the window's own divergence by more than a measured floor — the three
-broken windows this found sit at 21.5, 21.8 and 55.2 percentage points of internal deviation; the
-next-highest genuine one sits at 8.1.
+The fallback needed a guard VP1 alone does not — at the time. VP1 in poliovirus has no indels
+relative to Sabin — measured, and the reason an ungapped single-offset comparison is exact there —
+but that fact does not extend to VP4, VP2 or VP3, and two records surfaced it directly: a run of
+mismatches at the unrelated-sequence rate beginning at one exact position, resolved by shifting the
+query **one nucleotide** from that point on. A real indel in a coding, replicating poliovirus genome
+must be a multiple of three to preserve the reading frame, so a one-nucleotide break is a single bad
+base call in the deposit, not biology. `derive/evidence.py` declines the whole comparison when any
+150 nt chunk of it deviates from the window's own divergence by more than a measured floor — the
+three broken windows this found sit at 21.5, 21.8 and 55.2 percentage points of internal deviation;
+the next-highest genuine one sits at 8.1.
+
+`MIN_VP1_NT`/`MIN_CAPSID_NT` later dropped from 300 to MAD-VDPV's own published floor, 50 nt,
+recovering 60 more declines, every one agreeing with the shipped classification — but lowering the
+floor without protection surfaced the same single-bad-base failure in VP1 for the first time
+(`AY320423`, `JN092124`, `AY365233`, each 15-24 points more divergent than MAD-VDPV's own alignment
+over a 171-225 nt window), because the old 300 nt floor had always been enough sequence to dilute one
+bad call rather than be defined by it. `compare_vp1` now shares `compare_capsid_nt`'s
+chunked-homogeneity guard below the old floor, unchanged at or above it.
+
 [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
-one of the 1,649 remaining differences from 2.4.1's `poliovirus_classification` by category — 93.2%
-of the shared carve agrees, and 1,595 of the 1,649 are a decline rather than a contradiction. The
+one of the 1,561 remaining differences from 2.4.1's `poliovirus_classification` by category — 93.6%
+of the shared carve agrees, and 1,507 of the 1,561 are a decline rather than a contradiction. The
 epidemiological refinement `cVDPV`/`iVDPV` is now emitted wherever the record itself states it,
 including from `isolation_source` and `note`; the 95 that were not are two published environmental
-studies whose circulation claim lives in the paper rather than in any deposit, now recorded as
-decisions. Only the 4 `chimera` records remain outside the sequence rule's reach — a
-recombination-detection rule was built and reverted after it misclassified 192 other records, see
-the migration-gap doc for why.
+studies whose circulation claim lives in the paper rather than in any deposit, and a further 28
+strain-identity/patent (`reference_or_lab_text`) and unpublished-reference (`group_A_text_owned`)
+records are likewise now decisions rather than declines — all traced by decomposing the largest
+remaining discrepancy block into MAD-VDPV's own named mechanisms. Only the 4 `chimera` records remain
+outside the sequence rule's reach — a recombination-detection rule was built and reverted after it
+misclassified 192 other records, see the migration-gap doc for why.
 
 It carries no wall-clock timestamp. `audit/build_manifest.json` identifies the build by the hashes of
 its four determinants — the frozen archive, the decision ledger, the rule catalog, and the code — so

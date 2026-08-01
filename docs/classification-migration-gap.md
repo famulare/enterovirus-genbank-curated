@@ -10,23 +10,23 @@ investigations, and 1,506 of the ledger's active rows already cite a PMID for ex
 **A coarsened value is a lost judgement, not a conservative one**, and this file names precisely
 which ones are still lost so they can be migrated rather than rediscovered.
 
-`docs/classification-migration-gap.tsv` is the machine-readable list — **all 1,649 differing
+`docs/classification-migration-gap.tsv` is the machine-readable list — **all 1,561 differing
 records**, one row each, with the value 2.4.1 ships, the value this pipeline emits, the
 `unresolved_reason` if it declined, and a category. Every row has a category; the count of
 uncategorised rows is asserted to be zero, because "we looked at the big buckets" is how a residue
 of unexplained differences survives a review.
 
-Over the 24,299 records both datasets carve, the column now **agrees on 22,650 (93.2%)**.
+Over the 24,299 records both datasets carve, the column now **agrees on 22,738 (93.6%)**.
 
 An earlier version of this file covered only the 1,161 rows where 2.4.1 ships a *refinement* or
 `wild`. That was the interesting subset, not the whole difference, and scoping a reconciliation to
 the interesting subset is how the remaining 998 would have gone unnoticed.
 
-## All 1,649, by category
+## All 1,561, by category
 
 | category | n | what it means |
 |---|---:|---|
-| `declined_too_little_sequence` | 1,409 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over |
+| `declined_too_little_sequence` | 1,321 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over |
 | `declined_membership_undecided` | 153 | organism name cannot settle poliovirus membership |
 | `sequence_band_disagrees_with_release` | 38 | both resolved, divergence lands in a different band |
 | `declined_no_serotype_in_name` | 33 | no serotype in the organism name to pick a Sabin reference |
@@ -36,6 +36,11 @@ the interesting subset is how the remaining 998 would have gone unnoticed.
 
 The last two categories are worth noticing: on twelve records this pipeline is **more** specific than
 the release, not less. A reconciliation that only counted losses would have reported them as noise.
+
+`declined_too_little_sequence` fell again on 2026-07-31, from 1,409 to 1,321 — 28 closed by decisions
+(below) and 60 by lowering the divergence floor (further below), both traced by decomposing this
+single largest category into MAD-VDPV's own named mechanisms; see
+"[Inside the largest block: what MAD-VDPV's own mechanism labels show](#inside-the-largest-block-what-mad-vdpvs-own-mechanism-labels-show)".
 
 Three categories that appeared in earlier versions of this file are gone entirely, all closed by
 decisions landed 2026-07-31 rather than by a rule:
@@ -141,6 +146,103 @@ capsid-nt comparison, the three broken windows sit at 21.5, 21.8 and 55.2 points
 deviation and the next-highest genuine one sits at 8.1 — the floor sits in that gap, not fitted to
 the three cases that found it.
 
+### Inside the largest block: what MAD-VDPV's own mechanism labels show
+
+`declined_too_little_sequence` is 85% of every difference in this file, so it earns its own look
+rather than a single category row. MAD-VDPV's working tree carries a `classification_reconciled_basis`
+column naming exactly how it reached its own value for every record, and joining that column against
+this pipeline's 1,409 declines (the count before the 2026-07-31 work below) resolves the whole block
+into seven named, traceable mechanisms:
+
+| mechanism | n | what it is |
+|---|---:|---|
+| `needs_other_data_text_fallback` | 548 | no capsid signal either; falls back to a label mined from the **cited paper's title**, not the deposit's own fields |
+| `text_wild_override` | 219 | sequence *is* tierable, but the paper-title label overrides it outright |
+| `isolate_linked_inference` | 167 | no usable signal of its own; inherits the call from a **sibling accession** sharing the isolate name |
+| `group_B_sequence_newly_classified` / `group_B_sequence_tier` | 173 | MAD-VDPV's own sequence-only capsid comparison, over a window shorter than this pipeline's floor allowed |
+| `unresolved_*` (four reason codes) | 274 | 2.4.1 also declines — ships the literal string `unresolved`, not a text/sibling fallback |
+| `reference_or_lab_text` | 24 | strain-identity/patent text, the same kind of call as the 20 already migrated, just a population not yet found |
+| `group_A_text_owned` | 4 | hard-won `cVDPV` epi calls, same category as the 95 above |
+
+Of these, 274 are not a loss at all — 2.4.1 declines too, just with a different vocabulary (a literal
+`unresolved` string instead of a blank cell carrying a reason). The other 1,135 are where 2.4.1 really
+is more specific, and four of the seven mechanisms have now been closed:
+
+**`reference_or_lab_text` (24) and `group_A_text_owned` (4) — migrated as decisions, 2026-07-31.**
+Verified per record against GenBank directly, the same standard as the 95-record cVDPV work: 12
+`Sabin` and 10 `engineered/lab` deposits traced to two patent families (`EP 0197772-A2` and
+`EP 0383434-A1`/`EP 0383433-A1`, 15-24 nt fragments naming `Sabin` or `strain Leon` outright), a
+handful more `Sabin` from PMID-cited 5′UTR/defective-interfering-particle papers, `M14761`
+(`recombinant/lab`, PMID 3021340, a constructed Lansing-strain recombination junction) and `M17494`
+(`reference/lab`, PMID 6267593, the Mahoney P3-1b region) — none a divergence measurement, all
+strain-identity or patent facts a bare band cannot state. The 4 `group_A_text_owned` records
+(`EU004575`, `KM233675`, `KM235192`, `KM235193`) trace to unpublished GenBank submitter references
+rather than peer-reviewed papers — no PMID exists to check independently, which is recorded plainly
+in the decisions rather than dressed up as equivalent to the PMID-cited work above.
+
+**The VP1/capsid floor — lowered to MAD-VDPV's own 50 nt, 2026-07-31, with a new guard.**
+`MIN_SEROTYPE_COMPARED_NT = 50` is MAD-VDPV's own published floor (`build_reference_alignments.py`),
+well below this pipeline's 300 nt, and Mike validated by inspection that MAD-VDPV's calls at that
+floor are sound. Matching it directly, with no guard beyond the floor itself, recovered 175
+newly-filled records: 139 agreeing with the shipped value, 33 disagreeing in the shape of the
+`text_wild_override` policy question below (not a measurement error), and **3 genuinely wrong** —
+`AY320423`, `JN092124`, `AY365233` read 15-24 percentage points more divergent than MAD-VDPV's own
+alignment, each a single bad base call in the deposited read (not a real indel — VP1 has none
+relative to Sabin, but that fact never protected against an error in the read itself) corrupting a
+171-225 nt window, the same failure class the capsid-fallback's own homogeneity guard was built to
+catch — just never tested in VP1 before, because 300 nt was always enough sequence to dilute one bad
+call rather than be defined by it.
+
+`compare_vp1` now shares `compare_capsid_nt`'s chunked-homogeneity guard for windows under the old
+300 nt floor (unchanged at or above it, so none of the 7,728 VP1 comparisons this stage already
+shipped are at risk). With the guard in place, the floor drop recovers exactly **60** records — 45
+VP1, 17 capsid, minus one (`AJ783799`) that already had a capsid-based value and simply moved to a
+now-reachable VP1 window without changing it — and **every one of the 60 agrees with the shipped
+classification.**
+
+**`needs_other_data_text_fallback` (548) and `isolate_linked_inference` (167) — not yet built.**
+Both are real, MAD-VDPV-published mechanisms this pipeline does not reproduce: reading the record's
+cited-paper title (a signal `derive/classification._record_text` never reads — it reads `definition`,
+`strain`, `isolate`, `isolation_source`, `note`, all record-level qualifiers, never the GenBank
+`REFERENCE` block), and inheriting a classification from a sibling accession sharing the same
+`isolate`/`strain` qualifier and serotype where MAD-VDPV's own `resolve_isolate_linked_inference.py`
+finds a single unambiguous capsid-resolved label to inherit from, confidence-tiered by key-collision
+risk. Building either is a new evidence source and, for the second, a new whole-corpus post-processing
+stage rather than a per-record rule — real work, not yet done.
+
+### `text_wild_override`: investigated, not reproduced
+
+Mike asked for this one to be checked rather than ported outright, since MAD-VDPV's own rule is a
+blanket policy — `text == wild` always wins, regardless of what the sequence says — and this pipeline
+does not otherwise let text override a measurement it can make itself.
+
+Of the 219 records under this basis, **175 are not actually a disagreement**: MAD-VDPV's own
+sequence tier also reads `wild` there, so "override" is just how its bookkeeping labels every
+`text == wild` record, whether or not anything was actually overridden. The remaining **44** are
+genuine: MAD-VDPV's own VP1-based sequence tier computes `VDPV` (36) or `Sabin-like` (8), and the
+paper-title text overrides it to `wild` anyway.
+
+Every one of the 44 is a short VP1/2A-junction fragment — nearly all ~90-150 nt (`bases 3296-3445` on
+the classic 1980s-90s AFP-surveillance deposits, e.g. `M19582`, `M19594`, the `AJ2485xx` India series)
+— where the measured divergence sits close to the 15% wild threshold purely because the window is so
+short that a handful of mismatches swings the percentage a long way: `AJ248523` reads 12.222% over 90
+nt, six mismatches from the 15% line. This is not a new problem. It is the same population and the
+same shape of trap already documented above in "the two that are a known, unfixable-by-sequence trap"
+(`V01149.1`/`V01540.1`, where Sabin 1 *is* attenuated Mahoney and divergence alone cannot separate the
+wild parent from its own vaccine derivative) and in the pre-fallback "lowering the VP1 floor" finding
+that a no-floor VP1 call at ~90 nt gets **72 right and 33 wrong** — a coin weighted toward the answer,
+not a threshold. MAD-VDPV's own 2026-06-26 locked review of this exact discordance class reached the
+same conclusion by a different route: "short VP1 fragments (30-100 cod, distance uninformative —
+text stands)."
+
+**Recommendation: do not build a `text == wild` override rule.** It would resolve these 44 records
+by re-introducing exactly the short-window coin-flip this pipeline already rejected once, just gated
+on the shipped label agreeing with the flip rather than on anything this pipeline itself measured.
+The 44 are better treated the same way `V01149.1`/`V01540.1` already are — a known, sequence-cannot-
+decide population, closeable by individual or grouped ledger decisions if wanted, not by a rule that
+would apply the same override logic to every future short fragment regardless of whether the paper
+title is right.
+
 ### Membership is fully understood, and it is a cleaner story
 
 `virus_group` and `curation_status` differ on 1,588 shared rows each, and **every single one is a
@@ -208,51 +310,33 @@ chimera threshold precisely was not achievable from the one-paragraph rule descr
 against. The four records stay `wild`/`VDPV` here rather than risk a rule that would misclassify
 roughly fifty times as many records as it fixes.
 
-## The 787 where a curated refinement or `wild` is the thing lost
+## The 752 where a curated refinement or `wild` is the thing lost
 
 | 2.4.1 ships | this pipeline emits | why | n |
 |---|---|---|---:|
-| `wild` | *(blank)* | too little usable sequence, by either basis, to measure over | 750 |
+| `wild` | *(blank)* | too little usable sequence, by either basis, to measure over | 719 |
 | `wild` | `VDPV` | divergence lands in the 1–15% band | 13 |
 | `wild` | *(blank)* | partition undecided | 5 |
 | `cVDPV` | `cVDPV-n` | **finer**: the depositor's `note` says `cVDPV2-n` | 5 |
 | `wild` | `Sabin-like` | divergence under 1% | 4 |
 | `iVDPV` | `wild` | divergence at or above 15% | 4 |
-| `cVDPV` | *(blank)* | too little usable sequence | 4 |
 | `cVDPV` | `Sabin-like` | divergence under 1% | 2 |
 
-Every one is a distinct accession, so 787 rows would close this subset (the 4 `chimera` records are
-a separate mechanism, not this one, and are covered above); the full 1,649 is in the TSV, and the
-categories above say which of them a ledger row is even the right instrument for. Five of the 787
-are a gain rather than a loss (the `cVDPV-n` row). The `wild -> (blank)` row fell from 781 to 750
-with the capsid fallback — only 31 of the 148 newly-resolved records shipped `wild`; most of the
-rest shipped `Sabin-like` or a bare `VDPV`, which is why the fallback's headline number (148) and
-this table's movement (31) differ.
+Every one is a distinct accession, so 752 rows would close this subset (the 4 `chimera` records are
+a separate mechanism, not this one, and are covered above); the full 1,561 is in the TSV, and the
+categories above say which of them a ledger row is even the right instrument for. Five of the 752
+are a gain rather than a loss (the `cVDPV-n` row). The `wild -> (blank)` row has fallen from 781
+(before the capsid fallback) to 750 (after it) to **719** (after the 2026-07-31 decisions and the
+50 nt floor) — the `cVDPV -> (blank)` row that used to sit at 4 is gone entirely, closed by the
+`group_A_text_owned` decisions above.
 
 The `cVDPV` and `iVDPV` rows that used to dominate this table are gone entirely: all 46 `iVDPV`
-records stated immunodeficiency in their own record, and the 95 `cVDPV` records now trace to the two
-studies above rather than to a coarsened band. This pipeline now ships 1,757 `cVDPV`, 25 `cVDPV-n`
-and **205** `iVDPV`, against 2.4.1's 1,767, 20 and 203 — nearly the same totals by a different route,
-with the two extra `iVDPV` being records whose `isolation_source` names an immunodeficient host and
-which 2.4.1 left at `VDPV`.
-
-### Lowering the VP1 floor does not help — measured
-
-`MIN_VP1_NT = 300` is this pipeline's own measurement-quality floor, not a published parameter, so
-it was fair to ask whether relaxing it would recover the 785 blocked by it (as measured before the
-capsid fallback existed). Measured with the floor removed entirely:
-
-* **680 of the 785 have no VP1 overlap at all.** No threshold reaches them. They are 5′UTR, VP4/VP2
-  or 3D fragments, and the question is not how confidently VP1 is measured but whether VP1 is
-  present.
-* Of the 105 that do overlap, the median window is **90 nt**. A no-floor call gets **72 right and 33
-  wrong** — 25 would ship `VDPV` and 8 `Sabin-like` against a shipped `wild`.
-
-69% is not a threshold, it is a coin weighted toward the answer. The floor stays at 300 and these
-records stay declined by *lowering it*, which is the same reasoning that keeps `sequence_scope`
-pending rather than fitted to 86.7%. The capsid fallback above is a different move — not a lower bar
-on the same short window, but a longer window over more sequence, guarded against exactly the new
-failure mode a longer window introduces.
+records stated immunodeficiency in their own record, and the 99 `cVDPV` records now trace to
+decisions rather than to a coarsened band — 95 to the two published studies above, and 4 more
+(`group_A_text_owned`) to unpublished GenBank submitter references. This pipeline now ships 1,761
+`cVDPV`, 25 `cVDPV-n` and **205** `iVDPV`, against 2.4.1's 1,767, 20 and 203 — nearly the same totals
+by a different route, with the two extra `iVDPV` being records whose `isolation_source` names an
+immunodeficient host and which 2.4.1 left at `VDPV`.
 
 ### The two that are a known, unfixable-by-sequence trap
 
@@ -273,8 +357,12 @@ git -C ../MAD-VDPV archive <release-build-commit> data/genbank/working \
   | tar -x -C /tmp/evgc-registries --strip-components=3
 ```
 
-What remains after the 2026-07-31 decisions is `declined_too_little_sequence` (1,409, a measurement
-floor, not a migration target), `declined_membership_undecided` (153, needs the membership
-question settled first), `declined_no_serotype_in_name` (33), `sequence_band_disagrees_with_release`
-(38, genuine threshold disagreements) and the 4 `chimera` records above, which need a correctly
-validated recombination rule rather than a decision.
+What remains after the 2026-07-31 work is `declined_too_little_sequence` (1,321 — 274 where 2.4.1
+also declines, 201 `text_wild_override` (157 where the sequence, if this pipeline could reach it,
+would agree anyway; 44 the known short-fragment trap above), 131 `group_B_sequence` records the
+floor still does not reach (chiefly the ones failing the chunked-homogeneity guard below 180 nt),
+548 `needs_other_data_text_fallback` and 167 `isolate_linked_inference` — the last two real,
+MAD-VDPV-published mechanisms this pipeline does not yet reproduce), `declined_membership_undecided`
+(153, needs the membership question settled first), `declined_no_serotype_in_name` (33),
+`sequence_band_disagrees_with_release` (38, genuine threshold disagreements) and the 4 `chimera`
+records above, which need a correctly validated recombination rule rather than a decision.
