@@ -256,7 +256,10 @@ def test_build_refuses_to_write_into_the_immutable_trees(repository_root: Path) 
     """
     for candidate in (
         "raw",
-        "RAW",
+        # Case-varied *inside* the tree, not the tree itself. `RAW` alone passes on macOS, where it
+        # resolves to the same inode, and fails on Linux, where it is simply a different directory
+        # that does not exist — so it tested the platform rather than the guard. CI caught it.
+        "raw/ARCHIVE",
         "raw/nested",
         "raw/nested/..",
         "./raw/.",

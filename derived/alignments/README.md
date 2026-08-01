@@ -4,13 +4,15 @@ Multiple-sequence alignments built by this repository from `final/canonical/`, `
 the committed covariance-model core under `registry/alignment_seeds/`, using only `mafft` and
 Infernal's `cmalign`.
 
-**Five of the six declared populations are committed here.** `align/contract.py` declares six;
-`EV_unified` — the 24,301-row genus-wide artifact — has not been built. And the five are not one
-uniform set: `POLIO_unified` and `NPEV_unified` were built with MAFFT `--ep 0.5`, while `PV1`,
-`PV2` and `PV3` predate that parameter and carry the old gap-extension default. Each artifact's
-`.provenance.json` records which, under `codon.gap_extend`, and the two later ones additionally
-carry a `parameter_departures.gap_extend` note. A uniform rebuild of all six is pending; these
-bytes are here to be compared against, not to be depended on.
+**All six declared populations are built here, at one parameter set, from the 4.0.0 canonical
+table**, and promoted into `final/alignments/`. This directory is the build's working output; the
+release copy is what consumers read.
+
+The previous state is worth recording because it is what made the rebuild necessary rather than
+cosmetic: five artifacts, no `EV_unified` at all, and two different gap-extension settings —
+`POLIO_unified` and `NPEV_unified` carried MAFFT `--ep 0.5` while `PV1`/`PV2`/`PV3` predated that
+lever. Each artifact's `.provenance.json` records its own parameters under `codon.gap_extend`, so a
+mixed set is legible rather than assumed.
 
 ```bash
 pixi run -e align evgc alignment-build  --output-dir derived/alignments
@@ -18,13 +20,12 @@ pixi run -e align evgc alignment-verify --output-dir derived/alignments
 pixi run -e align evgc alignment-shape  --output-dir derived/alignments
 ```
 
-## Why `derived/` and not `final/`
+## Why `derived/` as well as `final/`
 
-`final/alignments/` holds the 2.4.1 release's alignments, which boundary 6 keeps immutable: a
-baseline is never regenerated in place. These are the rebuild, kept beside it so the two can be
-compared while the rebuild is reviewed. Promoting them into a new `releases/<version>/` and `final/`
-is a separate, reviewed step, and it has to happen together with the site rebuild that depends on
-those files.
+`alignment-build` writes here, and promotion into `final/alignments/` is a separate, reviewed copy —
+the same shape as `site/data/`, where the producer and the published copy are distinct steps. The
+2.4.1 alignments these replaced are preserved at `releases/2.4.1/alignments/`, which is what
+`alignment-shape` measures the declared delta against; a baseline is retired, not overwritten.
 
 ## Four files per artifact
 
