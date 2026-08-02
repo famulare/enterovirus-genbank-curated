@@ -1,14 +1,14 @@
 {
-  "release_version": "4.0.0",
+  "release_version": "4.1.0",
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "42b30f4b566aa5ef08f59cefed1d47f377744b8285e9852b1a84492d12a53e28",
+  "code_sha256": "4d0ebd9deb9df3e397e1196da5b21980f7f48aedb8fb2d5e3d035aecbbca6aa7",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "d7f120866fa90a29f4ba7bf5e094ede45663801c0739198e7b6e4ca3d2cef0a4",
+    "decisions_sha256": "ca5e0ab90ebaf9b102d69a16f585c54d8c0155070fdfdfd27fde05dab7bf5ecd",
     "rules_sha256": "6c29c28e49ba2c740fbacfe65025a8069c05bac1ef55b15dad360d47ccf179e7"
   },
   "row_counts": {
@@ -21,7 +21,7 @@
     "dates_not_applicable": 4573,
     "localities_without_geography": 2055,
     "curation_queue_groups": 295,
-    "decision_applications": 6106,
+    "decision_applications": 6119,
     "curation_queue_records": 25865,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
@@ -33,8 +33,8 @@
     "applied_exclusion": 173,
     "applied_changed": 522,
     "applied_unchanged": 25,
-    "applied_filled_unresolved": 5061,
-    "not_in_force_superseded": 13,
+    "applied_filled_unresolved": 5072,
+    "not_in_force_superseded": 15,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6
   },

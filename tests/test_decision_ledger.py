@@ -201,9 +201,28 @@ EXPECTED_UPSTREAM_PARTITION_ROWS = 1379
 SHORT_PATENT_MEMBERSHIP_SOURCE = "short_patent_deposit_sequence_membership_2026-08-01"
 EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS = 6
 
+# Release 4.1.0's whole content: thirteen accession-level `poliovirus_classification` adjudications
+# (2026-08-01). Eleven change the value the divergence band reaches, and two — `AF065158` and
+# `AB467472` — assert the value it already reaches, recorded so the wild call on a record whose own
+# paper is about vaccine-derived virus is a decision rather than an accident. Two of the eleven
+# supersede an active `wild` row on the same record (`CS406483`, `PU749298`), which is why `active`
+# gains 13 and loses 2 while `superseded` gains 2.
+POLIO_CLASSIFICATION_SOURCE = "curator_adjudication_2026-08-01"
+EXPECTED_POLIO_CLASSIFICATION_ROWS = 13
+EXPECTED_POLIO_CLASSIFICATION_VALUES = {
+    "VDPV": 1,
+    "iVDPV": 4,
+    "engineered/lab": 2,
+    "chimera": 4,
+    "wild": 2,
+}
+POLIO_CLASSIFICATION_SUPERSEDES = 2
+
 EXPECTED_STATUS = {
     "active": (
         2895
+        + EXPECTED_POLIO_CLASSIFICATION_ROWS
+        - POLIO_CLASSIFICATION_SUPERSEDES
         + EXPECTED_UPSTREAM_PARTITION_ROWS
         + EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
         + EXPECTED_VDPV_ROWS
@@ -215,7 +234,7 @@ EXPECTED_STATUS = {
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     ),
     "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
-    "superseded": 10 + len(VOCABULARY_REPAIR_ADDITIONS),
+    "superseded": 10 + len(VOCABULARY_REPAIR_ADDITIONS) + POLIO_CLASSIFICATION_SUPERSEDES,
 }
 
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
@@ -251,6 +270,7 @@ def test_ledger_satisfies_its_own_contract(
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
         + EXPECTED_UPSTREAM_PARTITION_ROWS
         + EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
+        + EXPECTED_POLIO_CLASSIFICATION_ROWS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -331,6 +351,74 @@ def test_the_cvdpv_and_strain_identity_decisions_agree_with_the_shipped_column(
     assert not disagreements, f"decisions the release does not already reflect: {disagreements}"
 
 
+POLIO_CLASSIFICATION_EXPECTED = {
+    "AB467472": "wild",
+    "AF065158": "wild",
+    "AY563379": "VDPV",
+    "CS406483": "engineered/lab",
+    "KR817054": "iVDPV",
+    "KR817055": "iVDPV",
+    "KR817056": "iVDPV",
+    "KR817060": "iVDPV",
+    "OR208593": "chimera",
+    "OR208600": "chimera",
+    "OR208605": "chimera",
+    "OR208612": "chimera",
+    "PU749298": "engineered/lab",
+}
+
+
+def test_the_4_1_0_classification_adjudications_reach_the_shipped_column(
+    repository_root: Path, ledger: list[dict[str, str]]
+) -> None:
+    """Release 4.1.0's entire content, checked where it has to land rather than where it is written.
+
+    Same shape as the two allowlist checks above, and the same reason: a ledger row the release does
+    not reflect is the D2 failure mode. The `decision_applications` half is what distinguishes
+    *applied* from *coincidentally agreeing* — two of these thirteen assert the value the divergence
+    band already reaches, so column agreement alone would pass for them even if the decision never
+    reached the projection at all.
+    """
+    rows = [r for r in ledger if r["source_artifact"] == POLIO_CLASSIFICATION_SOURCE]
+    assert len(rows) == EXPECTED_POLIO_CLASSIFICATION_ROWS
+    assert Counter(r["new_value"] for r in rows) == Counter(EXPECTED_POLIO_CLASSIFICATION_VALUES)
+    assert {r["field_name"] for r in rows} == {"classification"}
+    assert {r["status"] for r in rows} == {"active"}
+    assert {r["accession"]: r["new_value"] for r in rows} == POLIO_CLASSIFICATION_EXPECTED
+
+    with gzip.open(
+        repository_root / CANONICAL_METADATA, "rt", encoding="utf-8", newline=""
+    ) as handle:
+        shipped = {
+            r["accession"]: r["poliovirus_classification"]
+            for r in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
+        }
+    assert {
+        accession: shipped.get(accession) for accession in POLIO_CLASSIFICATION_EXPECTED
+    } == POLIO_CLASSIFICATION_EXPECTED
+
+    with gzip.open(
+        repository_root / "final/audit/decision_applications.tsv.gz",
+        "rt",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        applications = {
+            r["decision_id"]: r
+            for r in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
+            if r["canonical_field"] == "poliovirus_classification"
+        }
+    for row in rows:
+        application = applications.get(row["decision_id"])
+        assert application is not None, f"{row['decision_id']} reaches no canonical classification"
+        assert application["application_status"] in {
+            "applied_changed",
+            "applied_unchanged",
+            "applied_filled_unresolved",
+        }, f"{row['decision_id']}: {application['application_status']}"
+        assert application["final_value"] == row["new_value"]
+
+
 def test_decision_ids_are_unique_without_source_artifact_in_the_hash(
     ledger: list[dict[str, str]],
 ) -> None:
@@ -408,7 +496,16 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     # against it.
     repair_subjects = {subject for subject, _, _ in VOCABULARY_REPAIR_ADDITIONS}
     repaired_vocabulary = [r for r in superseded if r["subject_key"] in repair_subjects]
-    remainder = [r for r in superseded if r["subject_key"] not in repair_subjects]
+    # Sixth cause, 2026-08-01: the 4.1.0 adjudication reclassified `CS406483` and `PU749298` as
+    # `engineered/lab`, overturning the `wild` each carried. Partitioned by note text rather than by
+    # subject, because `CS406483` already appears in two other classes and would otherwise be
+    # claimed twice.
+    reclassified = [r for r in superseded if "superseded 2026-08-01 by" in r["notes"]]
+    remainder = [
+        r
+        for r in superseded
+        if r["subject_key"] not in repair_subjects and r not in reclassified
+    ]
     d2 = [
         r
         for r in remainder
@@ -424,7 +521,15 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     ]
     assert len(d2) + len(carried) + len(jc013129) + len(reversed_value) + len(
         repaired_vocabulary
-    ) == len(superseded), "an unexplained supersession class appeared"
+    ) + len(reclassified) == len(superseded), "an unexplained supersession class appeared"
+
+    assert {r["subject_key"] for r in reclassified} == {"CS406483", "PU749298"}
+    for row in reclassified:
+        assert row["field_name"] == "classification"
+        assert row["new_value"] == "wild"
+        assert "superseded 2026-08-01 by classification=engineered/lab" in row["notes"], (
+            "a supersession must name the value that replaced it"
+        )
 
     assert {r["subject_key"] for r in repaired_vocabulary} == repair_subjects
     for row in repaired_vocabulary:
@@ -677,6 +782,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         + len(VOCABULARY_REPAIR_ADDITIONS)
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     )
+    assert sources[POLIO_CLASSIFICATION_SOURCE] == EXPECTED_POLIO_CLASSIFICATION_ROWS
     assert sources[UPSTREAM_PARTITION_SOURCE] == EXPECTED_UPSTREAM_PARTITION_ROWS
     assert (
         sources[SHORT_PATENT_MEMBERSHIP_SOURCE] == EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
@@ -684,6 +790,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     assert set(sources) == registries | {
         "curator_adjudication_2026-07-29",
         "curator_adjudication_2026-07-31",
+        POLIO_CLASSIFICATION_SOURCE,
         UPSTREAM_PARTITION_SOURCE,
         SHORT_PATENT_MEMBERSHIP_SOURCE,
     }
@@ -702,7 +809,14 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
             # `classification` instead — the three vocabulary repairs and, since 2026-07-31, the 143
             # cVDPV/strain-identity decisions. Named as two explicit populations rather than widened
             # to "any field", so a third field arriving by accident still fails here.
-            if row["subject_key"] in classification_subjects:
+            # 2026-08-01 is a classification adjudication throughout, and it is keyed by its own
+            # source rather than by subject: two of its records (`CS406483`, `PU749298`) also carry
+            # `engineered_or_construct` rows from the 2026-07-29 adjudication, so a subject-keyed
+            # rule would demand the wrong field of those.
+            if (
+                row["source_artifact"] == POLIO_CLASSIFICATION_SOURCE
+                or row["subject_key"] in classification_subjects
+            ):
                 assert row["field_name"] == "classification"
             else:
                 assert row["field_name"] == "engineered_or_construct"

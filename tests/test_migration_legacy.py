@@ -407,6 +407,10 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # with the upstream release's own assignment as `is_poliovirus`. Neither generator produces
     # them.
     upstream_partition = 1385
+    # 13 more on 2026-08-01, and the whole of release 4.1.0: accession-level
+    # `poliovirus_classification` adjudications (1 VDPV, 4 iVDPV, 2 engineered/lab, 4 chimera, 2
+    # confirmed wild). Neither generator produces them either.
+    polio_classification = 13
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)
@@ -417,6 +421,7 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         + vocabulary_repairs
         + cvdpv_and_strain_identity
         + upstream_partition
+        + polio_classification
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
@@ -424,7 +429,8 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         f"{carried} carried-forward supersessions + {reconciled} reconciliation-allowlist rows + "
         f"{readjudication} re-adjudication rows + {cava_parental} CAVA parental rows + "
         f"{vocabulary_repairs} vocabulary repairs + {cvdpv_and_strain_identity} cVDPV/strain-"
-        f"identity decisions + {upstream_partition} upstream-partition projections = {expected}. "
+        f"identity decisions + {upstream_partition} upstream-partition projections + "
+        f"{polio_classification} 4.1.0 classification adjudications = {expected}. "
         f"Bumping one without the others is the drift the pin exists to catch."
     )
 
@@ -470,11 +476,15 @@ def test_the_shipped_ledger_carries_the_current_d2_evidence(
         else:
             assert row["notes"] == mig.D2_ADDED_NOTE, row["subject_key"]
 
+    # Narrowed again on 2026-08-01, for the same reason as `added` above: the 4.1.0 adjudication
+    # superseded CS406483's `manual_override` classification too, and D2 overturned the *legacy
+    # bridge's* call. Selecting by `decision_type` names the rows this generator actually wrote.
     superseded = [
         row for row in rows
         if row["subject_key"] in mig.D2_ACCESSIONS
         and row["status"] == "superseded"
         and row["field_name"] == "classification"
+        and row["decision_type"] == "legacy_classification_override"
     ]
     assert len(superseded) == len(mig.D2_ACCESSIONS), superseded
     for row in superseded:

@@ -89,7 +89,14 @@ EXPECTED_TALLY = {
     # `surveillance_stream` and `poliovirus_classification` wherever the newly-scoped record has its
     # own evidence to read. 1,385 decisions filling 2,770 previously-declined cells is the shape of
     # a partition being the gate on four other columns.
-    "applied_filled_unresolved": 2640 + 115 + 28 - 492 + 2770,
+    # +13 on 2026-08-01, release 4.1.0's whole content: the accession-level classification
+    # adjudications. All 13 land here rather than in `applied_changed` because the counterfactual
+    # withholds the *whole* ledger, which takes the partition with it — so without any decisions the
+    # rule declines these records entirely rather than reaching the `wild` the real build shows them
+    # moving off. `final/audit/decision_applications.tsv.gz` carries the per-decision proof, and
+    # `tests/test_decision_ledger.py` asserts the shipped column against all 13. Net +11, because
+    # the two `wild` rows the engineered/lab calls supersede were themselves counted here.
+    "applied_filled_unresolved": 2640 + 115 + 28 - 492 + 2770 + 13 - 2,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,
@@ -98,7 +105,9 @@ EXPECTED_TALLY = {
     "subject_outside_carve": 6,
     # +3 on 2026-07-31: the vocabulary repairs superseded the three active decisions whose value was
     # outside the controlled vocabulary (`CHAT`, a bare `engineered`, `iVPDV`).
-    "not_in_force_superseded": 10 + 3,
+    # +2 on 2026-08-01: `CS406483` and `PU749298`'s `wild` rows, superseded by the `engineered/lab`
+    # the 4.1.0 adjudication asserts.
+    "not_in_force_superseded": 10 + 3 + 2,
 }
 
 

@@ -53,7 +53,7 @@ site/                 Source for the browser data explorer linked above, plus th
                       precomputed artifacts it serves and the gate that keeps them
                       in step with final/.
 src/                  Pipeline foundation and executable contract validation.
-final/                Release 4.0.0 — what this pipeline produces, rebuilt from raw/ and
+final/                Release 4.1.0 — what this pipeline produces, rebuilt from raw/ and
                       registry/ alone. A build destination, not a comparison target: a
                       guarded build may write it and may not read a file it did not write.
 releases/2.4.1/       The superseded release, retired rather than rewritten: its parity
@@ -159,10 +159,22 @@ assertion sitting in the ledger for two releases while the pipeline quietly reco
 of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
 canonical column now reaches a rule that projects it.
 
-### Release 4.0.0
+### Release 4.1.0
 
-`final/` **is** release 4.0.0 — the dataset this pipeline produces end to end from public inputs.
-It ships the accumulated 3.0.0-3.3.0 line below as one major bump: reconciliation against the
+`final/` **is** release 4.1.0 — the dataset this pipeline produces end to end from public inputs.
+
+4.1.0 is a curation-only correction on top of 4.0.0: thirteen accession-level
+`poliovirus_classification` decisions in [`registry/decisions.tsv`](registry/decisions.tsv), no rule
+change, no threshold change, no column semantics change. `AY563379` -> `VDPV`; `KR817054`/`55`/`56`/
+`60` -> `iVDPV` (the 28-year immunodeficient-shedder series, whose lineage lives in the paper rather
+than in the divergence band); `CS406483` and its byte-identical twin `PU749298` -> `engineered/lab`,
+so the classification tier says what `engineered_or_construct=TRUE` already said; `OR208593`/`600`/
+`605`/`612` -> `chimera`, as accession-level overrides rather than a revival of the reverted
+generalized recombinant rule; and `AF065158` and `AB467472` are recorded confirmations of `wild`,
+against papers whose titles could have been read the other way. Eleven cells change value, two
+confirm the value the band already reaches.
+
+4.0.0 shipped the accumulated 3.0.0-3.3.0 line below as one major bump: reconciliation against the
 hand-curated 2.4.1 baseline is now complete in the sense this pipeline can make that claim (every
 one of the 536 remaining `poliovirus_classification` differences is categorized, not just counted —
 see [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md)), and it pairs
