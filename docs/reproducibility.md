@@ -2,7 +2,8 @@
 
 ## Current state
 
-**`final/` is what this pipeline builds.** As of 2026-08-01 it holds release 4.0.0: canonical,
+**`final/` is what this pipeline builds.** As of 2026-08-01 it holds release 4.1.0 — 4.0.0 plus
+thirteen accession-level `poliovirus_classification` decisions, no rule or threshold change: canonical,
 audit and curation trees written by `evgc build-metadata` from `raw/` and `registry/` alone, and
 alignments written by `evgc alignment-build` from those. It is a build destination now, not a parity
 target, and `build.reject_immutable_output` guards only `raw/` — the frozen input of record, where a

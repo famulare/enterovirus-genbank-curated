@@ -5,9 +5,21 @@ build citable in the same way — a build manifest naming its inputs and its cov
 manifest hashing every artifact — so a consumer can tell one build from another without diffing
 gigabytes.
 
-## The version is 4.0.0
+## The version is 4.1.0
 
-Release 4.0.0 ships the accumulated 3.0.0-3.3.0 line below as one major bump, for two reasons.
+Release 4.1.0 is a curation-only patch on 4.0.0's line: thirteen accession-level
+`poliovirus_classification` decisions landed in `registry/decisions.tsv`, and nothing else moved. No
+rule, no threshold, no column semantics — `AY563379` becomes `VDPV`, the four `KR8170*` records of
+the 28-year immunodeficient-shedder series become `iVDPV`, `CS406483` and its byte-identical twin
+`PU749298` become `engineered/lab` (the tier now says what `engineered_or_construct=TRUE` already
+said), the four `OR2086*` Uganda AFP records become `chimera` as accession-level overrides rather
+than the reverted generalized recombinant rule, and `AF065158` and `AB467472` are confirmed `wild`
+against the papers that could have been read the other way. Eleven cells change value and two are
+recorded confirmations of the value the divergence band already reaches. Minor rather than patch
+because a consumer's existing query returns a different classification for eleven accessions, which
+is a data change even though no code moved.
+
+Release 4.0.0 shipped the accumulated 3.0.0-3.3.0 line below as one major bump, for two reasons.
 First, it is the release at which reconciliation against the hand-curated 2.4.1 baseline is complete
 in the sense this pipeline can make that claim: every one of the 536 remaining
 `poliovirus_classification` differences is categorized rather than merely counted (see
@@ -121,7 +133,7 @@ from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPO
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
-RELEASE_VERSION = "4.0.0"
+RELEASE_VERSION = "4.1.0"
 SCHEMA_VERSION = "2.4.1"
 BASELINE_RELEASE = "2.4.1"
 
