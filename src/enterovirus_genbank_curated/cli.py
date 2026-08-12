@@ -98,6 +98,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="run the build in a guarded child process",
     )
 
+    parity_canonical = subparsers.add_parser(
+        "parity-canonical",
+        help="rebuild the canonical table and check every difference from the 2.4.1 baseline "
+             "against the declared transition classes",
+    )
+    parity_canonical.add_argument("--repository-root", type=Path, default=Path.cwd())
+    parity_canonical.add_argument(
+        "--guard-inputs", action="store_true",
+        help="run the build in a guarded child process",
+    )
+
     alignment_population = subparsers.add_parser(
         "alignment-population",
         help="derive each alignment's row set from final metadata; needs no aligner",
@@ -169,7 +180,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 GUARD_PASS_LINE = "undeclared-input guard: PASS (no read, write or connection outside scope)"
-PARITY_COMMANDS = frozenset({"parity-source", "check-declines"})
+PARITY_COMMANDS = frozenset({"parity-source", "check-declines", "parity-canonical"})
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -237,6 +248,20 @@ def main(argv: list[str] | None = None) -> int:
             )
             for field, count in sorted(observed.items()):
                 print(f"  {field:28} {count:>8}")
+            if requested_guard:
+                print(GUARD_PASS_LINE)
+            return 0
+        if args.command == "parity-canonical":
+            from enterovirus_genbank_curated.oracle.parity import verify_canonical_transitions
+
+            observed = verify_canonical_transitions(root, guarded=requested_guard)
+            cells = sum(sum(classes.values()) for classes in observed.values())
+            print(
+                f"canonical transitions: PASS ({cells} cells differ from the 2.4.1 baseline "
+                f"across {len(observed)} columns, every one in a declared class)"
+            )
+            for column, classes in sorted(observed.items()):
+                print(f"  {column:28} {sum(classes.values()):>7} in {len(classes):>3} classes")
             if requested_guard:
                 print(GUARD_PASS_LINE)
             return 0

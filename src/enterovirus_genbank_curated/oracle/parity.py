@@ -37,18 +37,271 @@ from __future__ import annotations
 import subprocess
 import sys
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
 
 from enterovirus_genbank_curated.build import build_metadata_layer, build_source_layer
-from enterovirus_genbank_curated.contracts import ContractError, sha256_file
+from enterovirus_genbank_curated.contracts import CANONICAL_COLUMNS, ContractError, sha256_file
+from enterovirus_genbank_curated.export.canonical import read_canonical_table
 from enterovirus_genbank_curated.export.metadata import read_projection_provenance
 from enterovirus_genbank_curated.genbank.parse import TABLE_COLUMNS
-from enterovirus_genbank_curated.oracle.release import SOURCE_LAYER_HASHES
+from enterovirus_genbank_curated.oracle.release import SOURCE_LAYER_HASHES, read_tsv_gz
 
 SHIPPED_SOURCE_DIR = "final/source"
 SHIPPED_CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 VERSION_COLUMN = "version"
 GUARD_PASS_MARKER = "undeclared-input guard: PASS"
+
+# The preserved 2.4.1 canonical table, and the only thing in this repository that can still say
+# what changed between the hand-curated baseline and what the pipeline builds.
+#
+# It is a *fixture*, not an input and not a parity target. `build.py` never sees it; only this
+# module and the tests read it. It exists because the alternative — comparing against nothing —
+# is how two declared deltas drifted unnoticed: the date-family delta moved 4,549 -> 4,564 behind
+# a gate (`SUPERSEDED_FIELD_DELTAS`) that had been deleted, and the classification migration-gap
+# document lost two records out of its own categorisation. A delta nobody can recompute is a delta
+# nobody is checking.
+#
+# 2.4.1 is not coming back and is not being reproduced. The claim this supports is narrower and
+# permanent: *every* cell that differs from the baseline belongs to a class someone declared below.
+BASELINE_CANONICAL = "releases/2.4.1/canonical/sequence_metadata.tsv.gz"
+
+# The carve delta, by version. Nine records the pipeline admits that 2.4.1 excluded (eight short
+# `synthetic construct` patent deposits that `R-MEMBERSHIP-AA-1` rescues on capsid amino-acid
+# distance, plus `AF326751.2`, which carries `Enterovirus` in its own GenBank lineage and which the
+# release excluded with no recorded reason), and two the pipeline leaves out —
+# `derive/metadata.py`'s `SEQUENCE_RESCUED_INCLUSIONS`, both sitting in R-MEMBERSHIP-AA-1's
+# undecided 8-15% band.
+DECLARED_ROW_DELTA = {
+    "added": (
+        "A06086.1", "A06087.1", "A08076.1", "AF326751.2",
+        "HW505760.1", "HW505761.1", "HW505772.1", "HW505773.1", "HW505774.1",
+    ),
+    "dropped": ("E00765.1", "E01571.1"),
+}
+
+# Every canonical cell that differs from the 2.4.1 baseline, by class, over the 24,299 shared rows.
+# The seventeen columns absent from this table are identical on every shared row, `virus_group` and
+# `curation_status` among them — the partition reproduces exactly.
+#
+# Read a `('x', '')` entry as "2.4.1 asserted x and this pipeline declines or blanks", and a
+# `('x', 'y')` entry as "both assert, differently". A blanking is not automatically a loss: 98.8% of
+# the `specimen_type` blankings drop `default_stool`, a structural assumption the upstream stage
+# applied after `/isolation_source` failed to match, and the 11,649 `('unknown', 'human')` cells are
+# this pipeline reading a `/host` the upstream stage never examined.
+DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
+    "sequence_scope": {
+        ('unknown', ''): 14217,
+        ('vp1_complete', ''): 5048,
+        ('other_fragment', ''): 2334,
+        ('complete_genome', ''): 1880,
+        ('vp1_partial', ''): 775,
+        ('capsid', ''): 45,
+    },
+    "virus_type": {
+        ('CVA13', ''): 188,
+        ('PV2', ''): 149,
+        ('EV-C99', ''): 123,
+        ('PV3', ''): 96,
+        ('CVA24', ''): 92,
+        ('PV1', ''): 90,
+        ('CVA11', ''): 70,
+        ('CVA17', ''): 57,
+        ('CVA20', ''): 53,
+        ('E6', ''): 42,
+        ('CVB1', ''): 39,
+        ('E7', ''): 36,
+        ('CVB3', ''): 35,
+        ('CVA1', ''): 28,
+        ('CVA19', ''): 27,
+        ('E19', ''): 21,
+        ('CVA22', ''): 13,
+        ('E11', ''): 11,
+        ('E24', ''): 11,
+        ('CVB4', ''): 10,
+        ('CVB5', ''): 9,
+        ('CVA21', ''): 6,
+        ('CVA9', ''): 6,
+        ('EV-C105', ''): 6,
+        ('EV-C96', ''): 6,
+        ('CVA8', ''): 5,
+        ('E13', ''): 5,
+        ('EV-C113', ''): 5,
+        ('CVA16', ''): 4,
+        ('CVA2', ''): 4,
+        ('CVA5', ''): 4,
+        ('E1', ''): 4,
+        ('E20', ''): 4,
+        ('EV-B80', ''): 4,
+        ('EV-B93', ''): 4,
+        ('EV-C116', ''): 4,
+        ('', 'PV2'): 3,
+        ('CVB2', ''): 3,
+        ('E21', ''): 3,
+        ('EV-B75', ''): 3,
+        ('CVA6', ''): 2,
+        ('E12', ''): 2,
+        ('E14', ''): 2,
+        ('E26', ''): 2,
+        ('E3', ''): 2,
+        ('E30', ''): 2,
+        ('EV-B111', ''): 2,
+        ('EV-B97', ''): 2,
+        ('EV-C104', ''): 2,
+        ('EV-C117', ''): 2,
+        ('EV-C118', ''): 2,
+        ('', 'CVA18'): 1,
+        ('', 'PV1'): 1,
+        ('CVA18', ''): 1,
+        ('CVA4', ''): 1,
+        ('E25', ''): 1,
+        ('E33', ''): 1,
+        ('E9', ''): 1,
+        ('EV-B100', ''): 1,
+        ('EV-B107', ''): 1,
+        ('EV-C109', ''): 1,
+        # The five relabels where the deposit's organism name and its sequence disagree. R-TYPE-2
+        # reads the name; 2.4.1 used a coverage-guarded capsid call. These are outside the
+        # 2026-07-30 serotype adjudication, whose population was records under 100 compared capsid
+        # codons — these have 138 to 879.
+        ('PV1', 'PV3'): 1,
+        ('PV2', 'PV1'): 1,
+        ('PV2', 'PV3'): 1,
+        ('PV3', 'PV1'): 1,
+        ('PV3', 'PV2'): 1,
+    },
+    "poliovirus_classification": {
+        ('unresolved', ''): 276,
+        ('Sabin-like', ''): 82,
+        ('wild', ''): 70,
+        ('Sabin-like', 'VDPV'): 16,
+        ('wild', 'VDPV'): 14,
+        ('VDPV', ''): 13,
+        ('Sabin', ''): 10,
+        ('defective-interfering particle', ''): 10,
+        ('VDPV', 'iVDPV'): 6,
+        ('wild', 'Sabin-like'): 6,
+        ('cVDPV', 'cVDPV-n'): 5,
+        ('engineered/lab', ''): 5,
+        ('chimera', ''): 4,
+        ('Sabin', 'Sabin-like'): 3,
+        ('Sabin-like', 'wild'): 2,
+        ('cVDPV', 'Sabin-like'): 2,
+        ('wild', 'engineered/lab'): 2,
+        ('Sabin', 'VDPV'): 1,
+        ('Sabin-like', 'cVDPV'): 1,
+        ('Sabin-like', 'engineered/lab'): 1,
+    },
+    "sample_origin": {
+        ('unknown', 'human'): 11649,
+        ('human', ''): 2761,
+        ('unknown', 'non-human'): 149,
+        ('non-human', ''): 74,
+        ('unknown', ''): 35,
+        ('vaccine', ''): 24,
+        ('non-human', 'unknown'): 11,
+        ('human', 'non-human'): 1,
+    },
+    "surveillance_stream": {
+        ('AFP/clinical', ''): 6738,
+        ('not_applicable', 'environmental'): 2354,
+        ('not_applicable', 'AFP/clinical'): 920,
+        ('environmental', ''): 277,
+        ('unknown', ''): 225,
+        ('not_applicable', ''): 192,
+        ('not_applicable', 'healthy/community'): 111,
+        ('AFP/clinical', 'healthy/community'): 92,
+        ('engineered/lab', ''): 82,
+        ('vaccine/reference', ''): 49,
+        ('AFP/clinical', 'environmental'): 6,
+        ('unknown', 'not_applicable'): 6,
+        ('engineered/lab', 'not_applicable'): 3,
+        ('non-human experimental', 'not_applicable'): 3,
+        ('AFP/clinical', 'not_applicable'): 2,
+        ('unknown', 'environmental'): 2,
+    },
+    "specimen_type": {
+        ('stool', ''): 5812,
+        ('environmental', ''): 393,
+        ('respiratory', ''): 4,
+        ('CNS', ''): 1,
+        ('stool', 'environmental'): 1,
+    },
+    # Enumerated per year rather than collapsed to a single "every difference is a blanking" class.
+    # The collapse was tried and reverted: with the from-side folded to a wildcard, *moving* the
+    # 1,761 blankings onto a different 1,761 records passes green, because only the total is
+    # checked. Fifty-nine numbers that each have to be right beat one that does not, and the year
+    # distribution is exactly what a mis-scoped date rule would disturb. Each recovery in
+    # `R-DATE-YEAR-FROM-ID-1` should decrement the year it recovers.
+    "collection_date": {
+        ('1996', ''): 225,
+        ('2001', ''): 203,
+        ('1992', ''): 110,
+        ('1991', ''): 105,
+        ('1993', ''): 98,
+        ('1998', ''): 92,
+        ('1999', ''): 87,
+        ('2003', ''): 84,
+        ('2008', ''): 69,
+        ('2000', ''): 67,
+        ('2002', ''): 50,
+        ('1988', ''): 49,
+        ('1989', ''): 49,
+        ('1990', ''): 49,
+        ('1994', ''): 48,
+        ('1995', ''): 47,
+        ('1987', ''): 38,
+        ('2006', ''): 28,
+        ('2010', ''): 27,
+        ('2005', ''): 24,
+        ('2007', ''): 23,
+        ('1997', ''): 21,
+        ('1985', ''): 18,
+        ('1986', ''): 17,
+        ('2009', ''): 13,
+        ('1960', ''): 9,
+        ('2011', ''): 8,
+        ('2023', ''): 8,
+        ('1982', ''): 6,
+        ('2015', ''): 6,
+        ('2021', ''): 6,
+        ('1959', ''): 5,
+        ('1977', ''): 5,
+        ('2004', ''): 5,
+        ('1961', ''): 4,
+        ('1980', ''): 4,
+        ('1981', ''): 4,
+        ('1983', ''): 4,
+        ('2022', ''): 4,
+        ('1952', ''): 3,
+        ('1962', ''): 3,
+        ('2013', ''): 3,
+        ('2016', ''): 3,
+        ('2024', ''): 3,
+        ('1953', ''): 2,
+        ('1967', ''): 2,
+        ('1973', ''): 2,
+        ('1976', ''): 2,
+        ('1978', ''): 2,
+        ('1979', ''): 2,
+        ('1984', ''): 2,
+        ('2012', ''): 2,
+        ('2014', ''): 2,
+        ('2017', ''): 2,
+        ('2018', ''): 2,
+        ('2019', ''): 2,
+        ('1955', ''): 1,
+        ('1963', ''): 1,
+        ('1971', ''): 1,
+    },
+    "collection_date_precision": {
+        ('unknown', 'NA'): 2803,
+        ('year', 'NA'): 1761,
+    },
+    "engineered_or_construct": {
+        ('TRUE', 'FALSE'): 511,
+    },
+}
 
 # `final/` paths the alignment layer (`align/`) derives from, declared here rather than in
 # `align/contract.py` so that module has exactly one path to `final/canonical/sequence_metadata`
@@ -390,3 +643,100 @@ def verify_metadata_declines(
         )
         raise ContractError(f"declined-cell counts moved — {detail}")
     return observed
+
+
+def load_baseline_canonical(repository_root: Path) -> dict[str, dict[str, str]]:
+    """Read the preserved 2.4.1 canonical table, keyed on `version`."""
+    header, rows = read_tsv_gz(repository_root / BASELINE_CANONICAL)
+    if VERSION_COLUMN not in header:
+        raise ContractError(f"{BASELINE_CANONICAL} declares no {VERSION_COLUMN} column")
+    return {row[header.index(VERSION_COLUMN)]: dict(zip(header, row, strict=True)) for row in rows}
+
+
+def measure_transitions(
+    baseline: Mapping[str, Mapping[str, str]], built: Mapping[str, Mapping[str, str]]
+) -> dict[str, dict[tuple[str, str], int]]:
+    """Every differing cell over the shared rows, tallied by (baseline value, built value)."""
+    shared = sorted(set(baseline) & set(built))
+    observed: dict[str, dict[tuple[str, str], int]] = {}
+    for version in shared:
+        before, after = baseline[version], built[version]
+        for column in before.keys() & after.keys():
+            was, now = before[column], after[column]
+            if was == now:
+                continue
+            observed.setdefault(column, {})
+            observed[column][(was, now)] = observed[column].get((was, now), 0) + 1
+    return observed
+
+
+def compare_to_baseline(
+    baseline: Mapping[str, Mapping[str, str]], built: Mapping[str, Mapping[str, str]]
+) -> dict[str, dict[tuple[str, str], int]]:
+    """Require every difference from the 2.4.1 baseline to be one somebody declared.
+
+    Pure, so the falsification battery in `tests/test_canonical_transitions.py` can mutate the
+    declarations and watch this go red without paying for a 25,727-record rebuild each time. The
+    build lives in `verify_canonical_transitions` below, which is a thin wrapper over this.
+
+    This is not a parity gate and cannot become one: 2.4.1 is superseded and reproducing it is not
+    the goal. What it establishes is that the *set of ways* this release differs from the last
+    hand-curated one is closed and reviewed — an undeclared class is a rule change nobody wrote
+    down, and a declared class whose count moved is one whose blast radius nobody re-measured. Both
+    are what went unnoticed while there was no baseline to compare against.
+    """
+    # The column set first, because every check below compares only the intersection: a built table
+    # that dropped a column would otherwise have that column silently uncompared rather than
+    # reported, which is the shape of a gate that passes by having nothing to look at.
+    for label, table in (("2.4.1 baseline", baseline), ("the build", built)):
+        columns = {column for row in table.values() for column in row}
+        if columns != set(CANONICAL_COLUMNS):
+            missing = sorted(set(CANONICAL_COLUMNS) - columns)
+            extra = sorted(columns - set(CANONICAL_COLUMNS))
+            raise ContractError(
+                f"{label} does not carry the declared canonical columns: missing {missing}, "
+                f"undeclared {extra}"
+            )
+
+    added = tuple(sorted(set(built) - set(baseline)))
+    dropped = tuple(sorted(set(baseline) - set(built)))
+    if added != tuple(DECLARED_ROW_DELTA["added"]) or dropped != tuple(
+        DECLARED_ROW_DELTA["dropped"]
+    ):
+        raise ContractError(
+            f"the carve delta against {BASELINE_CANONICAL} moved — built adds {list(added)} and "
+            f"drops {list(dropped)}; declared adds {list(DECLARED_ROW_DELTA['added'])} and drops "
+            f"{list(DECLARED_ROW_DELTA['dropped'])}"
+        )
+
+    observed = measure_transitions(baseline, built)
+    problems: list[str] = []
+    for column in sorted(set(observed) | set(DECLARED_TRANSITIONS)):
+        seen = observed.get(column, {})
+        declared = DECLARED_TRANSITIONS.get(column, {})
+        for key in sorted(set(seen) | set(declared)):
+            if seen.get(key, 0) != declared.get(key, 0):
+                problems.append(
+                    f"{column} {key[0]!r}->{key[1]!r}: built {seen.get(key, 0)}, "
+                    f"declared {declared.get(key, 0)}"
+                )
+    if problems:
+        raise ContractError(
+            "canonical transitions against the 2.4.1 baseline are not the declared ones — "
+            + "; ".join(problems)
+        )
+    return observed
+
+
+def verify_canonical_transitions(
+    repository_root: Path, *, guarded: bool = False
+) -> dict[str, dict[tuple[str, str], int]]:
+    """Rebuild the canonical table and compare it to the preserved 2.4.1 baseline."""
+    baseline = load_baseline_canonical(repository_root)
+    with tempfile.TemporaryDirectory(prefix="evgc-canonical-") as scratch:
+        if guarded:
+            run_guarded_build(repository_root, "build-metadata", Path(scratch))
+        else:
+            build_metadata_layer(repository_root, Path(scratch))
+        built = {row[VERSION_COLUMN]: row for row in read_canonical_table(Path(scratch))}
+    return compare_to_baseline(baseline, built)

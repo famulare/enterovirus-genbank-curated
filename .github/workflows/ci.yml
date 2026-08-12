@@ -78,6 +78,17 @@ jobs:
       # _guard` shells out to the guarded CLI against the real corpus and asserts both PASS lines.
       # Adding a step would run a second full corpus build for no extra coverage. If you are here to
       # add one, check that test first.
+      #
+      # `evgc parity-canonical` is not a separate step for the same reason. This tier runs the verb
+      # itself — `test_the_guarded_cli_verb_runs_the_real_build_and_passes` calls `cli.main` with
+      # `--guard-inputs`, so the CLI branch, the guarded child and a real 25,727-record rebuild are
+      # all covered by one test rather than by a step that would repeat the build.
+      #
+      # Its falsification battery is deliberately *not* here. `compare_to_baseline` is pure, so the
+      # eleven mutations that must fail — deleted class, moved count, relocated blanking, moved
+      # carve delta, dropped column, empty/truncated baseline — run in the fast tier above against
+      # the committed `final/`, in milliseconds. An earlier draft paid for four corpus builds to
+      # reach the same assertions.
       - name: Test against the full corpus
         run: pixi run -e align pytest -m slow
 
