@@ -255,13 +255,14 @@ STREAM_SOURCE_FIELD = "sampling_frame"
 LEDGER_STREAM_FIELD = "sampling_frame"
 
 BASIS_SPECIMEN_CONTEXT = "specimen_context"
+BASIS_ENVIRONMENTAL_FLAG = "environmental_sample_flag"
 UNRESOLVED_NO_STREAM_EVIDENCE = "no_surveillance_context_in_record"
 
 
 @rule_implementation(
     "derive.epi.surveillance_stream",
-    parameters=("streams", "outside_scope_value"),
-    evidence_bases=(BASIS_SPECIMEN_CONTEXT, BASIS_OUTSIDE_POLIOVIRUS),
+    parameters=("streams", "outside_scope_value", "individual_specimen_pattern"),
+    evidence_bases=(BASIS_SPECIMEN_CONTEXT, BASIS_ENVIRONMENTAL_FLAG, BASIS_OUTSIDE_POLIOVIRUS),
 )
 def surveillance_stream(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     """Which surveillance system produced the sample, and mostly a refusal to say.
@@ -291,9 +292,7 @@ def surveillance_stream(parameters: Mapping[str, Any], view: RecordView) -> Rule
 
     specimen = view.qualifier(ISOLATION_SOURCE_QUALIFIER).strip().lower()
     # As for `/host` in R-ORIGIN-2: where the record states the context, read it whatever the group.
-    if view.qualifier(ENVIRONMENTAL_FLAG_QUALIFIER).strip() or re.search(
-        streams["environmental_pattern"], specimen
-    ):
+    if re.search(streams["environmental_pattern"], specimen):
         stream = streams["environmental"]
     elif re.search(streams["healthy_pattern"], specimen):
         stream = streams["healthy_community"]
@@ -307,6 +306,27 @@ def surveillance_stream(parameters: Mapping[str, Any], view: RecordView) -> Rule
             value=stream,
             evidence_basis=BASIS_SPECIMEN_CONTEXT,
             source_field=STREAM_SOURCE_FIELD,
+            source_value=specimen,
+        )
+
+    # `/environmental_sample` is a **valueless** flag: all 278 occurrences store `''`, so the
+    # `.strip()` this branch used to sit behind was always falsy and it had never fired in any
+    # release. Presence is the signal.
+    #
+    # It runs *below* the specimen text rather than above it, which is the difference between +17
+    # cells and 36 wrong ones. 36 flagged records name their own specimen — 31 stool or faeces, 2 a
+    # nasopharyngeal swab, 3 a healthy contact's stool — and a stool sample from a person is not an
+    # environmental sample however the sampling programme was labelled. The flag is a statement
+    # about the *study*; `/isolation_source` is a statement about *this material*, and the more
+    # specific one wins. Where the record names an individual's specimen, the flag is not read, and
+    # the record keeps the answer the text gives it, which is what 2.4.1 ships on all 36.
+    if ENVIRONMENTAL_FLAG_QUALIFIER in view.qualifiers and not re.search(
+        parameters["individual_specimen_pattern"], specimen
+    ):
+        return RuleOutcome(
+            value=streams["environmental"],
+            evidence_basis=BASIS_ENVIRONMENTAL_FLAG,
+            source_field=ENVIRONMENTAL_FLAG_QUALIFIER,
             source_value=specimen,
         )
 

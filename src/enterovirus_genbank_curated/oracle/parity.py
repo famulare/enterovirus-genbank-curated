@@ -212,7 +212,7 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('AFP/clinical', ''): 6738,
         ('not_applicable', 'environmental'): 2354,
         ('not_applicable', 'AFP/clinical'): 920,
-        ('environmental', ''): 277,
+        ('environmental', ''): 260,
         ('unknown', ''): 225,
         ('not_applicable', ''): 192,
         ('not_applicable', 'healthy/community'): 111,
@@ -226,11 +226,16 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('AFP/clinical', 'not_applicable'): 2,
         ('unknown', 'environmental'): 2,
     },
+    # 80 cells left on 2026-08-12, when R-SPECIMEN-2 gained the keyword families its declined
+    # population turned out to name: 'treatment plant' and 'trunk line' for the Israeli sewage
+    # series, the bare 'environment', and 'central nervous system' for one deposit. The
+    # `('CNS', '')` class went to zero and is gone rather than listed. What is left is almost all
+    # `default_stool`: 5,812 records where 2.4.1 assumed stool after `/isolation_source` failed to
+    # match, which is a surveillance context and not a material.
     "specimen_type": {
         ('stool', ''): 5812,
-        ('environmental', ''): 393,
+        ('environmental', ''): 314,
         ('respiratory', ''): 4,
-        ('CNS', ''): 1,
         ('stool', 'environmental'): 1,
     },
     # `collection_date`'s own 1,761 blankings are the ones the header above records as gone — the
@@ -421,10 +426,16 @@ def verify_source_parity(repository_root: Path, *, guarded: bool = False) -> dic
 # nobody pinned. It is also the load-bearing one — `align/population.py` requires a partition on
 # every row, so a decline here is not a blank cell but a broken alignment layer.
 UNRESOLVED_PARTITION_ROWS = 0
-# `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: those where no keyword matches
-# `/isolation_source` and 4 where two categories match, naming two specimens rather than one. All 23
-# rescued records decline — patent deposits carry no `/isolation_source` — so this moved with them.
-UNRESOLVED_SPECIMEN_ROWS = 12700
+# `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: 10,265 that deposit no
+# `/isolation_source` at all, 2,351 where it names no keyword the patterns recognise, and 4 where
+# two categories match, naming two specimens rather than one. All 23 rescued records decline —
+# patent deposits carry no `/isolation_source` — so this moved with them.
+#
+# Down 80 from 12,780 on 2026-08-12: the treatment-plant, trunk-line, bare-environment and
+# central-nervous-system keyword families. What is left of the second group is mostly text naming
+# an epidemiological frame rather than a material — `AFP case`, `paralytic polio case` — which 2.4.1
+# resolved with the `default_stool` assumption this pipeline declines to inherit.
+UNRESOLVED_SPECIMEN_ROWS = 12620
 # `sample_origin` rows R-ORIGIN-2 declines, over the built carve: poliovirus records that
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
 # itself undecided and so cannot be scoped either way. 19 of the 23 rescued records decline; the
@@ -454,7 +465,13 @@ UNRESOLVED_ORIGIN_ROWS = 2902
 # Down a further 1,023 the same day, with the upstream partition projection. Same shape as
 # `sample_origin` above: a scoped record can be asked the question, and 1,023 of the newly-scoped
 # ones name a surveillance context in their own text. The others name none.
-UNRESOLVED_STREAM_ROWS = 7571
+#
+# Down a further 17, 2026-08-12, when the `/environmental_sample` branch fired for the first time.
+# It had tested the *value* of a valueless GenBank flag since the rule was written, so it had never
+# resolved anything; presence is the signal. Only 17 rather than the 148 flagged records in the
+# carve, because 95 already read `environmental` from their own text and 36 name an individual's
+# specimen, which the flag does not overrule — see `derive/epi.py`.
+UNRESOLVED_STREAM_ROWS = 7554
 # `engineered_or_construct` now declines on nothing. It declined on `LY501105` and `LZ216100`, the
 # CAVA cold-adaptation pair Appendix B of the re-adjudication recorded as open in either direction,
 # and the curator closed both FALSE on 2026-07-31 on the precedent already set inside patent
