@@ -44,9 +44,7 @@
     "locality",
     "biosample_accession"
   ],
-  "pending_columns": {
-    "sequence_scope": "needs record_type. The sequence stage exists and measures coverage against the Sabin frame, but coverage does not reproduce record_type: fitted against every threshold combination it agrees on 86.7% of poliovirus records with systematic rather than boundary errors \u2014 745 records the release calls other_fragment have a complete VP1, capsid or genome \u2014 so record_type is not a function of coverage against Sabin VP1 alone. See derive/evidence.py."
-  },
+  "pending_columns": {},
   "provenance_fields": [
     "collection_date",
     "collection_date_precision",
@@ -57,6 +55,7 @@
     "locality",
     "poliovirus_classification",
     "sample_origin",
+    "sequence_scope",
     "specimen_type",
     "surveillance_stream",
     "virus_group",
@@ -68,15 +67,15 @@
     "excluded_by_ledger": 173,
     "excluded_as_non_enterovirus": 1246,
     "included_by_membership_rescue": 23,
-    "provenance_rows": 316004,
-    "dates_not_applicable": 4573,
+    "provenance_rows": 340312,
+    "dates_not_applicable": 2812,
     "localities_without_geography": 2055,
     "curation_queue_groups": 295,
     "decision_applications": 6119,
     "curation_queue_records": 25865,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
-    "rules_published": 38,
+    "rules_published": 39,
     "classification_divergence_rows": 8347
   }
 }

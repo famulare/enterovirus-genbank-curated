@@ -61,6 +61,15 @@ class RecordView:
     text-classification fallback does, and only for a record with no sequence signal of its own to
     ask instead.
 
+    `features` holds every annotated feature on the record — not just the `source` one — as `key`,
+    `label` and `length`. `qualifiers` above deliberately covers only the first value of each
+    qualifier on the `source` feature, which is what every rule needed until `R-SCOPE-2`: the
+    genomic scope of a deposit is a statement about its *annotation*, so it has to see the CDS and
+    `mat_peptide` features and how long each one is. `label` is the feature type joined with its
+    naming qualifiers, matching how the frozen upstream stage composed the string it matched on, and
+    `length` is summed over `feature_location_parts` so a joined feature counts once at its full
+    span.
+
     `membership_evidence` holds `derive.evidence.measure_poliovirus_membership_band`'s result for a
     record whose organism name is one of `derive.partition.UNINFORMATIVE_ORGANISMS` — the capsid
     amino-acid distance to the nearest poliovirus reference, banded into `poliovirus` or
@@ -78,6 +87,7 @@ class RecordView:
     evidence: Mapping[str, str] = NO_EVIDENCE
     reference_titles: str = ""
     membership_evidence: Mapping[str, str] = NO_EVIDENCE
+    features: tuple[Mapping[str, str], ...] = ()
 
     def qualifier(self, name: str) -> str:
         return self.qualifiers.get(name, "")

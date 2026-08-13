@@ -109,12 +109,20 @@ including the floor-of-mean midpoint on all 121 interval records. The release de
 projections of curated fields; for these rows those curated fields evidently just held the normalized
 source value.
 
-The problem is the 4,569 records that deposited **no** date. The release splits them: 2,805 get
-precision `unknown`, and 1,764 get precision `year` with a year recovered outside GenBank by an
-archival reconstruction whose inputs are not in this repository. Nothing in `raw/` separates those two
-groups, so the split cannot be reproduced, and guessing it would fabricate 4,569 values.
+4,569 records deposited **no** `/collection_date`. The release split them: 2,805 got precision
+`unknown`, and 1,764 got precision `year` with a year attributed to an archival reconstruction
+outside this repository.
 
-**Curator decision, 2026-07-30: a record with no date has no precision.** Those rows now carry `NA`
+**That attribution was wrong, and it was never measured.** 1,690 of those years are readable from a
+GPEI surveillance identifier in `/strain`, `/isolate`, the definition line or the other `source`
+qualifiers, and 71 more from an explicit four-digit year in a strain designation — every one of them
+from a field `final/source/` already carries, and **none** from the archival reconstruction.
+`derive/date_identifiers.py` reads them (R-DATE-2's identifier branch, 2026-08-12) and reproduces
+2.4.1's year on **1,761 of 1,761** shared rows.
+
+What is left of the split is the 2,803 with no date and no identifier year either.
+
+**Curator decision, 2026-07-30: a record with no date has no precision.** Those rows carry `NA`
 and a blank date.
 
 **Invariant broken, and its replacement.** 2.4.1 guaranteed
@@ -130,22 +138,18 @@ about one that is. It is enforced against the build's own output by `validation/
 anything is written, so it holds for a fresh clone with no `final/` present and cannot be satisfied by
 copying. `unknown` is also freed to mean what it says — a date exists but its precision is unclear.
 
-The break is counted, not just described: **1,761** records differ on `collection_date` and **4,564**
-on `collection_date_precision`, declared in `oracle/parity.py`'s `DECLARED_TRANSITIONS` and compared
-against the preserved 2.4.1 baseline on every `evgc parity-canonical` run, so a deliberate delta
-changing size fails the gate.
+The break is counted, not just described: **2,803** records differ on `collection_date_precision`
+and **none** on `collection_date`, declared in `oracle/parity.py`'s `DECLARED_TRANSITIONS` and
+compared against the preserved 2.4.1 baseline on every `evgc parity-canonical` run, so a deliberate
+delta changing size fails the gate.
 
-It said 4,549 until 2026-08-12, and cited a gate that had been deleted. `SUPERSEDED_FIELD_DELTAS`
-went in commit `c245dd3`; the prose kept promising it for eleven days, and the delta moved to 4,564
-underneath — the 15 are release 3.1.0's membership-rescue records, which deposit no date on either
-side. The replacement is stronger than what it restores: per transition *class* rather than per
-column, so `collection_date`'s 59 per-year counts each have to be right, where a column total let
-the whole year distribution be replaced silently.
-
-The 1,761 whose year came from identifier parsing are recoverable, and sooner than this paragraph
-used to claim: they came from `genbank_id_inferred` reading `/strain`, `/isolate` and the definition
-line — inputs `final/source/` already carries — not from the archival reconstruction. Each one
-recovered moves a row from `NA` back to `year`, never the reverse.
+It said 1,761 and 4,549 until 2026-08-12, and cited a gate that had been deleted.
+`SUPERSEDED_FIELD_DELTAS` went in commit `c245dd3`; the prose kept promising it for eleven days, and
+the delta moved to 4,564 underneath — the 15 are release 3.1.0's membership-rescue records, which
+deposit no date on either side. The replacement is stronger than what it restores: per transition
+*class* rather than per column, so a from-value has to be right and not just a column total. That is
+what made the identifier recovery above measurable one convention at a time, and it is why
+`collection_date` could leave the contract entirely rather than shrink.
 
 R-DATE-1 and R-DATE-PRECISION-1 are therefore `deprecated` in the catalog and superseded by R-DATE-2
 and R-DATE-PRECISION-2 on real semver. `final/audit/rules.tsv.gz` still regenerates byte-for-byte,

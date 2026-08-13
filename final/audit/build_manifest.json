@@ -3,13 +3,13 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "7f07206f1b717746c0019ec0508122d1ba3f0eedebd14bc062b73ab5512cf343",
+  "code_sha256": "64d6efd258b935d2c54d5e0f5c0270cbee5e7c7ea47aa8a37787d2bbf0cea903",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
     "decisions_sha256": "ca5e0ab90ebaf9b102d69a16f585c54d8c0155070fdfdfd27fde05dab7bf5ecd",
-    "rules_sha256": "e4b0ed542c0493c8982c0678c102c670143a69faca596d14b53d982d464e30a0"
+    "rules_sha256": "104d411b730efcdc3b18ccf6683bfbce5bdcba62592d47994467ce24e2bc0346"
   },
   "row_counts": {
     "source_records": 25727,
@@ -17,22 +17,22 @@
     "excluded_by_ledger": 173,
     "excluded_as_non_enterovirus": 1246,
     "included_by_membership_rescue": 23,
-    "provenance_rows": 316004,
-    "dates_not_applicable": 4573,
+    "provenance_rows": 340312,
+    "dates_not_applicable": 2812,
     "localities_without_geography": 2055,
     "curation_queue_groups": 295,
     "decision_applications": 6119,
     "curation_queue_records": 25865,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
-    "rules_published": 38,
+    "rules_published": 39,
     "classification_divergence_rows": 8347
   },
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 173,
-    "applied_changed": 1653,
-    "applied_unchanged": 524,
+    "applied_unchanged": 526,
+    "applied_changed": 1651,
     "applied_filled_unresolved": 3442,
     "not_in_force_superseded": 15,
     "not_in_force_retired": 183,
@@ -41,10 +41,8 @@
   "completeness": {
     "canonical_columns": 26,
     "transported": 13,
-    "projected": 13,
-    "pending": [
-      "sequence_scope"
-    ],
+    "projected": 14,
+    "pending": [],
     "columns_with_declined_cells": {
       "poliovirus_classification": 476,
       "sample_origin": 2902,
@@ -80,11 +78,13 @@
       "declined": 0
     },
     "sequence_scope": {
-      "source": "pending",
-      "filled": 0,
-      "blank": 24308,
+      "source": "projected",
+      "filled": 24308,
+      "blank": 0,
       "declined": 0,
-      "pending_reason": "needs record_type. The sequence stage exists and measures coverage against the Sabin frame, but coverage does not reproduce record_type: fitted against every threshold combination it agrees on 86.7% of poliovirus records with systematic rather than boundary errors — 745 records the release calls other_fragment have a complete VP1, capsid or genome — so record_type is not a function of coverage against Sabin VP1 alone. See derive/evidence.py."
+      "rules": [
+        "R-SCOPE-2"
+      ]
     },
     "ncbi_taxid": {
       "source": "transported",
@@ -181,8 +181,8 @@
     },
     "collection_date": {
       "source": "projected",
-      "filled": 19735,
-      "blank": 4573,
+      "filled": 21496,
+      "blank": 2812,
       "declined": 0,
       "rules": [
         "R-DATE-2"

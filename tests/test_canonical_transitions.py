@@ -8,6 +8,11 @@ between the last hand-curated release and what we build?". That question stopped
 behind `SUPERSEDED_FIELD_DELTAS`, a gate that had been deleted, and the classification migration-gap
 document lost two records out of a categorisation whose whole claim was that it had no residue.
 
+It has since earned its keep the other way round, twice. `sequence_scope` and `collection_date` were
+both recorded as unreachable from `raw/`; both were reproduced against this fixture and both are now
+absent from the transition contract entirely. A comparand is also how you find out that a declared
+gap was a mis-specification.
+
 `releases/2.4.1/canonical/sequence_metadata.tsv.gz` is the answer, preserved once. It is a fixture:
 read by `oracle/parity.py` and by these tests, by nothing else, and never by a build —
 `sandbox.READ_REFUSED_DIRS` names its directory so that is enforced rather than asserted. It is not
@@ -215,20 +220,32 @@ def test_a_moved_count_fails(
 def test_relocating_a_blanking_onto_a_different_record_fails(
     baseline: dict[str, dict[str, str]], built: dict[str, dict[str, str]]
 ) -> None:
-    """The reason `collection_date` is enumerated per year instead of collapsed.
+    """Why the from-side is enumerated per value instead of folded to a wildcard.
 
-    With the from-side folded to a wildcard this mutation passed green — only the total was
-    checked, so the whole year distribution of the 1,761 lost dates could be replaced silently.
-    Per-year counts are what make it fail.
+    This mutation moves one blanking from a `CVA13` record to a `CVA24` one, leaving the column's
+    total difference count untouched. Folding the from-side to a wildcard was tried, and it passed
+    green — only totals were checked, so a mis-scoped rule could redistribute a whole population
+    silently. Enumerating the from-value is what makes it fail.
+
+    It was `collection_date` that proved this, over 59 per-year classes. That column now agrees with
+    the baseline exactly, so the check moved to `virus_type` rather than retiring with it — the
+    property is about the shape of the contract, not about dates.
     """
     moved = {version: dict(row) for version, row in built.items()}
-    donor = next(v for v in moved if baseline.get(v, {}).get("collection_date") == "1996"
-                 and moved[v]["collection_date"] == "")
-    taker = next(v for v in moved if baseline.get(v, {}).get("collection_date") == "2001"
-                 and moved[v]["collection_date"] == "")
-    moved[donor]["collection_date"] = baseline[donor]["collection_date"]
-    moved[taker]["collection_date"] = ""
-    with pytest.raises(ContractError, match="collection_date"):
+
+    def pick(value: str, *, agreeing: bool) -> str:
+        return next(
+            version
+            for version in moved
+            if baseline.get(version, {}).get("virus_type") == value
+            and (moved[version]["virus_type"] == value) is agreeing
+        )
+
+    donor = pick("CVA13", agreeing=False)
+    taker = pick("CVA24", agreeing=True)
+    moved[donor]["virus_type"] = baseline[donor]["virus_type"]
+    moved[taker]["virus_type"] = ""
+    with pytest.raises(ContractError, match="virus_type"):
         compare_to_baseline(baseline, moved)
 
 
@@ -302,31 +319,48 @@ def test_the_declared_row_delta_names_versions_that_exist(
         assert version in built, f"{version} is declared added but the build does not carry it"
 
 
-def test_the_documented_date_break_is_the_declared_one() -> None:
+def test_the_documented_date_break_is_the_declared_one(
+    baseline: dict[str, dict[str, str]], built: dict[str, dict[str, str]]
+) -> None:
     """The delta `docs/reproducibility.md` calls "the first deliberate break", pinned by name.
 
     This existed once as `SUPERSEDED_FIELD_DELTAS` and was deleted in `c245dd3`, while the prose
     kept saying the numbers were "declared in `oracle/parity.py` and required to match exactly, so
     a deliberate delta changing size fails the gate". No such gate remained, and the delta did
-    change size — 4,549 -> 4,564 — with nothing to notice. The 15 are release 3.1.0's
-    membership-rescue records, which have no deposited date on either side.
+    change size — 4,549 -> 4,564 — with nothing to notice.
 
     Restored as part of `DECLARED_TRANSITIONS` rather than as a parallel constant, so there is one
-    contract rather than two that can disagree, and per *class* rather than per column: the old
-    form checked only the totals. Named here so the documented numbers have a locatable referent
-    and the prose cannot drift from the check again.
+    contract rather than two that can disagree. Named here so the documented numbers have a
+    locatable referent and the prose cannot drift from the check again.
+
+    **What the break now is.** Half of it went away on 2026-08-12: the 1,761 records that lost a
+    date were the ones whose year 2.4.1 attributed to a source outside GenBank, and every one of
+    them turned out to be readable from a surveillance identifier in `raw/`. So `collection_date`
+    has no declared class at all, and that is asserted here rather than merely left out — a column
+    quietly reappearing in this contract is the regression to catch. What remains is the vocabulary
+    break: 2,803 dateless records whose precision was `unknown` and is now `NA`.
     """
-    dates = DECLARED_TRANSITIONS["collection_date"]
-    precision = DECLARED_TRANSITIONS["collection_date_precision"]
-    assert sum(dates.values()) == 1761
-    assert sum(precision.values()) == 4564
-    # Both directions of the invariant the break introduced: a date is lost exactly when its
-    # precision becomes NA, and `unknown` retired in favour of `NA`.
-    assert all(after == "" for _, after in dates), "a collection_date difference that is not a loss"
-    assert precision == {("unknown", "NA"): 2803, ("year", "NA"): 1761}
-    assert sum(dates.values()) == precision[("year", "NA")], (
-        "every record that lost its date should be exactly one that moved from year precision to NA"
+    assert "collection_date" not in DECLARED_TRANSITIONS, (
+        "collection_date has a declared difference from 2.4.1 again; R-DATE-2's identifier branch "
+        "reproduced that column exactly, so a new class here is a regression and not a declaration"
     )
+    precision = DECLARED_TRANSITIONS["collection_date_precision"]
+    assert precision == {("unknown", "NA"): 2803}
+
+    # Measured rather than inferred from the absence above: every shared row agrees on the date.
+    # Which of them agree *because* of the identifier branch is pinned per convention in
+    # `tests/test_date_identifiers.py`, against the shipped provenance that names it.
+    shared = set(baseline) & set(built)
+    assert not [v for v in shared if baseline[v]["collection_date"] != built[v]["collection_date"]]
+
+    # Both halves of the invariant the remaining break rests on: a precision difference is always
+    # `unknown` -> `NA`, and it lands only on rows blank on both sides.
+    assert all(before == "unknown" and after == "NA" for before, after in precision)
+    assert not [
+        v
+        for v in shared
+        if built[v]["collection_date_precision"] == "NA" and built[v]["collection_date"]
+    ]
 
 
 # --- the one thing that cannot be faked --------------------------------------------------------

@@ -80,11 +80,11 @@ RULE_FIELD_ORDER = (
     "status",
 )
 ACTIVE_RULE_STATUS = "active"
-# Every rule in the catalog: the 28 release 2.4.1 published, plus the 10 the rewrite added. Since
+# Every rule in the catalog: the 28 release 2.4.1 published, plus the 11 the rewrite added. Since
 # 2026-08-12 `export/audit.py` publishes all of them, so this is also the shipped `rules.tsv.gz` row
 # count — the two were deliberately different numbers while the view was pinned to 2.4.1's subset,
 # and that is exactly what left 84.6% of provenance rows citing a rule the release did not carry.
-EXPECTED_RULE_COUNT = 38
+EXPECTED_RULE_COUNT = 39
 # `BASELINE_VIEW_RULE_COUNT = 28` stood here until 2026-08-12: how many rules carried 2.4.1's own
 # `rule_version` and so appeared in the frozen `final/audit/rules.tsv.gz`. The view is the whole
 # catalog now, so the number counts nothing and is gone rather than kept as prose.
@@ -142,7 +142,9 @@ RULE_IMPLEMENTATIONS: dict[str, RuleImplementation] = {}
 # 38 the catalog declares. (This comment read "28 of 28 today" until 2026-08-12, a count that
 # matched neither number.)
 PENDING_IMPLEMENTATIONS: dict[str, str] = {
-    "derive.scope.sequence_scope": "needs record_type, derived against Sabin VP1 coordinates",
+    "derive.scope.sequence_scope_v241": (
+        "superseded by R-SCOPE-2; retained for the frozen 2.4.1 rule view"
+    ),
     "derive.typing.virus_type_v241": (
         "superseded by R-TYPE-2; retained for the frozen 2.4.1 rule view"
     ),
@@ -457,6 +459,10 @@ CITED_MEASUREMENTS: dict[str, frozenset[str]] = {
     # floor sit at these internal deviations, and the next-highest genuine one at 8.1. They are the
     # evidence that the declared floor sits in a real gap rather than being fitted to three cases.
     "R-CLASS-2": frozenset({"21.5", "21.8", "55.2", "8.1"}),
+    # The coverage-geometry fit this rule replaced. R-SCOPE-2's description reports it to explain
+    # why the column was recorded as blocked for so long, and why the conclusion drawn from it was
+    # wrong: 86.7 percent was a real measurement of the wrong model.
+    "R-SCOPE-2": frozenset({"86.7"}),
 }
 
 _DECIMAL = re.compile(r"(?<![\d.])\d+\.\d+(?![\d.])")

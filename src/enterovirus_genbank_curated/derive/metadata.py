@@ -69,16 +69,7 @@ TRANSPORTED_COLUMNS = (
 #
 # `assert_every_column_is_accounted_for` uses it as the allowlist for a column blank on every row,
 # so an entry here is a *declared* absence and a column going blank without one is a build failure.
-PENDING_COLUMNS = {
-    "sequence_scope": (
-        "needs record_type. The sequence stage exists and measures coverage against the Sabin "
-        "frame, but coverage does not reproduce record_type: fitted against every threshold "
-        "combination it agrees on 86.7% of poliovirus records with systematic rather than boundary "
-        "errors — 745 "
-        "records the release calls other_fragment have a complete VP1, capsid or genome — so "
-        "record_type is not a function of coverage against Sabin VP1 alone. See derive/evidence.py."
-    ),
-}
+PENDING_COLUMNS: dict[str, str] = {}
 
 # The two records the shipped carve includes and this transport still does not, down from seventeen.
 #

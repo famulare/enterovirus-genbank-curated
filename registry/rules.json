@@ -4,7 +4,7 @@
     "rule_version": "2.4.1",
     "field_name": "sequence_scope",
     "description": "Map the pipeline record_type to a normalized genomic scope (complete_genome/capsid/vp1_complete/vp1_partial/other_fragment/unknown). POLIOVIRUS ONLY: record_type is derived against Sabin VP1 coordinates and is literally 'other' for every non-polio EV record, so a non-polio row projects 'unknown' (no determination was made) rather than asserting 'other_fragment' (a determination that it is a fragment) -- 1,764 of those rows are >=6,000 nt.",
-    "implementation": "derive.scope.sequence_scope",
+    "implementation": "derive.scope.sequence_scope_v241",
     "parameters": {
       "scopes": [
         "complete_genome",
@@ -16,7 +16,7 @@
       ],
       "non_poliovirus_scope": "unknown"
     },
-    "status": "active"
+    "status": "deprecated"
   },
   {
     "rule_id": "R-PARTITION-1",
@@ -335,7 +335,7 @@
     "rule_id": "R-DATE-PRECISION-2",
     "rule_version": "1.0.0",
     "field_name": "collection_date_precision",
-    "description": "Precision is the shape of the GenBank /collection_date qualifier: day, month, year, or range. A record that deposited no date has no precision and projects NA. This supersedes R-DATE-PRECISION-1, which projected the curated collection_date_precision and used 'unknown' for 2,805 dateless records while giving 1,764 others a year recovered from outside GenBank. Nothing in raw/ separates those two groups, so the split cannot be reproduced and guessing it would fabricate 4,569 values. NA also frees 'unknown' to mean what it says: a date exists but its precision is unclear.",
+    "description": "Precision is the shape of the GenBank /collection_date qualifier: day, month, year, or range. A record that deposited no date, and whose identifier carries no year either, has no precision and projects NA. This supersedes R-DATE-PRECISION-1, which projected the curated collection_date_precision and used 'unknown' for 2,805 dateless records while giving 1,764 others a year. NA frees 'unknown' to mean what it says: a date exists but its precision is unclear. A year is read out of a GPEI poliovirus surveillance identifier only when no date was deposited and no decision names one, and only inside the curated poliovirus partition, since the naming conventions are poliovirus-surveillance-specific. The conventions themselves are structural and live in derive/date_identifiers.py; the three numbers that decide whether an inferred year is emitted at all are declared here. An inferred year must fall between 1930 and 2026 inclusive, and a two-digit YY belongs to the 1900s at or above 50 and to the 2000s below it. Out of window means the convention did not match and the cascade keeps looking, never that a wrong year is shipped: without the ceiling AJ783720 is dated 2028 from the specimen number 05/28, and without the floor AY948201 is dated 1025 from the isolate CHN1025. This recovers the year 2.4.1 shipped on 1,761 of 1,761 records that deposited no date - 1,690 from an identifier and 71 from a four-digit year written into a strain designation - which refutes the premise recorded until 2026-08-12 that those years came from an archival reconstruction outside this repository.",
     "implementation": "derive.dates.collection_date_precision",
     "parameters": {
       "precisions": [
@@ -344,7 +344,10 @@
         "year",
         "range"
       ],
-      "not_applicable": "NA"
+      "not_applicable": "NA",
+      "minimum_inferred_year": "1930",
+      "maximum_inferred_year": "2026",
+      "two_digit_year_pivot": "50"
     },
     "status": "active"
   },
@@ -352,7 +355,7 @@
     "rule_id": "R-DATE-2",
     "rule_version": "1.0.0",
     "field_name": "collection_date",
-    "description": "Precision-driven and source-derived: day and month precision emit the ISO normalization of the GenBank /collection_date, year emits the year, and range emits the midpoint (floor of the mean of the endpoint years). A record with no date emits blank, so collection_date is blank if and only if collection_date_precision is NA. Every emitted value matches ^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$. An active collection_year_curated decision wins outright, which is what keeps a rejected submitter date from being reinstated. This supersedes R-DATE-1, whose curated-first branches are not reachable from raw/ alone.",
+    "description": "Precision-driven and source-derived: day and month precision emit the ISO normalization of the GenBank /collection_date, year emits the year, and range emits the midpoint (floor of the mean of the endpoint years). A record with no date emits blank, so collection_date is blank if and only if collection_date_precision is NA. Every emitted value matches ^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$. An active collection_year_curated decision wins outright, which is what keeps a rejected submitter date from being reinstated. This supersedes R-DATE-1, whose curated-first branches are not reachable from raw/ alone. A year is read out of a GPEI poliovirus surveillance identifier only when no date was deposited and no decision names one, and only inside the curated poliovirus partition, since the naming conventions are poliovirus-surveillance-specific. The conventions themselves are structural and live in derive/date_identifiers.py; the three numbers that decide whether an inferred year is emitted at all are declared here. An inferred year must fall between 1930 and 2026 inclusive, and a two-digit YY belongs to the 1900s at or above 50 and to the 2000s below it. Out of window means the convention did not match and the cascade keeps looking, never that a wrong year is shipped: without the ceiling AJ783720 is dated 2028 from the specimen number 05/28, and without the floor AY948201 is dated 1025 from the isolate CHN1025. This recovers the year 2.4.1 shipped on 1,761 of 1,761 records that deposited no date - 1,690 from an identifier and 71 from a four-digit year written into a strain designation - which refutes the premise recorded until 2026-08-12 that those years came from an archival reconstruction outside this repository.",
     "implementation": "derive.dates.collection_date",
     "parameters": {
       "output_pattern": "^[0-9]{4}(-[0-9]{2}(-[0-9]{2})?)?$",
@@ -361,7 +364,10 @@
         "month",
         "year",
         "range"
-      ]
+      ],
+      "minimum_inferred_year": "1930",
+      "maximum_inferred_year": "2026",
+      "two_digit_year_pivot": "50"
     },
     "status": "active"
   },
@@ -491,6 +497,26 @@
         "vaccine",
         "wild"
       ]
+    },
+    "status": "active"
+  },
+  {
+    "rule_id": "R-SCOPE-2",
+    "rule_version": "1.0.0",
+    "field_name": "sequence_scope",
+    "description": "Derive sequence_scope from the record's own annotation and text, replacing R-SCOPE-1's projection of a pipeline record_type that no declared input carries. Not a coverage measurement: fitting coverage geometry against Sabin VP1 reproduces the shipped column on only 86.7 percent of poliovirus records with systematic rather than boundary errors, and that is because scope was never a function of coverage. It is a seven-branch precedence over which region the deposit names, with three length floors, and it reproduces the shipped column on 24301 of 24301 rows. The curated virus_group gates it: outside poliovirus no scope determination exists, because record_type was derived against Sabin coordinates, so the determined value unknown is emitted rather than a decline, which is what the release ships on every non-poliovirus row. Inside the gate the poliovirus test and the serotype both come from the frozen stage's own text inference and not from the canonical columns; using canonical virus_type for the serotype costs 308 rows, because the VP1 floor is serotype-specific. A record the text does not identify as poliovirus took record_type other by default upstream and does so here. Otherwise, in order: at or above 7000 nt, or naming a complete or whole genome, is complete_genome; a capsid-precursor feature at or above 2400 nt, or that length with the text naming P1 or a capsid precursor, is capsid; a polyprotein feature at or above 6000 nt, or that length with the text naming a polyprotein or a complete cds, resolves by length to complete_genome at or above 7000 nt and capsid below it; a VP1 feature at or above its serotype's canonical length -- 906 for type 1, 903 for type 2, 900 for type 3 and for an unstated serotype -- is vp1_complete; VP1 named but shorter is vp1_partial; text naming a non-capsid region is other_fragment; and a record naming no region at all is other_fragment too. That last branch is why 745 records the release calls other_fragment have a complete VP1, capsid or genome: the column states what a deposit says it is, not how much of the genome it covers, and reading it as completeness is what made those records look like a defect.",
+    "implementation": "derive.scope.sequence_scope_v2",
+    "parameters": {
+      "whole_genome_nt": "7000",
+      "capsid_nt": "2400",
+      "polyprotein_nt": "6000",
+      "vp1_nt_by_serotype": {
+        "1": "906",
+        "2": "903",
+        "3": "900",
+        "unknown": "900"
+      },
+      "non_poliovirus_scope": "unknown"
     },
     "status": "active"
   }

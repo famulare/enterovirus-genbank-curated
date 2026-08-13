@@ -91,7 +91,9 @@ def assert_date_precision_invariant(rows: Iterable[dict[str, str]]) -> int:
     This replaces a weaker release guarantee. 2.4.1 promised only that the precision came from a
     five-value vocabulary including `unknown`, and said nothing relating the two columns — which is
     how 1,764 records ended up with precision `year` and a date, alongside 2,805 with precision
-    `unknown` and no date, with no way to tell from GenBank which was which.
+    `unknown` and no date, with nothing recording which was which. (1,761 of those years turned out
+    to be readable from a surveillance identifier after all, and R-DATE-2 now reads them; that
+    changed which rows are `NA` and not this invariant, which held before and after.)
 
     The replacement is checkable in both directions, and both directions matter. A blank date with a
     real precision claims a determination about a date that is not there; a populated date with `NA`

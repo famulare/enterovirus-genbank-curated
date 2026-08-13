@@ -62,6 +62,11 @@ GUARD_PASS_MARKER = "undeclared-input guard: PASS"
 # document lost two records out of its own categorisation. A delta nobody can recompute is a delta
 # nobody is checking.
 #
+# It also does the opposite of what it was commissioned for, twice. `sequence_scope` and
+# `collection_date` were both recorded as unreachable from `raw/`; both were reproduced against this
+# fixture and are now absent from `DECLARED_TRANSITIONS` entirely. A comparand is how you find out
+# that a declared gap was a mis-specification.
+#
 # 2.4.1 is not coming back and is not being reproduced. The claim this supports is narrower and
 # permanent: *every* cell that differs from the baseline belongs to a class someone declared below.
 BASELINE_CANONICAL = "releases/2.4.1/canonical/sequence_metadata.tsv.gz"
@@ -81,7 +86,7 @@ DECLARED_ROW_DELTA = {
 }
 
 # Every canonical cell that differs from the 2.4.1 baseline, by class, over the 24,299 shared rows.
-# The seventeen columns absent from this table are identical on every shared row, `virus_group` and
+# The nineteen columns absent from this table are identical on every shared row, `virus_group` and
 # `curation_status` among them — the partition reproduces exactly.
 #
 # Read a `('x', '')` entry as "2.4.1 asserted x and this pipeline declines or blanks", and a
@@ -90,14 +95,12 @@ DECLARED_ROW_DELTA = {
 # applied after `/isolation_source` failed to match, and the 11,649 `('unknown', 'human')` cells are
 # this pipeline reading a `/host` the upstream stage never examined.
 DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
-    "sequence_scope": {
-        ('unknown', ''): 14217,
-        ('vp1_complete', ''): 5048,
-        ('other_fragment', ''): 2334,
-        ('complete_genome', ''): 1880,
-        ('vp1_partial', ''): 775,
-        ('capsid', ''): 45,
-    },
+    # `sequence_scope` is absent, and its absence is the result. It held 24,299 cells in 6 classes
+    # — every shared row, because the column shipped empty — until `R-SCOPE-2` landed on
+    # 2026-08-12 and reproduced 2.4.1's column exactly. A canonical column moving from "differs on
+    # every row" to "no declared class at all" is the strongest form this contract can take, and it
+    # is why the column is not listed rather than listed as zero: there is no transition to declare.
+    # `collection_date` left the same way the same day; see its note below the epi columns.
     "virus_type": {
         ('CVA13', ''): 188,
         ('PV2', ''): 149,
@@ -227,76 +230,23 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('CNS', ''): 1,
         ('stool', 'environmental'): 1,
     },
-    # Enumerated per year rather than collapsed to a single "every difference is a blanking" class.
-    # The collapse was tried and reverted: with the from-side folded to a wildcard, *moving* the
-    # 1,761 blankings onto a different 1,761 records passes green, because only the total is
-    # checked. Fifty-nine numbers that each have to be right beat one that does not, and the year
-    # distribution is exactly what a mis-scoped date rule would disturb. Each recovery in
-    # `R-DATE-YEAR-FROM-ID-1` should decrement the year it recovers.
-    "collection_date": {
-        ('1996', ''): 225,
-        ('2001', ''): 203,
-        ('1992', ''): 110,
-        ('1991', ''): 105,
-        ('1993', ''): 98,
-        ('1998', ''): 92,
-        ('1999', ''): 87,
-        ('2003', ''): 84,
-        ('2008', ''): 69,
-        ('2000', ''): 67,
-        ('2002', ''): 50,
-        ('1988', ''): 49,
-        ('1989', ''): 49,
-        ('1990', ''): 49,
-        ('1994', ''): 48,
-        ('1995', ''): 47,
-        ('1987', ''): 38,
-        ('2006', ''): 28,
-        ('2010', ''): 27,
-        ('2005', ''): 24,
-        ('2007', ''): 23,
-        ('1997', ''): 21,
-        ('1985', ''): 18,
-        ('1986', ''): 17,
-        ('2009', ''): 13,
-        ('1960', ''): 9,
-        ('2011', ''): 8,
-        ('2023', ''): 8,
-        ('1982', ''): 6,
-        ('2015', ''): 6,
-        ('2021', ''): 6,
-        ('1959', ''): 5,
-        ('1977', ''): 5,
-        ('2004', ''): 5,
-        ('1961', ''): 4,
-        ('1980', ''): 4,
-        ('1981', ''): 4,
-        ('1983', ''): 4,
-        ('2022', ''): 4,
-        ('1952', ''): 3,
-        ('1962', ''): 3,
-        ('2013', ''): 3,
-        ('2016', ''): 3,
-        ('2024', ''): 3,
-        ('1953', ''): 2,
-        ('1967', ''): 2,
-        ('1973', ''): 2,
-        ('1976', ''): 2,
-        ('1978', ''): 2,
-        ('1979', ''): 2,
-        ('1984', ''): 2,
-        ('2012', ''): 2,
-        ('2014', ''): 2,
-        ('2017', ''): 2,
-        ('2018', ''): 2,
-        ('2019', ''): 2,
-        ('1955', ''): 1,
-        ('1963', ''): 1,
-        ('1971', ''): 1,
-    },
+    # `collection_date` is absent for the same reason `sequence_scope` is. It held 1,761 blankings
+    # in 59 per-year classes — the population `docs/reproducibility.md` blamed on an archival
+    # reconstruction outside this repository — until `R-DATE-2` grew the identifier branch on
+    # 2026-08-12 and recovered every one of them, at the year 2.4.1 shipped, from `/strain`,
+    # `/isolate`, the definition line and the other `source` qualifiers. The column now agrees with
+    # the baseline on all 24,299 shared rows.
+    #
+    # (Those 59 classes were themselves a correction. The first draft folded the from-side to a
+    # wildcard and measured green while the 1,761 blankings were *relocated* onto different records,
+    # because only the total was checked. The year distribution is what a mis-scoped date rule
+    # disturbs, so it was the year distribution that had to be pinned.)
+    #
+    # What is left below is the vocabulary break and nothing else: 2,803 records that deposited no
+    # date and whose identifier carries no year either. 2.4.1 called their precision `unknown`; a
+    # record with no date has no precision, so this pipeline calls it `NA`.
     "collection_date_precision": {
         ('unknown', 'NA'): 2803,
-        ('year', 'NA'): 1761,
     },
     "engineered_or_construct": {
         ('TRUE', 'FALSE'): 511,

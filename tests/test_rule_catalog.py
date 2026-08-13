@@ -50,9 +50,10 @@ from enterovirus_genbank_curated.registry.rules import (
 )
 
 SHIPPED_RULES = "final/audit/rules.tsv.gz"
-# One provenance row per carved record per implemented field. Pinned so the closure check below
-# cannot be satisfied by a truncated table.
-PROVENANCE_ROWS = 316004
+# One provenance row per carved record per implemented field: 14 fields over 24,308 records.
+# Pinned so the closure check below cannot be satisfied by a truncated table. Grew by 24,308 on
+# 2026-08-12 when R-SCOPE-2 made `sequence_scope` the fourteenth projected field.
+PROVENANCE_ROWS = 340312
 
 
 @pytest.fixture(scope="module")
@@ -249,7 +250,12 @@ def test_two_active_rules_for_one_canonical_field_are_refused(
     """The shipped provenance has exactly one winning rule per canonical field."""
     doubled = copy.deepcopy(records)
     clone = copy.deepcopy(next(r for r in doubled if r["field_name"] == "sequence_scope"))
-    clone["rule_id"] = "R-SCOPE-2"
+    # Not "R-SCOPE-2": that is a real rule since 2026-08-12, so the clone would trip the
+    # duplicate-id check first and this test would stop exercising the one it names. And the rule
+    # it clones is R-SCOPE-1, now `deprecated` — a deprecated duplicate is exactly what the
+    # supersession pattern produces on purpose, so the clone has to be made active to be a conflict.
+    clone["rule_id"] = "R-SCOPE-CLONE"
+    clone["status"] = "active"
     doubled.append(clone)
     specs = load_rule_catalog(write_catalog(tmp_path, doubled), contract)
     with pytest.raises(ContractError, match="two active rules"):

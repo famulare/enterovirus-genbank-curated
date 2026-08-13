@@ -117,15 +117,23 @@ EXPECTED_TALLY = {
     # decision is redundant with the rules as they stand). The totals are unchanged at 5,619
     # applications; what moved is the attribution, which was the one thing this table exists to
     # state. `applied_unchanged` going 25 -> 524 is the counterfactual finally doing the job
-    # `build.py` describes it as doing — surfacing curation a rule has made redundant.
+    # `build.py` describes it as doing — surfacing curation a rule has made redundant. It went to
+    # 526 the same week, for the same reason and by a different route; see the note below.
     #
     # These three are flat numbers rather than sums because there is no honest decomposition: the
     # history above was measured against the wrong comparison, and re-deriving per-episode terms
     # from it would be inventing provenance. The commentary is kept as the record of what the
     # broken counterfactual reported.
+    # 2026-08-12, R-DATE-2's identifier branch: two cells move `applied_changed` ->
+    # `applied_unchanged`, both `AY308802`. Its `collection_year_curated = 1953` decision is now
+    # redundant — withhold it and `country_year_optional_case` reads the same 1953 out of the
+    # strain token `USA53`. The upstream stage had noticed the same coincidence and drawn the
+    # opposite conclusion from it: because the inferred year agreed, an override-shadowing bug
+    # there stayed invisible for weeks. Here it is the counterfactual reporting exactly what it
+    # exists to report, and `AY308802` joins the Phase H population.
     "applied_filled_unresolved": 3442,
-    "applied_changed": 1653,
-    "applied_unchanged": 524,
+    "applied_changed": 1651,
+    "applied_unchanged": 526,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,

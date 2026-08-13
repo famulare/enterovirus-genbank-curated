@@ -20,6 +20,12 @@ from enterovirus_genbank_curated.registry.rules import BoundRule
 NO_OVERRIDE = "FALSE"
 OVERRIDE = "TRUE"
 SOURCE_FEATURE_KEY = "source"
+# The qualifiers that name a feature, and the ones whose text describes it. Both lists are the
+# frozen upstream stage's own (`extract_genbank_metadata.feature_label` / `text_blob`), kept
+# verbatim so `R-SCOPE-2` matches on the same string it was calibrated against. `region_name` occurs
+# zero times in this corpus and `standard_name` once; they stay for fidelity and cost nothing.
+LABEL_QUALIFIERS = ("gene", "product", "note", "region_name", "standard_name", "function")
+TEXT_QUALIFIERS = ("product", "note", "gene", "region_name")
 
 
 def build_record_views(
@@ -70,6 +76,40 @@ def build_record_views(
         if title:
             titles.setdefault(row["record_id"], []).append(title)
 
+    # Every feature, not just `source`, with the label the frozen upstream stage composed and the
+    # span summed over its location parts so a joined feature counts once at its full length.
+    # `R-SCOPE-2` is the only reader: genomic scope is a statement about a record's annotation, so
+    # it needs the CDS and `mat_peptide` features the `qualifiers` map above deliberately omits.
+    part_length: dict[str, int] = {}
+    for row in tables["feature_location_parts"]:
+        span = int(row["end_1based_inclusive"]) - int(row["start_1based"]) + 1
+        part_length[row["feature_id"]] = part_length.get(row["feature_id"], 0) + span
+    feature_qualifiers: dict[str, dict[str, list[str]]] = {}
+    for row in tables["feature_qualifiers"]:
+        record_id = feature_record[row["feature_id"]]
+        if record_id not in wanted:
+            continue
+        feature_qualifiers.setdefault(row["feature_id"], {}).setdefault(
+            row["qualifier_name"], []
+        ).append(row["qualifier_value"])
+    features: dict[str, list[dict[str, str]]] = {}
+    for row in tables["features"]:
+        record_id = row["record_id"]
+        if record_id not in wanted:
+            continue
+        held = feature_qualifiers.get(row["feature_id"], {})
+        label = " ".join(
+            [row["feature_key"], *(v for key in LABEL_QUALIFIERS for v in held.get(key, ()))]
+        )
+        features.setdefault(record_id, []).append(
+            {
+                "key": row["feature_key"],
+                "label": label,
+                "length": str(part_length.get(row["feature_id"], 0)),
+                "text": " ".join(v for key in TEXT_QUALIFIERS for v in held.get(key, ())),
+            }
+        )
+
     ledger = decisions or {}
     measured = evidence or {}
     membership_measured = membership_evidence or {}
@@ -84,6 +124,7 @@ def build_record_views(
             evidence=measured.get(record["version"], NO_EVIDENCE),
             reference_titles=" | ".join(titles.get(record["version"], ())),
             membership_evidence=membership_measured.get(record["version"], NO_EVIDENCE),
+            features=tuple(features.get(record["version"], ())),
         )
         for record in tables["records"]
         if record["version"] in wanted
