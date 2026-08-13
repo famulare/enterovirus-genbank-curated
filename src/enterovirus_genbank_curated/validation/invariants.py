@@ -10,7 +10,7 @@ clone with no `final/` present, and so it cannot be satisfied by copying.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.derive.dates import PRECISION_NOT_APPLICABLE
@@ -19,6 +19,7 @@ from enterovirus_genbank_curated.derive.geo import (
     BASIS_NO_GEOGRAPHY,
     BASIS_SUPPRESSED,
 )
+from enterovirus_genbank_curated.registry.rules import BoundRule
 
 DATE_FIELD = "collection_date"
 PRECISION_FIELD = "collection_date_precision"
@@ -129,3 +130,54 @@ def assert_date_precision_invariant(rows: Iterable[dict[str, str]]) -> int:
             "that passes vacuously is indistinguishable from one that is not running"
         )
     return not_applicable
+
+
+def assert_every_basis_is_declared(
+    rows: list[dict[str, str]], bound: Mapping[str, BoundRule]
+) -> int:
+    """Every `evidence_basis` in the assembled provenance is one its own rule declares.
+
+    `derive/apply.py` already checks this for outcomes it projects, and that check is why the
+    declared `evidence_bases` tuples mean anything. It is not sufficient, because it only sees rows
+    that pass *through* `project_field`. `derive/isolate_linkage.py`'s whole-corpus post-pass builds
+    provenance dicts directly and appends them, so its basis went unchecked from the day it landed
+    and shipped on 191 rows of `projection_provenance.tsv.gz` while appearing in no rule's
+    declaration. Declaring it fixed that instance and closed nothing: replacing the constant with
+    any other string still built cleanly.
+
+    This runs over the finished table instead, after every rule and every post-pass, so it is a
+    property of the artifact rather than of one code path. A future post-pass inherits it.
+
+    Declined rows carry no basis by construction (`RuleOutcome.__post_init__`) and are skipped.
+    """
+    declared: dict[str, frozenset[str]] = {
+        rule_id: rule.implementation.declared_bases
+        for rule_id, rule in bound.items()
+        if rule.implementation is not None
+    }
+    offenders: dict[tuple[str, str], int] = {}
+    examined = 0
+    for row in rows:
+        basis = row.get("evidence_basis", "")
+        if not basis or row.get("unresolved_reason"):
+            continue
+        examined += 1
+        rule_id = row.get("winning_rule_id", "")
+        if basis not in declared.get(rule_id, frozenset()):
+            key = (rule_id, basis)
+            offenders[key] = offenders.get(key, 0) + 1
+    if offenders:
+        shown = "; ".join(
+            f"{rule_id} emits {basis!r} on {count} rows without declaring it"
+            for (rule_id, basis), count in sorted(offenders.items(), key=lambda kv: -kv[1])[:10]
+        )
+        raise ContractError(
+            f"{sum(offenders.values())} provenance rows carry an evidence_basis their rule does "
+            f"not declare — {shown}"
+        )
+    if not examined:
+        raise ContractError(
+            "the evidence-basis invariant examined no rows; one that passes vacuously is "
+            "indistinguishable from one that is not running"
+        )
+    return examined

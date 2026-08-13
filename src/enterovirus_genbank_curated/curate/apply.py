@@ -42,10 +42,11 @@ the counterfactual, and no amount of inspecting the final value supplies it.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.derive.apply import project_field
+from enterovirus_genbank_curated.derive.isolate_linkage import apply_isolate_linked_inference
 from enterovirus_genbank_curated.derive.outcome import RecordView
 from enterovirus_genbank_curated.registry.rules import BoundRule
 
@@ -147,23 +148,29 @@ def project_without_decisions(
 
     The counterfactual. Without it, `applied_changed` and `applied_unchanged` are indistinguishable,
     and "this decision did something" becomes an assumption rather than a measurement.
+
+    `replace` rather than a field-by-field reconstruction, and that is the whole point: the ledger
+    is the *only* thing this withholds. The reconstruction it replaced named five of `RecordView`'s
+    nine fields, so it silently dropped `byte_identical`, `evidence`, `reference_titles` and
+    `membership_evidence` — inputs that `derive/engineered.py`, `derive/classification.py` and
+    `derive/partition.py` read. A rule that answered differently because its *evidence* had vanished
+    was recorded as a decision that changed something. `replace` cannot omit a field that exists,
+    so a future `RecordView` input inherits the right behaviour instead of the bug.
+
+    The isolate-linkage post-pass runs here too, for the same reason. It is part of how the build
+    reaches a `poliovirus_classification`, so a counterfactual that omitted it would say the rules
+    could not resolve a cell they in fact resolve — the identical mistake, one stage further on, on
+    21 records whose sibling linkage supplies the value.
     """
-    stripped = [
-        RecordView(
-            version=view.version,
-            accession=view.accession,
-            record=view.record,
-            qualifiers=view.qualifiers,
-            decisions={},
-        )
-        for view in views
-    ]
-    return {
-        (row["version"], row["canonical_field"]): row
+    stripped = [replace(view, decisions={}) for view in views]
+    rows = [
+        row
         for rule in bound
         if rule.implementation is not None
         for row in project_field(rule, stripped)
-    }
+    ]
+    rows = apply_isolate_linked_inference(stripped, rows)
+    return {(row["version"], row["canonical_field"]): row for row in rows}
 
 
 def apply_decisions(

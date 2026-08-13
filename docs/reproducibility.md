@@ -130,12 +130,22 @@ about one that is. It is enforced against the build's own output by `validation/
 anything is written, so it holds for a fresh clone with no `final/` present and cannot be satisfied by
 copying. `unknown` is also freed to mean what it says — a date exists but its precision is unclear.
 
-The break is counted, not just described: **1,761** records differ on `collection_date` and **4,549**
-on `collection_date_precision`, declared in `oracle/parity.py` and required to match exactly, so a
-deliberate delta changing size fails the gate. The 1,764 whose year came from identifier parsing are
-recoverable later — the frozen archival-dates extract labels 21 identifier rule families, usable as a
-validation oracle rather than an input — and each one recovered moves a row from `NA` back to `year`,
-never the reverse.
+The break is counted, not just described: **1,761** records differ on `collection_date` and **4,564**
+on `collection_date_precision`, declared in `oracle/parity.py`'s `DECLARED_TRANSITIONS` and compared
+against the preserved 2.4.1 baseline on every `evgc parity-canonical` run, so a deliberate delta
+changing size fails the gate.
+
+It said 4,549 until 2026-08-12, and cited a gate that had been deleted. `SUPERSEDED_FIELD_DELTAS`
+went in commit `c245dd3`; the prose kept promising it for eleven days, and the delta moved to 4,564
+underneath — the 15 are release 3.1.0's membership-rescue records, which deposit no date on either
+side. The replacement is stronger than what it restores: per transition *class* rather than per
+column, so `collection_date`'s 59 per-year counts each have to be right, where a column total let
+the whole year distribution be replaced silently.
+
+The 1,761 whose year came from identifier parsing are recoverable, and sooner than this paragraph
+used to claim: they came from `genbank_id_inferred` reading `/strain`, `/isolate` and the definition
+line — inputs `final/source/` already carries — not from the archival reconstruction. Each one
+recovered moves a row from `NA` back to `year`, never the reverse.
 
 R-DATE-1 and R-DATE-PRECISION-1 are therefore `deprecated` in the catalog and superseded by R-DATE-2
 and R-DATE-PRECISION-2 on real semver. `final/audit/rules.tsv.gz` still regenerates byte-for-byte,

@@ -3,13 +3,13 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "edb5a389d1d8a1f4fe28b374f3a2766b6c61bbace3fcadf52545f5161a3081e5",
+  "code_sha256": "7f07206f1b717746c0019ec0508122d1ba3f0eedebd14bc062b73ab5512cf343",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
     "decisions_sha256": "ca5e0ab90ebaf9b102d69a16f585c54d8c0155070fdfdfd27fde05dab7bf5ecd",
-    "rules_sha256": "6c29c28e49ba2c740fbacfe65025a8069c05bac1ef55b15dad360d47ccf179e7"
+    "rules_sha256": "e4b0ed542c0493c8982c0678c102c670143a69faca596d14b53d982d464e30a0"
   },
   "row_counts": {
     "source_records": 25727,
@@ -25,15 +25,15 @@
     "curation_queue_records": 25865,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
-    "rules_in_baseline_view": 28,
+    "rules_published": 38,
     "classification_divergence_rows": 8347
   },
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 173,
-    "applied_changed": 522,
-    "applied_unchanged": 25,
-    "applied_filled_unresolved": 5072,
+    "applied_changed": 1653,
+    "applied_unchanged": 524,
+    "applied_filled_unresolved": 3442,
     "not_in_force_superseded": 15,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6

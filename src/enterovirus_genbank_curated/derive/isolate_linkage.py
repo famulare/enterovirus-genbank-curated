@@ -46,6 +46,7 @@ import re
 from collections.abc import Mapping, Sequence
 
 from enterovirus_genbank_curated.derive.classification import (
+    BASIS_ISOLATE_LINKED,
     BASIS_SABIN_LIKE,
     BASIS_TEXT_REFINEMENT,
     BASIS_VDPV,
@@ -60,7 +61,11 @@ from enterovirus_genbank_curated.derive.partition import POLIOVIRUS, resolved_pa
 from enterovirus_genbank_curated.derive.typing import serotype_from_name
 
 CLASSIFICATION_FIELD = "poliovirus_classification"
-LINKED_BASIS = "isolate_linked_inference"
+# Re-exported from `classification` rather than defined here, so R-CLASS-2 can declare it. This
+# pass writes provenance rows directly and never reaches `derive/apply.py`'s declared-basis check,
+# so a locally-defined string would ship in the release while being declared nowhere — which it
+# did, on 191 rows, until 2026-08-12.
+LINKED_BASIS = BASIS_ISOLATE_LINKED
 
 # Measured, not guessed: propagating either of these to a second record would compound whichever
 # one is wrong rather than carry forward an actual measurement. See the module docstring.

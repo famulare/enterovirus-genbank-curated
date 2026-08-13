@@ -155,7 +155,7 @@ def virus_type(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
         if not curated:
             return RuleOutcome(
                 value="",
-                evidence_basis=BASIS_LEDGER,
+                evidence_basis="",
                 source_field=field,
                 source_value=raw,
                 unresolved_reason=UNRESOLVED_CURATED_UNKNOWN,
@@ -175,7 +175,7 @@ def virus_type(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     if not derived:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_TYPE_NAME,
+            evidence_basis="",
             source_field=ORGANISM_FIELD,
             source_value=organism,
             unresolved_reason=UNRESOLVED_NO_TYPE_IN_NAME,

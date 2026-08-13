@@ -302,6 +302,33 @@ def test_the_declared_row_delta_names_versions_that_exist(
         assert version in built, f"{version} is declared added but the build does not carry it"
 
 
+def test_the_documented_date_break_is_the_declared_one() -> None:
+    """The delta `docs/reproducibility.md` calls "the first deliberate break", pinned by name.
+
+    This existed once as `SUPERSEDED_FIELD_DELTAS` and was deleted in `c245dd3`, while the prose
+    kept saying the numbers were "declared in `oracle/parity.py` and required to match exactly, so
+    a deliberate delta changing size fails the gate". No such gate remained, and the delta did
+    change size — 4,549 -> 4,564 — with nothing to notice. The 15 are release 3.1.0's
+    membership-rescue records, which have no deposited date on either side.
+
+    Restored as part of `DECLARED_TRANSITIONS` rather than as a parallel constant, so there is one
+    contract rather than two that can disagree, and per *class* rather than per column: the old
+    form checked only the totals. Named here so the documented numbers have a locatable referent
+    and the prose cannot drift from the check again.
+    """
+    dates = DECLARED_TRANSITIONS["collection_date"]
+    precision = DECLARED_TRANSITIONS["collection_date_precision"]
+    assert sum(dates.values()) == 1761
+    assert sum(precision.values()) == 4564
+    # Both directions of the invariant the break introduced: a date is lost exactly when its
+    # precision becomes NA, and `unknown` retired in favour of `NA`.
+    assert all(after == "" for _, after in dates), "a collection_date difference that is not a loss"
+    assert precision == {("unknown", "NA"): 2803, ("year", "NA"): 1761}
+    assert sum(dates.values()) == precision[("year", "NA")], (
+        "every record that lost its date should be exactly one that moved from year precision to NA"
+    )
+
+
 # --- the one thing that cannot be faked --------------------------------------------------------
 
 

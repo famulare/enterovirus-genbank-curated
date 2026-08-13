@@ -24,10 +24,18 @@ belong. The declared order is also the readable one: projection rules first, the
 
 ## Why thresholds are strings
 
-`"0.15"`, not `0.15`. Comparisons are done with `Fraction` or integer cross-multiplication, so the
-sequence stage cannot acquire a platform float-drift class before it is even written. A JSON float
-also round-trips through `repr` differently across versions, which would break byte-stable
-serialization.
+`"0.15"`, not `0.15`. A JSON float round-trips through `repr` differently across versions, which
+would break the byte-stable serialization `canonical_catalog_text` depends on, and a threshold
+parsed at the point of use cannot acquire a platform float-drift class in the file itself.
+
+What the readers do with them is not uniform, and this docstring claimed otherwise until
+2026-08-12: it said comparisons use `Fraction` or integer cross-multiplication. `Fraction` appears
+nowhere in this repository. `derive/classification.py` parses thresholds with `Decimal`,
+`derive/evidence.py` with `float` and `int`, and several parameters are not numbers at all —
+`derive/epi.py` and `derive/dates.py` read regexes, `derive/partition.py` reads controlled
+vocabularies. The one property actually enforced is that every leaf is a `str`
+(`scalar_parameters`), which is what `assert_parameters_are_described` needs to match them against
+their own prose.
 
 ## Why `implementation` is a key and not an import path
 
@@ -46,7 +54,7 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -72,13 +80,14 @@ RULE_FIELD_ORDER = (
     "status",
 )
 ACTIVE_RULE_STATUS = "active"
-# 35 published by release 2.4.1, plus every rule the rewrite adds. The `-2` rules carry real semver
-# and are excluded from the frozen 2.4.1 view by `export/audit.py`, so this count and the shipped
-# `rules.tsv.gz` row count are deliberately different numbers.
+# Every rule in the catalog: the 28 release 2.4.1 published, plus the 10 the rewrite added. Since
+# 2026-08-12 `export/audit.py` publishes all of them, so this is also the shipped `rules.tsv.gz` row
+# count — the two were deliberately different numbers while the view was pinned to 2.4.1's subset,
+# and that is exactly what left 84.6% of provenance rows citing a rule the release did not carry.
 EXPECTED_RULE_COUNT = 38
-# How many of those carry the baseline's own rule_version and so appear in the frozen
-# `final/audit/rules.tsv.gz` view. The rest are the rewrite's own, on real semver.
-BASELINE_VIEW_RULE_COUNT = 28
+# `BASELINE_VIEW_RULE_COUNT = 28` stood here until 2026-08-12: how many rules carried 2.4.1's own
+# `rule_version` and so appeared in the frozen `final/audit/rules.tsv.gz`. The view is the whole
+# catalog now, so the number counts nothing and is gone rather than kept as prose.
 
 
 @dataclass(frozen=True)
@@ -127,7 +136,11 @@ class BoundRule:
 RULE_IMPLEMENTATIONS: dict[str, RuleImplementation] = {}
 
 # Every rule whose body does not exist yet, and the input it is waiting on. The same honesty
-# `derive/metadata.py`'s `PENDING_COLUMNS` provides for columns, at the rule layer: 28 of 28 today.
+# `derive/metadata.py`'s `PENDING_COLUMNS` provides for columns, at the rule layer. Two kinds:
+# superseded 2.4.1 keys retained so the published catalog still lists the rule its successor
+# replaced, and stages genuinely unwritten. 26 entries against 12 registered bodies, which is the
+# 38 the catalog declares. (This comment read "28 of 28 today" until 2026-08-12, a count that
+# matched neither number.)
 PENDING_IMPLEMENTATIONS: dict[str, str] = {
     "derive.scope.sequence_scope": "needs record_type, derived against Sabin VP1 coordinates",
     "derive.typing.virus_type_v241": (
@@ -432,6 +445,79 @@ def assert_parameters_are_described(specs: Iterable[RuleSpec]) -> None:
         )
 
 
+# Decimal literals that appear in a rule description as *cited evidence* rather than as a declared
+# threshold. Each is a measurement the description reports to justify a parameter, so it has no
+# counterpart in `parameters` and must be named here or `assert_no_orphaned_thresholds` reads it as
+# a threshold the rule stopped declaring.
+#
+# Keep this small and keep the reasons. An entry added to silence the check, rather than because the
+# number really is a citation, converts the check back into the decoration it replaced.
+CITED_MEASUREMENTS: dict[str, frozenset[str]] = {
+    # The chunked-homogeneity guard's own calibration: the three broken windows that motivated the
+    # floor sit at these internal deviations, and the next-highest genuine one at 8.1. They are the
+    # evidence that the declared floor sits in a real gap rather than being fitted to three cases.
+    "R-CLASS-2": frozenset({"21.5", "21.8", "55.2", "8.1"}),
+}
+
+_DECIMAL = re.compile(r"(?<![\d.])\d+\.\d+(?![\d.])")
+
+
+def assert_no_orphaned_thresholds(specs: Iterable[RuleSpec]) -> None:
+    """The converse of `assert_parameters_are_described`, and the half that was missing.
+
+    That check is one-directional: every declared parameter must appear in the prose. It cannot see
+    a parameter that *moves onto a value the prose already contains*. Measured — changing PV2's
+    Sabin-like ceiling from 0.6 to 1.0 while the description still reads "below 0.6 percent for PV2"
+    passes it, because "1.0" is already in the text for PV1 and PV3. 466 records reclassify and both
+    gates stay green.
+
+    What the mutation leaves behind is an orphan: "0.6" still stated in prose while no parameter
+    declares it. So the rule is that every decimal literal in a description must be a declared value
+    of that rule, unless it is named in `CITED_MEASUREMENTS` as a reported measurement. Both halves
+    together mean the prose and the parameters have to move as one.
+    """
+    orphaned = {
+        spec.rule_id: absent
+        for spec in specs
+        if (
+            absent := sorted(
+                {
+                    literal
+                    for literal in _DECIMAL.findall(spec.description)
+                    if literal not in scalar_parameters(dict(spec.parameters))
+                    and literal not in CITED_MEASUREMENTS.get(spec.rule_id, frozenset())
+                }
+            )
+        )
+    }
+    if orphaned:
+        raise ContractError(
+            f"rule descriptions state decimal values their parameters do not declare: {orphaned}. "
+            f"A threshold that moved leaves its old value stranded in prose; if these are reported "
+            f"measurements rather than thresholds, name them in CITED_MEASUREMENTS with a reason."
+        )
+
+
+def assert_catalog_is_whole(specs: Sequence[RuleSpec]) -> None:
+    """The count, the binding and the description coherence, over a catalog already loaded.
+
+    Split out of `validate_rule_catalog` on 2026-08-12 so `build.py` can apply it to the catalog it
+    has in hand rather than parsing the file a second time. Until then these ran *only* under
+    `evgc validate-contracts` and pytest, so a build accepted a catalog whose declared thresholds
+    did not appear in their own rule descriptions — the exact drift
+    `assert_parameters_are_described` exists to catch, unchecked at the one moment it decides
+    values. `bind_rules` was already called by the build; the other two were not.
+    """
+    if len(specs) != EXPECTED_RULE_COUNT:
+        raise ContractError(
+            f"{RULES_CATALOG_PATH} holds {len(specs)} rules; this release publishes "
+            f"{EXPECTED_RULE_COUNT}"
+        )
+    bind_rules(specs)
+    assert_parameters_are_described(specs)
+    assert_no_orphaned_thresholds(specs)
+
+
 def validate_rule_catalog(repository_root: Path) -> tuple[RuleSpec, ...]:
     """Shape, binding and description coherence, for `evgc validate-contracts`."""
     from enterovirus_genbank_curated.contracts import RULES_SCHEMA_PATH
@@ -440,11 +526,5 @@ def validate_rule_catalog(repository_root: Path) -> tuple[RuleSpec, ...]:
     load_rule_implementations()
     contract = load_rule_contract(repository_root / RULES_SCHEMA_PATH)
     specs = load_rule_catalog(repository_root / RULES_CATALOG_PATH, contract)
-    if len(specs) != EXPECTED_RULE_COUNT:
-        raise ContractError(
-            f"{RULES_CATALOG_PATH} holds {len(specs)} rules; the shipped release publishes "
-            f"{EXPECTED_RULE_COUNT}"
-        )
-    bind_rules(specs)
-    assert_parameters_are_described(specs)
+    assert_catalog_is_whole(specs)
     return specs

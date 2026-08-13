@@ -17,7 +17,9 @@ release carried the file at all.
 
 from __future__ import annotations
 
+import collections
 import copy
+import csv
 import gzip
 import json
 from pathlib import Path
@@ -27,14 +29,12 @@ import pytest
 
 from enterovirus_genbank_curated.build import build_metadata_layer
 from enterovirus_genbank_curated.contracts import (
-    BASELINE_RELEASE,
     RULES_SCHEMA_PATH,
     ContractError,
 )
 from enterovirus_genbank_curated.export.audit import RULES_VIEW_RELATIVE, write_rules_view
 from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 from enterovirus_genbank_curated.registry.rules import (
-    BASELINE_VIEW_RULE_COUNT,
     EXPECTED_RULE_COUNT,
     RULE_FIELD_ORDER,
     RULE_IMPLEMENTATIONS,
@@ -50,6 +50,9 @@ from enterovirus_genbank_curated.registry.rules import (
 )
 
 SHIPPED_RULES = "final/audit/rules.tsv.gz"
+# One provenance row per carved record per implemented field. Pinned so the closure check below
+# cannot be satisfied by a truncated table.
+PROVENANCE_ROWS = 316004
 
 
 @pytest.fixture(scope="module")
@@ -82,7 +85,7 @@ def test_the_real_catalog_validates(repository_root: Path) -> None:
 def test_the_catalog_regenerates_the_shipped_rules_table_byte_for_byte(
     repository_root: Path, contract, tmp_path: Path
 ) -> None:
-    """The gate. Four of the catalog's seven fields are a projection of a frozen artifact."""
+    """The gate. Five of the catalog's seven fields are what the release publishes."""
     specs = load_rule_catalog(repository_root / RULES_CATALOG_PATH, contract)
     write_rules_view(tmp_path, specs)
     assert (tmp_path / RULES_VIEW_RELATIVE).read_bytes() == (
@@ -97,13 +100,13 @@ def test_the_real_build_writes_the_shipped_rules_table_byte_for_byte(
     """The same byte comparison, on the artifact a build actually produces.
 
     The projection test above is a claim about `write_rules_view`. This is the claim that matters to
-    a consumer: the release directory contains `audit/rules.tsv.gz`, and its bytes are the frozen
-    release's bytes. Those came apart. The writer reproduced the file from the day it landed and no
-    build ever called it, so the gate stayed green through 25 commits of releases that shipped
+    a consumer: the release directory contains `audit/rules.tsv.gz`, and its bytes are what this
+    build wrote. Those came apart once — the writer reproduced the file from the day it landed and
+    no build ever called it, so the gate stayed green through 25 commits of releases that shipped
     without it. A test that supplies the missing call cannot notice a missing call.
     """
     result = build_metadata_layer(repository_root, tmp_path)
-    assert result.row_counts["rules_in_baseline_view"] == BASELINE_VIEW_RULE_COUNT
+    assert result.row_counts["rules_published"] == EXPECTED_RULE_COUNT
     assert (tmp_path / RULES_VIEW_RELATIVE).read_bytes() == (
         repository_root / SHIPPED_RULES
     ).read_bytes()
@@ -281,13 +284,67 @@ def test_the_shipped_view_has_no_rule_the_catalog_omits(
 ) -> None:
     """Both directions, so neither a dropped nor an invented rule passes.
 
-    Only the rules carrying the baseline's own `rule_version` are in the frozen view — that is what
-    lets the catalog hold the rewrite's superseding rules without moving a published artifact.
+    The view is the whole catalog since 2026-08-12. It used to be the 2.4.1-versioned subset, which
+    kept the published artifact frozen while the catalog grew — and left the release citing rules
+    in its provenance table that its own rule table did not contain, on 84.6% of rows.
     """
     specs = load_rule_catalog(repository_root / RULES_CATALOG_PATH, contract)
-    in_view = [s for s in specs if s.rule_version == BASELINE_RELEASE]
-    assert len(in_view) == BASELINE_VIEW_RULE_COUNT
+    in_view = list(specs)
     assert len(specs) == EXPECTED_RULE_COUNT
     with gzip.open(repository_root / SHIPPED_RULES, "rt", encoding="utf-8") as handle:
         shipped_ids = [line.split("\t")[0] for line in handle.read().splitlines()[1:]]
     assert [s.rule_id for s in in_view] == shipped_ids
+
+
+def test_every_winning_rule_id_resolves_in_the_shipped_view(repository_root: Path) -> None:
+    """Referential closure between the two audit tables a consumer joins.
+
+    `README.md` promises every curated field is traceable "under which versioned rule
+    (`final/audit/rules.tsv.gz`)". It was not: while the view was pinned to 2.4.1's 28 rules,
+    **267,388 of 316,004 provenance rows — 84.6% — cited a rule the shipped table did not contain**,
+    including every row decided by `R-CLASS-2`, `R-DATE-2`, `R-TYPE-2` and seven others. Nothing
+    checked it, because the check is unwritable while the two tables are pinned to different
+    releases by design.
+
+    Both tables here are the committed release, so this is a statement about the bytes that ship
+    together rather than about a rebuild.
+    """
+    with gzip.open(repository_root / SHIPPED_RULES, "rt", encoding="utf-8", newline="") as handle:
+        published = {row["rule_id"] for row in csv.DictReader(handle, delimiter="\t")}
+    provenance = repository_root / "final/audit/projection_provenance.tsv.gz"
+    with gzip.open(provenance, "rt", encoding="utf-8", newline="") as handle:
+        cited = collections.Counter(
+            row["winning_rule_id"] for row in csv.DictReader(handle, delimiter="\t")
+        )
+    # Before the join: a truncated or empty provenance table would satisfy the check below by
+    # having nothing to resolve. An earlier draft's "negative control" only inspected the rule
+    # table and would have stayed green through exactly that.
+    assert sum(cited.values()) == PROVENANCE_ROWS, (
+        f"projection_provenance.tsv.gz has {sum(cited.values())} rows, not {PROVENANCE_ROWS}; the "
+        f"closure check below would pass by having nothing to check"
+    )
+    assert len(published) == EXPECTED_RULE_COUNT
+    dangling = {rule: n for rule, n in cited.items() if rule not in published}
+    assert not dangling, (
+        f"projection_provenance.tsv.gz cites rules absent from the rule table shipped beside it: "
+        f"{dict(sorted(dangling.items(), key=lambda kv: -kv[1]))}"
+    )
+
+
+def test_the_closure_check_can_fail(repository_root: Path) -> None:
+    """Negative control: the join really is a join.
+
+    Deleting one rule from the published set must strand the rows that cite it. Without this, the
+    check above is satisfied by any two tables that happen not to disagree, including empty ones.
+    """
+    with gzip.open(repository_root / SHIPPED_RULES, "rt", encoding="utf-8", newline="") as handle:
+        published = {row["rule_id"] for row in csv.DictReader(handle, delimiter="\t")}
+    provenance = repository_root / "final/audit/projection_provenance.tsv.gz"
+    with gzip.open(provenance, "rt", encoding="utf-8", newline="") as handle:
+        cited = collections.Counter(
+            row["winning_rule_id"] for row in csv.DictReader(handle, delimiter="\t")
+        )
+    published.discard("R-CLASS-2")
+    stranded = {rule: n for rule, n in cited.items() if rule not in published}
+    assert stranded, "removing a cited rule stranded nothing; the join is not joining"
+    assert stranded["R-CLASS-2"] > 0

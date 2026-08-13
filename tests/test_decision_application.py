@@ -96,12 +96,39 @@ EXPECTED_TALLY = {
     # moving off. `final/audit/decision_applications.tsv.gz` carries the per-decision proof, and
     # `tests/test_decision_ledger.py` asserts the shipped column against all 13. Net +11, because
     # the two `wild` rows the engineered/lab calls supersede were themselves counted here.
-    "applied_filled_unresolved": 2640 + 115 + 28 - 492 + 2770 + 13 - 2,
+    # --- restated 2026-08-12, when the counterfactual stopped withholding more than the ledger ---
+    #
+    # Every arithmetic term above describes a measurement taken against a broken counterfactual.
+    # `curate/apply.py:project_without_decisions` rebuilt each `RecordView` by naming five of its
+    # nine fields, so it silently dropped `byte_identical`, `evidence`, `reference_titles` and
+    # `membership_evidence` as well as the ledger. Rules that read those — `derive/engineered.py`,
+    # `derive/classification.py`, `derive/partition.py` — therefore declined in the counterfactual
+    # for want of *evidence*, and a decision that filled the resulting blank was recorded as
+    # `applied_filled_unresolved` when the rule could in fact decide on its own.
+    #
+    # A second omission of the same shape, found by review and fixed with it: the counterfactual
+    # also skipped `apply_isolate_linked_inference`. That pass is part of how the build reaches a
+    # `poliovirus_classification`, so leaving it out claimed the rules could not resolve 21 cells
+    # they do resolve. Running it moves 19 more to `applied_changed` and 2 to `applied_unchanged`.
+    #
+    # Withholding only the ledger moves 1,630 decisions out of `applied_filled_unresolved`: 1,131 to
+    # `applied_changed` (the rule reaches a different answer, so the curator's judgment is doing
+    # real work) and 499 to `applied_unchanged` (the rule now reaches the *same* answer, so the
+    # decision is redundant with the rules as they stand). The totals are unchanged at 5,619
+    # applications; what moved is the attribution, which was the one thing this table exists to
+    # state. `applied_unchanged` going 25 -> 524 is the counterfactual finally doing the job
+    # `build.py` describes it as doing — surfacing curation a rule has made redundant.
+    #
+    # These three are flat numbers rather than sums because there is no honest decomposition: the
+    # history above was measured against the wrong comparison, and re-deriving per-episode terms
+    # from it would be inventing provenance. The commentary is kept as the record of what the
+    # broken counterfactual reported.
+    "applied_filled_unresolved": 3442,
+    "applied_changed": 1653,
+    "applied_unchanged": 524,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,
-    "applied_changed": 31 + 491,
-    "applied_unchanged": 24 + 1,
     "subject_outside_carve": 6,
     # +3 on 2026-07-31: the vocabulary repairs superseded the three active decisions whose value was
     # outside the controlled vocabulary (`CHAT`, a bare `engineered`, `iVPDV`).

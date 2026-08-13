@@ -116,7 +116,7 @@ def engineered_or_construct(parameters: Mapping[str, Any], view: RecordView) -> 
     if view.accession in ADJUDICATION_OPEN:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_NO_SIGNAL,
+            evidence_basis="",
             source_field=DIVISION_FIELD,
             source_value=view.record.get(DIVISION_FIELD, ""),
             unresolved_reason=UNRESOLVED_CURATOR_OPEN,

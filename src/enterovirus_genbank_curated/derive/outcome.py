@@ -105,3 +105,21 @@ class RuleOutcome:
                 f"an unresolved outcome must not carry a value: {self.value!r} with reason "
                 f"{self.unresolved_reason!r}"
             )
+        # A declined cell has no branch, so it must not name one. Until 2026-08-12 every one of the
+        # seventeen declining branches returned the same `evidence_basis` a *resolving* branch of
+        # the same rule uses — there was no decline-only basis anywhere in the layer — and all
+        # 25,865 declined cells shipped in `projection_provenance.tsv.gz` claiming an evidence basis
+        # they had not used. 422 of them read `too_little_sequence_compared_to_measure_divergence`
+        # alongside `vp1_divergence_below_sabin_like_threshold`: the reason says no divergence could
+        # be measured and the basis says one was, on the same row. (The other 54 of that column's
+        # 476 declines carried the same basis under a different reason.)
+        #
+        # `unresolved_reason` is the field that carries why. Refusing the pair here rather than
+        # fixing the seventeen call sites is what stops the class coming back: the state is no
+        # longer expressible.
+        if self.unresolved_reason and self.evidence_basis:
+            raise ValueError(
+                f"an unresolved outcome must not name an evidence basis: "
+                f"{self.evidence_basis!r} with reason {self.unresolved_reason!r}; the reason is "
+                f"what carries why a rule declined"
+            )

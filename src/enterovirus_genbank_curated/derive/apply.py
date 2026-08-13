@@ -126,7 +126,11 @@ def project_field(bound: BoundRule, views: Sequence[RecordView]) -> list[dict[st
                 raise ContractError(
                     f"{bound.spec.rule_id} returned {type(outcome).__name__}, not a RuleOutcome"
                 )
-            if outcome.evidence_basis not in implementation.declared_bases:
+            # A declined outcome carries no basis by construction (`RuleOutcome.__post_init__`), so
+            # there is nothing to check against the declared set. Exempting the declined case says
+            # that; adding `""` to all twelve `evidence_bases` tuples instead would leave the check
+            # unable to catch a resolving branch that genuinely forgot its basis.
+            if outcome.resolved and outcome.evidence_basis not in implementation.declared_bases:
                 raise ContractError(
                     f"{bound.spec.rule_id} emitted evidence_basis {outcome.evidence_basis!r}, "
                     f"which it does not declare; declared: "

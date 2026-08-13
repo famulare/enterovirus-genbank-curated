@@ -76,7 +76,7 @@
     "curation_queue_records": 25865,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
-    "rules_in_baseline_view": 28,
+    "rules_published": 38,
     "classification_divergence_rows": 8347
   }
 }

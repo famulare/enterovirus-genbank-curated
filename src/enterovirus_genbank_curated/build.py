@@ -78,12 +78,14 @@ from enterovirus_genbank_curated.registry.decisions import (
 from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 from enterovirus_genbank_curated.registry.rules import (
     RULES_CATALOG_PATH,
+    assert_catalog_is_whole,
     bind_rules,
     load_rule_catalog,
     load_rule_contract,
 )
 from enterovirus_genbank_curated.validation.invariants import (
     assert_date_precision_invariant,
+    assert_every_basis_is_declared,
     assert_locality_basis_invariant,
 )
 
@@ -223,6 +225,11 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     load_rule_implementations()
     rule_contract = load_rule_contract(repository_root / RULES_SCHEMA_PATH)
     catalog = load_rule_catalog(repository_root / RULES_CATALOG_PATH, rule_contract)
+    # Count, binding and description coherence, before the catalog decides anything. `bind_rules`
+    # ran below already; the other two ran only under `evgc validate-contracts`, so until
+    # 2026-08-12 a build would happily project values from a catalog whose declared thresholds
+    # contradicted their own descriptions.
+    assert_catalog_is_whole(catalog)
 
     # Sequences are read before the carve, because the carve now depends on them: R-MEMBERSHIP-AA-1
     # decides membership for the records whose GenBank lineage does not name the genus. Reading the
@@ -273,6 +280,10 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # table still incoherent, and no single rule can see two columns.
     not_applicable_dates = assert_date_precision_invariant(provenance)
     locality_bases = assert_locality_basis_invariant(provenance, transport.rows)
+    # After the post-pass, deliberately: `project_field` only sees rows it projects, so a pass that
+    # appends provenance directly bypasses the declared-basis check entirely. This is the same
+    # property over the finished table.
+    assert_every_basis_is_declared(provenance, bound)
 
     # Every declined cell becomes exactly one queue row, grouped by the input the rule could not
     # decide from. A rule that declines has done its job; the value still has to come from a
@@ -321,7 +332,7 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # The divergence view was worse than absent — it was computed on every build, used by R-CLASS-2
     # to decide `poliovirus_classification`, and then discarded, so the release published verdicts
     # and withheld the measurements behind them.
-    row_counts["rules_in_baseline_view"] = write_rules_view(output_dir, catalog)
+    row_counts["rules_published"] = write_rules_view(output_dir, catalog)
     # Was `vp1_measured`, then `vp1_divergence_rows`: the length of an in-memory dict, then rows in
     # an artifact a reader can open. Renamed again now that the artifact carries capsid-fallback
     # rows too, so a count still named for one basis would describe only most of what it counts.

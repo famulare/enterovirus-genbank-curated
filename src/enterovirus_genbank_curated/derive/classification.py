@@ -126,6 +126,14 @@ BASIS_SABIN_LIKE = "vp1_divergence_below_sabin_like_threshold"
 BASIS_VDPV = "vp1_divergence_in_vaccine_derived_band"
 BASIS_WILD = "vp1_divergence_at_or_above_wild_threshold"
 BASIS_TEXT_FALLBACK = "text_classification_no_sequence_signal"
+# Emitted by `derive/isolate_linkage.py`'s whole-corpus post-pass, which writes provenance rows
+# directly rather than returning a `RuleOutcome`, so it never passes `derive/apply.py`'s
+# declared-basis check. It is declared here anyway, and on R-CLASS-2 below, because the check is
+# the only vocabulary gate on this column and a basis that ships in 191 release rows while being
+# declared nowhere is the gate having a hole rather than an exception. The constant lives here and
+# not in `isolate_linkage.py` because that module already imports from this one; the reverse would
+# be a cycle.
+BASIS_ISOLATE_LINKED = "isolate_linked_inference"
 
 UNRESOLVED_FOLLOWS_PARTITION = "follows_unresolved_virus_group"
 UNRESOLVED_NO_SEROTYPE = "no_serotype_in_organism_name_to_choose_a_reference"
@@ -231,6 +239,7 @@ def _group_b_text_fallback(text: str, controlled_values: Collection[str]) -> tup
         BASIS_VDPV,
         BASIS_WILD,
         BASIS_TEXT_FALLBACK,
+        BASIS_ISOLATE_LINKED,
     ),
 )
 def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
@@ -243,7 +252,7 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
     if not partition:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_OUTSIDE_POLIOVIRUS,
+            evidence_basis="",
             source_field=ORGANISM_FIELD,
             source_value=view.record.get(ORGANISM_FIELD, ""),
             unresolved_reason=UNRESOLVED_FOLLOWS_PARTITION,
@@ -269,7 +278,7 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
         if asserted not in parameters["controlled_values"]:
             return RuleOutcome(
                 value="",
-                evidence_basis=BASIS_LEDGER,
+                evidence_basis="",
                 source_field=field,
                 source_value=asserted,
                 unresolved_reason=UNRESOLVED_UNCONTROLLED_VALUE,
@@ -295,7 +304,7 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
     if not serotype:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_SABIN_LIKE,
+            evidence_basis="",
             source_field=ORGANISM_FIELD,
             source_value=view.record.get(ORGANISM_FIELD, ""),
             unresolved_reason=UNRESOLVED_NO_SEROTYPE,
@@ -327,7 +336,7 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
             )
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_SABIN_LIKE,
+            evidence_basis="",
             source_field=EVIDENCE_COMPARED,
             source_value=compared,
             unresolved_reason=UNRESOLVED_INSUFFICIENT_SEQUENCE,

@@ -152,7 +152,7 @@ def collection_date_precision(parameters: Mapping[str, Any], view: RecordView) -
     if not precision:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_NO_DATE,
+            evidence_basis="",
             source_field=DATE_QUALIFIER,
             source_value=view.qualifier(DATE_QUALIFIER),
             unresolved_reason=UNRESOLVED_UNPARSEABLE,
@@ -199,7 +199,7 @@ def collection_date(parameters: Mapping[str, Any], view: RecordView) -> RuleOutc
     if not precision:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_NO_DATE,
+            evidence_basis="",
             source_field=DATE_QUALIFIER,
             source_value=view.qualifier(DATE_QUALIFIER),
             unresolved_reason=UNRESOLVED_UNPARSEABLE,
@@ -281,7 +281,7 @@ def collection_year_bounds(
         return {
             field: RuleOutcome(
                 value="",
-                evidence_basis=BASIS_NO_DATE,
+                evidence_basis="",
                 source_field=field,
                 source_value="",
                 unresolved_reason=UNRESOLVED_UNPARSEABLE,

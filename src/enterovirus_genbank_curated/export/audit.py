@@ -3,12 +3,14 @@
 Five views, and they fall into three kinds. The kind decides the *filename*, which is the only part
 of an audit artifact a consumer reads before trusting it.
 
-**One reproduces a frozen artifact, so it wears the frozen name.** `write_rules_view` is generated
-from `registry/rules.json` and must come out **byte-identical** to the shipped
-`final/audit/rules.tsv.gz`, which is what turns the new catalog from a plausible-looking data file
-into one demonstrably describing the release. The four shipped columns are a projection of the
-catalog's seven; `implementation`, `parameters` and `status` are the rewrite's own additions and are
-deliberately not in the view, because the view has to reproduce a frozen artifact.
+**One publishes the rules the build ran.** `write_rules_view` is generated from
+`registry/rules.json` and carries every rule in it. It used to carry only the 28 whose
+`rule_version` was 2.4.1's, so that it came out byte-identical to that release's frozen
+`rules.tsv.gz` — correct while `final/` held 2.4.1, and wrong from the moment it stopped, because
+the release then published a rule table describing a *different* release and withheld its own. It
+emits five of the catalog's seven columns; `implementation` and `parameters` stay out as build
+internals, and `status` is in precisely because a full catalog contains deprecated rules a consumer
+has to be able to skip.
 
 **Two have a shipped counterpart and cover less of it, so they carry their own names.** A partial
 table under a frozen table's filename would be read as that table, and no `notes` column undoes a
@@ -25,7 +27,6 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
-from enterovirus_genbank_curated.contracts import BASELINE_RELEASE
 from enterovirus_genbank_curated.curate.apply import APPLICATION_COLUMNS, DecisionApplication
 from enterovirus_genbank_curated.derive.evidence import (
     EVIDENCE_COLUMNS,
@@ -36,7 +37,11 @@ from enterovirus_genbank_curated.export.source import write_tsv
 from enterovirus_genbank_curated.registry.rules import RuleSpec
 
 RULES_VIEW_RELATIVE = "audit/rules.tsv.gz"
-RULES_VIEW_COLUMNS = ("rule_id", "rule_version", "field_name", "description")
+# `status` is the fifth column, added 2026-08-12 with the un-pinning below. Once the view carries
+# every rule rather than one release's subset, a consumer has to be able to tell `R-DATE-1`
+# (deprecated, superseded by R-DATE-2) from a rule that actually decided something — and the four
+# 2.4.1 columns give no way to.
+RULES_VIEW_COLUMNS = ("rule_id", "rule_version", "field_name", "description", "status")
 
 # Deliberately not the shipped name. The release's own projection-provenance table carries fourteen
 # canonical fields; this holds only the fields whose rule is implemented, so it is written under its
@@ -63,21 +68,22 @@ PROVENANCE_OUTPUT_COLUMNS = (*PROVENANCE_COLUMNS, UNRESOLVED_REASON_COLUMN)
 
 
 def write_rules_view(output_dir: Path, specs: Iterable[RuleSpec]) -> int:
-    """Project the catalog onto the four shipped columns, in catalog order.
+    """Publish the rule catalog this build actually ran, in catalog order.
 
-    Only rules carrying the baseline's own `rule_version` are emitted. That is what lets the catalog
-    grow — and lets a rule be *superseded* — while this view stays byte-identical to the frozen
-    `rules.tsv.gz`. A rule the rewrite adds or corrects gets a real semver instead, so it is visibly
-    not part of the release it postdates.
+    Until 2026-08-12 this filtered on `rule_version == BASELINE_RELEASE`, so the view stayed
+    byte-identical to 2.4.1's frozen `rules.tsv.gz` while the catalog grew underneath it. That was
+    right while `final/` *held* 2.4.1 and byte-parity was the gate. It stopped being right at the
+    promotion, and the cost was measured: the release published 28 rules, none of which decided any
+    of its values, while **267,388 of 316,004 rows in `projection_provenance.tsv.gz` — 84.6% —
+    carried a `winning_rule_id` that resolved to nothing in the table shipped beside it.** Ten of
+    the twelve rules that produced the release were absent, `R-CLASS-2` and `R-DATE-2` among them.
 
-    Filtering on a data field rather than on a hardcoded id list keeps release knowledge out of the
-    build: this writer never needs to know which rules 2.4.1 happened to contain.
+    A release whose provenance table cites rules its own rule table does not contain is not
+    traceable, which is the property `README.md` claims for it. So the view is the catalog now, and
+    `test_every_winning_rule_id_resolves_in_the_shipped_view` is what keeps the two joined —
+    a check the byte-parity arrangement made impossible to write.
     """
-    rows = [
-        {column: getattr(spec, column) for column in RULES_VIEW_COLUMNS}
-        for spec in specs
-        if spec.rule_version == BASELINE_RELEASE
-    ]
+    rows = [{column: getattr(spec, column) for column in RULES_VIEW_COLUMNS} for spec in specs]
     return write_tsv(output_dir / RULES_VIEW_RELATIVE, RULES_VIEW_COLUMNS, rows)
 
 
