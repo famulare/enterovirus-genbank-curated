@@ -145,7 +145,7 @@ Q-80f1cc73b3cb	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidenc
 Q-829c68f4e846	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	human feces	9	MN395994.1 MN395997.1 MN396001.1	decision
 Q-82d4596bbcbe	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool specimen from an immunocompetent infant	4	AJ783783.1 AJ783793.1 AJ783794.1	decision
 Q-82d7c067d992	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	Ayalon Ramle Trunk Line	1	KJ013463.1	rule_parameter
-Q-83a4137200fd	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus B	245	AB268243.1 AB268250.1 AB268275.1	decision
+Q-83a4137200fd	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus B	221	AB268243.1 AB268250.1 AB268275.1	decision
 Q-83e036faaed0	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	whole cell lysate	14	DQ787783.1 DQ787784.1 DQ787785.1	decision
 Q-84ab2aa3abca	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	environment	8	OQ417772.1 OQ417773.1 OQ417774.1	decision
 Q-85a8e90b24ee	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	ophthalmic sampling offemale age 33 with hemorrhagic conjunctivitis	1	PQ867801.1	rule_parameter
@@ -208,7 +208,7 @@ Q-aae0cdff87f4	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-ab2d36f52de5	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus 24	10	PQ009058.1 PQ009059.1 PQ009060.1	decision
 Q-acd1c5cfb16a	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	vesicular fluid	2	FN298944.1 FN298945.1	rule_parameter
 Q-add3bb90f79b	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	air sample	1	KU821672.1	rule_parameter
-Q-add66e840968	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus A	9	KX580681.1 PQ566823.1 PQ566824.1	decision
+Q-add66e840968	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus A	1	KX580681.1	decision
 Q-aed13e8dbb45	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	tracheal aspirate	4	KU669041.2 MF160824.1 MF160942.1	rule_parameter
 Q-aee6356c0ab4	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	eyes	1	JX196594.1	rule_parameter
 Q-b11f0de8d29e	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	Rahat Treatment Plant	18	KJ013420.1 KJ013421.1 KJ013425.1	rule_parameter
@@ -278,7 +278,7 @@ Q-f309a17d0733	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-f311c60854c7	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Human poliovirus 78/ROU/2008	2	FR715541.1 FR715555.1	decision
 Q-f376a5ff90f0	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	ocular sample	3	PQ683184.1 PQ683185.1 PQ683186.1	rule_parameter
 Q-f41334bf0a18	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	fecal samples	1	OR493401.1	decision
-Q-f415b295ee15	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus C	1618	AB205395.1 AB206718.1 AB207266.1	decision
+Q-f415b295ee15	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus C	1223	AB205395.1 AB206718.1 AB207266.1	decision
 Q-f4a46e0aead5	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	east fork lake	3	JF343824.1 JF343825.1 JF343826.1	decision
 Q-f50dfff765a3	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Coxsackievirus	3	MF993352.1 MF993353.1 MG793424.1	decision
 Q-f54ac326712f	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	rahat south trunk line	1	KJ013447.1	decision

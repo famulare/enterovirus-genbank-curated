@@ -20,6 +20,7 @@ import pytest
 
 from enterovirus_genbank_curated.align import contract, population
 from enterovirus_genbank_curated.contracts import ContractError
+from enterovirus_genbank_curated.oracle.parity import load_baseline_canonical
 
 SHIPPED = "releases/2.4.1/alignments/{name}.sto.gz"
 
@@ -371,34 +372,42 @@ def test_the_family_rule_is_upstreams_including_the_echo_fallback() -> None:
     assert contract.family_of("E30") == "Echo"
 
 
-def test_the_family_rule_reproduces_the_shipped_counts_given_the_shipped_rows(
+def test_the_family_rule_differs_from_the_baseline_only_where_the_type_column_does(
     repository_root: Path, records: dict[str, population.AlignedRecord]
 ) -> None:
-    """Divergence from the shipped `families` block is attributable to the type column alone.
+    """Same rule, same rows, richer input — compared **per record**, which is the point.
 
-    Same rule, same rows, richer input: canonical `virus_type` resolves records upstream left blank,
-    so `unknown` shrinks and the resolved families grow by exactly that much.
+    This compared against the shipped aggregate `families` block until 2026-08-12, asserting that
+    whatever `unknown` gained the resolved families lost. That identity is nearly blind: it stayed
+    green while 974 individual rows disagreed, because arrivals in one family cancelled departures
+    from another. Measured now, over the 14,050 shipped `NPEV_unified` rows against 2.4.1's own
+    canonical types:
+
+    * **547** where this pipeline declines a type the baseline states — the population the deferred
+      EV reference-panel pass is for. Down from 974 when R-TYPE-2 began reading the definition line.
+    * **3** where this pipeline states one the baseline leaves blank: `M22129` (PV1), `M24195` (PV2)
+      and `AB206350` (CVA18).
+    * **zero** where both state a type and the families disagree.
+
+    That last zero is the claim worth having, and the aggregate form could not express it.
     """
-    shipped = shipped_row_ids(repository_root, "NPEV_unified")
-    counts: dict[str, int] = {}
-    for row_id in shipped:
-        family = records[row_id].family
-        counts[family] = counts.get(family, 0) + 1
-    shipped_families = {
-        "CVA": 6191, "Echo": 2629, "unknown": 1277, "EV-D": 948, "CVB": 897,
-        "EV-C": 701, "EV-A": 377, "RV-C": 347, "RV-A": 344, "EV-B": 227, "RV-B": 112,
-    }
-    assert sum(counts.values()) == sum(shipped_families.values())
-    # Families upstream and canonical agree on exactly.
-    for family in ("EV-A", "EV-D", "RV-A", "RV-B", "RV-C"):
-        assert counts[family] == shipped_families[family], family
-    # Everything `unknown` gains is exactly what the resolved families lose, less the two records
-    # the partition moved into poliovirus — they leave the non-polio families for `PV`, which is a
-    # membership change rather than a typing one, so it is subtracted rather than absorbed.
-    moved_to_polio = counts.pop("PV")
-    assert moved_to_polio == 2
-    lost = sum(shipped_families[f] - counts[f] for f in counts if counts[f] < shipped_families[f])
-    assert counts["unknown"] - shipped_families["unknown"] == lost - moved_to_polio
+    baseline = load_baseline_canonical(repository_root)
+    by_accession = {row["accession"]: row for row in baseline.values()}
+    declined_here = typed_here = disagreed = 0
+    for row_id in shipped_row_ids(repository_root, "NPEV_unified"):
+        ours = records[row_id]
+        theirs = by_accession[row_id]["virus_type"]
+        if ours.family == contract.family_of(theirs):
+            continue
+        if not ours.virus_type:
+            declined_here += 1
+        elif not theirs:
+            typed_here += 1
+        else:
+            disagreed += 1
+    assert not disagreed, "a record both sides type, placed in different families"
+    assert declined_here == 547
+    assert typed_here == 3
 
 
 # --- the blank-type sentinel ---------------------------------------------------------------------
@@ -412,18 +421,26 @@ def test_blank_types_take_the_sentinel_for_their_own_group(
     25/877 before the 4.0.0 re-anchor, 366/1,850 after, for the same reason the serotype files
     shrank: R-TYPE-2 declines a type the organism name does not state. The sentinel distinction is
     what makes that growth safe to ship — `PV?` says "poliovirus, serotype unresolved" and
-    `unknown` says "not poliovirus, no type resolved", and 1,850 rows is a lot of records to
+    `unknown` says "not poliovirus, no type resolved", and 1,850 rows was a lot of records to
     mislabel as poliovirus by sharing one sentinel.
+
+    1,850 -> 1,423 on 2026-08-12: R-TYPE-2 began reading the definition line, and 427 of those rows
+    turned out to state their type in their own title. The sentinel population is the *residue* of a
+    typing gap, so it shrinking is the gap closing.
+
+    **`type_sort_key` is also the alignment row order** (`population.select_records`), so those 427
+    records move within `NPEV_unified` and `EV_unified`. That is why the alignment rebuild covers
+    all six artifacts and not the five the population arithmetic alone would imply.
     """
     polio_blanks = [r for r in populations["POLIO_unified"].records if not r.virus_type]
     npev_blanks = [r for r in populations["NPEV_unified"].records if not r.virus_type]
     assert {r.type_sort_key for r in polio_blanks} == {"PV?"}
     assert {r.type_sort_key for r in npev_blanks} == {"unknown"}
     assert len(polio_blanks) == 366
-    assert len(npev_blanks) == 1850
+    assert len(npev_blanks) == 1423
     ev_labels = populations["EV_unified"].type_counts()
     assert ev_labels["PV?"] == 366
-    assert ev_labels["unknown"] == 1850
+    assert ev_labels["unknown"] == 1423
 
 
 def test_the_blank_polio_records_are_in_no_serotype_artifact(

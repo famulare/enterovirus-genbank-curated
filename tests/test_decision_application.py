@@ -131,9 +131,14 @@ EXPECTED_TALLY = {
     # opposite conclusion from it: because the inferred year agreed, an override-shadowing bug
     # there stayed invisible for weeks. Here it is the counterfactual reporting exactly what it
     # exists to report, and `AY308802` joins the Phase H population.
-    "applied_filled_unresolved": 3442,
+    #
+    # The same day, R-TYPE-2's definition-line reading moves one more: `KC787121`'s
+    # `corrected_type = Coxsackievirus A13` is now derivable, because the record's own title states
+    # `CV-A13`. `applied_filled_unresolved` -> `applied_unchanged`, since the rule went from
+    # declining the cell to reaching the curator's own answer.
+    "applied_filled_unresolved": 3441,
     "applied_changed": 1651,
-    "applied_unchanged": 526,
+    "applied_unchanged": 527,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,

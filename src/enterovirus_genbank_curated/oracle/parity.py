@@ -95,54 +95,56 @@ DECLARED_ROW_DELTA = {
 # applied after `/isolation_source` failed to match, and the 11,649 `('unknown', 'human')` cells are
 # this pipeline reading a `/host` the upstream stage never examined.
 DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
-    # `sequence_scope` is absent, and its absence is the result. It held 24,299 cells in 6 classes
-    # — every shared row, because the column shipped empty — until `R-SCOPE-2` landed on
-    # 2026-08-12 and reproduced 2.4.1's column exactly. A canonical column moving from "differs on
-    # every row" to "no declared class at all" is the strongest form this contract can take, and it
-    # is why the column is not listed rather than listed as zero: there is no transition to declare.
-    # `collection_date` left the same way the same day; see its note below the epi columns.
+    # Two columns are absent from this table, and their absence is the result rather than an
+    # omission. `sequence_scope` held 24,299 cells in 6 classes — every shared row, because the
+    # column shipped empty — and `collection_date` held 1,761 in 59 per-year classes. Both were
+    # recorded as unreachable from `raw/`; both were reproduced exactly on 2026-08-12, by
+    # `R-SCOPE-2` and by `R-DATE-2`'s identifier branch. A column moving from "differs on every row"
+    # to "no declared class at all" is the strongest form this contract can take, and it is why
+    # neither is listed as zero: there is no transition left to declare.
+    #
+    # 427 cells left `virus_type` the same day, when R-TYPE-2 began reading the depositor's own
+    # definition line for the abbreviated type forms an NCBI organism name never uses. What is left
+    # is the population the deferred EV reference-panel pass is for: 883 cells the release typed
+    # from its sequence, on records whose name and title both state nothing.
     "virus_type": {
-        ('CVA13', ''): 188,
         ('PV2', ''): 149,
-        ('EV-C99', ''): 123,
         ('PV3', ''): 96,
-        ('CVA24', ''): 92,
         ('PV1', ''): 90,
-        ('CVA11', ''): 70,
-        ('CVA17', ''): 57,
-        ('CVA20', ''): 53,
+        ('EV-C99', ''): 62,
+        ('CVA13', ''): 58,
         ('E6', ''): 42,
+        ('CVA24', ''): 40,
         ('CVB1', ''): 39,
+        ('CVA11', ''): 38,
         ('E7', ''): 36,
-        ('CVB3', ''): 35,
-        ('CVA1', ''): 28,
-        ('CVA19', ''): 27,
+        ('CVA20', ''): 31,
         ('E19', ''): 21,
-        ('CVA22', ''): 13,
+        ('CVA17', ''): 20,
+        ('CVB3', ''): 13,
         ('E11', ''): 11,
         ('E24', ''): 11,
+        ('CVA1', ''): 10,
         ('CVB4', ''): 10,
-        ('CVB5', ''): 9,
-        ('CVA21', ''): 6,
+        ('CVB5', ''): 7,
+        ('CVA22', ''): 6,
         ('CVA9', ''): 6,
         ('EV-C105', ''): 6,
-        ('EV-C96', ''): 6,
-        ('CVA8', ''): 5,
         ('E13', ''): 5,
-        ('EV-C113', ''): 5,
-        ('CVA16', ''): 4,
-        ('CVA2', ''): 4,
+        ('EV-C96', ''): 5,
+        ('CVA19', ''): 4,
         ('CVA5', ''): 4,
         ('E1', ''): 4,
         ('E20', ''): 4,
         ('EV-B80', ''): 4,
         ('EV-B93', ''): 4,
-        ('EV-C116', ''): 4,
         ('', 'PV2'): 3,
+        ('CVA16', ''): 3,
+        ('CVA2', ''): 3,
         ('CVB2', ''): 3,
         ('E21', ''): 3,
         ('EV-B75', ''): 3,
-        ('CVA6', ''): 2,
+        ('CVA21', ''): 2,
         ('E12', ''): 2,
         ('E14', ''): 2,
         ('E26', ''): 2,
@@ -151,6 +153,7 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('EV-B111', ''): 2,
         ('EV-B97', ''): 2,
         ('EV-C104', ''): 2,
+        ('EV-C116', ''): 2,
         ('EV-C117', ''): 2,
         ('EV-C118', ''): 2,
         ('', 'CVA18'): 1,
@@ -230,17 +233,15 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('CNS', ''): 1,
         ('stool', 'environmental'): 1,
     },
-    # `collection_date` is absent for the same reason `sequence_scope` is. It held 1,761 blankings
-    # in 59 per-year classes — the population `docs/reproducibility.md` blamed on an archival
-    # reconstruction outside this repository — until `R-DATE-2` grew the identifier branch on
-    # 2026-08-12 and recovered every one of them, at the year 2.4.1 shipped, from `/strain`,
-    # `/isolate`, the definition line and the other `source` qualifiers. The column now agrees with
-    # the baseline on all 24,299 shared rows.
+    # `collection_date`'s own 1,761 blankings are the ones the header above records as gone — the
+    # population `docs/reproducibility.md` blamed on an archival reconstruction outside this
+    # repository, recovered from `/strain`, `/isolate`, the definition line and the other `source`
+    # qualifiers at the year 2.4.1 shipped.
     #
-    # (Those 59 classes were themselves a correction. The first draft folded the from-side to a
-    # wildcard and measured green while the 1,761 blankings were *relocated* onto different records,
-    # because only the total was checked. The year distribution is what a mis-scoped date rule
-    # disturbs, so it was the year distribution that had to be pinned.)
+    # (Its 59 per-year classes were themselves a correction worth keeping in mind here. The first
+    # draft folded the from-side to a wildcard and measured green while the 1,761 blankings were
+    # *relocated* onto different records, because only the total was checked. Every from-value in
+    # this table is enumerated for that reason.)
     #
     # What is left below is the vocabulary break and nothing else: 2,803 records that deposited no
     # date and whose identifier carries no year either. 2.4.1 called their precision `unknown`; a
@@ -462,13 +463,16 @@ UNRESOLVED_STREAM_ROWS = 7571
 # such record left. Kept as a named zero so the next one to appear fails this gate rather than
 # passing.
 UNRESOLVED_ENGINEERED_ROWS = 0
-# `virus_type` rows R-TYPE-2 declines: 2,179 whose organism name states no type — species-level
-# names like `Enterovirus C`, the pre-2016 bare numbering (`Enterovirus 19`), simian species outside
-# A-to-D scheme (`Enterovirus J115`), and the chimera label `Enterovirus coxsackiepol` the release
-# types PV2 — plus 37 where an active decision records the type as `unknown`, which is a curator
-# stating that it is undetermined. All 23 rescued records land in the first group, for the same
-# reason they land in `UNRESOLVED_PARTITION_ROWS`.
-UNRESOLVED_TYPE_ROWS = 2216
+# `virus_type` rows R-TYPE-2 declines: 1,752 whose organism name *and* definition line both state no
+# type — species-level names like `Enterovirus C`, the pre-2016 bare numbering (`Enterovirus 19`),
+# simian species outside the A-to-D scheme (`Enterovirus J115`), and the chimera label
+# `Enterovirus coxsackiepol` the release types PV2 — plus 37 where an active decision records the
+# type as `unknown`, which is a curator stating that it is undetermined. All 23 rescued records land
+# in the first group, for the same reason they land in `UNRESOLVED_PARTITION_ROWS`.
+#
+# Down 427 from 2,216 on 2026-08-12, when the definition-line reading landed. Every one of the 427
+# lands on the type 2.4.1 shipped; none gains a type the release leaves blank.
+UNRESOLVED_TYPE_ROWS = 1789
 # `poliovirus_classification` rows R-CLASS-2 declines: 1,596 whose virus group is itself undecided,
 # 1,409 poliovirus records with too little usable sequence by either basis to measure divergence
 # over, 33 with no serotype in the organism name to pick a Sabin reference with, and 3 whose active

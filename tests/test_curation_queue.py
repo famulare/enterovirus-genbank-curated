@@ -105,7 +105,11 @@ from enterovirus_genbank_curated.derive.partition import (
 # the 211 above. A record whose partition is decided stops being queued for the partition and starts
 # being queued, where it still has no evidence of its own, for `sample_origin` or
 # `surveillance_stream` on their own reasons. Real work leaves; real work also becomes visible.
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334
+# 25,438, 2026-08-12: R-TYPE-2 reads the depositor's own definition line when the organism name
+# states no type, and 427 `virus_type` declines become values. Unlike the moves above this one is
+# pure subtraction — a resolved `virus_type` cell creates no new decline anywhere, because no other
+# rule declines *because* the type was undecided.
+EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334 - 427
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.

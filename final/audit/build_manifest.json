@@ -3,13 +3,13 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "64d6efd258b935d2c54d5e0f5c0270cbee5e7c7ea47aa8a37787d2bbf0cea903",
+  "code_sha256": "e2b086e81156e0faf2b2824908f24e947be277c72020b94df44c8c2085855dce",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
     "decisions_sha256": "ca5e0ab90ebaf9b102d69a16f585c54d8c0155070fdfdfd27fde05dab7bf5ecd",
-    "rules_sha256": "104d411b730efcdc3b18ccf6683bfbce5bdcba62592d47994467ce24e2bc0346"
+    "rules_sha256": "c1aa3815490eae6431d518831733eabb6c8e9a18d1e4ce8510e564d74c816b2b"
   },
   "row_counts": {
     "source_records": 25727,
@@ -22,7 +22,7 @@
     "localities_without_geography": 2055,
     "curation_queue_groups": 295,
     "decision_applications": 6119,
-    "curation_queue_records": 25865,
+    "curation_queue_records": 25438,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
     "rules_published": 39,
@@ -31,9 +31,9 @@
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 173,
-    "applied_unchanged": 526,
+    "applied_unchanged": 527,
     "applied_changed": 1651,
-    "applied_filled_unresolved": 3442,
+    "applied_filled_unresolved": 3441,
     "not_in_force_superseded": 15,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6
@@ -48,7 +48,7 @@
       "sample_origin": 2902,
       "specimen_type": 12700,
       "surveillance_stream": 7571,
-      "virus_type": 2216
+      "virus_type": 1789
     },
     "reading_a_blank_cell": "A blank is not a claim that the value is absent in nature. It is either a value a rule chose (a locality that would repeat admin1) or a cell no rule could decide. audit/projection_provenance.tsv.gz carries unresolved_reason per cell and curation/curation_queue.tsv groups the undecided ones into questions."
   },
@@ -109,9 +109,9 @@
     },
     "virus_type": {
       "source": "projected",
-      "filled": 22092,
-      "blank": 2216,
-      "declined": 2216,
+      "filled": 22519,
+      "blank": 1789,
+      "declined": 1789,
       "rules": [
         "R-TYPE-2"
       ]
