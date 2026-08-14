@@ -585,7 +585,7 @@ class AnchorInputs:
 def load_anchor_inputs(repository_root: Path) -> AnchorInputs:
     cds_by_record, parts_by_feature, codon_starts = segment._load_cds_index(repository_root)
     return AnchorInputs(
-        region_rows=tuple(regions.derive_regions(repository_root)),
+        region_rows=tuple(regions.regions_from_release(repository_root)),
         cds_by_record=cds_by_record,
         parts_by_feature=parts_by_feature,
         codon_starts=codon_starts,

@@ -149,6 +149,7 @@ FILE_BYTES = "file_bytes"
 # build's output. Declaring the list also turns a writer that silently stopped emitting something
 # into a failed build rather than a shorter manifest.
 BUILD_ARTIFACT_RELATIVES = (
+    "alignments/reference_region_coordinates.tsv",
     "audit/build_manifest.json",
     "audit/classification_divergence.tsv.gz",
     "audit/decision_applications.tsv.gz",

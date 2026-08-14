@@ -35,7 +35,12 @@ from enterovirus_genbank_curated.derive.evidence import (
     MembershipRescue,
 )
 from enterovirus_genbank_curated.derive.metadata import CURATION_STATUS_EXCLUDED
-from enterovirus_genbank_curated.export.source import write_tsv
+from enterovirus_genbank_curated.derive.regions import (
+    SABIN_REFERENCES,
+    derive_regions,
+    render,
+)
+from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RuleSpec
 
 RULES_VIEW_RELATIVE = "audit/rules.tsv.gz"
@@ -151,6 +156,43 @@ def write_membership_rescue(
 # of the shipped table the way the rule view is a projection of `rules.tsv.gz`; it is a different,
 # smaller measurement that answers one of the shipped table's questions. Under the shipped name it
 # would promise nineteen columns of evidence it does not have, over most of the records it reaches.
+REFERENCE_REGIONS_RELATIVE = "alignments/reference_region_coordinates.tsv"
+
+
+def write_reference_regions(
+    output_dir: Path,
+    tables: Mapping[str, Sequence[Mapping[str, str]]],
+    canonical: Sequence[Mapping[str, str]],
+) -> int:
+    """The Sabin reference region frame, from the tables this build already parsed.
+
+    Carried from 2.4.1 until 2026-08-14, and the reason was circular: the derivation existed and was
+    byte-reproducible, but it read `final/source/normalized_tsv/` — so a build could not call it,
+    because a build may not read `final/`. Splitting the arithmetic out of `align/regions.py` into
+    `derive/regions.py` is what let the producer move to the build side of that boundary.
+
+    Written with `write_tsv` through `render`'s own text so the bytes stay identical to the shipped
+    file: plain `.tsv`, so no gzip container, and row order and the `length` column come from the
+    same code the alignment layer's wrapper uses.
+    """
+    lengths = {
+        row["accession"]: int(row["sequence_length_nt"])
+        for row in canonical
+    }
+    regions = derive_regions(
+        tables["features"],
+        tables["feature_location_parts"],
+        tables["feature_qualifiers"],
+        lengths,
+        SABIN_REFERENCES,
+    )
+    path = output_dir / REFERENCE_REGIONS_RELATIVE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with deterministic_text_writer(path) as handle:
+        handle.write(render(regions))
+    return len(regions)
+
+
 RECORD_DISPOSITION_RELATIVE = "audit/record_disposition.tsv.gz"
 RECORD_DISPOSITION_COLUMNS = (
     "accession", "version", "candidate_query_member", "virus_group", "curation_status",

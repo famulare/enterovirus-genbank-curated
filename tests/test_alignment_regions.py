@@ -15,6 +15,7 @@ import pytest
 
 from enterovirus_genbank_curated.align import contract, regions
 from enterovirus_genbank_curated.contracts import ContractError
+from enterovirus_genbank_curated.derive import regions as derive_regions_module
 
 # The pinned hash from tests/test_carried_files.py. Repeated here on purpose: if the two ever
 # disagree, one of the two mechanisms is wrong, and that is worth failing over.
@@ -37,12 +38,12 @@ def test_the_build_is_deterministic(repository_root: Path) -> None:
 
 
 def test_the_table_has_the_expected_shape(repository_root: Path) -> None:
-    rows = regions.derive_regions(repository_root)
+    rows = regions.regions_from_release(repository_root)
     assert len(rows) == EXPECTED_ROWS
-    assert len(regions.REGION_ORDER) * 3 == EXPECTED_ROWS
+    assert len(derive_regions_module.REGION_ORDER) * 3 == EXPECTED_ROWS
     for serotype in ("PV1", "PV2", "PV3"):
         got = [r.region for r in rows if r.serotype == serotype]
-        assert got == list(regions.REGION_ORDER), f"{serotype} regions out of order"
+        assert got == list(derive_regions_module.REGION_ORDER), f"{serotype} regions out of order"
 
 
 def test_the_regions_tile_the_genome_without_gap_or_overlap(repository_root: Path) -> None:
@@ -51,7 +52,7 @@ def test_the_regions_tile_the_genome_without_gap_or_overlap(repository_root: Pat
     Worth checking independently of byte-parity: it is the property that makes the table usable as a
     coordinate frame, and byte-parity against a file nobody has verified would not establish it.
     """
-    rows = regions.derive_regions(repository_root)
+    rows = regions.regions_from_release(repository_root)
     for serotype in ("PV1", "PV2", "PV3"):
         spans = [(r.start, r.end) for r in rows if r.serotype == serotype]
         assert spans[0][0] == 1
@@ -60,7 +61,7 @@ def test_the_regions_tile_the_genome_without_gap_or_overlap(repository_root: Pat
 
 
 def test_the_declared_length_column_is_consistent(repository_root: Path) -> None:
-    for region in regions.derive_regions(repository_root):
+    for region in regions.regions_from_release(repository_root):
         assert region.length == region.end - region.start + 1
         assert region.length > 0
 
@@ -76,7 +77,7 @@ def test_the_sabin_frame_width_matches_the_canonical_sequence_length(
     acc, length = header.index(contract.ACCESSION), header.index(contract.SEQUENCE_LENGTH_NT)
     lengths = {row[acc].split(".", 1)[0]: int(row[length]) for row in rows}
 
-    derived = regions.derive_regions(repository_root)
+    derived = regions.regions_from_release(repository_root)
     for serotype, expected in (("PV1", 7441), ("PV2", 7439), ("PV3", 7432)):
         accession = contract.SABIN_REFERENCES[serotype]
         assert lengths[accession] == expected
@@ -90,7 +91,7 @@ def test_the_stop_codon_extension_is_real_and_not_cosmetic(repository_root: Path
     Asserting the shipped numbers here means a future refactor that ends `3D` at the peptide
     boundary fails rather than shifting the CDS frame by three bases.
     """
-    rows = {(r.serotype, r.region): r for r in regions.derive_regions(repository_root)}
+    rows = {(r.serotype, r.region): r for r in regions.regions_from_release(repository_root)}
     assert rows[("PV1", "3D")].end == 7372
     assert rows[("PV1", "3UTR")].start == 7373
     assert rows[("PV2", "3D")].end == 7371
@@ -99,22 +100,31 @@ def test_the_stop_codon_extension_is_real_and_not_cosmetic(repository_root: Path
 
 def test_the_product_prefix_is_stripped(repository_root: Path) -> None:
     """The qualifiers read `protein VP4`; the table must not."""
-    for region in regions.derive_regions(repository_root):
-        assert not region.region.startswith(regions.PRODUCT_PREFIX)
+    for region in regions.regions_from_release(repository_root):
+        assert not region.region.startswith(derive_regions_module.PRODUCT_PREFIX)
         assert " " not in region.region
 
 
-def test_a_missing_mature_peptide_is_refused(repository_root: Path, monkeypatch) -> None:
-    """Fail closed: a frame with a peptide missing must raise, not emit a short table."""
-    real = regions._feature_index
+def test_a_missing_mature_peptide_is_refused(repository_root: Path) -> None:
+    """Fail closed: a frame with a peptide missing must raise, not emit a short table.
 
-    def without_vp1(root: Path):
-        features, parts, products = real(root)
-        products = {
-            fid: value for fid, value in products.items() if value != "protein VP1"
-        }
-        return features, parts, products
-
-    monkeypatch.setattr(regions, "_feature_index", without_vp1)
+    No monkeypatching since 2026-08-14. `derive_regions` takes its three tables as arguments now, so
+    the perturbation is a filtered input rather than a patched private helper — which is what a
+    falsification of a pure function should look like.
+    """
+    features = regions._rows(repository_root, contract.SOURCE_FEATURES)
+    parts = regions._rows(repository_root, contract.SOURCE_FEATURE_PARTS)
+    qualifiers = [
+        row
+        for row in regions._rows(repository_root, contract.SOURCE_FEATURE_QUALIFIERS)
+        if row["qualifier_value"] != "protein VP1"
+    ]
+    lengths = {
+        region.ref_accession: region.end
+        for region in regions.regions_from_release(repository_root)
+        if region.region == "3UTR"
+    }
     with pytest.raises(ContractError, match="do not match the declared|no product qualifier"):
-        regions.derive_regions(repository_root)
+        derive_regions_module.derive_regions(
+            features, parts, qualifiers, lengths, contract.SABIN_REFERENCES
+        )

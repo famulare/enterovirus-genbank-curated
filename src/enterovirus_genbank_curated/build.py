@@ -59,6 +59,7 @@ from enterovirus_genbank_curated.export.audit import (
     write_membership_rescue,
     write_projection_provenance,
     write_record_disposition,
+    write_reference_regions,
     write_rules_view,
 )
 from enterovirus_genbank_curated.export.canonical import (
@@ -379,6 +380,12 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         transport.excluded,
         {view.version: resolved_partition(view) for view in excluded_views},
     )
+
+    # The Sabin region frame. Carried from 2.4.1 until 2026-08-14 for a circular reason: the
+    # derivation existed and was byte-reproducible, but it read `final/source/normalized_tsv/`, so
+    # no build could call it. Splitting the arithmetic into `derive/regions.py` moved it to this
+    # side of the boundary.
+    row_counts["reference_region_rows"] = write_reference_regions(output_dir, tables, canonical)
 
     # The four data dictionaries, after every table they describe has been written and before the
     # manifest that hashes them. They were carried from 2.4.1 as opaque bytes and all four had gone

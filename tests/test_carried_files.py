@@ -98,8 +98,6 @@ CARRIED_SHA256 = {
         "f78f2d31bf3480d7666d025d175b01f3c28fddf4e60e36360d26bad88904a53e",
     "final/alignments/PV3_unified_aln.fasta.gz":
         "ce0ef1ba12a365524aa930cb1a7fbff0646241fd67160eec541e7b0ce34333f1",
-    "final/alignments/reference_region_coordinates.tsv":
-        "41420f9e5a5d3804f6370c0b41fa487365e5dc0a85e1f85c191082f15f9551e1",
     "final/audit/sequence_evidence.tsv.gz":
         "5c5e55a9d38ab9fbb64b5cc204846af941257f7b803c8644f646375c9789c349",
     "final/source/genbank_source.duckdb":
@@ -162,8 +160,8 @@ CARRIED_SHA256 = {
 # to "written by this build". `EXPECTED_FINAL_FILES` does not move, because no file appeared or
 # disappeared — only which side of the line it sits on.
 EXPECTED_FINAL_FILES = 69
-EXPECTED_MANIFEST_ROWS = 13 + 4 + 1
-EXPECTED_FILE_BYTES_ROWS = 12 + 4 + 1
+EXPECTED_MANIFEST_ROWS = 13 + 4 + 1 + 1
+EXPECTED_FILE_BYTES_ROWS = 12 + 4 + 1 + 1
 
 
 def sha256(path: Path) -> str:

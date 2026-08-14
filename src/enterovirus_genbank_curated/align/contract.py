@@ -78,6 +78,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from enterovirus_genbank_curated.align.seeds import SEED_DIR
+from enterovirus_genbank_curated.derive.regions import SABIN_REFERENCES as _SABIN_REFERENCES
 from enterovirus_genbank_curated.oracle.parity import (
     SHIPPED_CANONICAL_FASTA,
     SHIPPED_CANONICAL_METADATA,
@@ -429,7 +430,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
 # The Sabin references, and the accession each `PV{n}_unified` is anchored on. Their canonical
 # `sequence_length_nt` — 7,441 / 7,439 / 7,432 — equals the shipped
 # `n_sabin_reference_columns` exactly, which gives the anchored stack a free integer invariant.
-SABIN_REFERENCES = {"PV1": "AY184219", "PV2": "AY184220", "PV3": "AY184221"}
+SABIN_REFERENCES = _SABIN_REFERENCES
 
 # Reasons a row present in a shipped alignment is absent from the rebuild. Closed vocabulary: a
 # drop with no reason is a bug, and a new reason is a source edit that gets reviewed.
