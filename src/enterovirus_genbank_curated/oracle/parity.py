@@ -176,27 +176,37 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('PV3', 'PV1'): 1,
         ('PV3', 'PV2'): 1,
     },
+    # The named wild parents left on 2026-08-14. `('wild', 'VDPV')` was 14 and is 2 — the 12 that
+    # went were Mahoney, Brunhilde, Lansing and Saukett deposits, and `KY026068`/`AB060337`, not
+    # reference strains, stay with the divergence band. `('wild', 'Sabin-like')` fell 7 -> 1 the
+    # same way.
+    #
+    # The one that remains is `V01132.1`, and it is 2.4.1 disagreeing with itself rather than a
+    # value lost. It is a Leon VP1 fragment measuring 0.222% over 900 nt — the same measurement to
+    # the digit as `V01540.1` and `AY082684.1`, which 2.4.1 calls `wild`. All three are `wild` now.
+    # The tiny divergence is the whole point: Sabin 3 differs from its Leon parent by a handful of
+    # nucleotides, so the band reads "Sabin-like" on a record that *is* the wild ancestor.
     "poliovirus_classification": {
         ('unresolved', ''): 276,
         ('Sabin-like', ''): 82,
-        ('wild', ''): 70,
+        ('wild', ''): 69,
         ('Sabin-like', 'VDPV'): 16,
-        ('wild', 'VDPV'): 14,
         ('VDPV', ''): 13,
         ('Sabin', ''): 10,
         ('defective-interfering particle', ''): 10,
         ('VDPV', 'iVDPV'): 6,
-        ('wild', 'Sabin-like'): 6,
         ('cVDPV', 'cVDPV-n'): 5,
         ('engineered/lab', ''): 5,
         ('chimera', ''): 4,
         ('Sabin', 'Sabin-like'): 3,
-        ('Sabin-like', 'wild'): 2,
+        ('Sabin-like', 'wild'): 3,
         ('cVDPV', 'Sabin-like'): 2,
+        ('wild', 'VDPV'): 2,
         ('wild', 'engineered/lab'): 2,
         ('Sabin', 'VDPV'): 1,
         ('Sabin-like', 'cVDPV'): 1,
         ('Sabin-like', 'engineered/lab'): 1,
+        ('wild', 'Sabin-like'): 1,
     },
     # The GenBank division branch landed 2026-08-13 (curator ruling) and resolves 571 records: 112
     # `ENV` and 459 `PAT`. Against the baseline that is 19 + 56 = 75 cells recovered — declines the
@@ -574,7 +584,10 @@ UNRESOLVED_TYPE_ROWS = 1789
 # `not_applicable_outside_poliovirus`, since the projection lands far more records in
 # `non_polio_enterovirus` than in `poliovirus`), and 21 are newly-scoped poliovirus records that
 # still have too little usable sequence to measure divergence over.
-UNRESOLVED_CLASSIFICATION_ROWS = 476
+#
+# Down 1 on 2026-08-14, with the named-wild-reference guard: one record was declining for want of a
+# usable divergence measurement and its strain name settles it without one.
+UNRESOLVED_CLASSIFICATION_ROWS = 475
 PARTITION_FIELDS = ("virus_group", "curation_status")
 
 

@@ -3,13 +3,13 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "cd84532108800c0c7e573caa0c5cef8421b6551129034288ff0ca836488e5358",
+  "code_sha256": "3f62feaed1d0f04893dc4683be634cb81876fa428b59e6cdec3772972646f641",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
     "decisions_sha256": "da13ac6dc0317c1b9a2e7d53206b389e96b4bedf0eb089fa88222034feecdc91",
-    "rules_sha256": "cf4ce040709b82a67bc8ed21a91c347d2f8ac35e5cfc0dee96559cd685f896e6"
+    "rules_sha256": "9deac6351d305d98aea141f973d7980c7380145f2248d97ea1cb864cda928ae1"
   },
   "row_counts": {
     "source_records": 25727,
@@ -22,7 +22,7 @@
     "localities_without_geography": 2055,
     "curation_queue_groups": 268,
     "decision_applications": 6292,
-    "curation_queue_records": 25069,
+    "curation_queue_records": 25068,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
     "rules_published": 39,
@@ -37,8 +37,8 @@
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 173,
-    "applied_unchanged": 523,
-    "applied_changed": 1699,
+    "applied_unchanged": 527,
+    "applied_changed": 1695,
     "not_in_force_retired": 194,
     "applied_filled_unresolved": 3559,
     "not_in_force_superseded": 15,
@@ -50,7 +50,7 @@
     "projected": 14,
     "pending": [],
     "columns_with_declined_cells": {
-      "poliovirus_classification": 476,
+      "poliovirus_classification": 475,
       "sample_origin": 2728,
       "specimen_type": 12620,
       "surveillance_stream": 7456,
@@ -124,9 +124,9 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 9614,
-      "blank": 14694,
-      "declined": 476,
+      "filled": 9615,
+      "blank": 14693,
+      "declined": 475,
       "rules": [
         "R-CLASS-2"
       ]

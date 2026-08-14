@@ -458,7 +458,11 @@ CITED_MEASUREMENTS: dict[str, frozenset[str]] = {
     # The chunked-homogeneity guard's own calibration: the three broken windows that motivated the
     # floor sit at these internal deviations, and the next-highest genuine one at 8.1. They are the
     # evidence that the declared floor sits in a real gap rather than being fitted to three cases.
-    "R-CLASS-2": frozenset({"21.5", "21.8", "55.2", "8.1"}),
+    # ...and the span the named wild parents occupy relative to the Sabin strains derived from
+    # them. Reported to show why the divergence band cannot decide them: 1.6 is inside the
+    # Sabin-like ceiling's neighbourhood and 13.4 is below the wild floor, so every one of the 12
+    # lands in the middle. Neither is a threshold anything compares against.
+    "R-CLASS-2": frozenset({"21.5", "21.8", "55.2", "8.1", "1.6", "13.4"}),
     # The coverage-geometry fit this rule replaced. R-SCOPE-2's description reports it to explain
     # why the column was recorded as blocked for so long, and why the conclusion drawn from it was
     # wrong: 86.7 percent was a real measurement of the wrong model.

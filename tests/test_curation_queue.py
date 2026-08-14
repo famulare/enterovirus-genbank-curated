@@ -118,7 +118,7 @@ from enterovirus_genbank_curated.derive.partition import (
 # `sampling_frame` on laboratory and patent deposits. The other 2 of the 173 rows land on `S61236`,
 # whose cells were determined rather than declined, so they were never queued.
 EXPECTED_QUEUE_WORK_ITEMS = (
-    28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334 - 427 - 80 - 17 - 101 - 171
+    28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334 - 427 - 80 - 17 - 101 - 171 - 1
 )
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record

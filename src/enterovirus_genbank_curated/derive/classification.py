@@ -134,6 +134,7 @@ BASIS_TEXT_FALLBACK = "text_classification_no_sequence_signal"
 # not in `isolate_linkage.py` because that module already imports from this one; the reverse would
 # be a cycle.
 BASIS_ISOLATE_LINKED = "isolate_linked_inference"
+BASIS_WILD_REFERENCE_STRAIN = "named_wild_reference_strain"
 
 UNRESOLVED_FOLLOWS_PARTITION = "follows_unresolved_virus_group"
 UNRESOLVED_NO_SEROTYPE = "no_serotype_in_organism_name_to_choose_a_reference"
@@ -230,7 +231,12 @@ def _group_b_text_fallback(text: str, controlled_values: Collection[str]) -> tup
 
 @rule_implementation(
     "derive.classification.poliovirus_classification",
-    parameters=("sabin_like_threshold_pct", "wild_threshold_pct", "controlled_values"),
+    parameters=(
+        "sabin_like_threshold_pct",
+        "wild_threshold_pct",
+        "controlled_values",
+        "wild_reference_strains",
+    ),
     evidence_bases=(
         BASIS_LEDGER,
         BASIS_OUTSIDE_POLIOVIRUS,
@@ -240,6 +246,7 @@ def _group_b_text_fallback(text: str, controlled_values: Collection[str]) -> tup
         BASIS_WILD,
         BASIS_TEXT_FALLBACK,
         BASIS_ISOLATE_LINKED,
+        BASIS_WILD_REFERENCE_STRAIN,
     ),
 )
 def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
@@ -290,6 +297,32 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
             source_field=field,
             source_value=asserted,
             manual_override=True,
+        )
+
+    # The named wild parents, read before the divergence band, because the band cannot get them
+    # right and is not wrong to.
+    #
+    # Divergence from Sabin is **symmetric**; "vaccine-derived" is **directional**. Mahoney,
+    # Brunhilde, Lansing and Saukett are the wild strains Sabin was attenuated *from*, so they sit
+    # 1.6-13.4% from their own descendants and land squarely in a band defined as "not Sabin-like,
+    # not far enough to be wild". Twelve records, every one a reference strain by name, shipped as
+    # `VDPV` — which asserts that the ancestor was derived from its descendant.
+    #
+    # A rule and not twelve ledger rows, because the defect is generic: any deposit of a named wild
+    # parent hits it, and a curator would have to notice each one. Keyed on the strain and isolate
+    # names because that is where a reference strain announces itself, and placed *after* the ledger
+    # so a curator can still overrule it.
+    #
+    # Leon is in the list and changes nothing today — `K01392` and `M37321` already carry active
+    # `wild` decisions — which is the point of naming it rather than listing only what currently
+    # misbehaves.
+    named = " ".join((view.qualifier("strain"), view.qualifier("isolate"))).lower()
+    if any(strain in named for strain in parameters["wild_reference_strains"]):
+        return RuleOutcome(
+            value=WILD,
+            evidence_basis=BASIS_WILD_REFERENCE_STRAIN,
+            source_field="strain_name",
+            source_value=named.strip(),
         )
 
     # The name is not the only source of a serotype. A record whose organism name is one of
