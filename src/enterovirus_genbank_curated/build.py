@@ -31,6 +31,7 @@ from enterovirus_genbank_curated.contracts import (
     PARITY_SPEC_PATH,
     RULES_SCHEMA_PATH,
     ContractError,
+    assert_raw_manifest_agrees,
     load_decision_contract,
     validate_decision_ledger,
     validate_parity_spec,
@@ -145,6 +146,7 @@ def extracted_flat_file(repository_root: Path) -> Iterator[Path]:
     """
     spec = validate_parity_spec(repository_root / PARITY_SPEC_PATH)
     raw = spec["raw_input"]
+    assert_raw_manifest_agrees(repository_root, raw)
     verify_raw_input(repository_root, raw)
 
     member = raw["archive_member"]

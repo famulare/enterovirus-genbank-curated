@@ -19,6 +19,7 @@ from typing import Any
 from enterovirus_genbank_curated.contracts import (
     PARITY_SPEC_PATH,
     ContractError,
+    assert_raw_manifest_agrees,
     load_json,
     sha256_file,
     validate_contract_shape,
@@ -410,6 +411,7 @@ def verify_release_baseline(repository_root: Path, spec: dict[str, Any]) -> None
     of the two.
     """
     verify_build_manifest(repository_root, spec)
+    assert_raw_manifest_agrees(repository_root, spec["raw_input"])
     verify_raw_input(repository_root, spec["raw_input"])
     verify_release_manifest_hashes(repository_root)
     verify_carried_hashes(repository_root)
