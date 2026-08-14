@@ -71,10 +71,15 @@ def records(repository_root: Path) -> dict[str, population.AlignedRecord]:
 
 
 @pytest.fixture(scope="module")
-def populations(
-    records: dict[str, population.AlignedRecord],
-) -> dict[str, population.AlignmentPopulation]:
-    return {name: population.select(records, spec) for name, spec in contract.ARTIFACTS.items()}
+def populations(repository_root: Path) -> dict[str, population.AlignmentPopulation]:
+    """Through `load_populations`, deliberately.
+
+    This fixture reimplemented that function's one line for one line, which is why a dead-code sweep
+    on 2026-08-14 read the function as unused and nearly deleted it. It is the only entry point the
+    alignment layer offers for "every artifact's population", so the test that asserts those
+    populations should be the thing that exercises it.
+    """
+    return population.load_populations(repository_root)
 
 
 # --- membership is exactly what metadata says --------------------------------------------------

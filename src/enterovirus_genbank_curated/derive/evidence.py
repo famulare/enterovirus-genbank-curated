@@ -242,10 +242,6 @@ class ReferenceFrame:
     index: Mapping[str, tuple[int, ...]]
 
     @property
-    def vp1_length(self) -> int:
-        return self.vp1_end - self.vp1_start
-
-    @property
     def capsid_end(self) -> int:
         """The capsid is VP4-VP2-VP3-VP1 contiguously, so it ends where VP1 does."""
         return self.vp1_end

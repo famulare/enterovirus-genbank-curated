@@ -24,7 +24,6 @@ from collections import Counter
 from dataclasses import asdict
 from pathlib import Path
 
-from enterovirus_genbank_curated.align import contract
 from enterovirus_genbank_curated.align.population import AlignmentPopulation
 from enterovirus_genbank_curated.align.stitch import BLOCK_CDS, StitchedAlignment
 
@@ -66,7 +65,6 @@ def build_provenance(
     *,
     tool_identity: dict[str, str],
     threads: int,
-    seconds: float,
     over_length_cap: tuple[str, ...] = (),
     anchored_rows: tuple = (),
 ) -> dict:
@@ -120,7 +118,12 @@ def build_provenance(
         "covariance_models": models,
         "tool_identity": dict(sorted(tool_identity.items())),
         "threads": threads,
-        "seconds": round(seconds, 1),
+        # No wall-clock duration. It was here as `"seconds"` until 2026-08-14, rounded to a tenth,
+        # which made a committed artifact depend on how fast the machine that built it happened to
+        # be: two byte-identical alignments from the same inputs produced two different provenance
+        # files. `threads` stays because it is a declared build parameter that changes the output;
+        # elapsed time is a property of the hardware, and `evgc alignment-build` still reports it on
+        # stderr for the operator who wants it.
         "parameter_departures": PARAMETER_DEPARTURES,
         "artifact_sha256": {
             key: _sha256(path) for key, path in sorted(paths.items()) if path.is_file()
@@ -195,15 +198,3 @@ def tool_identity(toolchain) -> dict[str, str]:
         for name, tool in toolchain.tools.items()
     }
 
-
-def spec_summary() -> dict:
-    """Every declared artifact's shape, for a reader who has no build output to hand."""
-    return {
-        name: {
-            "stack": spec.stack,
-            "expected_rows": spec.expected_rows,
-            "virus_groups": list(spec.population.virus_groups),
-            "virus_types": list(spec.population.virus_types or ()),
-        }
-        for name, spec in contract.ARTIFACTS.items()
-    }

@@ -36,3 +36,7 @@ site/data/
 # flags you pass — it just sits in the release tree looking like data. Naming it
 # here does not make git see it, but it does tell a reader the name is expected.
 evgc-probe-fifo
+
+# Byte-identical duplicate of `final/alignments/`, produced by `evgc alignment-build` before
+# promotion. 24 MB of it, and the promoted copy is the one under contract.
+derived/alignments/

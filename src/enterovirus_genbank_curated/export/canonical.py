@@ -104,6 +104,18 @@ def write_canonical_table(
     assert_every_column_is_accounted_for(rows)
     write_tsv(output_dir / CANONICAL_RELATIVE, CANONICAL_COLUMNS, rows)
     vouched = [row for row in rows if row[CURATION_STATUS_COLUMN] == VOUCHED]
+    # Backlog B5. The subset relation held *structurally* — `vouched` is a filter over `rows` one
+    # line up — and a structurally-true property went unasserted for three releases. A writer that
+    # built the two tables from different sources would ship a vouched row absent from canonical and
+    # nothing in the tree would say so. Verified by breaking it: appending one synthetic version to
+    # `vouched` fails the build here rather than downstream.
+    canonical_versions = {row["version"] for row in rows}
+    orphans = sorted(row["version"] for row in vouched if row["version"] not in canonical_versions)
+    if orphans:
+        raise ContractError(
+            f"{len(orphans)} vouched rows are absent from the canonical table ({orphans[:5]}); the "
+            f"vouched file must be a subset of canonical, not a parallel derivation of it"
+        )
     write_tsv(output_dir / VOUCHED_RELATIVE, CANONICAL_COLUMNS, vouched)
 
     missing = [row["version"] for row in rows if row["version"] not in sequences]
