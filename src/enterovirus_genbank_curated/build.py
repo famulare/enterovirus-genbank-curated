@@ -63,6 +63,11 @@ from enterovirus_genbank_curated.export.canonical import (
     assemble_canonical_rows,
     write_canonical_table,
 )
+from enterovirus_genbank_curated.export.dictionaries import (
+    source_table_shapes,
+    write_dictionaries,
+    written_audit_shapes,
+)
 from enterovirus_genbank_curated.export.metadata import write_metadata_transport
 from enterovirus_genbank_curated.export.queue import write_curation_queue
 from enterovirus_genbank_curated.export.release import write_release_manifests
@@ -351,6 +356,21 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     write_curation_queue(output_dir, queue)
     write_decision_applications(output_dir, applications)
     write_membership_rescue(output_dir, rescued, tables["records"])
+
+    # The four data dictionaries, after every table they describe has been written and before the
+    # manifest that hashes them. They were carried from 2.4.1 as opaque bytes and all four had gone
+    # wrong — see `export/dictionaries.py`. The shapes are read back off what this build just wrote
+    # rather than declared a second time here, so a table gaining a column cannot leave its
+    # dictionary behind.
+    row_counts.update(
+        write_dictionaries(
+            repository_root,
+            output_dir,
+            canonical_rows=canonical,
+            source_shapes=source_table_shapes(tables),
+            audit_shapes=written_audit_shapes(output_dir),
+        )
+    )
 
     # Last, because the file manifest hashes everything above it. A build that failed before here
     # leaves artifacts with no manifest, which is the right way round: an unstamped directory is

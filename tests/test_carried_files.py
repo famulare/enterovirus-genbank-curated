@@ -41,7 +41,6 @@ import pytest
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.oracle.release import (
     CARRIED_FINAL_FILES,
-    DICTIONARY_HASHES,
     IGNORED_FINAL_NAMES,
     RELEASE_FILE_MANIFEST_PATH,
     SOURCE_LAYER_HASHES,
@@ -105,14 +104,6 @@ CARRIED_SHA256 = {
         "2de98c63e822ec5352921a71bb801d99f3ed5639ce4f1020dbe22c88c835871a",
     "final/audit/sequence_evidence.tsv.gz":
         "5c5e55a9d38ab9fbb64b5cc204846af941257f7b803c8644f646375c9789c349",
-    "final/dictionaries/audit_data_dictionary.tsv":
-        "222ef799baa1ae7f292cc652237dd1fc9e474199eb8e8d2a76f120a33d0c2098",
-    "final/dictionaries/canonical_data_dictionary.tsv":
-        "8fc475c7ac7482e7602339fb0257ce95a4db9e9fee164570fb9903750651df70",
-    "final/dictionaries/controlled_vocabularies.tsv":
-        "7fb35d08de7796793456c634f343eaa7f55823302052a3940b4bdc9efaeb8d4a",
-    "final/dictionaries/source_schema_dictionary.tsv":
-        "e946d0ea4e77743338195052d8823dab7551e26214f5ecc5302a60b7a99fde1b",
     "final/source/genbank_source.duckdb":
         "fd7dbbc7f1c4ee5674aead335196c3019b122da80386d843fb9afb3e16969bb5",
     "final/source/normalized_tsv/comments.tsv.gz":
@@ -167,9 +158,14 @@ CARRIED_SHA256 = {
 
 # Counts that make the completeness claim checkable rather than assertable. Each is re-derived in
 # test_the_carried_set_is_exactly_final_minus_the_manifest.
+#
+# The manifest grew by four on 2026-08-14 and the carried set shrank by the same four: the
+# `final/dictionaries/` files now have a producer, so they moved from "bytes inherited from 2.4.1"
+# to "written by this build". `EXPECTED_FINAL_FILES` does not move, because no file appeared or
+# disappeared — only which side of the line it sits on.
 EXPECTED_FINAL_FILES = 69
-EXPECTED_MANIFEST_ROWS = 13
-EXPECTED_FILE_BYTES_ROWS = 12
+EXPECTED_MANIFEST_ROWS = 13 + 4
+EXPECTED_FILE_BYTES_ROWS = 12 + 4
 
 
 def sha256(path: Path) -> str:
@@ -245,13 +241,15 @@ def test_this_file_is_the_sole_record_of_every_carried_file(repository_root: Pat
     it is a build artifact, not a committed cross-check, and the position is unchanged: this file is
     authoritative for every carried file.
 
-    The exception is the source layer and the dictionaries, which `oracle/release.py` also pins
-    because `parity-source` reads them outside pytest; the assertion below requires the two to
-    agree rather than treating either as the copy.
+    The exception is the source layer, which `oracle/release.py` also pins because `parity-source`
+    reads it outside pytest; the assertion below requires the two to agree rather than treating
+    either as the copy. The four dictionaries were a second exception until 2026-08-14, when
+    `export/dictionaries.py` gave them a producer — they are build artifacts now and the release
+    manifest covers them.
     """
     assert len(CARRIED_SHA256) == EXPECTED_FINAL_FILES - EXPECTED_MANIFEST_ROWS
     assert set(CARRIED_SHA256) == set(CARRIED_FINAL_FILES)
-    for relative, declared in {**SOURCE_LAYER_HASHES, **DICTIONARY_HASHES}.items():
+    for relative, declared in SOURCE_LAYER_HASHES.items():
         assert CARRIED_SHA256[f"final/{relative}"] == declared
 
 

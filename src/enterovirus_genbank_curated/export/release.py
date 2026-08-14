@@ -161,6 +161,10 @@ BUILD_ARTIFACT_RELATIVES = (
     "canonical/sequence_metadata_vouched.tsv.gz",
     "canonical/sequences.fasta.gz",
     "curation/curation_queue.tsv",
+    "dictionaries/audit_data_dictionary.tsv",
+    "dictionaries/canonical_data_dictionary.tsv",
+    "dictionaries/controlled_vocabularies.tsv",
+    "dictionaries/source_schema_dictionary.tsv",
 )
 
 

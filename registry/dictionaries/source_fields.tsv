@@ -1,0 +1,71 @@
+table_name	column_name	definition	logical_type	physical_type	nullable	key_role
+records	record_id	accession.version of THIS record (== version; the primary-key alias).	string	string	FALSE	alias of primary key (== version)
+records	record_ordinal	1-based order the record appeared in the GenBank flat file.	integer	int64	FALSE	
+records	accession	Unversioned accession.	string	string	FALSE	natural key (unversioned)
+records	version	accession.version.	string	string	FALSE	primary key
+records	locus_name	GenBank LOCUS name.	string	string	TRUE	
+records	definition	GenBank DEFINITION line (verbatim).	string	string	TRUE	
+records	organism_name	Submitted organism name.	string	string	TRUE	
+records	ncbi_taxid	NCBI Taxonomy id.	string	string	TRUE	
+records	molecule_type	Molecule type annotation.	string	string	TRUE	
+records	topology	linear/circular topology.	string	string	TRUE	
+records	division	GenBank data-file division.	string	string	TRUE	
+records	record_date	GenBank record date.	string	string	TRUE	
+records	sequence_length_nt	Sequence length in nucleotides.	integer	int64	FALSE	
+records	sequence_sha256	SHA-256 of the uppercased nucleotide sequence.	string	string	FALSE	
+record_keywords	record_id	accession.version of the parent record.	string	string	FALSE	FK -> records.version
+record_keywords	keyword_ordinal	1-based keyword order.	integer	int64	FALSE	
+record_keywords	keyword	A KEYWORDS entry.	string	string	FALSE	
+record_taxonomy	record_id	accession.version of the parent record.	string	string	FALSE	FK -> records.version
+record_taxonomy	lineage_ordinal	1-based taxonomy-lineage order.	integer	int64	FALSE	
+record_taxonomy	taxon_name	A taxonomy lineage element.	string	string	FALSE	
+record_accessions	record_id	accession.version of the parent record.	string	string	FALSE	FK -> records.version
+record_accessions	accession_ordinal	1-based order in the ACCESSION line.	integer	int64	FALSE	
+record_accessions	accession	Unversioned accession.	string	string	FALSE	
+record_accessions	accession_role	primary or secondary accession.	string	string	FALSE	
+features	feature_id	Synthetic feature key (record_id:F<ordinal>).	string	string	FALSE	primary key
+features	record_id	accession.version of the parent record.	string	string	FALSE	FK -> records.version
+features	feature_ordinal	1-based feature order.	integer	int64	FALSE	
+features	feature_key	Feature type (source, CDS, …).	string	string	FALSE	
+features	location_parsed	String form of the parsed Biopython location (NOT literal INSDC text; the structured truth is feature_location_parts).	string	string	TRUE	
+features	location_operator	join/order/complement operator when compound.	string	string	TRUE	
+feature_location_parts	feature_id	Synthetic feature key (record_id:F<ordinal>).	string	string	FALSE	FK -> features.feature_id
+feature_location_parts	part_ordinal	1-based part order within a (possibly compound) location.	integer	int64	FALSE	
+feature_location_parts	start_1based	1-based inclusive start coordinate.	integer	int64	FALSE	
+feature_location_parts	end_1based_inclusive	1-based inclusive end coordinate.	integer	int64	FALSE	
+feature_location_parts	strand	+ or - strand.	string	string	TRUE	
+feature_location_parts	start_position_class	Biopython position class (Exact/Before/After…) capturing fuzziness.	string	string	TRUE	
+feature_location_parts	end_position_class	Biopython end position class.	string	string	TRUE	
+feature_location_parts	remote_accession	Referenced accession for a remote location part.	string	string	TRUE	
+feature_qualifiers	feature_id	Synthetic feature key (record_id:F<ordinal>).	string	string	FALSE	FK -> features.feature_id
+feature_qualifiers	qualifier_ordinal	1-based order of the qualifier NAME within the feature (the n-th distinct /qualifier encountered).	integer	int64	FALSE	
+feature_qualifiers	qualifier_name	Feature qualifier name (e.g. organism, isolate, note, translation).	string	string	FALSE	
+feature_qualifiers	value_ordinal	1-based order among REPEATED values of the same qualifier name (e.g. the 2nd /note on a feature).	integer	int64	FALSE	
+feature_qualifiers	qualifier_value	Feature qualifier value (verbatim; F6).	string	string	TRUE	
+references	reference_id	Synthetic reference key (record_id:R<ordinal>).	string	string	FALSE	primary key
+references	record_id	accession.version of the parent record.	string	string	FALSE	FK -> records.version
+references	reference_ordinal	1-based reference order.	integer	int64	FALSE	
+references	title	Reference title (verbatim).	string	string	TRUE	
+references	journal_raw	Reference journal string (verbatim).	string	string	TRUE	
+references	authors_raw	Complete submitted author string, verbatim (lossless; F6).	string	string	TRUE	
+references	pubmed_id	PubMed id.	string	string	TRUE	
+references	medline_id	MEDLINE id.	string	string	TRUE	
+references	consortium	Consortium/consrtm string.	string	string	TRUE	
+references	reference_location	Reference base-range location string.	string	string	TRUE	
+references	remark	Reference REMARK (verbatim).	string	string	TRUE	
+reference_authors	reference_id	Synthetic reference key (record_id:R<ordinal>).	string	string	FALSE	FK -> references.reference_id
+reference_authors	author_ordinal	1-based author order (convenience split).	integer	int64	FALSE	
+reference_authors	author_raw	One heuristically-split author token (convenience; authors_raw is authoritative).	string	string	FALSE	
+comments	comment_id	Synthetic comment key (record_id:C/SC<ordinal>).	string	string	FALSE	primary key
+comments	record_id	accession.version of the parent record.	string	string	FALSE	FK -> records.version
+comments	comment_ordinal	1-based comment order.	integer	int64	FALSE	
+comments	comment_type	COMMENT or STRUCTURED_COMMENT.	string	string	FALSE	
+comments	comment_text	Comment text (verbatim; F6).	string	string	TRUE	
+record_xrefs	record_id	accession.version of the parent record.	string	string	FALSE	FK -> records.version
+record_xrefs	xref_ordinal	1-based DBLINK order.	integer	int64	FALSE	
+record_xrefs	database_name	DBLINK database name.	string	string	TRUE	
+record_xrefs	identifier	DBLINK identifier.	string	string	TRUE	
+structured_comment_fields	comment_id	Synthetic comment key (record_id:C/SC<ordinal>).	string	string	FALSE	FK -> comments.comment_id
+structured_comment_fields	field_ordinal	1-based structured-comment field order.	integer	int64	FALSE	
+structured_comment_fields	field_name	Structured-comment field name.	string	string	FALSE	
+structured_comment_fields	field_value	Structured-comment field value (verbatim; F6).	string	string	TRUE	
