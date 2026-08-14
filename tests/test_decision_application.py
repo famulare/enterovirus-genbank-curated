@@ -154,11 +154,14 @@ EXPECTED_TALLY = {
     # decline. Including `S61236`'s two, whose *real* values are determined rather than declined:
     # the counterfactual withholds the whole ledger and takes its `is_poliovirus = FALSE` with it,
     # so without any decisions the partition declines and the epi rules decline behind it.
+    # -11 on 2026-08-14: the rule-redundant `serotype` retirements. They leave `applied_unchanged`
+    # for `not_in_force_retired` and move no canonical cell, which is what `applied_unchanged` meant
+    # in the first place — verified by rebuilding and diffing the table: 0 rows changed.
     "applied_filled_unresolved": 3559,
     "applied_changed": 1699,
-    "applied_unchanged": 534,
+    "applied_unchanged": 534 - 11,
     "applied_exclusion": 173,
-    "not_in_force_retired": 183,
+    "not_in_force_retired": 183 + 11,
     "no_canonical_field": 123,
     "subject_outside_carve": 6,
     # +3 on 2026-07-31: the vocabulary repairs superseded the three active decisions whose value was

@@ -166,7 +166,23 @@ CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 # 162 rows were retired on 2026-07-30 because a *rule* now derives their value, not because another
 # decision replaced them. That is a second meaning for `retired` and the reason the invariant below
 # had to be split.
-RULE_REDUNDANT_RETIREMENTS = 162
+#
+# 11 more on 2026-08-14, under the same reasoning and after a per-group review of all 534
+# `applied_unchanged` decisions: bare `serotype` assertions on records whose organism name states
+# the serotype outright (`AJ699401`, `EU598475`, `A37539`, `A37564`, `DI499171`-`176`, `JC013129`).
+# R-TYPE-2 reaches all 11 with the whole ledger withheld.
+#
+# **Only** those 11, and the reason the other 523 stay is the interesting half. 500 are
+# `poliovirus_classification` made redundant by R-CLASS-2 — a rule rewritten six times in three
+# weeks, so a decision agreeing with it today agrees with something still moving. The rest became
+# redundant within the last week, through branches added in this release. The branch that retires
+# these 11 is R-TYPE-2's oldest and most stable, measured at 220 of 223 organism names mapping to
+# exactly one type, and it cannot change without failing `tests/test_typing.py`.
+#
+# `applied_unchanged` is also a health metric worth keeping non-zero: a rising count means the rules
+# are absorbing curation, which is the direction of travel. Driving it to zero each release deletes
+# the signal. Curator ruling, 2026-08-14.
+RULE_REDUNDANT_RETIREMENTS = 162 + 11
 
 # A third meaning for `retired`, landed 2026-07-31: an adjudication overturned the assertion. Four
 # rows, all `engineered_or_construct` TRUEs — `AJ512791`/`AJ512792` (Appendix B Q8, a wild PV1

@@ -8,7 +8,7 @@
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "8ebc6dbf3194d5ff703f7ecd1e89e3e9e624e50c95bf1c21e44224049f23441f",
+    "decisions_sha256": "da13ac6dc0317c1b9a2e7d53206b389e96b4bedf0eb089fa88222034feecdc91",
     "rules_sha256": "cf4ce040709b82a67bc8ed21a91c347d2f8ac35e5cfc0dee96559cd685f896e6"
   },
   "row_counts": {
@@ -37,11 +37,11 @@
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 173,
-    "applied_unchanged": 534,
+    "applied_unchanged": 523,
     "applied_changed": 1699,
+    "not_in_force_retired": 194,
     "applied_filled_unresolved": 3559,
     "not_in_force_superseded": 15,
-    "not_in_force_retired": 183,
     "subject_outside_carve": 6
   },
   "completeness": {
