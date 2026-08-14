@@ -20,11 +20,15 @@ import pytest
 
 from enterovirus_genbank_curated.derive.epi import (
     BASIS_ENVIRONMENTAL_FLAG,
+    BASIS_GENBANK_DIVISION,
+    BASIS_HOST_SPECIES,
     BASIS_SPECIMEN_CONTEXT,
     UNRESOLVED_AMBIGUOUS,
     UNRESOLVED_NO_KEYWORD,
+    UNRESOLVED_NO_ORIGIN_EVIDENCE,
     UNRESOLVED_NO_SOURCE,
     UNRESOLVED_NO_STREAM_EVIDENCE,
+    sample_origin,
     specimen_type,
     surveillance_stream,
 )
@@ -62,8 +66,21 @@ STREAM_PARAMETERS = {
     ),
 }
 
+ORIGIN_PARAMETERS = {
+    "human_host_pattern": r"homo sapiens|\bhuman\b",
+    "human_specimen_pattern": (
+        r"stool|faeces|faecal|feces|fecal|sewage|wastewater|waste water|water\b|throat|nasal"
+        r"|nasopharyn|oropharyn|\bcsf\b|cerebrospinal|serum|blood\b|patient|\bafp\b|acute flaccid"
+        r"|paralysis|paralytic|meningitis|gastroenteritis"
+    ),
+    "origins": {"human": "human", "non_human": "non-human"},
+    "outside_scope_value": "unknown",
+    "origin_by_division": {"ENV": "human", "PAT": "non-human"},
+}
+
 RECOVERED_BY_THE_FLAG = 17
 RECOVERED_SPECIMEN_KEYWORDS = 80
+RESOLVED_BY_THE_DIVISION = 571
 
 
 def view(
@@ -71,16 +88,20 @@ def view(
     *,
     environmental_flag: bool = False,
     poliovirus: bool = True,
+    division: str = "VRL",
+    host: str = "",
     decisions: dict[str, str] | None = None,
 ) -> RecordView:
     qualifiers = {"isolation_source": source} if source else {}
     if environmental_flag:
         # A valueless qualifier is present with an empty value, which is the whole point.
         qualifiers["environmental_sample"] = ""
+    if host:
+        qualifiers["host"] = host
     return RecordView(
         version="X00001.1",
         accession="X00001",
-        record={"organism_name": "Poliovirus 1"},
+        record={"organism_name": "Poliovirus 1", "division": division},
         qualifiers=qualifiers,
         decisions=decisions or {"is_poliovirus": "TRUE" if poliovirus else "FALSE"},
     )
@@ -204,12 +225,97 @@ def test_the_flag_is_read_below_the_text_and_not_above_it() -> None:
     assert outcome.evidence_basis == BASIS_SPECIMEN_CONTEXT
 
 
+# --- R-ORIGIN-2's ENV division branch -------------------------------------------------------------
+
+
+def test_an_environmental_division_record_is_human_origin() -> None:
+    """Sewage is human waste from a human population, which is what 2.4.1 ships on all 19.
+
+    `sample_origin` records *who* was sampled and `surveillance_stream` records *which system*
+    sampled them, so there is no environmental value in this vocabulary and none is wanted — the
+    two-axis split exists so that "from a sewer" and "from a person" are not the same answer.
+    """
+    outcome = sample_origin(ORIGIN_PARAMETERS, view("Rahat Treatment Plant", division="ENV"))
+    assert outcome.value == "human"
+    assert outcome.evidence_basis == BASIS_GENBANK_DIVISION
+    assert outcome.source_field == "division"
+
+
+def test_a_deposited_host_still_outranks_the_division() -> None:
+    """The division is a structural fallback, not a rule about who was sampled."""
+    outcome = sample_origin(
+        ORIGIN_PARAMETERS, view("river water", division="ENV", host="Sus scrofa")
+    )
+    assert outcome.value == "non-human"
+    assert outcome.evidence_basis == BASIS_HOST_SPECIES
+
+
+@pytest.mark.parametrize(
+    ("division", "expected"), [("ENV", "human"), ("PAT", "non-human")]
+)
+def test_the_division_branch_reaches_non_poliovirus_records_too(
+    division: str, expected: str
+) -> None:
+    """416 records move off the release's `unknown` this way, and that is the intended behaviour.
+
+    21 are non-poliovirus sewage isolates already streamed `environmental`; 377 are non-poliovirus
+    patent deposits. 2.4.1 left all of them `unknown` because its `origin_class` was curated for
+    poliovirus only — a fact about the upstream process rather than about the record. That is the
+    same 2026-07-30 curator decision this rule already applies to `/host`, which is why the branch
+    sits above the partition scope rather than below it.
+    """
+    outcome = sample_origin(
+        ORIGIN_PARAMETERS, view("cell culture", division=division, poliovirus=False)
+    )
+    assert outcome.value == expected
+    assert outcome.evidence_basis == BASIS_GENBANK_DIVISION
+
+
+def test_a_patent_deposit_is_not_a_sample_taken_from_an_organism() -> None:
+    """82 records were declining this and 2.4.1 fills 56 of them with `non-human`.
+
+    The other 26 it calls `unknown`, which is a placeholder rather than a determination — the same
+    inheritance the `default_stool` and `not_applicable` reviews refused. Curator ruling 2026-08-13.
+    """
+    outcome = sample_origin(ORIGIN_PARAMETERS, view("", division="PAT"))
+    assert outcome.value == "non-human"
+    assert outcome.evidence_basis == BASIS_GENBANK_DIVISION
+
+
+def test_a_division_that_states_nothing_about_origin_is_not_read() -> None:
+    """`VRL` is the division of 24,410 of these records and says only "this is a virus"."""
+    outcome = sample_origin(ORIGIN_PARAMETERS, view("cell culture", division="VRL"))
+    assert outcome.value == ""
+    assert outcome.unresolved_reason == UNRESOLVED_NO_ORIGIN_EVIDENCE
+
+
+def test_the_declared_mapping_is_the_whole_branch() -> None:
+    """A division not in the mapping falls through, so adding one is a catalog edit and not a code
+    edit. `SYN` is the case that makes this worth pinning: a synthetic-construct deposit is arguably
+    non-human too, but R-CONSTRUCT-2 already owns that determination and no measurement asked this
+    rule for it."""
+    assert set(ORIGIN_PARAMETERS["origin_by_division"]) == {"ENV", "PAT"}
+    outcome = sample_origin(ORIGIN_PARAMETERS, view("", division="SYN"))
+    assert outcome.value == ""
+
+
 # --- the corpus ---------------------------------------------------------------------------------
 
 
 @pytest.fixture(scope="module")
 def provenance(repository_root: Path) -> list[dict[str, str]]:
     return read_projection_provenance(repository_root / "final")
+
+
+def test_the_division_branch_resolves_the_declared_population(
+    provenance: list[dict[str, str]],
+) -> None:
+    bases = Counter(
+        row["evidence_basis"]
+        for row in provenance
+        if row["canonical_field"] == "sample_origin" and not row["unresolved_reason"]
+    )
+    assert bases[BASIS_GENBANK_DIVISION] == RESOLVED_BY_THE_DIVISION
 
 
 def test_the_flag_resolves_the_declared_population(provenance: list[dict[str, str]]) -> None:

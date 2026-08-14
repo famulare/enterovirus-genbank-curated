@@ -354,7 +354,7 @@ TRAITS = (
 TRAIT_SCOPE_RECORD = "record"
 
 DEFAULT_SELECTION = "PV1"
-DEFAULT_REGION = REGION_POLYPROTEIN
+DEFAULT_REGION = REGION_P1
 
 # Number of discrete categories given their own hue before the rest collapse into a
 # single `Other` bucket. Seven is not a preference: it is the largest number of hues

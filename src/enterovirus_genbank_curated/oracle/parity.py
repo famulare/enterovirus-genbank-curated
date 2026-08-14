@@ -198,13 +198,25 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('Sabin-like', 'cVDPV'): 1,
         ('Sabin-like', 'engineered/lab'): 1,
     },
+    # The GenBank division branch landed 2026-08-13 (curator ruling) and resolves 571 records: 112
+    # `ENV` and 459 `PAT`. Against the baseline that is 19 + 56 = 75 cells recovered — declines the
+    # release fills — and 21 + 395 = 416 moved off the release's `unknown`.
+    #
+    # The moved cells are not a new kind of claim. They land in the two classes below that already
+    # count 11,649 and 149 of exactly this correction: a record whose GenBank division states its
+    # origin structurally, which 2.4.1 left `unknown` because its `origin_class` was curated for
+    # poliovirus only. The 21 are non-poliovirus sewage isolates, every one already streamed
+    # `environmental`; the 377 of the 395 that were not previously declined are non-poliovirus
+    # patent deposits, not samples taken from an organism whatever their virus group. That is a
+    # fact about the upstream process rather than about the record — the same 2026-07-30 decision
+    # this rule already applies to `/host`, which is why the branch sits above the partition scope.
     "sample_origin": {
-        ('unknown', 'human'): 11649,
-        ('human', ''): 2761,
-        ('unknown', 'non-human'): 149,
-        ('non-human', ''): 74,
-        ('unknown', ''): 35,
+        ('unknown', 'human'): 11670,
+        ('human', ''): 2742,
+        ('unknown', 'non-human'): 544,
         ('vaccine', ''): 24,
+        ('non-human', ''): 18,
+        ('unknown', ''): 17,
         ('non-human', 'unknown'): 11,
         ('human', 'non-human'): 1,
     },
@@ -448,11 +460,15 @@ UNRESOLVED_SPECIMEN_ROWS = 12620
 # for 140 more records: 21 of them deposit a `/host` and so read it here for the first time; the
 # other 119 have none and stay declined.
 #
+# Down a further 101, 2026-08-13, with the GenBank division branch: 19 `ENV` records and 82 `PAT`
+# ones were declining and now resolve. The branch reaches 571 records in all; the other 470 were
+# already answered by their `/host` or by the outside-scope value. See the transition note above.
+#
 # Down a further 759 the same day, when the upstream partition projection closed `virus_group`
 # entirely: those 759 are now scoped and read their `/host`. The rest of the 1,385 newly-partitioned
 # records deposit no `/host` and no recognisable human specimen, so they stay declined here — a
 # resolved partition makes the question askable, not answered.
-UNRESOLVED_ORIGIN_ROWS = 2902
+UNRESOLVED_ORIGIN_ROWS = 2801
 # `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
 # its values — plus those whose partition is undecided and so cannot be scoped either way. 20 of the

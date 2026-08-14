@@ -30,10 +30,10 @@ test("summary declares the five selections the site is built around", () => {
   );
 });
 
-test("the default view is the PV1 polyprotein colored by classification", () => {
+test("the default view is the PV1 capsid colored by classification", () => {
   const view = defaultView(summary);
   assert.equal(view.selection, "PV1");
-  assert.equal(view.region, "polyprotein");
+  assert.equal(view.region, "P1");
   assert.equal(view.trait, "poliovirus_classification");
   assert.equal(view.pinned, null);
 });

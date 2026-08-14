@@ -169,6 +169,8 @@ ORIGIN_SOURCE_FIELD = "origin_class"
 
 BASIS_HOST_SPECIES = "host_species"
 BASIS_HUMAN_SPECIMEN = "human_specimen"
+BASIS_GENBANK_DIVISION = "genbank_division"
+DIVISION_FIELD = "division"
 BASIS_OUTSIDE_POLIOVIRUS = "not_determined_outside_poliovirus"
 UNRESOLVED_NO_ORIGIN_EVIDENCE = "no_host_or_specimen_evidence"
 UNRESOLVED_FOLLOWS_PARTITION = "follows_unresolved_virus_group"
@@ -177,8 +179,19 @@ LEDGER_ORIGIN_FIELD = "origin_class"
 
 @rule_implementation(
     "derive.epi.sample_origin",
-    parameters=("human_host_pattern", "human_specimen_pattern", "origins", "outside_scope_value"),
-    evidence_bases=(BASIS_HOST_SPECIES, BASIS_HUMAN_SPECIMEN, BASIS_OUTSIDE_POLIOVIRUS),
+    parameters=(
+        "human_host_pattern",
+        "human_specimen_pattern",
+        "origins",
+        "outside_scope_value",
+        "origin_by_division",
+    ),
+    evidence_bases=(
+        BASIS_HOST_SPECIES,
+        BASIS_HUMAN_SPECIMEN,
+        BASIS_GENBANK_DIVISION,
+        BASIS_OUTSIDE_POLIOVIRUS,
+    ),
 )
 def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     """Who was sampled, scoped by the partition that decides whether the question was asked.
@@ -212,6 +225,32 @@ def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
             evidence_basis=BASIS_HOST_SPECIES,
             source_field=ORIGIN_SOURCE_FIELD,
             source_value=host,
+        )
+
+    # Two GenBank divisions state the origin structurally, and are read below `/host` — a deposit
+    # that names its host has answered directly — and above the specimen text, which is where a
+    # record whose `/isolation_source` is a place name or absent would otherwise fall through.
+    #
+    # `ENV` means the sequence came from an environmental sample, and in poliovirus surveillance
+    # that sample is sewage: human waste from a human population. 2.4.1 ships `human` on all 19 of
+    # the records this rule was declining. `PAT` means a patent deposit, which is not a sample taken
+    # from an organism at all, so it is `non-human`.
+    #
+    # The `origin_class` vocabulary has no environmental value and needs none. `sample_origin`
+    # records *who* was sampled and `surveillance_stream` records *which system* sampled them;
+    # conflating them is what the two-axis split exists to prevent.
+    #
+    # Both branches reach past the records 2.4.1 answers, and deliberately. `ENV` moves 21 further
+    # records `unknown` -> `human` and `PAT` moves 18 `unknown` -> `non-human`: cells where the
+    # release recorded a placeholder rather than a determination, which is the same inheritance the
+    # `default_stool` and `not_applicable` reviews refused elsewhere. Curator ruling, 2026-08-13.
+    division = parameters["origin_by_division"].get(view.record.get(DIVISION_FIELD, ""))
+    if division:
+        return RuleOutcome(
+            value=division,
+            evidence_basis=BASIS_GENBANK_DIVISION,
+            source_field=DIVISION_FIELD,
+            source_value=view.record.get(DIVISION_FIELD, ""),
         )
 
     # With no host the scope matters again: the specimen-text fallback was calibrated on poliovirus

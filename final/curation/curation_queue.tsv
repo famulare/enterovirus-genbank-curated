@@ -66,9 +66,8 @@ Q-44d627334e93	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-44f6ae0d1230	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	environment	10	KY941933.1 KY941935.1 OQ417772.1	decision
 Q-476a4590420f	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	acute flaccid paralysis patient	2	JN408584.1 JN408585.1	rule_parameter
 Q-483fd8eff578	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	patient with acute flaccid paralysis (AFP)	1	KF495604.1	rule_parameter
-Q-48c7a5632dd8	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	tel sheva treatment plant	1	KP004225.1	decision
 Q-4909fcf15859	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	case of tonsilitis	2	DQ264254.1 DQ264325.1	decision
-Q-499181033252	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence		2725	A01868.1 A03852.1 A03999.1	decision
+Q-499181033252	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence		2643	AB052561.1 AB052562.1 AB052563.1	decision
 Q-49e04718b018	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool sample from child 2 on day 142	1	JX179283.1	decision
 Q-4ad1436e398f	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	immunodeficient vaccine-derived paralytic polio case	12	ON207141.1 ON207142.1 ON207143.1	rule_parameter
 Q-4be88471237b	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	clinical sample stool	16	MK660464.1 MK660466.1 MK660469.1	decision
@@ -78,7 +77,7 @@ Q-4e60952fa759	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-4f3cb8130dbc	poliovirus_classification	poliovirus_classification	R-CLASS-2	no_serotype_in_organism_name_to_choose_a_reference	Human poliovirus 30/ROU/2008	2	FR715534.1 FR715548.1	decision
 Q-5173345e8cab	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Bovine enterovirus type 1	1	JX538126.1	decision
 Q-51f1bd630cb6	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	feces	399	AB162759.1 DQ411554.1 DQ411555.1	decision
-Q-535a22adf5e0	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	shoket treatment plant	2	KJ013422.1 KP004232.1	decision
+Q-535a22adf5e0	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	shoket treatment plant	1	KJ013422.1	decision
 Q-5725ea17fb1b	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	case of tonsilitis	2	DQ264254.1 DQ264325.1	rule_parameter
 Q-572d0bea6c74	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	clinical sample from acute flaccid paralysis patient	8	MT271232.1 MT271233.1 MT271234.1	rule_parameter
 Q-57420346d5df	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	ashdod treatment plant	1	KJ013441.1	decision
@@ -97,7 +96,7 @@ Q-6888cd576af0	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-69c8cc117296	poliovirus_classification	poliovirus_classification	R-CLASS-2	no_serotype_in_organism_name_to_choose_a_reference	Human poliovirus sp.	11	M30211.1 M30212.1 M30214.1	decision
 Q-6a034055f100	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	pericardial fluid	1	MN896906.1	rule_parameter
 Q-6a57d947aa0c	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	healthy individual	29	AY278549.1 AY278550.1 AY278552.1	rule_parameter
-Q-6ac5a074e851	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	arad treatment plant	2	KJ013450.1 KP004236.1	decision
+Q-6ac5a074e851	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	arad treatment plant	1	KJ013450.1	decision
 Q-6bec97f6b59c	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	ar'ara treatment plant	3	KJ013442.1 KJ013443.1 KJ013467.1	decision
 Q-6c44b4e9c6fd	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	cell culture	31	MN240491.1 MN240492.1 MN240493.1	rule_parameter
 Q-6e179a3e80df	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Human enterovirus Ningbo3-02	1	AY876912.1	decision
@@ -106,7 +105,6 @@ Q-6f3c64ba32a3	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-6f4e05aea8c2	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool specimen	40	AJ871589.1 AJ871590.1 AJ871591.1	decision
 Q-6f904eaa1710	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	conjuctival swab	11	OR610291.1 OR610292.1 OR610293.1	rule_parameter
 Q-6fc775673105	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	SP	2	MN246008.1 MN246040.1	rule_parameter
-Q-7142683d809c	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	segev shalom west trunk line	1	KP004244.1	decision
 Q-71a1dbb45f14	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	envirnmental sample	1	KM225628.1	rule_parameter
 Q-72b29ee90590	poliovirus_classification	poliovirus_classification	R-CLASS-2	too_little_sequence_compared_to_measure_divergence		422	A01868.1 AB111500.1 AB111501.1	decision
 Q-74758a15c2b4	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	VAPP patient on day 60 from paralysis onset	1	AY649328.1	rule_parameter
@@ -116,7 +114,7 @@ Q-759bf7bc900f	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Human
 Q-75c00a396512	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	acute enterocolitis case	5	MG212441.1 MG212442.1 MG212443.1	rule_parameter
 Q-763d21ca61c6	poliovirus_classification	poliovirus_classification	R-CLASS-2	no_serotype_in_organism_name_to_choose_a_reference	Human poliovirus 40/ROU/2008	2	FR715535.1 FR715549.1	decision
 Q-76ae39bcf8cb	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool sample collected one week after children received one dose of oral poliovirus vaccine (opv)	1	DQ522896.1	decision
-Q-773e788c4c32	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	tnuvot treatment plant	2	KJ013453.1 KP004237.1	decision
+Q-773e788c4c32	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	tnuvot treatment plant	1	KJ013453.1	decision
 Q-784937b7c726	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	cerebrospinal fluid (csf)	2	KX011399.1 KX011400.1	decision
 Q-78a11d7d637d	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	ayalon lod trunk line	2	KJ013462.1 KJ013468.1	decision
 Q-78cd80ae3255	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	madison lake	2	JF343827.1 JF343828.1	decision
@@ -169,12 +167,12 @@ Q-9bf8278b3803	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Simia
 Q-9cb3d580fd33	poliovirus_classification	poliovirus_classification	R-CLASS-2	no_serotype_in_organism_name_to_choose_a_reference	Enterovirus C	11	AB206718.1 AX664691.1 DQ150696.1	decision
 Q-9cb4edfd9c6f	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus J112	10	JX537976.1 JX537977.1 JX537978.1	decision
 Q-9cee5fa2f776	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Human poliovirus 40/ROU/2008	2	FR715535.1 FR715549.1	decision
-Q-9d9a67e96bdd	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	rahat treatment plant	18	KJ013420.1 KJ013421.1 KJ013425.1	decision
+Q-9d9a67e96bdd	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	rahat treatment plant	11	KJ013420.1 KJ013421.1 KJ013425.1	decision
 Q-9e7e807c1118	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	AFP case	212	AB207263.1 AB207264.1 AB207265.1	rule_parameter
 Q-9ee0ef245665	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	horashim tretment plant	2	KJ013459.1 KJ013460.1	decision
 Q-9f0a1088a730	poliovirus_classification	poliovirus_classification	R-CLASS-2	no_serotype_in_organism_name_to_choose_a_reference	unidentified poliovirus	7	A03999.1 A13892.1 A16105.1	decision
 Q-9f0b629a9ddf	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	patient with acute gastroenteritis	6	MT491237.1 MT491238.1 MT491239.1	rule_parameter
-Q-a15ec184a883	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	kiryat gat treatment plant	7	KJ013424.1 KJ013440.1 KJ013446.1	decision
+Q-a15ec184a883	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	kiryat gat treatment plant	6	KJ013424.1 KJ013440.1 KJ013446.1	decision
 Q-a259bc6003a5	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	healthy child living in close contact with a poliomyelitis patient	31	EF628385.1 EF628386.1 EF628387.1	rule_parameter
 Q-a2b2b49afdca	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	ar'ara treatment plant	3	KJ013442.1 KJ013443.1 KJ013467.1	decision
 Q-a32d2c82edc4	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Human enterovirus Hangzhou13-02	1	AY876913.1	decision
@@ -199,7 +197,6 @@ Q-b1c39bd64401	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surve
 Q-b31944c88626	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus 19	13	PQ009045.1 PQ009046.1 PQ009047.1	decision
 Q-b31e8509f6a1	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Rhinovirus C	2	MF161053.1 MF775365.1	decision
 Q-b35bc0b8636c	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	RD cell culture isolate	1	MG976582.1	rule_parameter
-Q-b41471542b60	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	kasefia trunk line	1	KP004243.1	decision
 Q-b4e64d83cd00	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	acute haemorrhagic conjunctivitis patient	32	EU162068.1 EU162069.1 EU162070.1	rule_parameter
 Q-b56ead228394	specimen_type	specimen_type	R-SPECIMEN-2	no_isolation_source_deposited		10265	A01868.1 A03852.1 A03999.1	decision
 Q-b668f882f90a	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	cerebrospinal fluid	1	GQ506664.1	decision
@@ -215,7 +212,6 @@ Q-c1bf45ee5cce	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_i
 Q-c22a3c9f9705	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	human stool	110	AB781738.1 AB781739.1 AB781740.1	decision
 Q-c266c9da564a	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	tnuvot treatment plant	1	KJ013453.1	decision
 Q-c42e8b6ba9dc	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	RD cell	8	KJ755189.1 KJ755190.1 KT277550.1	rule_parameter
-Q-c448fac4488d	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	rahat south treatment plant	1	KP004233.1	decision
 Q-c6a80dd3f847	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	contact	4	EF634009.1 EF634010.1 EF634011.1	rule_parameter
 Q-c75ac70157ba	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	other wash	1	MF160234.1	rule_parameter
 Q-c991e4c62dbc	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus 6	14	PQ009012.1 PQ009013.1 PQ009014.1	decision
@@ -233,7 +229,7 @@ Q-d8a3cbe6538b	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surve
 Q-d9077d04724f	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	case of viral infection	1	MG212465.1	rule_parameter
 Q-da0a9d5b0fe3	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	clinical sample feces	1	MN384438.1	decision
 Q-db57876e1da0	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enterovirus sp.	4	KX941077.1 KX941080.1 KX941094.1	decision
-Q-dcb17e9c6083	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	ayalon treatment plant	4	KJ013451.1 KJ013452.1 KJ013456.1	decision
+Q-dcb17e9c6083	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	ayalon treatment plant	3	KJ013451.1 KJ013452.1 KJ013456.1	decision
 Q-dce7ae65a226	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	rahat north trunk line	1	KJ013448.1	decision
 Q-ddecabd0c6da	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	HFMD	15	MT588186.1 MT588187.1 MT588188.1	rule_parameter
 Q-df0a23e9da54	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	clinical	2	PV178345.1 PV178545.1	rule_parameter
@@ -243,7 +239,7 @@ Q-e32a2f4c50fa	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	synth
 Q-e3bce894673c	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool sample from child 1 on day 123	1	JX179291.1	decision
 Q-e4b9e857e727	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	conjunctival swab	453	AB769150.1 AB769151.1 AB769152.1	rule_parameter
 Q-e4d899a88ed4	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	l20b cell	10	FJ859183.1 FJ859184.1 FJ859185.1	decision
-Q-e4e1676b3cb6	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	be'er sheva treatment plant	18	KJ013419.1 KJ013423.1 KJ013426.1	decision
+Q-e4e1676b3cb6	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	be'er sheva treatment plant	15	KJ013419.1 KJ013423.1 KJ013426.1	decision
 Q-ea06b19be33f	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record		5865	A01868.1 A03852.1 A03999.1	decision
 Q-ea85481fbb79	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	rhabdomyosarcoma cell	131	MN845761.1 MN845762.1 MN845763.1	rule_parameter
 Q-eb68bef9664b	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool 1	1	EU684057.1	decision

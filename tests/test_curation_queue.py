@@ -111,7 +111,11 @@ from enterovirus_genbank_curated.derive.partition import (
 # rule declines *because* the type was undecided.
 # 25,341, the same day: R-SPECIMEN-2 gains four keyword families (-80) and R-SURVEILLANCE-2's
 # `/environmental_sample` branch fires for the first time (-17). Both are pure subtraction too.
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334 - 427 - 80 - 17
+# 25,240, 2026-08-13: R-ORIGIN-2's GenBank division branch resolves 101 `origin_class` declines
+# (19 `ENV`, 82 `PAT`) and closes 4 groups with them.
+EXPECTED_QUEUE_WORK_ITEMS = (
+    28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334 - 427 - 80 - 17 - 101
+)
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -179,7 +183,10 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1
 # Trunk Line` — was its own group, so a family of patterns closes a family of groups. Composition
 # now: specimen_type 124, surveillance_stream 55, virus_type 48, origin_class 33,
 # poliovirus_classification 12.
-EXPECTED_QUEUE_GROUPS = 302 - 3 + 3 - 7 - 21 - 2  # 299 (2026-07-31) + 3 - 7 (projection) - 23
+# 268 the next day, when the division branch closed 4 `origin_class` groups. Composition:
+# specimen_type 124, surveillance_stream 55, virus_type 48, origin_class 29,
+# poliovirus_classification 12.
+EXPECTED_QUEUE_GROUPS = 302 - 3 + 3 - 7 - 21 - 2 - 4
 
 
 def declined(

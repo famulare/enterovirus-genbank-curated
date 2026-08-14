@@ -3,13 +3,13 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "87865162d1064993837a883234f08edd539ec5082b9650bbf2f1031f07cc1f8a",
+  "code_sha256": "fb084ddfbc2f41754c92527c1341b9264ee55f0b2c8ed1914857cca1b44e9900",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
     "decisions_sha256": "ca5e0ab90ebaf9b102d69a16f585c54d8c0155070fdfdfd27fde05dab7bf5ecd",
-    "rules_sha256": "16ffb117df032ce415fd30b7f15e591ace85f74cd591bddfa65a5fa99f06f569"
+    "rules_sha256": "cf4ce040709b82a67bc8ed21a91c347d2f8ac35e5cfc0dee96559cd685f896e6"
   },
   "row_counts": {
     "source_records": 25727,
@@ -20,9 +20,9 @@
     "provenance_rows": 340312,
     "dates_not_applicable": 2812,
     "localities_without_geography": 2055,
-    "curation_queue_groups": 272,
+    "curation_queue_groups": 268,
     "decision_applications": 6119,
-    "curation_queue_records": 25341,
+    "curation_queue_records": 25240,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
     "rules_published": 39,
@@ -31,9 +31,9 @@
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 173,
-    "applied_unchanged": 529,
-    "applied_changed": 1651,
-    "applied_filled_unresolved": 3439,
+    "applied_unchanged": 534,
+    "applied_changed": 1699,
+    "applied_filled_unresolved": 3386,
     "not_in_force_superseded": 15,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6
@@ -45,7 +45,7 @@
     "pending": [],
     "columns_with_declined_cells": {
       "poliovirus_classification": 476,
-      "sample_origin": 2902,
+      "sample_origin": 2801,
       "specimen_type": 12620,
       "surveillance_stream": 7554,
       "virus_type": 1789
@@ -154,9 +154,9 @@
     },
     "sample_origin": {
       "source": "projected",
-      "filled": 21406,
-      "blank": 2902,
-      "declined": 2902,
+      "filled": 21507,
+      "blank": 2801,
+      "declined": 2801,
       "rules": [
         "R-ORIGIN-2"
       ]

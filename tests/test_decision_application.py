@@ -139,9 +139,20 @@ EXPECTED_TALLY = {
     # And two more the same day, both `surveillance_stream`: `KP004243` and `KP004244` assert
     # `environmental`, and the `/environmental_sample` flag on each now reaches it unaided. Their
     # `/isolation_source` is empty, so nothing contradicts the flag.
-    "applied_filled_unresolved": 3439,
-    "applied_changed": 1651,
-    "applied_unchanged": 529,
+    # 2026-08-13, R-ORIGIN-2's GenBank division branch: 53 `origin_class` decisions leave
+    # `applied_filled_unresolved`, because the rule now has an answer of its own on a patent or
+    # environmental deposit where it used to decline. 48 become `applied_changed` and 5
+    # `applied_unchanged`.
+    #
+    # The 48 are the interesting ones and they vindicate the branch rather than contradicting it: 31
+    # assert `human` and 17 `vaccine` on patent deposits the rule now calls `non-human`. A curator
+    # read those particular patents and found a vaccine strain or human-derived material in them;
+    # the rule reads only the division. The ledger wins, as it must, and the counterfactual now
+    # states plainly that the curator's judgement is doing work — which is the whole point of
+    # measuring against one.
+    "applied_filled_unresolved": 3386,
+    "applied_changed": 1699,
+    "applied_unchanged": 534,
     "applied_exclusion": 173,
     "not_in_force_retired": 183,
     "no_canonical_field": 123,
