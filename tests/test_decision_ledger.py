@@ -218,6 +218,31 @@ EXPECTED_POLIO_CLASSIFICATION_VALUES = {
 }
 POLIO_CLASSIFICATION_SUPERSEDES = 2
 
+# The `origin_unknown` curation of 2026-05-28, projected on 2026-08-14: 115 accessions were reviewed
+# and 110 are asserted here, as 74 `origin_class` rows and 99 `sampling_frame` ones.
+#
+# Three filters cut 115 x 2 down to 173, and each is a rule about what a ledger row is for:
+#
+#   − 5 accessions   the four `classical_reference` records and `M37321` carry per-record
+#                    dispositions rather than a group rule, and every one of them already holds
+#                    active rows; `M37321`'s own recommendation is `unknown / unknown`, which is
+#                    not an assertion
+#   − 11 rows        `DI499146`/`147`/`171`-`176`, `FV537074`, `FW503126`, `HZ037987` already hold
+#                    an active `sampling_frame`, asserting `vaccine/reference` where this pass says
+#                    `engineered/lab`. A later human decision supersedes an earlier codex layer —
+#                    the constraint the `M37321` date exchange established
+#   − 36 rows        the patent-division records take `origin_class` from R-ORIGIN-2's GenBank
+#                    division branch instead. A generic reason belongs in a rule, and 36
+#                    accession-level rows asserting what `division == PAT` already entails would be
+#                    redundant curation the day they landed
+#
+# What is left is the part no rule can reach: the paper's word for the 62-record Rico-Hesse/Kew wild
+# PV1 panel, whose 150 nt deposits carry neither `/host` nor `/isolation_source`, and the
+# `engineered/lab` frame for laboratory and patent deposits — a statement about what a record is
+# *not*, which no rule in this pipeline asserts from an absence.
+ORIGIN_UNKNOWN_SOURCE = "origin_unknown_curation.csv"
+EXPECTED_ORIGIN_UNKNOWN_ROWS = 173
+
 EXPECTED_STATUS = {
     "active": (
         2895
@@ -232,6 +257,7 @@ EXPECTED_STATUS = {
         + len(CAVA_PARENTAL_ADDITIONS)
         + VOCABULARY_REPAIR_NET_ACTIVE
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
+        + EXPECTED_ORIGIN_UNKNOWN_ROWS
     ),
     "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
     "superseded": 10 + len(VOCABULARY_REPAIR_ADDITIONS) + POLIO_CLASSIFICATION_SUPERSEDES,
@@ -271,6 +297,7 @@ def test_ledger_satisfies_its_own_contract(
         + EXPECTED_UPSTREAM_PARTITION_ROWS
         + EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
         + EXPECTED_POLIO_CLASSIFICATION_ROWS
+        + EXPECTED_ORIGIN_UNKNOWN_ROWS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -768,11 +795,14 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     honest answer fail.
 
     Eleven since 2026-07-30: `vdpv_wild_reconciliation.csv` is the locked reconciliation allowlist,
-    the last input to `poliovirus_classification` that had no counterpart here.
+    the last input to `poliovirus_classification` that had no counterpart here. Twelve since
+    2026-08-14, with `origin_unknown_curation.csv` — deliberately *not* a
+    `curator_adjudication_<date>` name, a prefix this file restricts to `classification` and
+    `engineered_or_construct` rows.
     """
     sources = Counter(r["source_artifact"] for r in ledger)
     registries = {s for s in sources if s.endswith(".csv")}
-    assert len(registries) == 11
+    assert len(registries) == 12
     assert sources[VDPV_SOURCE] == EXPECTED_VDPV_ROWS
     assert sources["curator_adjudication_2026-07-29"] == len(D2_ADDITIONS) + len(
         ENGINEERED_READJUDICATION_ADDITIONS

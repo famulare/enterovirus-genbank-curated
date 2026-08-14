@@ -411,6 +411,11 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # `poliovirus_classification` adjudications (1 VDPV, 4 iVDPV, 2 engineered/lab, 4 chimera, 2
     # confirmed wild). Neither generator produces them either.
     polio_classification = 13
+    # 173 more on 2026-08-14: the `origin_unknown` review of 2026-05-28, projected as 74
+    # `origin_class` and 99 `sampling_frame` rows over 110 of the 115 accessions it covered. Neither
+    # generator produces them; `tests/test_decision_ledger.py` documents the three filters that take
+    # 115 accessions to 173 rows.
+    origin_unknown = 173
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)
@@ -422,6 +427,7 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         + cvdpv_and_strain_identity
         + upstream_partition
         + polio_classification
+        + origin_unknown
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
@@ -430,7 +436,8 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         f"{readjudication} re-adjudication rows + {cava_parental} CAVA parental rows + "
         f"{vocabulary_repairs} vocabulary repairs + {cvdpv_and_strain_identity} cVDPV/strain-"
         f"identity decisions + {upstream_partition} upstream-partition projections + "
-        f"{polio_classification} 4.1.0 classification adjudications = {expected}. "
+        f"{polio_classification} 4.1.0 classification adjudications + "
+        f"{origin_unknown} origin_unknown projections = {expected}. "
         f"Bumping one without the others is the drift the pin exists to catch."
     )
 

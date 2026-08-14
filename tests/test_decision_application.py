@@ -150,7 +150,11 @@ EXPECTED_TALLY = {
     # the rule reads only the division. The ledger wins, as it must, and the counterfactual now
     # states plainly that the curator's judgement is doing work — which is the whole point of
     # measuring against one.
-    "applied_filled_unresolved": 3386,
+    # +173 on 2026-08-14: every row of the `origin_unknown` projection fills a cell the rules
+    # decline. Including `S61236`'s two, whose *real* values are determined rather than declined:
+    # the counterfactual withholds the whole ledger and takes its `is_poliovirus = FALSE` with it,
+    # so without any decisions the partition declines and the epi rules decline behind it.
+    "applied_filled_unresolved": 3559,
     "applied_changed": 1699,
     "applied_unchanged": 534,
     "applied_exclusion": 173,

@@ -67,7 +67,7 @@ Q-44f6ae0d1230	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surve
 Q-476a4590420f	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	acute flaccid paralysis patient	2	JN408584.1 JN408585.1	rule_parameter
 Q-483fd8eff578	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	patient with acute flaccid paralysis (AFP)	1	KF495604.1	rule_parameter
 Q-4909fcf15859	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	case of tonsilitis	2	DQ264254.1 DQ264325.1	decision
-Q-499181033252	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence		2643	AB052561.1 AB052562.1 AB052563.1	decision
+Q-499181033252	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence		2570	AB052561.1 AB052562.1 AB052563.1	decision
 Q-49e04718b018	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool sample from child 2 on day 142	1	JX179283.1	decision
 Q-4ad1436e398f	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	immunodeficient vaccine-derived paralytic polio case	12	ON207141.1 ON207142.1 ON207143.1	rule_parameter
 Q-4be88471237b	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	clinical sample stool	16	MK660464.1 MK660466.1 MK660469.1	decision
@@ -240,7 +240,7 @@ Q-e3bce894673c	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surve
 Q-e4b9e857e727	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	conjunctival swab	453	AB769150.1 AB769151.1 AB769152.1	rule_parameter
 Q-e4d899a88ed4	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	l20b cell	10	FJ859183.1 FJ859184.1 FJ859185.1	decision
 Q-e4e1676b3cb6	sample_origin	origin_class	R-ORIGIN-2	no_host_or_specimen_evidence	be'er sheva treatment plant	15	KJ013419.1 KJ013423.1 KJ013426.1	decision
-Q-ea06b19be33f	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record		5865	A01868.1 A03852.1 A03999.1	decision
+Q-ea06b19be33f	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record		5767	A01868.1 A06086.1 A06087.1	decision
 Q-ea85481fbb79	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	rhabdomyosarcoma cell	131	MN845761.1 MN845762.1 MN845763.1	rule_parameter
 Q-eb68bef9664b	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool 1	1	EU684057.1	decision
 Q-ed715c29a9e5	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	case of enterovirus infection	2	DQ264282.1 DQ264353.1	rule_parameter

@@ -3,12 +3,12 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "fb084ddfbc2f41754c92527c1341b9264ee55f0b2c8ed1914857cca1b44e9900",
+  "code_sha256": "e4d6e567eca12a6210a141866d878b224657f971eeddafeffa10ef4c1b445d5b",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "ca5e0ab90ebaf9b102d69a16f585c54d8c0155070fdfdfd27fde05dab7bf5ecd",
+    "decisions_sha256": "8ebc6dbf3194d5ff703f7ecd1e89e3e9e624e50c95bf1c21e44224049f23441f",
     "rules_sha256": "cf4ce040709b82a67bc8ed21a91c347d2f8ac35e5cfc0dee96559cd685f896e6"
   },
   "row_counts": {
@@ -21,8 +21,8 @@
     "dates_not_applicable": 2812,
     "localities_without_geography": 2055,
     "curation_queue_groups": 268,
-    "decision_applications": 6119,
-    "curation_queue_records": 25240,
+    "decision_applications": 6292,
+    "curation_queue_records": 25069,
     "canonical_rows": 24308,
     "vouched_rows": 10090,
     "rules_published": 39,
@@ -33,7 +33,7 @@
     "applied_exclusion": 173,
     "applied_unchanged": 534,
     "applied_changed": 1699,
-    "applied_filled_unresolved": 3386,
+    "applied_filled_unresolved": 3559,
     "not_in_force_superseded": 15,
     "not_in_force_retired": 183,
     "subject_outside_carve": 6
@@ -45,9 +45,9 @@
     "pending": [],
     "columns_with_declined_cells": {
       "poliovirus_classification": 476,
-      "sample_origin": 2801,
+      "sample_origin": 2728,
       "specimen_type": 12620,
-      "surveillance_stream": 7554,
+      "surveillance_stream": 7456,
       "virus_type": 1789
     },
     "reading_a_blank_cell": "A blank is not a claim that the value is absent in nature. It is either a value a rule chose (a locality that would repeat admin1) or a cell no rule could decide. audit/projection_provenance.tsv.gz carries unresolved_reason per cell and curation/curation_queue.tsv groups the undecided ones into questions."
@@ -154,18 +154,18 @@
     },
     "sample_origin": {
       "source": "projected",
-      "filled": 21507,
-      "blank": 2801,
-      "declined": 2801,
+      "filled": 21580,
+      "blank": 2728,
+      "declined": 2728,
       "rules": [
         "R-ORIGIN-2"
       ]
     },
     "surveillance_stream": {
       "source": "projected",
-      "filled": 16754,
-      "blank": 7554,
-      "declined": 7554,
+      "filled": 16852,
+      "blank": 7456,
+      "declined": 7456,
       "rules": [
         "R-SURVEILLANCE-2"
       ]

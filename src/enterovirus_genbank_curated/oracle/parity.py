@@ -212,16 +212,16 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
     # this rule already applies to `/host`, which is why the branch sits above the partition scope.
     "sample_origin": {
         ('unknown', 'human'): 11670,
-        ('human', ''): 2742,
+        ('human', ''): 2680,
         ('unknown', 'non-human'): 544,
         ('vaccine', ''): 24,
-        ('non-human', ''): 18,
         ('unknown', ''): 17,
-        ('non-human', 'unknown'): 11,
+        ('non-human', 'unknown'): 10,
+        ('non-human', ''): 7,
         ('human', 'non-human'): 1,
     },
     "surveillance_stream": {
-        ('AFP/clinical', ''): 6738,
+        ('AFP/clinical', ''): 6676,
         ('not_applicable', 'environmental'): 2354,
         ('not_applicable', 'AFP/clinical'): 920,
         ('environmental', ''): 260,
@@ -229,11 +229,11 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('not_applicable', ''): 192,
         ('not_applicable', 'healthy/community'): 111,
         ('AFP/clinical', 'healthy/community'): 92,
-        ('engineered/lab', ''): 82,
+        ('engineered/lab', ''): 46,
         ('vaccine/reference', ''): 49,
         ('AFP/clinical', 'environmental'): 6,
         ('unknown', 'not_applicable'): 6,
-        ('engineered/lab', 'not_applicable'): 3,
+        ('engineered/lab', 'not_applicable'): 2,
         ('non-human experimental', 'not_applicable'): 3,
         ('AFP/clinical', 'not_applicable'): 2,
         ('unknown', 'environmental'): 2,
@@ -464,11 +464,16 @@ UNRESOLVED_SPECIMEN_ROWS = 12620
 # ones were declining and now resolve. The branch reaches 571 records in all; the other 470 were
 # already answered by their `/host` or by the outside-scope value. See the transition note above.
 #
+# Down a further 73, 2026-08-14: the `origin_unknown` curation reaches the ledger. 62 are the
+# Rico-Hesse/Kew wild PV1 panel, whose 150 nt deposits carry neither `/host` nor `/isolation_source`
+# and whose human origin is in the paper; 11 are laboratory constructs outside the patent division,
+# which the rule above cannot reach.
+#
 # Down a further 759 the same day, when the upstream partition projection closed `virus_group`
 # entirely: those 759 are now scoped and read their `/host`. The rest of the 1,385 newly-partitioned
 # records deposit no `/host` and no recognisable human specimen, so they stay declined here — a
 # resolved partition makes the question askable, not answered.
-UNRESOLVED_ORIGIN_ROWS = 2801
+UNRESOLVED_ORIGIN_ROWS = 2728
 # `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
 # its values — plus those whose partition is undecided and so cannot be scoped either way. 20 of the
@@ -482,12 +487,17 @@ UNRESOLVED_ORIGIN_ROWS = 2801
 # `sample_origin` above: a scoped record can be asked the question, and 1,023 of the newly-scoped
 # ones name a surveillance context in their own text. The others name none.
 #
-# Down a further 17, 2026-08-12, when the `/environmental_sample` branch fired for the first time.
+# Down a further 98, 2026-08-14, with the `origin_unknown` curation: 62 wild PV1 panel records take
+# `AFP/clinical` from the paper and 36 laboratory or patent deposits take `engineered/lab`. Neither
+# is derivable — a patent deposit's surveillance frame is a statement about what it is *not*, and no
+# rule in this pipeline asserts a frame from the absence of one.
+#
+# Down 17 before that, 2026-08-12, when the `/environmental_sample` branch fired for the first time.
 # It had tested the *value* of a valueless GenBank flag since the rule was written, so it had never
 # resolved anything; presence is the signal. Only 17 rather than the 148 flagged records in the
 # carve, because 95 already read `environmental` from their own text and 36 name an individual's
 # specimen, which the flag does not overrule — see `derive/epi.py`.
-UNRESOLVED_STREAM_ROWS = 7554
+UNRESOLVED_STREAM_ROWS = 7456
 # `engineered_or_construct` now declines on nothing. It declined on `LY501105` and `LZ216100`, the
 # CAVA cold-adaptation pair Appendix B of the re-adjudication recorded as open in either direction,
 # and the curator closed both FALSE on 2026-07-31 on the precedent already set inside patent
