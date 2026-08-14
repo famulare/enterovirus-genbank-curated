@@ -3,7 +3,7 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "45721d973e55ee504e07b9b67f596d713e91cedbfba93e7ec1970d9f7330734d",
+  "code_sha256": "d75f406c3520e1a2fbd40d479ec5977824f5b5affef87fa0adc26f4082ffd7d4",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
@@ -27,9 +27,10 @@
     "vouched_rows": 10090,
     "rules_published": 39,
     "classification_divergence_rows": 8347,
+    "record_disposition_rows": 25727,
     "canonical_dictionary_rows": 26,
     "source_dictionary_rows": 70,
-    "audit_dictionary_rows": 40,
+    "audit_dictionary_rows": 48,
     "controlled_vocabulary_rows": 61
   },
   "decision_applications": {

@@ -118,6 +118,23 @@ UNDECLARED_EXCLUSIONS = frozenset(
 )
 
 
+def _exclusion(record: dict[str, str], reason: str) -> dict[str, str]:
+    """A carved-out candidate's disposition row, less the columns the caller supplies.
+
+    `virus_group` is `non_ev_other` wherever the exclusion *is* the determination: GenBank's
+    lineage not naming the genus, or a curator confirming the record is not in scope. Only a
+    `carve_exclusion` — in scope and left out anyway — leaves it blank for the caller to fill from
+    the partition rule reading the organism name, exactly as an included record's is.
+    """
+    return {
+        "accession": record["accession"],
+        "version": record["version"],
+        "sequence_sha256": record["sequence_sha256"],
+        "exclusion_reason": reason,
+        "virus_group": NON_EV_OTHER if reason in GROUP_FROM_EXCLUSION else "",
+    }
+
+
 def _lineage_taxa(tables: dict[str, list[dict[str, str]]]) -> dict[str, set[str]]:
     lineage: dict[str, set[str]] = {}
     for row in tables["record_taxonomy"]:
@@ -161,15 +178,41 @@ def _biosample_accessions(tables: dict[str, list[dict[str, str]]]) -> dict[str, 
 @dataclass(frozen=True)
 class MetadataTransportResult:
     rows: list[dict[str, str]]
+    # One entry per candidate the carve leaves out, carrying the reason. `export/audit.py` joins
+    # these to the included rows to write `record_disposition.tsv.gz`; the reason has to be recorded
+    # here because here is where the decision is made, and nowhere downstream can recover it.
+    excluded: tuple[dict[str, str], ...]
     excluded_by_ledger: int
     excluded_as_non_enterovirus: int
     included_by_membership_rescue: int
+
+
+# Why a candidate record is not in the canonical table. Two reasons, because the carve has exactly
+# two exclusion branches — which is the whole point of recording them: 2.4.1 shipped
+# `record_disposition.tsv.gz` with 1,253 of its 1,426 exclusions carrying a **blank** reason
+# (backlog B34), and a disposition table whose main column is empty on 88% of the rows it exists to
+# explain is a table nobody can act on.
+# Three, not two, because the ledger excludes for two different reasons and they are not the same
+# claim. A `membership_exclusion` says *this is not the virus we are cataloguing* — which is itself
+# the partition determination, so the record is `non_ev_other` on the curator's word. A
+# `carve_exclusion` says *this is in scope and we are leaving it out anyway* (`AH004344`, a
+# third-party assembly artifact), which says nothing about what the record is, so its group still
+# comes from the partition rule reading the organism name. 2.4.1's own 1,425 `non_ev_other` and 1
+# `poliovirus` is exactly that split, and reproducing it is what proved the distinction is real.
+EXCLUDED_BY_MEMBERSHIP_DECISION = "curator_confirmed_not_in_scope"
+EXCLUDED_BY_CARVE_DECISION = "curator_carve_exclusion"
+EXCLUDED_NOT_ENTEROVIRUS = "genbank_lineage_names_no_enterovirus_genus"
+GROUP_FROM_EXCLUSION = frozenset({EXCLUDED_NOT_ENTEROVIRUS, EXCLUDED_BY_MEMBERSHIP_DECISION})
+
+CURATION_STATUS_EXCLUDED = "excluded"
+NON_EV_OTHER = "non_ev_other"
 
 
 def transport_metadata(
     tables: dict[str, list[dict[str, str]]],
     excluded_accessions: frozenset[str],
     rescued_versions: frozenset[str] = frozenset(),
+    carve_excluded_accessions: frozenset[str] = frozenset(),
 ) -> MetadataTransportResult:
     """Carve the canonical row set and fill every transportable column for it.
 
@@ -192,6 +235,7 @@ def transport_metadata(
     biosamples = _biosample_accessions(tables)
 
     rows: list[dict[str, str]] = []
+    excluded: list[dict[str, str]] = []
     by_ledger = 0
     non_enterovirus = 0
     rescued_rows = 0
@@ -199,10 +243,17 @@ def transport_metadata(
         record_id = record["record_id"]
         if record["accession"] in excluded_accessions:
             by_ledger += 1
+            excluded.append(_exclusion(
+                record,
+                EXCLUDED_BY_CARVE_DECISION
+                if record["accession"] in carve_excluded_accessions
+                else EXCLUDED_BY_MEMBERSHIP_DECISION,
+            ))
             continue
         if ENTEROVIRUS_GENUS_TAXON not in lineage.get(record_id, set()):
             if record["version"] not in rescued_versions:
                 non_enterovirus += 1
+                excluded.append(_exclusion(record, EXCLUDED_NOT_ENTEROVIRUS))
                 continue
             rescued_rows += 1
 
@@ -218,6 +269,7 @@ def transport_metadata(
 
     return MetadataTransportResult(
         rows=rows,
+        excluded=tuple(excluded),
         excluded_by_ledger=by_ledger,
         excluded_as_non_enterovirus=non_enterovirus,
         included_by_membership_rescue=rescued_rows,

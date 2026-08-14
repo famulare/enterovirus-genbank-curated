@@ -52,11 +52,13 @@ from enterovirus_genbank_curated.derive.evidence import (
 )
 from enterovirus_genbank_curated.derive.isolate_linkage import apply_isolate_linked_inference
 from enterovirus_genbank_curated.derive.metadata import transport_metadata
+from enterovirus_genbank_curated.derive.partition import resolved_partition
 from enterovirus_genbank_curated.export.audit import (
     write_classification_divergence,
     write_decision_applications,
     write_membership_rescue,
     write_projection_provenance,
+    write_record_disposition,
     write_rules_view,
 )
 from enterovirus_genbank_curated.export.canonical import (
@@ -78,6 +80,7 @@ from enterovirus_genbank_curated.export.source import (
 from enterovirus_genbank_curated.genbank.parse import parse_source_tables, read_sequences
 from enterovirus_genbank_curated.registry.decisions import (
     load_active_decisions,
+    load_carve_excluded_accessions,
     load_excluded_accessions,
     load_ledger_rows,
 )
@@ -247,7 +250,12 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
 
     membership = next(spec for spec in catalog if spec.rule_id == MEMBERSHIP_RULE_ID)
     rescued = measure_membership_rescue(tables, sequences, excluded, membership.parameters)
-    transport = transport_metadata(tables, excluded, frozenset(rescued))
+    transport = transport_metadata(
+        tables,
+        excluded,
+        frozenset(rescued),
+        carve_excluded_accessions=load_carve_excluded_accessions(ledger_path),
+    )
 
     # R-MEMBERSHIP-AA-1's other half: the same catalog parameters, read again for the two-sided band
     # (`derive.evidence.measure_poliovirus_membership_band`) that settles `virus_group` for a carved
@@ -356,6 +364,21 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     write_curation_queue(output_dir, queue)
     write_decision_applications(output_dir, applications)
     write_membership_rescue(output_dir, rescued, tables["records"])
+
+    # The disposition of every candidate record, not just the carved ones. Carried from 2.4.1 until
+    # 2026-08-14 because no build wrote it, and its `exclusion_reason` was blank on 1,253 of 1,426
+    # exclusions (backlog B34). `transport.excluded` carries the reason from where the carve decides
+    # it; a curator-excluded record's `virus_group` comes from the partition rule reading its
+    # organism name, which is the same rule the carved records get rather than a second opinion.
+    excluded_views = build_record_views(
+        tables, (row["version"] for row in transport.excluded), load_active_decisions(ledger_path)
+    )
+    row_counts["record_disposition_rows"] = write_record_disposition(
+        output_dir,
+        canonical,
+        transport.excluded,
+        {view.version: resolved_partition(view) for view in excluded_views},
+    )
 
     # The four data dictionaries, after every table they describe has been written and before the
     # manifest that hashes them. They were carried from 2.4.1 as opaque bytes and all four had gone

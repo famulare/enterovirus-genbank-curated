@@ -83,7 +83,6 @@ CARRIED_FINAL_FILES = frozenset({
     "final/alignments/PV3_unified.sto.gz",
     "final/alignments/PV3_unified_aln.fasta.gz",
     "final/alignments/reference_region_coordinates.tsv",
-    "final/audit/record_disposition.tsv.gz",  # 2.4.1; still read by align/shape.py
     "final/audit/sequence_evidence.tsv.gz",
     "final/source/genbank_source.duckdb",
     *(f"final/source/normalized_tsv/{name}.tsv.gz" for name in (

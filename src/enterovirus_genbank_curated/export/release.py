@@ -154,6 +154,7 @@ BUILD_ARTIFACT_RELATIVES = (
     "audit/decision_applications.tsv.gz",
     "audit/membership_rescue.tsv",
     "audit/projection_provenance.tsv.gz",
+    "audit/record_disposition.tsv.gz",
     "audit/rules.tsv.gz",
     "canonical/metadata_transport_coverage.json",
     "canonical/sequence_metadata.tsv.gz",

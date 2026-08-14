@@ -24,15 +24,17 @@ decision, and why a record outside the GenBank lineage is nonetheless in the car
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 
+from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.curate.apply import APPLICATION_COLUMNS, DecisionApplication
 from enterovirus_genbank_curated.derive.evidence import (
     EVIDENCE_COLUMNS,
     MEMBERSHIP_COLUMNS,
     MembershipRescue,
 )
+from enterovirus_genbank_curated.derive.metadata import CURATION_STATUS_EXCLUDED
 from enterovirus_genbank_curated.export.source import write_tsv
 from enterovirus_genbank_curated.registry.rules import RuleSpec
 
@@ -149,6 +151,75 @@ def write_membership_rescue(
 # of the shipped table the way the rule view is a projection of `rules.tsv.gz`; it is a different,
 # smaller measurement that answers one of the shipped table's questions. Under the shipped name it
 # would promise nineteen columns of evidence it does not have, over most of the records it reaches.
+RECORD_DISPOSITION_RELATIVE = "audit/record_disposition.tsv.gz"
+RECORD_DISPOSITION_COLUMNS = (
+    "accession", "version", "candidate_query_member", "virus_group", "curation_status",
+    "canonical_included", "exclusion_reason", "sequence_sha256",
+)
+# Every record in `raw/` was returned by the GenBank query that produced the archive, so this is
+# `TRUE` on all 25,727 rows. Kept as a column rather than dropped because it is the denominator: the
+# table's claim is "what became of every candidate", and a reader needs to see the candidate set
+# stated rather than inferred from the row count.
+CANDIDATE_QUERY_MEMBER = "TRUE"
+
+
+def write_record_disposition(
+    output_dir: Path,
+    canonical: Sequence[Mapping[str, str]],
+    excluded: Sequence[Mapping[str, str]],
+    partitions: Mapping[str, str],
+) -> int:
+    """One row per candidate record, in corpus order, saying what became of it and why.
+
+    Carried from 2.4.1 until 2026-08-14 because no build wrote it, and the carried copy left
+    **1,253 of its 1,426 exclusions with a blank `exclusion_reason`** (backlog B34). A disposition
+    table whose explaining column is empty on 88% of the rows it exists to explain cannot be acted
+    on: a reader cannot tell a curator's deliberate carve-out from a record GenBank never called an
+    enterovirus. Both reasons are recorded now, on every excluded row, because `transport_metadata`
+    records them where the decision is made.
+
+    `partitions` supplies `virus_group` for a curator-excluded record, whose exclusion says why it
+    is out and nothing about what it is. A lineage-excluded record already carries `non_ev_other`,
+    which the exclusion itself establishes.
+    """
+    rows = [
+        {
+            "accession": row["accession"],
+            "version": row["version"],
+            "candidate_query_member": CANDIDATE_QUERY_MEMBER,
+            "virus_group": row["virus_group"],
+            "curation_status": row["curation_status"],
+            "canonical_included": "TRUE",
+            "exclusion_reason": "",
+            "sequence_sha256": row["sequence_sha256"],
+        }
+        for row in canonical
+    ]
+    rows += [
+        {
+            "accession": row["accession"],
+            "version": row["version"],
+            "candidate_query_member": CANDIDATE_QUERY_MEMBER,
+            "virus_group": row["virus_group"] or partitions.get(row["version"], ""),
+            "curation_status": CURATION_STATUS_EXCLUDED,
+            "canonical_included": "FALSE",
+            "exclusion_reason": row["exclusion_reason"],
+            "sequence_sha256": row["sequence_sha256"],
+        }
+        for row in excluded
+    ]
+    missing = [row["version"] for row in rows if not row["virus_group"]]
+    if missing:
+        raise ContractError(
+            f"{len(missing)} disposition rows have no virus_group ({missing[:5]}); every candidate "
+            f"is an enterovirus by lineage, a curator exclusion whose organism name the partition "
+            f"rule reads, or a carved record that already has one"
+        )
+    rows.sort(key=lambda row: row["version"])
+    write_tsv(output_dir / RECORD_DISPOSITION_RELATIVE, RECORD_DISPOSITION_COLUMNS, rows)
+    return len(rows)
+
+
 CLASSIFICATION_DIVERGENCE_RELATIVE = "audit/classification_divergence.tsv.gz"
 
 
