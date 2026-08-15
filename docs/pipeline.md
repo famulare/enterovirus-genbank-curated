@@ -60,9 +60,11 @@ The intended package is `src/enterovirus_genbank_curated/` with these responsibi
 - `validation`: enforce referential closure, parity, and determinism.
 
 All seven exist. `derive/metadata.py` covers the canonical columns whose value is a source value —
-13 of the 26 — and `derive/typing.py`, `derive/classification.py`, `derive/engineered.py` and
-`derive/evidence.py` cover the 12 that are computed. The 26th, `sequence_scope`, is the one column
-still unwritten (`derive.metadata.PENDING_COLUMNS`), so a release now fills 25 of 26.
+13 of the 26 — and `derive/typing.py`, `derive/classification.py`, `derive/engineered.py`,
+`derive/scope.py` and `derive/evidence.py` cover the 13 that are computed.
+`derive.metadata.PENDING_COLUMNS` is **empty**: a release fills 26 of 26. `sequence_scope` was the
+last, and `derive/scope.py` explains why it stayed unwritten so long — the determinant is a record's
+own annotation, not coverage geometry.
 
 One package is not in that list because it is not part of the build: `oracle` is the only place
 permitted to read `final/` or `releases/`. Boundary 1 used to be enforced by care alone, with release
@@ -156,7 +158,9 @@ no oracle: the build declines exactly where `oracle/parity.py`'s `UNRESOLVED_*` 
 declines, per canonical field, including the named zeros. A rule that quietly starts guessing where
 it used to refuse moves a number there and fails. The row-set gap is still
 declared in code, compared for equality, and invisible to the build; `R-MEMBERSHIP-AA-1` closed most
-of it, leaving two records, and the build now carves 24,308 rows against the shipped 24,301 — see
+of it, leaving two records, and the build carves 24,305 rows against the shipped 24,301 — nine the
+release excludes and this pipeline admits, less two it leaves undecided and three carve-excluded on
+2026-08-14 as laboratory conversions of the Mahoney parental sequence. See
 [`reproducibility.md`](reproducibility.md).
 
 ## Staged delivery
@@ -169,13 +173,14 @@ of it, leaving two records, and the build now carves 24,308 rows against the shi
 5. Deterministic derivation and versioned rules. **Delivered:** the canonical metadata transport
    covers the 13 columns that are source values, the 12 computed columns are
    derived by `derive/typing.py`, `derive/classification.py`, `derive/engineered.py` and
-   `derive/evidence.py`, and `registry/rules.json` declares all 28 rules with their thresholds as
+   `derive/evidence.py`, and `registry/rules.json` declares all 39 rules with their thresholds as
    data, regenerating the shipped rule table byte-for-byte. `locality` is projected through the rule
-   catalog with its provenance row compared to the release on all nine columns. Only `sequence_scope`
-   remains unwritten.
-6. Decision application, disposition, and complete provenance. **Delivered:** 6,106 decision
-   applications from a 4,699-row ledger, 316,004 provenance rows, and 25,865 declined cells
-   collapsed into 295 curation-queue groups.
+   catalog with its provenance row compared to the release on all nine columns. **No column remains
+   unwritten.**
+6. Decision application, disposition, and complete provenance. **Delivered:** 6,306 decision
+   applications from a 4,899-row ledger, 340,270 provenance rows, and 25,065 declined cells
+   collapsed into 268 curation-queue groups. `record_disposition.tsv.gz` gained a producer on
+   2026-08-14 and now carries a reason on every one of its 1,422 exclusions.
 7. Dictionaries, references, and reproducible alignments. **Delivered, except the dictionaries.**
    The alignment layer is built natively by this repository (`evgc alignment-build`) from
    `final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft`
