@@ -557,7 +557,7 @@ UNRESOLVED_TYPE_ROWS = 1789
 # divergence measurement) and 4 more `group_A_text_owned` `cVDPV` records, none of which had a prior
 # decision, so all 28 leave the declined population for the first time.
 #
-# Down a further 60 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (MAD-VDPV's own
+# Down a further 60 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (the upstream
 # `MIN_SEROTYPE_COMPARED_NT`), guarded by extending the chunked-homogeneity check to VP1 below its
 # old 300 nt floor. Every one of the 60 agrees with the shipped classification.
 #

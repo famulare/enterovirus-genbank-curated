@@ -1,15 +1,15 @@
 {
-  "release_version": "4.1.0",
+  "release_version": "5.0.0",
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "6d49d62701dde7fccc370a47ed6b474b165f8b22a10d261d02aed8365d181e65",
+  "code_sha256": "99c088ec49e43ce70853e630f20ab9c57c077c76aee7e069a8336fae7bfba414",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "d219f11bf7dbc5ba12f0844a5951a7fdb12bc8dbcd13f5cdd348b0bfe6ed0225",
-    "rules_sha256": "9deac6351d305d98aea141f973d7980c7380145f2248d97ea1cb864cda928ae1"
+    "decisions_sha256": "7b81a314ceb7985ed44649340a38c86264e1de8adf1809cd6b2b4205108a0362",
+    "rules_sha256": "7d10bf0db90c680c2b130abd7c50d856e682a4a667b1c275254029cf23c42d08"
   },
   "row_counts": {
     "source_records": 25727,

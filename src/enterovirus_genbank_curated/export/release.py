@@ -74,7 +74,7 @@ changed shape.
 nucleotide fallback for records VP1 alone cannot reach.** 1,911 carved, name-serotyped records have
 no usable VP1; `derive/evidence.compare_capsid_nt` measures divergence over the whole capsid
 instead, over the same published thresholds — the same VP1-first / P1-fallback precedence
-MAD-VDPV's own sequence classifier states outright. 148 records newly resolve, all agreeing with the
+the upstream sequence classifier states outright. 148 records newly resolve, all agreeing with the
 shipped classification wherever 2.4.1 has one to compare against, which is why `audit/
 classification_divergence.tsv.gz` carries that name rather than `vp1_divergence.tsv.gz`: a `basis`
 column now names which region decided each row.
@@ -133,7 +133,7 @@ from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPO
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
-RELEASE_VERSION = "4.1.0"
+RELEASE_VERSION = "5.0.0"
 SCHEMA_VERSION = "2.4.1"
 BASELINE_RELEASE = "2.4.1"
 

@@ -33,7 +33,7 @@ amino-acid distance reads them as what they are.
 
 `compare_capsid_nt` measures **nucleotide** divergence over the whole capsid (VP4-VP2-VP3-VP1), and
 exists only because VP1 alone is absent or too short on 1,911 carved, name-serotyped records — the
-same fallback MAD-VDPV's own pipeline takes, stated outright in `classify_sequence_tier.py` as
+same fallback the upstream pipeline takes, stated outright in `classify_sequence_tier.py` as
 "VP1-first / P1-fallback". It answers the same question `compare_vp1` does and uses the same
 thresholds; it is not a third kind of evidence, just VP1's question asked over more sequence when
 VP1 itself is not there to answer it.
@@ -81,13 +81,13 @@ fitting thresholds to 86.7% would assert a wrong determination on 1,332 records.
 — a measured fact, not an assumption, and this module's own justification for skipping an aligner.
 That fact rules out one failure mode (a true evolutionary insertion or deletion) but not another: a
 single wrong base call *in the deposited read itself* — a technical artifact of how the sequence was
-determined, not biology, and so not excluded by "VP1 has no indels" at all. Reproducing MAD-VDPV's
+determined, not biology, and so not excluded by "VP1 has no indels" at all. Reproducing the upstream
 whole-capsid fallback the same way — one diagonal, no gaps — surfaces sequences where this happens;
 lowering `MIN_VP1_NT` far enough surfaces it in VP1 too.
 
 Three carved, name-serotyped records where the naive whole-capsid measurement disagreed with the
 release diagnosed exactly why. `AB162760.1` and `AB162761.1` read >18 percentage points more
-divergent than MAD-VDPV's own alignment reports for the same accessions (9.8-10.1% vs 0.0-0.2%),
+divergent than the upstream alignment reports for the same accessions (9.8-10.1% vs 0.0-0.2%),
 and in both the mismatches begin at one exact position and run at ~74-90% (the unrelated-sequence
 rate) for the rest of the window. Shifting the query by **one nucleotide** from that position on
 restores 98-100% identity. A real indel in a coding, actively-replicating poliovirus genome must be
@@ -98,9 +98,9 @@ window sits on the wrong side of it.
 At the original 300 nt VP1 floor this class of error was apparently rare enough never to surface: a
 ~900 nt region with, evidently, an occasional bad base in the corpus, and 300 nt of it was enough
 sequence to dilute one bad call rather than be defined by it. Lowering `MIN_VP1_NT` to 50 nt (to
-match MAD-VDPV's own floor, 2026-07-31) removed that dilution, and it surfaced exactly this failure
+match the upstream floor, 2026-07-31) removed that dilution, and it surfaced exactly this failure
 in VP1 for the first time — `AY320423`, `JN092124` and `AY365233` each read 15-24 percentage points
-more divergent than MAD-VDPV's own alignment over a 171-225 nt window. The same mechanism, now in
+more divergent than the upstream alignment over a 171-225 nt window. The same mechanism, now in
 the region this module's own no-indels argument does not protect.
 
 So the fallback needs to detect a window that is not internally consistent, not just decline a
@@ -152,7 +152,7 @@ PRODUCT_QUALIFIER = "product"
 # Seed length. Long enough that a 12-mer is rarely shared by chance across 7.4 kb (4^12 = 16.8M
 # possibilities against ~7,400 positions), short enough to survive ~20% divergence.
 SEED = 12
-# MAD-VDPV's own floor (`build_reference_alignments.MIN_SEROTYPE_COMPARED_NT`), adopted 2026-07-31.
+# the upstream floor (`build_reference_alignments.MIN_SEROTYPE_COMPARED_NT`), adopted 2026-07-31.
 # It is safe to match exactly, and not merely close, because it rests on a fact specific to VP1: VP1
 # in poliovirus has no indels relative to Sabin (the module docstring's own justification for a
 # single fixed diagonal at any length), so a shorter window is a smaller sample of the same exact
@@ -172,7 +172,7 @@ MIN_DIAGONAL_ANCHORS = 5
 # expectation. A result this far out is reported as no measurement rather than as a large number.
 IMPLAUSIBLE_DIVERGENCE_PCT = 40.0
 
-# Same floor as `MIN_VP1_NT`, matching MAD-VDPV's own `MIN_SEROTYPE_COMPARED_NT`, adopted 2026-07-31
+# Same floor as `MIN_VP1_NT`, matching the upstream `MIN_SEROTYPE_COMPARED_NT`, adopted 2026-07-31
 # — but unlike VP1, this is a fallback over VP4/VP2/VP3 too, and those regions are not established
 # indel-free the way VP1 is, so the floor alone is not the safety argument here; the strengthened
 # `_capsid_homogeneous` below is.
@@ -353,7 +353,7 @@ class Vp1Comparison:
 # (2026-07-31): three records where lowering the floor to 50 nt let a single bad base call in the
 # deposit (not a real indel — VP1 has none relative to Sabin, but a technical artifact of the read
 # can land anywhere) corrupt a 171-225 nt window the same way `_capsid_homogeneous`'s own module
-# docstring already diagnoses for the capsid case, each landing at 20-34% where MAD-VDPV's own
+# docstring already diagnoses for the capsid case, each landing at 20-34% where the upstream
 # alignment reports 6-11%. A short window is not exempt from the failure that guard exists for; it
 # was only ever *untested* below 300 nt, because nothing shorter used to reach this far.
 VP1_HOMOGENEITY_FLOOR_NT = 300
@@ -763,7 +763,7 @@ def measure_sequence_evidence(
     membership_band: Mapping[str, Mapping[str, str]] | None = None,
 ) -> dict[str, dict[str, str]]:
     """VP1-first, capsid-fallback divergence for every carved record whose organism name names a
-    serotype — the same precedence MAD-VDPV's own `classify_sequence_tier.py` states outright:
+    serotype — the same precedence the upstream `classify_sequence_tier.py` states outright:
     "VP1-first / P1-fallback".
 
     Scoped to name-serotyped records, with one narrow exception. The organism name is what picks the

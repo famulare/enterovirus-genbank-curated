@@ -137,8 +137,10 @@ def test_the_report_states_the_delta_for_a_real_artifact(repository_root: Path) 
     # was built. Against the 4.0.0 canonical table it is +263 / -91, and the 91 are almost all
     # `virus_type_lost`: records 2.4.1 typed PV3 from curated data, which R-TYPE-2 will not type
     # from an organism name that states no serotype.
-    assert delta["n_added"] == 263
-    assert delta["n_dropped"] == 91
+    # 263/91 against the 4.0.0 table; 261/89 for 5.0.0, where two PV3 records the ledger relabels
+    # return to the file they had left and so stop counting as dropped.
+    assert delta["n_added"] == 261
+    assert delta["n_dropped"] == 89
     assert set(delta["dropped_by_reason"]) <= set(shape.DROP_REASONS)
     assert entry["shape"]["width_nt"] == 7432
     assert sum(entry["shape"]["block_widths"].values()) == 7432

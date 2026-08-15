@@ -1,7 +1,7 @@
 """The Sabin-anchored CDS block: a pairwise reference-frame projection, no MAFFT at all.
 
-Ported from MAD-VDPV's `codon_align.py` (the TAB engine), `build_reference_alignments.py` (BS0a, the
-nucleotide anchor) and `build_reference_msa.py` (BS0b, the projection). Where the unified stack
+Ported from the upstream `codon_align.py` (the TAB engine), `build_reference_alignments.py` (BS0a,
+the nucleotide anchor) and `build_reference_msa.py` (BS0b, the projection). Where the unified stack
 builds one profile alignment over a whole population, this aligns each record independently against
 one Sabin reference and writes it onto that reference's own coordinate frame. Two consequences worth
 stating plainly, because they are the whole reason the second stack exists:

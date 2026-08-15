@@ -1,6 +1,6 @@
 """Assemble the 5'NCR + CDS + 3'NCR blocks into one row per record.
 
-Ported from MAD-VDPV's `build_{ev,polio,grand_ev}_unified_stockholm.py` and, for the anchored
+Ported from the upstream `build_{ev,polio,grand_ev}_unified_stockholm.py` and, for the anchored
 stack, `build_unified_stockholm.py` — upstream had one of these per population; the assembly is the
 same in all of them. `#=GC RF` is computed per block: a per-column majority nucleotide for the
 unified stack, or the reference's own bases where the caller supplies `cds_rf` (see `stitch`).

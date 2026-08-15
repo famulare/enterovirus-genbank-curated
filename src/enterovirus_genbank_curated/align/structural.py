@@ -2,7 +2,7 @@
 Infernal's own consensus/match-column marking (`#=GC RF`, non-gap) is what fixes the alignment's
 columns — insert-column residues are discarded, not kept as extra, ragged columns.
 
-Ported from MAD-VDPV's `build_{ev,polio,grand_ev}_ncr_structural.py`, but only the `cmalign` step:
+Ported from the upstream `build_{ev,polio,grand_ev}_ncr_structural.py`, but only the `cmalign` step:
 the CM itself is a committed input-of-record (`registry/alignment_seeds/`, verified cheaply by
 `align.seeds`), not rebuilt here — the `mafft-xinsi`/`RNAalifold`/`cmbuild` seed-and-build path
 those scripts also contain is a separate, gated, not-expected-to-run prerequisite.

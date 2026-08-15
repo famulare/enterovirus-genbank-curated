@@ -48,7 +48,7 @@ stating it.
 
 1,911 carved, name-serotyped records have no usable VP1: too short, or VP1 not deposited at all.
 `derive/evidence.py` falls back to the whole capsid (VP4-VP2-VP3-VP1) for these, the same fallback
-MAD-VDPV's own pipeline takes, over the same thresholds — a longer region to ask the same question,
+the upstream pipeline takes, over the same thresholds — a longer region to ask the same question,
 not a different one. This rule does not know or care which basis answered it; `view.evidence[
 EVIDENCE_BASIS]` is carried into `source_value` for the audit trail, and nowhere else, because the
 threshold logic below is identical either way.
@@ -65,7 +65,7 @@ threshold logic below is identical either way.
    guard (`derive/evidence.compare_capsid_nt`).
 6. No serotype in the organism name to pick a reference with: decline.
 7. No divergence measurement by either basis: fall back to `wild`/`VDPV`/`Sabin-like` named in the
-   record's own text or the cited paper's title (`_group_b_text_fallback`) — MAD-VDPV's own
+   record's own text or the cited paper's title (`_group_b_text_fallback`) — the upstream
    `needs_other_data_text_fallback`. `iVDPV`, `cVDPV` and the reference/lab labels are excluded from
    this fallback on purpose; see `_GROUP_B_TEXT_PATTERNS`.
 8. Otherwise decline — too little usable sequence by either basis, and no text label to fall
@@ -150,9 +150,9 @@ UNRESOLVED_UNCONTROLLED_VALUE = "curated_value_outside_the_controlled_vocabulary
 # `iVDPV` matches an immunodeficient *host* as well as the token, because the refinement is a claim
 # about the host and a depositor who writes `isolation_source="... from an immunodeficient
 # individual who received OPV and developed paralysis"` has stated it as plainly as one who writes
-# `iVDPV`. This is the same record-level standard MAD-VDPV settled on: its own text miner gates
-# `iVDPV` on immunodeficiency evidence in record-level fields specifically, after a title-only match
-# was found stamping `iVDPV` onto a paper's wild comparators.
+# `iVDPV`. This is the same record-level standard the upstream stage settled on: its text miner
+# gates `iVDPV` on immunodeficiency evidence in record-level fields specifically, after a title-only
+# match was found stamping `iVDPV` onto a paper's wild comparators.
 #
 # `cVDPV` gets no matching widening, and the asymmetry is deliberate. Circulation is a claim about a
 # transmission chain reconstructed across isolates, so no single record's own text can establish it,
@@ -169,13 +169,13 @@ _REFINEMENTS = (
 
 # The band a record's own text may state when no sequence measurement of any kind exists to ask
 # instead — `derive.evidence` never got a comparison to make, not "made one and a decision
-# overrides it". Longest/most-specific first, matching MAD-VDPV's own `CLASS_PATTERNS` order and
+# overrides it". Longest/most-specific first, matching the upstream `CLASS_PATTERNS` order and
 # regexes (`infer_genbank_metadata.py`) for the three bands this pipeline can also reach by
 # sequence: `VDPV` (`aVDPV` included and normalized, the same treatment `_stated_refinement`
 # already gives it), `Sabin-like`, `wild`.
 #
 # `iVDPV`, `cVDPV` and the reference/lab labels (`Sabin`, `vaccine`, `engineered/lab`, ...) are
-# deliberately absent, not merely lower-precedence: MAD-VDPV's own text miner reaches those too, but
+# deliberately absent, not merely lower-precedence: the upstream text miner reaches those too, but
 # every record in *this* pipeline's corpus where it does was traced and migrated as an individual
 # ledger decision (`reference_or_lab_text`, `group_A_text_owned`), not automated, because
 # circulation and strain identity are curator calls this pipeline has no automated input for.
@@ -219,9 +219,9 @@ def _stated_refinement(text: str, controlled_values: Collection[str]) -> str:
 
 def _group_b_text_fallback(text: str, controlled_values: Collection[str]) -> tuple[str, str]:
     """`(value, matched substring)` for the `wild`/`VDPV`/`Sabin-like` named in the text, for a
-    record with no divergence measurement at all — MAD-VDPV's `needs_other_data_text_fallback`. See
-    `_GROUP_B_TEXT_PATTERNS` for why `iVDPV`, `cVDPV` and the reference/lab labels are not in scope
-    here. `("", "")` when nothing matches or the match is outside the controlled vocabulary.
+    record with no divergence measurement at all — the upstream `needs_other_data_text_fallback`.
+    See `_GROUP_B_TEXT_PATTERNS` for why `iVDPV`, `cVDPV` and the reference/lab labels are not in
+    scope here. `("", "")` when nothing matches or the match is outside the controlled vocabulary.
     """
     for pattern, value in _GROUP_B_TEXT_PATTERNS:
         if match := pattern.search(text):
@@ -350,7 +350,7 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
     if not compared or not divergence:
         # No sequence signal of any kind — not "measured, and a decision overrides it" (step 3
         # already returned for that), and not "measured, and the record's own text names a finer
-        # refinement" (step 4, below, is the divergence band's business). MAD-VDPV's own text
+        # refinement" (step 4, below, is the divergence band's business). The upstream text
         # miner reaches for the cited paper's title here, and so does this: `reference_titles`
         # is the one field genuinely absent from `_record_text`'s scope, because nowhere else
         # does this rule read the study rather than the deposit.

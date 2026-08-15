@@ -1,4 +1,4 @@
-"""Isolate-linked classification inference — MAD-VDPV's own `isolate_linked_inference`.
+"""Isolate-linked classification inference — the upstream `isolate_linked_inference`.
 
 A whole-corpus pass, not a per-record rule. `derive.classification.poliovirus_classification`
 sees one `RecordView` at a time and structurally cannot know what a sibling accession's own
@@ -24,7 +24,7 @@ than mined from `definition` text: GenBank's own `P05`/`P05 (2)` clone conventio
 structured qualifier read and does not survive a length-floor regex over free text. A key three
 alphanumeric characters or shorter (`L1`, `P05`, `V14`) recurs across unrelated studies by chance,
 so it is only honoured across accessions in the same deposit batch — same alphabetic prefix, same
-digit width, within 200 accession numbers of this one, MAD-VDPV's own same-batch heuristic — never
+digit width, within 200 accession numbers of this one, the upstream same-batch heuristic — never
 as a bare match on a short string alone.
 
 ## What counts as a sibling with an answer
@@ -71,10 +71,10 @@ LINKED_BASIS = BASIS_ISOLATE_LINKED
 # one is wrong rather than carry forward an actual measurement. See the module docstring.
 FIRM_BASES = frozenset({BASIS_SABIN_LIKE, BASIS_VDPV, BASIS_WILD, BASIS_TEXT_REFINEMENT})
 
-# MAD-VDPV's own floor: a key this short recurs across unrelated studies by chance, so it is not
+# the upstream floor: a key this short recurs across unrelated studies by chance, so it is not
 # corroboration on its own.
 SHORT_KEY_MAX_ALNUM = 3
-# MAD-VDPV's own same-batch window: two deposits from the same study land within this many
+# the upstream same-batch window: two deposits from the same study land within this many
 # accession numbers of each other, sharing a prefix and digit width.
 BATCH_ACCESSION_WINDOW = 200
 _ACCESSION_SHAPE = re.compile(r"^([A-Za-z]+)(\d+)$")

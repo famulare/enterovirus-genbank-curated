@@ -3,9 +3,9 @@ backbone tier joins with `--add`, the addon tier joins as fragments with `--addf
 steeper local gap-open, and the resulting gapped amino-acid alignment is backtranslated onto each
 record's own unaligned nucleotide ORF.
 
-Ported from MAD-VDPV's `build_{ev,polio,grand_ev}_cds_codon_msa.py` — structurally identical across
-all three upstream scripts, so this repo needs one implementation rather than three; a population
-plus its `CodonSpec` already carries everything that varied between them.
+Ported from the upstream `build_{ev,polio,grand_ev}_cds_codon_msa.py` — structurally identical
+across all three upstream scripts, so this repo needs one implementation rather than three; a
+population plus its `CodonSpec` already carries everything that varied between them.
 
 ## Where this diverges from upstream
 

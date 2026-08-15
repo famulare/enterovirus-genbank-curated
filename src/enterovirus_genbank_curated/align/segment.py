@@ -1,7 +1,7 @@
 """One segmentation pass over every canonical record: the primary CDS split into 5'NCR / ORF /
 3'NCR, or a 6-frame inference fallback when no CDS is annotated at all.
 
-Ported from MAD-VDPV's `build_ev_segmentation.py` (`build_polio_segmentation.py` re-used its logic
+Ported from the upstream `build_ev_segmentation.py` (`build_polio_segmentation.py` re-used its logic
 verbatim, pointed at a different carve). Upstream ran this twice — once per carve — and merged the
 two caches; here it runs once over the whole union, the same simplification `align.population`
 already made for tiering.
