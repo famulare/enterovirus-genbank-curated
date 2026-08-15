@@ -2,7 +2,7 @@
 
 `registry/alignment_seeds/` holds ten Infernal `.cm` files — four genus-wide, anchor-free models
 (POLIO and NPEV, 5' and 3' NCR) and six per-serotype, Sabin-anchored models (PV1/PV2/PV3, 5' and 3'
-NCR) — plus the seed alignment each was built from, copied from MAD-VDPV's own "reproducer core" so
+NCR) — plus the seed alignment each was built from, copied from the upstream "reproducer core" so
 a routine alignment build needs only `mafft` + Infernal — no network, no compiler, no `mafft-xinsi`.
 
 Two things this file must prove that a casual copy would not: the files are the *right* models

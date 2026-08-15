@@ -76,7 +76,7 @@ from enterovirus_genbank_curated.derive.partition import (
 # day: 28 more `poliovirus_classification` declines resolve and leave the queue, closing the
 # largest remaining discrepancy block (`declined_too_little_sequence`).
 #
-# 28,153 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (matching MAD-VDPV's own
+# 28,153 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (matching the upstream
 # `MIN_SEROTYPE_COMPARED_NT`) with a chunked-homogeneity guard extended to VP1 for the newly-opened
 # sub-300 nt territory: 60 more `poliovirus_classification` declines resolve, every one agreeing
 # with the shipped classification.

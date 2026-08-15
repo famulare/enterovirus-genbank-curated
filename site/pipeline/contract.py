@@ -101,7 +101,7 @@ CANONICAL_COLUMNS = (
     "engineered_or_construct",
     "biosample_accession",
 )
-# The date-range field arrived (2026-07-29, MAD-VDPV schema 2.2.0/2.3.0):
+# The date-range field arrived (2026-07-29, upstream schema 2.2.0/2.3.0):
 # collection_year_earliest/latest, populated IFF collection_date_precision == 'range'
 # (121 records upstream), collection_date holding the midpoint on those rows. Declared
 # here only, per this module's own contract -- not added to TRAITS. Whether the bounds

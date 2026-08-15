@@ -61,12 +61,12 @@ SHIPPED_COLUMN_COUNT = 21
 #       single-nucleotide break the module docstring diagnoses, not a real divergence.
 #
 # 7,773 by VP1 + 175 by the capsid fallback = 7,948, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped from
-# 300 to 50 nt on 2026-07-31 (MAD-VDPV's own `MIN_SEROTYPE_COMPARED_NT`). The floor alone would have
+# 300 to 50 nt on 2026-07-31 (the upstream `MIN_SEROTYPE_COMPARED_NT`). The floor alone would have
 # opened more than this: the chunked-homogeneity guard extended to VP1 for the newly-opened sub-300
 # nt territory declines three records that would otherwise measure — `AY320423`, `JN092124`,
 # `AY365233` — where a single bad base in the deposit (not a real indel; VP1 has none relative to
 # Sabin, but the artifact is in the read, not the biology) corrupted a 171-225 nt window enough to
-# move the divergence 15-24 percentage points from MAD-VDPV's own alignment.
+# move the divergence 15-24 percentage points from the upstream alignment.
 #
 # +45 VP1 = 44 genuinely new + `AJ783799`, already measured at 0.660% via the capsid fallback (303
 # nt, just over the old 300 nt floor), which now measures 0.669% via VP1 alone (299 nt, under the

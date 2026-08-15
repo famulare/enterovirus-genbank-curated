@@ -115,7 +115,7 @@ LEDGER_ONLY_ADDITIONS = (
 # 115 rows landed 2026-07-31, the same day and under the same `source_artifact` as the vocabulary
 # repairs and the CAVA parental pair above but a different act: not a repair of a malformed value
 # and not an engineered_or_construct call, a curation decision closing a classification gap traced
-# by reading MAD-VDPV's own working tree. Not enumerated as 115 literal tuples, for the same reason
+# by reading the upstream working tree. Not enumerated as 115 literal tuples, for the same reason
 # the VDPV_SOURCE allowlist below is not: identified by `source_artifact`, excluding the 3
 # vocabulary-repair and 2 CAVA-parental subjects that share it, and pinned by count, value
 # distribution, and agreement with the shipped column — a fabricated or altered row fails against
@@ -130,7 +130,7 @@ LEDGER_ONLY_ADDITIONS = (
 #
 # 28 more landed the same day, same `source_artifact`, closing the largest remaining discrepancy
 # block (`declined_too_little_sequence`) the same way: 24 `reference_or_lab_text` records traced by
-# MAD-VDPV's own working tree to strain-identity/patent evidence too short to ever reach a
+# the upstream working tree to strain-identity/patent evidence too short to ever reach a
 # divergence measurement (12 `Sabin`, 10 `engineered/lab`, 1 `recombinant/lab`, 1 `reference/lab`),
 # and 4 more `group_A_text_owned` `cVDPV` records. Folded into the same population rather than a
 # second one: same act (a curation decision closing a text-derived classification gap), same source,

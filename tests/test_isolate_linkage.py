@@ -131,7 +131,7 @@ def test_a_short_key_declines_without_batch_corroboration() -> None:
 
 
 def test_a_short_key_links_with_batch_corroboration() -> None:
-    """Same prefix, same digit width, within 200 accession numbers: MAD-VDPV's same-batch rule."""
+    """Same prefix, same digit width, within 200 accession numbers: the upstream same-batch rule."""
     views = [
         view("AB000001.1", isolate="L1"),
         view("AB000050.1", isolate="L1"),

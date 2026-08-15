@@ -93,7 +93,7 @@
   },
   "description": "Covariance-model core for the NCR structural block: the mafft-xinsi seed alignment (genus-wide) or the hand-annotated Sabin-anchored seed (per-serotype), and the cmbuild output built from each, for the 5' and 3' non-coding regions of POLIO_unified, NPEV_unified (genus-wide, anchor-free), and PV1/PV2/PV3_unified (per-serotype, Sabin-anchored via cmbuild --hand). Committed as inputs-of-record so a routine alignment build needs only mafft + Infernal (cmalign); rebuilding a CM from scratch additionally needs mafft-xinsi (genus-wide) or RNAalifold (either stack), plus the mxscarnamod helper bioconda's mafft package omits (see scripts/setup_mxscarna.sh) -- a path that exists but is not expected to run even on a fresh clone.",
   "reused_by": {
-    "EV_unified": "reuses npev_ncr_5p.cm and npev_ncr_3p.cm as-is (cmalign only, no new CM built) -- matches the shipped EV_unified.provenance.json's cm_reused field, and confirmed by grand_ev_unified's own working tree in MAD-VDPV carrying no .cm files of its own."
+    "EV_unified": "reuses npev_ncr_5p.cm and npev_ncr_3p.cm as-is (cmalign only, no new CM built) -- matches the shipped EV_unified.provenance.json's cm_reused field, and confirmed by grand_ev_unified's own upstream working tree carrying no .cm files of its own."
   },
   "population_note": "`population` means something different per stack: for the four genus-wide (anchor-free) artifacts it is the pop_min/pop_max-windowed cmalign population upstream's own build script filtered to; for the six per-serotype (Sabin-anchored) artifacts it is upstream's own 'any-overlap' production population (every record whose GenBank-derived span touches the NCR region at all), a materially different selection rule. Both are historical counts from upstream's own build, recorded for provenance only -- this repository's own population selection for each stack is declared independently in align.contract / align.anchored and is not required to reproduce either number.",
   "schema": 1,
@@ -110,6 +110,6 @@
     "pv3_ncr_3p": "07ead7828d5beead1b4c16da2d0c0cb4e54bff62",
     "pv3_ncr_5p": "07ead7828d5beead1b4c16da2d0c0cb4e54bff62"
   },
-  "source_repository": "MAD-VDPV (private)",
+  "source_repository": "private source repository",
   "verified": "Each scrubbed .cm confirmed to still run under `cmalign --outformat Stockholm` (exit 0, well-formed Stockholm output) after scrubbing, 2026-07-30 (genus-wide four); 2026-07-30 (per-serotype six)."
 }
