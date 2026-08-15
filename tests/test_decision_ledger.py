@@ -259,6 +259,16 @@ POLIO_CLASSIFICATION_SUPERSEDES = 2
 ORIGIN_UNKNOWN_SOURCE = "origin_unknown_curation.csv"
 EXPECTED_ORIGIN_UNKNOWN_ROWS = 173
 
+# Release 5.0.0's own correctness pass, 2026-08-14. Fourteen rows, three kinds:
+#   3  `carve_exclusion` on `FV537075`/`76`/`77` — laboratory conversions of the Mahoney parental
+#      sequence, out of the canonical carve on the same footing as `AH004344`
+#   5  `serotype` relabels where the organism name and the capsid sequence disagree and the
+#      sequence wins (`OR208596`, `AY830709`, `HM537010`, `MG212473`, `AY297766`)
+#   6  `engineered_or_construct = TRUE` on the six R-CONSTRUCT-2's two structural tests cannot
+#      reach (`M14761`, `S61236`, `S65446`/`447`/`449`/`450`), ratified 2026-08-12
+EXPECTED_RELEASE_5_ROWS = 3 + 5 + 6
+RELEASE_5_ADJUDICATION_SOURCE = "curator_adjudication_2026-08-14"
+
 EXPECTED_STATUS = {
     "active": (
         2895
@@ -274,6 +284,7 @@ EXPECTED_STATUS = {
         + VOCABULARY_REPAIR_NET_ACTIVE
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
         + EXPECTED_ORIGIN_UNKNOWN_ROWS
+        + EXPECTED_RELEASE_5_ROWS
     ),
     "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
     "superseded": 10 + len(VOCABULARY_REPAIR_ADDITIONS) + POLIO_CLASSIFICATION_SUPERSEDES,
@@ -314,6 +325,7 @@ def test_ledger_satisfies_its_own_contract(
         + EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
         + EXPECTED_POLIO_CLASSIFICATION_ROWS
         + EXPECTED_ORIGIN_UNKNOWN_ROWS
+        + EXPECTED_RELEASE_5_ROWS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -386,10 +398,22 @@ def test_the_cvdpv_and_strain_identity_decisions_agree_with_the_shipped_column(
             r["accession"]: r["poliovirus_classification"]
             for r in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
         }
+    # A carve-excluded record has no shipped classification to agree with, and that is not a
+    # disagreement. Checked rather than skipped: the records absent from the column must be exactly
+    # the ones the ledger itself excludes, so a record vanishing for any other reason still fails.
+    carve_excluded = {
+        r["accession"] for r in ledger
+        if r["decision_type"] == "carve_exclusion" and r["status"] == "active"
+    }
+    absent = {r["accession"] for r in rows if r["accession"] not in shipped}
+    assert absent <= carve_excluded, (
+        f"decisions on records the release does not carry, and the ledger does not exclude: "
+        f"{sorted(absent - carve_excluded)}"
+    )
     disagreements = {
         r["accession"]: (r["new_value"], shipped.get(r["accession"]))
         for r in rows
-        if shipped.get(r["accession"]) != r["new_value"]
+        if r["accession"] in shipped and shipped[r["accession"]] != r["new_value"]
     }
     assert not disagreements, f"decisions the release does not already reflect: {disagreements}"
 
@@ -829,6 +853,10 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     )
     assert sources[POLIO_CLASSIFICATION_SOURCE] == EXPECTED_POLIO_CLASSIFICATION_ROWS
+    # The 2026-08-14 adjudication asserts `engineered_or_construct` only, which is what the
+    # `curator_adjudication_` prefix permits. The carve exclusions and serotype relabels landing the
+    # same day went to `carve_exclusions_confirmed.csv` and `manual_review_overrides.csv` instead.
+    assert sources[RELEASE_5_ADJUDICATION_SOURCE] == 6
     assert sources[UPSTREAM_PARTITION_SOURCE] == EXPECTED_UPSTREAM_PARTITION_ROWS
     assert (
         sources[SHORT_PATENT_MEMBERSHIP_SOURCE] == EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
@@ -837,6 +865,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         "curator_adjudication_2026-07-29",
         "curator_adjudication_2026-07-31",
         POLIO_CLASSIFICATION_SOURCE,
+        RELEASE_5_ADJUDICATION_SOURCE,
         UPSTREAM_PARTITION_SOURCE,
         SHORT_PATENT_MEMBERSHIP_SOURCE,
     }
@@ -859,7 +888,13 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
             # source rather than by subject: two of its records (`CS406483`, `PU749298`) also carry
             # `engineered_or_construct` rows from the 2026-07-29 adjudication, so a subject-keyed
             # rule would demand the wrong field of those.
-            if (
+            # 2026-08-14 is keyed by source for the same reason, and it is the case that proves
+            # the point: `M14761` carries a `classification = recombinant/lab` row from the
+            # 2026-07-31 adjudication *and* an `engineered_or_construct = TRUE` row from this one.
+            # A subject-keyed rule demands `classification` of both.
+            if row["source_artifact"] == RELEASE_5_ADJUDICATION_SOURCE:
+                assert row["field_name"] == "engineered_or_construct"
+            elif (
                 row["source_artifact"] == POLIO_CLASSIFICATION_SOURCE
                 or row["subject_key"] in classification_subjects
             ):

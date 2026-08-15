@@ -29,16 +29,26 @@ SHIPPED = "releases/2.4.1/alignments/{name}.sto.gz"
 # the rebuild legitimately loses. Both are re-derived per artifact in the delta tests, so these
 # are tripwires: they fail when the underlying data moves, which is the point.
 EXPECTED_DELTA = {
-    "POLIO_unified": (106, 4),
+    "POLIO_unified": (106, 7),
     "NPEV_unified": (168, 0),
-    "EV_unified": (272, 2),
-    "PV1_unified": (717, 112),
-    "PV2_unified": (357, 171),
-    "PV3_unified": (263, 91),
+    "EV_unified": (272, 5),
+    "PV1_unified": (715, 114),
+    "PV2_unified": (356, 169),
+    "PV3_unified": (261, 89),
 }
 
+# Re-measured 2026-08-14 for release 5.0.0's correctness pass. Two changes, both deliberate:
+#
+#   +3 dropped everywhere `FV537075`/`76`/`77` appear — carve-excluded as laboratory conversions of
+#      the Mahoney parental sequence, so a shipped alignment row that the rebuild rightly loses;
+#   the serotype files move in both columns because five relabels move records between PV1, PV2 and
+#      PV3 (`OR208596`, `AY830709`, `HM537010`, `MG212473`, `AY297766`), which subtracts from one
+#      file's `added` and adds to another's `dropped` without changing any total.
+#
+# `NPEV_unified` does not move: all eight affected records are poliovirus.
+
 # Re-measured 2026-08-01 against the 4.0.0 canonical table. The three serotype files are where the
-# delta moved: `dropped` went 20/23/2 to 112/171/91, and 332 of the 374 dropped rows are
+# delta moved: `dropped` went 20/23/2 to 114/169/89, and 332 of the 372 dropped rows are
 # `virus_type_lost` — 2.4.1 asserted a serotype from curated data, R-TYPE-2 derives it from the
 # organism name and declines where the name does not state one. The rest are 37 relabels, 3 carve
 # exclusions and 2 records the partition moved out of poliovirus.
@@ -225,7 +235,7 @@ def test_the_substituted_column_reproduces_the_shipped_tiers_exactly(
 
 @pytest.mark.parametrize(
     ("name", "backbone", "addon"),
-    [("POLIO_unified", 8735, 1251), ("NPEV_unified", 10418, 3632), ("EV_unified", 19153, 4883)],
+    [("POLIO_unified", 8732, 1251), ("NPEV_unified", 10418, 3632), ("EV_unified", 19150, 4883)],
 )
 def test_the_rebuilds_own_rule_differs_from_shipped_only_by_the_reclassified_records(
     repository_root: Path,
@@ -239,10 +249,10 @@ def test_the_rebuilds_own_rule_differs_from_shipped_only_by_the_reclassified_rec
     Shipped provenance: POLIO 8,736/1,252, NPEV 10,418/3,632, EV 19,154/4,884. Under the rebuild's
     rule one record changes column — `JX181922`, whose two confidence columns disagree
     (`serotype_sequence_confident=FALSE`, `enterovirus_type_sequence_confident=TRUE`), so switching
-    which column governs flips it backbone-ward. Two more shipped rows simply are not in the 4.0.0
-    carve (`SEQUENCE_RESCUED_INCLUSIONS`), which is why POLIO reads 8,735/1,251 and EV 19,153/4,883
-    rather than one above the shipped figures. Deriving this is honest; asserting exactness on all
-    three would assert something false.
+    which column governs flips it backbone-ward. **Five** shipped rows are not in the 5.0.0 carve at
+    all — the two `SEQUENCE_RESCUED_INCLUSIONS` and the three `FV5370xx` carve exclusions added on
+    2026-08-14 — which is why POLIO and EV read below the shipped figures rather than one above.
+    Deriving this is honest; asserting exactness on all three would assert something false.
     """
     shipped = shipped_row_ids(repository_root, name)
     counts = {"backbone": 0, "addon": 0}
@@ -253,7 +263,7 @@ def test_the_rebuilds_own_rule_differs_from_shipped_only_by_the_reclassified_rec
             absent += 1
             continue
         counts[record.tier] += 1
-    assert absent == (2 if name in {"POLIO_unified", "EV_unified"} else 0)
+    assert absent == (5 if name in {"POLIO_unified", "EV_unified"} else 0)
     assert counts == {"backbone": backbone, "addon": addon}
 
 
@@ -311,7 +321,13 @@ def test_every_dropped_pv_row_has_a_reason_in_the_closed_vocabulary(
     records: dict[str, population.AlignedRecord],
     populations: dict[str, population.AlignmentPopulation],
 ) -> None:
-    """374 shipped PV rows leave. Adjudicated is not invisible: each needs a classifiable reason.
+    """372 shipped PV rows leave. Adjudicated is not invisible: each needs a classifiable reason.
+
+    374 until 2026-08-14, and the movement is release 5.0.0's correctness pass in one line: three
+    `FV5370xx` records join `carve_excluded`, and five `serotype` relabels put five rows back in a
+    serotype file they had left — so `serotype_relabelled` falls 37 -> 32 while `carve_excluded`
+    rises 3 -> 6. A relabel that *returns* a row is the ledger correcting the organism name,
+    which is what those five decisions are for.
 
     45 before the 4.0.0 re-anchor. The growth is one category: `virus_type_lost` went from 10 to
     332, because 2.4.1's `virus_type` came from curated data and R-TYPE-2 derives it from the
@@ -332,7 +348,7 @@ def test_every_dropped_pv_row_has_a_reason_in_the_closed_vocabulary(
                 reasons[row_id] = "virus_type_lost"
             else:
                 reasons[row_id] = "serotype_relabelled"
-    assert len(reasons) == 374
+    assert len(reasons) == 372
     assert set(reasons.values()) <= set(contract.DROP_REASONS)
     tally = {
         reason: sum(1 for v in reasons.values() if v == reason) for reason in set(reasons.values())
@@ -340,12 +356,12 @@ def test_every_dropped_pv_row_has_a_reason_in_the_closed_vocabulary(
     # Reasons are assigned most-specific first, so a record that both changed group and lost its
     # type counts once, as `group_moved`. The precedence is declared rather than incidental.
     assert tally == {
-        "serotype_relabelled": 37,
+        "serotype_relabelled": 32,
         "virus_type_lost": 332,
         "group_moved": 2,
-        "carve_excluded": 3,
+        "carve_excluded": 6,
     }
-    assert sum(tally.values()) == 374
+    assert sum(tally.values()) == 372
     assert reasons[CARVE_EXCLUDED_IN_SHIPPED] == "carve_excluded"
     for accession in RECLASSIFIED_TO_NON_POLIO:
         assert reasons.get(accession) == "group_moved"

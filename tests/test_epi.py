@@ -80,7 +80,9 @@ ORIGIN_PARAMETERS = {
 
 RECOVERED_BY_THE_FLAG = 17
 RECOVERED_SPECIMEN_KEYWORDS = 80
-RESOLVED_BY_THE_DIVISION = 571
+# 571 until the three FV5370xx patent conversions were carve-excluded on 2026-08-14; they were
+# PAT-division records this branch resolved, so they left with the carve.
+RESOLVED_BY_THE_DIVISION = 571 - 3
 
 
 def view(

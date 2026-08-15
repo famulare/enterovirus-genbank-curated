@@ -213,7 +213,7 @@ def test_a_moved_count_fails(
     mutated = {column: dict(classes) for column, classes in DECLARED_TRANSITIONS.items()}
     mutated["engineered_or_construct"][("TRUE", "FALSE")] += 1
     monkeypatch.setattr(parity, "DECLARED_TRANSITIONS", mutated)
-    with pytest.raises(ContractError, match="declared 512"):
+    with pytest.raises(ContractError, match="declared 503"):
         compare_to_baseline(baseline, built)
 
 
@@ -338,14 +338,14 @@ def test_the_documented_date_break_is_the_declared_one(
     them turned out to be readable from a surveillance identifier in `raw/`. So `collection_date`
     has no declared class at all, and that is asserted here rather than merely left out — a column
     quietly reappearing in this contract is the regression to catch. What remains is the vocabulary
-    break: 2,803 dateless records whose precision was `unknown` and is now `NA`.
+    break: 2,800 dateless records whose precision was `unknown` and is now `NA`.
     """
     assert "collection_date" not in DECLARED_TRANSITIONS, (
         "collection_date has a declared difference from 2.4.1 again; R-DATE-2's identifier branch "
         "reproduced that column exactly, so a new class here is a regression and not a declaration"
     )
     precision = DECLARED_TRANSITIONS["collection_date_precision"]
-    assert precision == {("unknown", "NA"): 2803}
+    assert precision == {("unknown", "NA"): 2800}
 
     # Measured rather than inferred from the absence above: every shared row agrees on the date.
     # Which of them agree *because* of the identifier branch is pinned per convention in

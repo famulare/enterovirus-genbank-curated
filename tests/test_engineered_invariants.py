@@ -194,9 +194,13 @@ LEGITIMATE_SAME_SEQUENCE_SPLITS: dict[tuple[str, ...], str] = {}
 # the defect: `\bPAT\b` matched as free text inside a 20-field blob, so *every* patent-division
 # record is flagged engineered regardless of what its sequence is. When the rule is rewritten this
 # equality is the first thing that should break.
-EXPECTED_TRUE_TOTAL = 38
+# 38 -> 44 on 2026-08-14: the six the 2026-08-12 adjudication ratified TRUE (`M14761`, `S61236`,
+# `S65446`/`447`/`449`/`450`). All six are division VRL, so `EXPECTED_PAT_TRUE` and
+# `EXPECTED_SYN_TRUE` do not move — which is the check that the six are the residue of
+# R-CONSTRUCT-2's structural narrowness and not a widening of it.
+EXPECTED_TRUE_TOTAL = 38 + 6
 EXPECTED_TRUE_AT_LEAST_3000NT = 11
-EXPECTED_PAT_IN_CANONICAL = 512
+EXPECTED_PAT_IN_CANONICAL = 512 - 3
 EXPECTED_PAT_TRUE = 24
 EXPECTED_SYN_IN_CANONICAL = 7
 EXPECTED_SYN_TRUE = 7
@@ -205,19 +209,23 @@ EXPECTED_SYN_TRUE = 7
 # Without this, deleting `SYN` from `DELIBERATE_DEPOSIT_DIVISIONS` is undetectable: all 7 canonical
 # SYN records are sha256 singletons, so they contribute nothing to the group/record pins below and
 # a PAT-only restriction yields *identically* 178/374.
-EXPECTED_SCOPED_RECORDS = 519
+# 519 -> 516 on 2026-08-14: `FV537075`/`76`/`77` are PAT-division records and were carve-excluded,
+# so they leave the scope with the carve.
+EXPECTED_SCOPED_RECORDS = 519 - 3
 
 # Pinned so a future change that *stops* constraining records — by moving them out of PAT/SYN, or
 # by dropping them from canonical — fails loudly instead of turning the invariant into a check over
 # an empty set.
-EXPECTED_CONSTRAINED_GROUPS = 179
-EXPECTED_CONSTRAINED_RECORDS = 381
+EXPECTED_CONSTRAINED_GROUPS = 179 - 1
+EXPECTED_CONSTRAINED_RECORDS = 381 - 2
 
 # Counts alone constrain cardinality, not membership: a compensating swap (one group leaving the
 # scope, another joining) preserves 178/374 exactly. This digest pins *which* groups and which
 # accessions, so such a swap is visible.
+# Re-pinned 2026-08-14 with the three FV5370xx carve exclusions. Two of the three sat in a
+# constrained sha256 group, which is why the record count drops by 2 and the group count by 1.
 EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256 = (
-    "a114cc523ef305e7d9641027988898bc32374d2a4c9f0c37371da8d35fe6811a"
+    "95f8a059bb78a80d5271e6cc3098fe82863c47c8bbed2a01a2563ff1a9bad2da"
 )
 
 # The population the general falsification controls run over.
@@ -226,8 +234,8 @@ EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256 = (
 # canonical records (unaligned non-polio), which collapses 19 identical-sequence groups below two
 # members. Both counts fall by exactly 19 because all 19 were agreeing groups. Purely a
 # population-size effect — re-measured, not derived.
-EXPECTED_MULTI_MEMBER_GROUPS = 1626
-EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1626
+EXPECTED_MULTI_MEMBER_GROUPS = 1626 - 1
+EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1626 - 1
 
 # Invariant B's outstanding violations, pinned as the exact set of TRUE members per group.
 #

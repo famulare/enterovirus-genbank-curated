@@ -75,7 +75,8 @@ SHIPPED_COLUMN_COUNT = 21
 # needs. Of the 61 genuinely-new accessions (44 + 17), 60 were previously declined and now agree
 # with the shipped classification; the 61st already had an active ledger decision, so its
 # classification was unaffected — it simply has evidence to cite where it had none before.
-EXPECTED_VP1_ROWS = 7773
+# -3 on 2026-08-14: `FV537075`/`76`/`77` are carve-excluded, so no divergence is measured for them.
+EXPECTED_VP1_ROWS = 7773 - 3
 EXPECTED_CAPSID_FALLBACK_ROWS = 175
 # 392 VP1 + 7 capsid, 2026-08-01: `measure_poliovirus_membership_band` identifies a serotype by
 # capsid-AA distance for every organism-uninformative record that clears its 8%/15% band, and

@@ -416,6 +416,9 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # generator produces them; `tests/test_decision_ledger.py` documents the three filters that take
     # 115 accessions to 173 rows.
     origin_unknown = 173
+    # 14 more the same day: release 5.0.0's correctness pass — 3 carve exclusions, 5 serotype
+    # relabels, 6 engineered_or_construct TRUE. Neither generator produces them.
+    release_5 = 3 + 5 + 6
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)
@@ -428,6 +431,7 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         + upstream_partition
         + polio_classification
         + origin_unknown
+        + release_5
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
@@ -437,7 +441,8 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         f"{vocabulary_repairs} vocabulary repairs + {cvdpv_and_strain_identity} cVDPV/strain-"
         f"identity decisions + {upstream_partition} upstream-partition projections + "
         f"{polio_classification} 4.1.0 classification adjudications + "
-        f"{origin_unknown} origin_unknown projections = {expected}. "
+        f"{origin_unknown} origin_unknown projections + {release_5} release-5.0.0 rows "
+        f"= {expected}. "
         f"Bumping one without the others is the drift the pin exists to catch."
     )
 

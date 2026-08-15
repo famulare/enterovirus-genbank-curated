@@ -157,17 +157,22 @@ EXPECTED_TALLY = {
     # -11 on 2026-08-14: the rule-redundant `serotype` retirements. They leave `applied_unchanged`
     # for `not_in_force_retired` and move no canonical cell, which is what `applied_unchanged` meant
     # in the first place — verified by rebuilding and diffing the table: 0 rows changed.
-    "applied_filled_unresolved": 3559,
-    "applied_changed": 1699 - 4,
+    # 2026-08-14, release 5.0.0's correctness pass. The three carve exclusions take their subjects
+    # out of the carve, so the `classification` and `sampling_frame` decisions already on those
+    # records become `subject_outside_carve` (6 -> 12) and their own new rows land as
+    # `applied_exclusion` (173 -> 176). The five serotype relabels and six engineered TRUEs are
+    # `applied_changed`, since the rules reach a different answer on every one.
+    "applied_filled_unresolved": 3559 - 3,
+    "applied_changed": 1699 - 4 + 8,
     # +4 on 2026-08-14 from the named-wild-reference guard: four `classification` decisions
     # asserting `wild` on a Mahoney, Brunhilde, Lansing or Saukett deposit are now reached by the
     # rule unaided. They stay active under the 2026-08-14 ruling — R-CLASS-2 is the rule still
     # moving, and these four became redundant through a branch added this week.
     "applied_unchanged": 534 - 11 + 4,
-    "applied_exclusion": 173,
+    "applied_exclusion": 173 + 3,
     "not_in_force_retired": 183 + 11,
     "no_canonical_field": 123,
-    "subject_outside_carve": 6,
+    "subject_outside_carve": 6 + 6,
     # +3 on 2026-07-31: the vocabulary repairs superseded the three active decisions whose value was
     # outside the controlled vocabulary (`CHAT`, a bare `engineered`, `iVPDV`).
     # +2 on 2026-08-01: `CS406483` and `PU749298`'s `wild` rows, superseded by the `engineered/lab`

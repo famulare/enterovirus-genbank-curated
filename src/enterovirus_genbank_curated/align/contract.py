@@ -363,7 +363,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="POLIO_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,)),
-        expected_rows=10_090,
+        expected_rows=10_087,
         description=(
             "All-serotype poliovirus whole-genome multiple sequence alignment "
             "(5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
@@ -385,7 +385,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="EV_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS, NON_POLIO)),
-        expected_rows=24_308,
+        expected_rows=24_305,
         description=(
             "All-enterovirus (poliovirus and non-polio) whole-genome multiple sequence "
             "alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
@@ -396,7 +396,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="PV1_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV1",)),
-        expected_rows=4_337,
+        expected_rows=4_333,
         description=(
             "Poliovirus serotype 1 whole-genome multiple sequence alignment, Sabin-anchored"
         ),
@@ -407,7 +407,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="PV2_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV2",)),
-        expected_rows=3_790,
+        expected_rows=3_791,
         description=(
             "Poliovirus serotype 2 whole-genome multiple sequence alignment, Sabin-anchored"
         ),

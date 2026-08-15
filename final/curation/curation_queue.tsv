@@ -198,7 +198,7 @@ Q-b31944c88626	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Enter
 Q-b31e8509f6a1	virus_type	virus_type	R-TYPE-2	organism_name_states_no_type	Rhinovirus C	2	MF161053.1 MF775365.1	decision
 Q-b35bc0b8636c	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	RD cell culture isolate	1	MG976582.1	rule_parameter
 Q-b4e64d83cd00	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	acute haemorrhagic conjunctivitis patient	32	EU162068.1 EU162069.1 EU162070.1	rule_parameter
-Q-b56ead228394	specimen_type	specimen_type	R-SPECIMEN-2	no_isolation_source_deposited		10265	A01868.1 A03852.1 A03999.1	decision
+Q-b56ead228394	specimen_type	specimen_type	R-SPECIMEN-2	no_isolation_source_deposited		10262	A01868.1 A03852.1 A03999.1	decision
 Q-b668f882f90a	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	cerebrospinal fluid	1	GQ506664.1	decision
 Q-b7f7d51c1a22	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	ST1	1	MN246036.1	rule_parameter
 Q-bb2fd98fb9f6	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surveillance_context_in_record	stool of infant who were administered oral poliovirus vaccine	9	LC143260.1 LC143304.1 LC143370.1	decision

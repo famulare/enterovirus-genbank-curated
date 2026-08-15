@@ -82,10 +82,16 @@ DECLARED_ROW_DELTA = {
         "A06086.1", "A06087.1", "A08076.1", "AF326751.2",
         "HW505760.1", "HW505761.1", "HW505772.1", "HW505773.1", "HW505774.1",
     ),
-    "dropped": ("E00765.1", "E01571.1"),
+    "dropped": (
+        "E00765.1", "E01571.1",
+        # Carve-excluded 2026-08-14: three FV5370xx deposits converted from the Mahoney parental
+        # sequence, laboratory products rather than field samples. `FV537074`, the unconverted
+        # Mahoney reference they were made from, stays.
+        "FV537075.1", "FV537076.1", "FV537077.1",
+    ),
 }
 
-# Every canonical cell that differs from the 2.4.1 baseline, by class, over the 24,299 shared rows.
+# Every canonical cell that differs from the 2.4.1 baseline, by class, over the 24,296 shared rows.
 # The nineteen columns absent from this table are identical on every shared row, `virus_group` and
 # `curation_status` among them — the partition reproduces exactly.
 #
@@ -166,15 +172,11 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('EV-B100', ''): 1,
         ('EV-B107', ''): 1,
         ('EV-C109', ''): 1,
-        # The five relabels where the deposit's organism name and its sequence disagree. R-TYPE-2
-        # reads the name; 2.4.1 used a coverage-guarded capsid call. These are outside the
-        # 2026-07-30 serotype adjudication, whose population was records under 100 compared capsid
-        # codons — these have 138 to 879.
-        ('PV1', 'PV3'): 1,
-        ('PV2', 'PV1'): 1,
-        ('PV2', 'PV3'): 1,
-        ('PV3', 'PV1'): 1,
-        ('PV3', 'PV2'): 1,
+        # The five relabels where the deposit's organism name and its sequence disagree left on
+        # 2026-08-14, as five `serotype` decisions. R-TYPE-2 reading the name stays correct policy;
+        # a mislabelled deposit is what a decision is for. They sit outside the 2026-07-30 serotype
+        # adjudication, whose population was records under 100 compared capsid codons — these have
+        # 138 to 879, so the measurement is not a short-fragment artifact.
     },
     # The named wild parents left on 2026-08-14. `('wild', 'VDPV')` was 14 and is 2 — the 12 that
     # went were Mahoney, Brunhilde, Lansing and Saukett deposits, and `KY026068`/`AB060337`, not
@@ -274,10 +276,10 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
     # date and whose identifier carries no year either. 2.4.1 called their precision `unknown`; a
     # record with no date has no precision, so this pipeline calls it `NA`.
     "collection_date_precision": {
-        ('unknown', 'NA'): 2803,
+        ('unknown', 'NA'): 2800,
     },
     "engineered_or_construct": {
-        ('TRUE', 'FALSE'): 511,
+        ('TRUE', 'FALSE'): 502,
     },
 }
 
@@ -457,7 +459,7 @@ UNRESOLVED_PARTITION_ROWS = 0
 # central-nervous-system keyword families. What is left of the second group is mostly text naming
 # an epidemiological frame rather than a material — `AFP case`, `paralytic polio case` — which 2.4.1
 # resolved with the `default_stool` assumption this pipeline declines to inherit.
-UNRESOLVED_SPECIMEN_ROWS = 12620
+UNRESOLVED_SPECIMEN_ROWS = 12617
 # `sample_origin` rows R-ORIGIN-2 declines, over the built carve: poliovirus records that
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
 # itself undecided and so cannot be scoped either way. 19 of the 23 rescued records decline; the

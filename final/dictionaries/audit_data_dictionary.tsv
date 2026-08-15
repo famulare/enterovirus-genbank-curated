@@ -7,32 +7,32 @@ record_disposition	curation_status	vouched, provisional or excluded. Every non-i
 record_disposition	canonical_included	TRUE if the record appears in the canonical table.	string	string	FALSE		25727
 record_disposition	exclusion_reason	Why the record is not in canonical, blank when it is. One of three: the GenBank lineage names no Enterovirus genus, a curator confirmed the record is not in scope, or a curator carve exclusion left an in-scope record out. Blank on 1,253 of 1,426 excluded rows in the carried 2.4.1 copy; blank on none now.	string	string	TRUE		25727
 record_disposition	sequence_sha256	SHA-256 of the nucleotide sequence.	string	string	FALSE	content hash; FK -> source.records.sequence_sha256	25727
-projection_provenance	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	340312
-projection_provenance	version	accession.version the row concerns.	string	string	FALSE	composite PK (version, canonical_field)	340312
-projection_provenance	canonical_field	Canonical column whose provenance this row records.	string	string	FALSE	composite PK (version, canonical_field)	340312
-projection_provenance	final_value	Value written to the canonical column.	string	string	TRUE		340312
-projection_provenance	source_field	Upstream curated field the canonical value was projected from.	string	string	FALSE		340312
-projection_provenance	source_value	Value of that upstream field.	string	string	TRUE		340312
-projection_provenance	winning_rule_id	Rule id (FK -> rules.rule_id) governing the projection.	string	string	FALSE	FK -> rules.rule_id	340312
-projection_provenance	evidence_basis	Basis for the value (e.g. name_derived, sequence_derived_confident, canonical_projection).	string	string	FALSE		340312
-projection_provenance	manual_override	TRUE if any normalized human decision asserts a field aliasing to this canonical column for this accession (P2; DECISION_FIELD_TO_CANONICAL).	string	string	FALSE		340312
-projection_provenance	unresolved_reason	Why the rule declined this cell, when it did. Blank on a resolved cell. This is the column that makes a blank canonical value readable: the table cannot tell a value a rule chose to leave empty from one it could not decide, and this says which.	string	string	TRUE		340312
-decision_applications	decision_id	Content-stable id of the curation decision this row reports on (FK -> registry ledger).	string	string	FALSE	primary key (one row per decision per canonical field)	6292
-decision_applications	accession	Unversioned GenBank accession the decision concerns.	string	string	TRUE	join key (blank for accession-less decisions)	6292
-decision_applications	registry_field	The ledger's own field name, as written by the curator.	string	string	FALSE		6292
-decision_applications	canonical_field	Canonical column the ledger field maps to, or blank when it maps to none.	string	string	TRUE		6292
-decision_applications	asserted_value	Value the decision asserts.	string	string	FALSE		6292
-decision_applications	value_without_decision	What the rules alone reach for this cell, measured by projecting the corpus with the whole ledger withheld. Blank means the rules decline.	string	string	TRUE		6292
-decision_applications	final_value	Value actually shipped in the canonical column.	string	string	TRUE		6292
-decision_applications	application_status	What became of the decision: applied_changed, applied_filled_unresolved, applied_unchanged (the rules now reach the same value unaided), applied_exclusion, not_in_force_retired, not_in_force_superseded, no_canonical_field, subject_outside_carve.	string	string	FALSE	FK -> controlled_vocabularies application_status	6292
-classification_divergence	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	8347
-classification_divergence	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per measured record)	8347
-classification_divergence	reference_serotype	Sabin serotype the divergence was measured against (1/2/3).	string	string	FALSE		8347
-classification_divergence	reference_version	accession.version of the Sabin reference used.	string	string	FALSE	FK -> canonical.version	8347
-classification_divergence	divergence_pct	Percent nucleotide divergence from that reference over the compared span.	number	string	FALSE		8347
-classification_divergence	compared_nt	Number of nucleotide positions compared; the denominator of divergence_pct.	integer	string	FALSE		8347
-classification_divergence	strand	Which strand the comparison was made on; a reverse-complement deposit is compared as deposited.	string	string	FALSE		8347
-classification_divergence	basis	Region the divergence was measured on (VP1, or the P1 capsid fallback), and how the serotype reference was chosen.	string	string	FALSE		8347
+projection_provenance	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	340270
+projection_provenance	version	accession.version the row concerns.	string	string	FALSE	composite PK (version, canonical_field)	340270
+projection_provenance	canonical_field	Canonical column whose provenance this row records.	string	string	FALSE	composite PK (version, canonical_field)	340270
+projection_provenance	final_value	Value written to the canonical column.	string	string	TRUE		340270
+projection_provenance	source_field	Upstream curated field the canonical value was projected from.	string	string	FALSE		340270
+projection_provenance	source_value	Value of that upstream field.	string	string	TRUE		340270
+projection_provenance	winning_rule_id	Rule id (FK -> rules.rule_id) governing the projection.	string	string	FALSE	FK -> rules.rule_id	340270
+projection_provenance	evidence_basis	Basis for the value (e.g. name_derived, sequence_derived_confident, canonical_projection).	string	string	FALSE		340270
+projection_provenance	manual_override	TRUE if any normalized human decision asserts a field aliasing to this canonical column for this accession (P2; DECISION_FIELD_TO_CANONICAL).	string	string	FALSE		340270
+projection_provenance	unresolved_reason	Why the rule declined this cell, when it did. Blank on a resolved cell. This is the column that makes a blank canonical value readable: the table cannot tell a value a rule chose to leave empty from one it could not decide, and this says which.	string	string	TRUE		340270
+decision_applications	decision_id	Content-stable id of the curation decision this row reports on (FK -> registry ledger).	string	string	FALSE	primary key (one row per decision per canonical field)	6306
+decision_applications	accession	Unversioned GenBank accession the decision concerns.	string	string	TRUE	join key (blank for accession-less decisions)	6306
+decision_applications	registry_field	The ledger's own field name, as written by the curator.	string	string	FALSE		6306
+decision_applications	canonical_field	Canonical column the ledger field maps to, or blank when it maps to none.	string	string	TRUE		6306
+decision_applications	asserted_value	Value the decision asserts.	string	string	FALSE		6306
+decision_applications	value_without_decision	What the rules alone reach for this cell, measured by projecting the corpus with the whole ledger withheld. Blank means the rules decline.	string	string	TRUE		6306
+decision_applications	final_value	Value actually shipped in the canonical column.	string	string	TRUE		6306
+decision_applications	application_status	What became of the decision: applied_changed, applied_filled_unresolved, applied_unchanged (the rules now reach the same value unaided), applied_exclusion, not_in_force_retired, not_in_force_superseded, no_canonical_field, subject_outside_carve.	string	string	FALSE	FK -> controlled_vocabularies application_status	6306
+classification_divergence	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	8344
+classification_divergence	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per measured record)	8344
+classification_divergence	reference_serotype	Sabin serotype the divergence was measured against (1/2/3).	string	string	FALSE		8344
+classification_divergence	reference_version	accession.version of the Sabin reference used.	string	string	FALSE	FK -> canonical.version	8344
+classification_divergence	divergence_pct	Percent nucleotide divergence from that reference over the compared span.	number	string	FALSE		8344
+classification_divergence	compared_nt	Number of nucleotide positions compared; the denominator of divergence_pct.	integer	string	FALSE		8344
+classification_divergence	strand	Which strand the comparison was made on; a reverse-complement deposit is compared as deposited.	string	string	FALSE		8344
+classification_divergence	basis	Region the divergence was measured on (VP1, or the P1 capsid fallback), and how the serotype reference was chosen.	string	string	FALSE		8344
 membership_rescue	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	23
 membership_rescue	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per rescued record)	23
 membership_rescue	organism_name	NCBI organism name, which for every rescued record states no poliovirus membership.	string	string	FALSE		23
