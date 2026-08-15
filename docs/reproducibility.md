@@ -2,26 +2,32 @@
 
 ## Current state
 
-**`final/` is what this pipeline builds.** As of 2026-08-01 it holds release 4.1.0 — 4.0.0 plus
-thirteen accession-level `poliovirus_classification` decisions, no rule or threshold change: canonical,
-audit and curation trees written by `evgc build-metadata` from `raw/` and `registry/` alone, and
-alignments written by `evgc alignment-build` from those. It is a build destination now, not a parity
+**`final/` is what this pipeline builds.** As of 2026-08-14 it holds release 5.0.0: canonical, audit,
+curation and dictionary trees written by `evgc build-metadata` from `raw/` and `registry/` alone,
+and alignments written by `evgc alignment-build` from those. It is a build destination, not a parity
 target, and `build.reject_immutable_output` guards only `raw/` — the frozen input of record, where a
 build that can overwrite its own input has no oracle left at all.
 
-The 2.4.1 release it replaced is not gone. `releases/2.4.1/parity.json` still describes the raw
-archive, and `releases/2.4.1/alignments/` holds the nineteen carved-in alignment files, which is
-what `evgc alignment-shape` still measures the rebuild's declared delta against. What retired with
-the promotion is the *metadata* parity gate: comparing the build to `final/` cell by cell would now
-read the build's own bytes and pass by construction, and a gate that cannot fail is worse than an
-absent one. `evgc check-declines` replaced it with a claim that needs no oracle — the build declines
-exactly where this repository declares it declines.
+The 2.4.1 release it replaced is not gone, and 5.0.0 is the release where that stopped being
+sentiment. `releases/2.4.1/canonical/sequence_metadata.tsv.gz` is preserved as a **fixture** — the
+only thing in the tree that can still say what changed between the last hand-curated release and
+what this pipeline builds. `oracle/parity.py`'s `DECLARED_TRANSITIONS` declares every differing cell
+by class, and `evgc parity-canonical` checks it on demand. Twice already it has done the opposite of
+what it was commissioned for: `sequence_scope` and `collection_date` were both recorded as
+unreachable from `raw/`, and both were reproduced *exactly* against it. A comparand is how you find
+out that a declared gap was a mis-specification.
 
-What that does *not* mean: 4.0.0 is not 2.4.1 rebuilt. It carves 24,308 rows against the shipped
+What that does *not* mean: 5.0.0 is not 2.4.1 rebuilt. It carves 24,305 rows against the shipped
 24,301, it declines values the release asserts, and it supersedes some the release got wrong. Every
 one of those differences is declared as a count or a witness rather than absorbed, and the rest of
-this document is the accounting. One structural gap remains open and has its own section:
-`sequence_scope` is the one canonical column still unwritten.
+this document is the accounting. **No canonical column is unwritten.** `sequence_scope` was the last
+one, and it was unwritten for the wrong reason — its determinant is a record's own annotation, not
+coverage geometry, and read that way it reproduces 2.4.1 on 24,301 of 24,301 rows.
+
+Against the baseline, 36,732 cells differ across seven columns, all declared. What is left is not a
+backlog of unreached values: `specimen_type`'s 5,812 are the `default_stool` assumption this
+pipeline declines to inherit, `sample_origin`'s 11,670 are a `/host` the upstream stage never read,
+and `virus_type`'s 888 and `poliovirus_classification`'s 512 need a sequence stage or a paper.
 
 **Reproducible today — `final/source/`.** `evgc parity-source` re-authenticates
 `raw/sequence.gb.zip`, reparses all 25,727 records, and compares every one of the twelve
@@ -74,25 +80,38 @@ disagreements rather than by its inputs is the specific mistake being avoided he
 entailment has since resolved part of it and neither figure has been re-measured; the argument does
 not depend on the exact values.)
 
-The declined population is now **1,596 rows** — `oracle/parity.py`'s `UNRESOLVED_PARTITION_ROWS`,
-which the parity gate checks rather than trusts. Of the remaining 22,703 of 24,299 shared rows, every
-one matches the release, including `manual_override` — TRUE on exactly the seventeen records the
+The declined population is now **zero** — `oracle/parity.py`'s `UNRESOLVED_PARTITION_ROWS`, which
+the parity gate checks rather than trusts, and which is kept as a *named zero* rather than deleted so
+the next organism name the rule cannot decide fails the gate instead of appearing as a new key nobody
+pinned. It reached zero in stages: the capsid-AA membership band, then the upstream partition
+projection into `is_poliovirus` decisions, then six short patent deposits the curator called
+directly. `virus_group` matches the release on every shared row, including `manual_override` — TRUE on exactly the seventeen records the
 ledger's `is_poliovirus` decisions resolve. That is the first place a recorded decision is shown to
 reach a generated provenance row rather than merely existing in the ledger, which is the D2 failure
 stated positively.
 
 ### Being hash-gated is not the same claim as being regenerable
 
-`final/audit/release_file_manifest.tsv` covers 38 of the 58 files in `final/`; the other twenty had
-no hash anywhere at all, so truncating all nineteen `final/alignments/` files to zero bytes and
-deleting one outright left every gate reporting PASS. `oracle.release.verify_release_manifest_hashes`
-now recomputes all thirty-seven `file_bytes` hashes the manifest declares (previously six were), and
-`verify_manifest_completeness` requires every file under `final/` to be covered by either the
-manifest or `oracle.release.CARRIED_FINAL_FILES` — bidirectionally, so an undeclared new file fails
-as loudly as a deleted declared one. The twenty carried hashes are pinned in
-`tests/test_carried_files.py`, in code rather than in a new `releases/2.4.1/parity.json` key, because
-a data key would give them a single declaration computed from the very bytes it gates and movable by
-a data edit.
+`final/audit/release_file_manifest.tsv` covered 38 of the 58 files in `final/` when this section was
+written; the other twenty had no hash anywhere at all, so truncating all nineteen
+`final/alignments/` files to zero bytes and deleting one outright left every gate reporting PASS.
+`oracle.release.verify_release_manifest_hashes` recomputes every `file_bytes` hash the manifest
+declares (previously six of thirty-seven), and `verify_manifest_completeness` requires every file
+under `final/` to be covered by either the manifest or `oracle.release.CARRIED_FINAL_FILES` —
+bidirectionally, so an undeclared new file fails as loudly as a deleted declared one. The carried
+hashes are pinned in `tests/test_carried_files.py`, in code rather than in a new
+`releases/2.4.1/parity.json` key, because a data key would give them a single declaration computed
+from the very bytes it gates and movable by a data edit.
+
+**The split as of release 5.0.0: 69 files, 19 declared in the manifest, 50 carried.** Of the 50, 49
+are the alignment layer — 24 artifacts plus the source layer — and the fiftieth is
+`final/audit/sequence_evidence.tsv.gz`, which waits on the deferred EV reference-panel pass. Six
+files moved from carried to declared in this release when they stopped being inherited bytes and
+gained producers: the four `final/dictionaries/` files (`export/dictionaries.py`),
+`audit/record_disposition.tsv.gz` (`export/audit.py`) and
+`alignments/reference_region_coordinates.tsv` (`derive/regions.py`). `EXPECTED_FINAL_FILES` did not
+move across that, because no file appeared or disappeared — only which side of the line it sits on,
+which is the distinction this section is about.
 
 None of this makes `final/alignments/` reproducible. It makes it *immutable in a way something
 checks*, which is the weaker property that was missing. See "The alignment layer" below for what
@@ -302,27 +321,32 @@ shipped data.
 Because parity is byte-exact, this loss cannot be corrected without deliberately breaking the gate
 and cutting a new release. That is a real constraint, not an oversight.
 
-### The one column not written: `sequence_scope`
+### The column that was not written, and why it stayed that way: `sequence_scope`
 
-`derive.metadata.PENDING_COLUMNS` holds exactly one entry, and that set shrinking from twelve to one
-is the measure of what the derivation stages delivered. `assert_every_column_is_accounted_for` uses it
-as the allowlist for a column blank on every row, so this is a *declared* absence — a column going
-blank without an entry is a build failure.
+`derive.metadata.PENDING_COLUMNS` is **empty**. It held twelve entries, then one, and the last of
+them was `sequence_scope` — the column this section existed to explain. It is kept because *why* it
+stayed unwritten for so long is the more useful lesson than the fact that it is written now.
 
-It is not blocked on a missing stage. `derive/evidence.py` builds the Sabin 1/2/3 reference frame
-from the frozen archive's own `mat_peptide` features and reproduces the shipped
-`reference_region_coordinates.tsv` exactly. What does not follow is the column: fitted against every
-threshold combination, coverage geometry against Sabin VP1 agrees with the shipped `sequence_scope` on
-86.7% of poliovirus records, and the 13.3% are systematic rather than boundary errors — 745 records
-the release calls `other_fragment` have a complete VP1, capsid or genome. So the shipped column is
-not a function of Sabin-VP1 coverage alone, and a rule fitted to 86.7% would assert a wrong
-determination on the remaining 13.3% — on the order of thirteen hundred records.
+It was never blocked on a missing stage. What was measured, and correctly, is that coverage geometry
+against Sabin VP1 agrees with the shipped column on only **86.7%** of poliovirus records, with the
+13.3% systematic rather than boundary errors: 745 records the release calls `other_fragment` have a
+complete VP1, capsid or genome by coverage. The conclusion drawn was that the determinant was
+unknown and a rule fitted to 86.7% would assert a wrong determination on some thirteen hundred
+records. That reasoning was right, and the refusal to ship a fitted rule was right.
 
-That is the same argument as the `virus_group` decline, applied to a column rather than a row set:
-scoring well against the oracle is not evidence the rule is right when the disagreements have
-structure. The column stays declared-pending until the determinant the release actually used is
-known. It is the clearest single item for a metadata pass to close, because the measurement that
-would settle it is already written — what is missing is the *definition*.
+**The measurement was right and the model was wrong.** `sequence_scope` is not a function of
+coverage at all, so no threshold on coverage was ever going to find it. It is a statement about a
+record's own *annotation* — a seven-branch precedence over which region the deposit names, with
+three length floors — and read that way it reproduces the shipped column on **24,301 of 24,301**
+rows. The 745 that looked like errors are where the final `else` lands: a deposit that names no
+region is `other_fragment` regardless of how much sequence it has. Reading the column as a
+completeness measure is what made them look like a defect in the data.
+
+Two things worth keeping from that. First, a well-measured 86.7% against the wrong model is
+indistinguishable from a hard problem, and the thing that broke the deadlock was asking what the
+column *means* rather than fitting harder. Second, none of it was checkable until
+`releases/2.4.1/canonical/` was preserved: the reproduction is a claim about 24,301 specific cells,
+and there was a period when nothing in the tree could evaluate it.
 
 ## The alignment layer
 
