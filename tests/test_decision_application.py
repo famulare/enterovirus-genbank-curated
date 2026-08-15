@@ -163,12 +163,16 @@ EXPECTED_TALLY = {
     # `applied_exclusion` (173 -> 176). The five serotype relabels and six engineered TRUEs are
     # `applied_changed`, since the rules reach a different answer on every one.
     "applied_filled_unresolved": 3559 - 3,
-    "applied_changed": 1699 - 4 + 8,
+    # -4 more on 2026-08-15: four `iVDPV` decisions the attestation branch now reaches unaided,
+    # because the record's own `/isolation_source` names an immunodeficient host and the rule reads
+    # it. `iVDPV` in this tally goes 40 -> 44. They stay active under the 2026-08-14 ruling — the
+    # branch that makes them redundant is a day old.
+    "applied_changed": 1699 - 4 + 8 - 4,
     # +4 on 2026-08-14 from the named-wild-reference guard: four `classification` decisions
     # asserting `wild` on a Mahoney, Brunhilde, Lansing or Saukett deposit are now reached by the
     # rule unaided. They stay active under the 2026-08-14 ruling — R-CLASS-2 is the rule still
     # moving, and these four became redundant through a branch added this week.
-    "applied_unchanged": 534 - 11 + 4,
+    "applied_unchanged": 534 - 11 + 4 + 4,
     "applied_exclusion": 173 + 3,
     "not_in_force_retired": 183 + 11,
     "no_canonical_field": 123,

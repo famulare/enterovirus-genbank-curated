@@ -11,14 +11,14 @@
     "cds:no_cds_untranslatable": 40
   },
   "artifact_sha256": {
-    "coverage": "c09511e12719342d189102356c8e5e569bad59d38fcaee83332b85ff8fd910c5",
-    "fasta": "9dcb1c4c692a41f2ef671072445ba331bf68a80639c8e0c385d9b04f4f14552f",
-    "stockholm": "ea62b62a8c0f770dc8d8906d24d6f3a7dfe07f64b31ee890786a8ce9cbf8953c"
+    "coverage": "a72e9c1a699d7e25f3d7da4035e486d6de450e3ccbbae2c8e29afa243b3d6946",
+    "fasta": "2a69e8cd276e16b8469861c97641db067515e3c4cf9932776b06fea44e1dc555",
+    "stockholm": "65da80e648e872552fb057b12c9351fdac9f80d453eb5c97afde9d2bf96dd8b9"
   },
   "block_widths": {
     "3ncr": 87,
     "5ncr": 738,
-    "cds": 14598
+    "cds": 7503
   },
   "blocks_present": {
     "3ncr": 1545,
@@ -26,7 +26,7 @@
     "cds": 14178
   },
   "blocks_present_cds": 14178,
-  "cds_codons": 4866,
+  "cds_codons": 2501,
   "cds_width_is_whole_codons": true,
   "codon": {
     "accept_annotated_max_internal_stops": 1,
@@ -58,18 +58,18 @@
   "description": "Non-polio enterovirus whole-genome multiple sequence alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)",
   "expected_rows": 14218,
   "families": {
-    "CVA": 5876,
-    "CVB": 873,
+    "CVA": 6210,
+    "CVB": 897,
     "EV-A": 377,
     "EV-B": 227,
-    "EV-C": 633,
+    "EV-C": 702,
     "EV-D": 948,
     "Echo": 2629,
     "PV": 2,
     "RV-A": 344,
     "RV-B": 112,
     "RV-C": 347,
-    "unknown": 1850
+    "unknown": 1423
   },
   "name": "NPEV_unified",
   "parameter_departures": {
@@ -77,10 +77,9 @@
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
-  "population_sha256": "c99a7dbb6e012a7d9612e21cb037401eed44e98ff8bd1bfee43e51f8dd564d90",
+  "population_sha256": "a9745402f37fc219bef4e67117a18a7c75c58086970fdf6c7d4d17bd4dd41092",
   "rows": 14218,
   "schema": 1,
-  "seconds": 4471.9,
   "stack": "unified",
   "threads": 8,
   "tiers": {
@@ -93,34 +92,34 @@
     "mafft-linsi": "mafft 7.526 h99b78c6_0"
   },
   "types": {
-    "CVA1": 365,
+    "CVA1": 383,
     "CVA10": 236,
-    "CVA11": 185,
+    "CVA11": 217,
     "CVA12": 2,
-    "CVA13": 756,
+    "CVA13": 886,
     "CVA14": 9,
     "CVA15": 21,
-    "CVA16": 162,
-    "CVA17": 131,
+    "CVA16": 163,
+    "CVA17": 168,
     "CVA18": 50,
-    "CVA19": 275,
-    "CVA2": 81,
-    "CVA20": 254,
-    "CVA21": 250,
-    "CVA22": 100,
-    "CVA24": 2411,
+    "CVA19": 298,
+    "CVA2": 82,
+    "CVA20": 276,
+    "CVA21": 254,
+    "CVA22": 107,
+    "CVA24": 2463,
     "CVA3": 3,
     "CVA4": 39,
     "CVA5": 23,
-    "CVA6": 404,
+    "CVA6": 406,
     "CVA7": 1,
-    "CVA8": 27,
+    "CVA8": 32,
     "CVA9": 91,
     "CVB1": 91,
     "CVB2": 76,
-    "CVB3": 293,
+    "CVB3": 315,
     "CVB4": 104,
-    "CVB5": 275,
+    "CVB5": 277,
     "CVB6": 34,
     "E1": 69,
     "E11": 415,
@@ -188,14 +187,14 @@
     "EV-C104": 69,
     "EV-C105": 56,
     "EV-C109": 49,
-    "EV-C113": 15,
-    "EV-C116": 38,
+    "EV-C113": 20,
+    "EV-C116": 40,
     "EV-C117": 19,
     "EV-C118": 5,
     "EV-C119": 1,
     "EV-C95": 9,
-    "EV-C96": 121,
-    "EV-C99": 247,
+    "EV-C96": 122,
+    "EV-C99": 308,
     "EV-D111": 2,
     "EV-D68": 942,
     "EV-D70": 2,
@@ -309,7 +308,7 @@
     "RV-C6": 38,
     "RV-C7": 6,
     "RV-C9": 8,
-    "unknown": 1850
+    "unknown": 1423
   },
-  "width_nt": 15423
+  "width_nt": 8328
 }

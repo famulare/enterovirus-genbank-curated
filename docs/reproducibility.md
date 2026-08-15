@@ -357,11 +357,45 @@ repository's own alignments** — `evgc alignment-build` produces them from `fin
 same shape as `site/data/`. 2.4.1's nineteen files are retired to `releases/2.4.1/alignments/`,
 where the declared delta is still measured against them.
 
-**All six declared populations are built, at one parameter set, from the 4.0.0 canonical table.**
-The previous state is what made that worth doing: five artifacts, `EV_unified` never built at all,
-and two different gap-extension settings — `POLIO_unified` and `NPEV_unified` carried MAFFT
+**All six declared populations are built, at one parameter set, from the 5.0.0 canonical table.**
+The state before 4.0.0 is what made that worth doing: five artifacts, `EV_unified` never built at
+all, and two different gap-extension settings — `POLIO_unified` and `NPEV_unified` carried MAFFT
 `--ep 0.5` while `PV1`/`PV2`/`PV3` predated it. Build times, one artifact at a time on eight
-threads: PV3 7.4 min, PV1 13.5, PV2 24.9, POLIO 25.9, NPEV 74.5, EV 234.4.
+threads: PV3 7.4 min, PV1 13.3, POLIO 25.6, PV2 24.6, NPEV 74.4, EV 232.3 — about seven hours, run
+strictly in series because concurrent aligner processes once reached ~50 GB.
+
+| artifact | rows | width | 2.4.1 |
+|---|---:|---:|---:|
+| `EV_unified` | 24,305 | 8,817 | 9,942 |
+| `NPEV_unified` | 14,218 | 8,328 | 8,502 |
+| `POLIO_unified` | 10,087 | 7,632 | 8,928 |
+| `PV1`/`PV2`/`PV3` | 4,333 / 3,791 / 1,597 | 7,441 / 7,439 / 7,432 | 7,866 / 8,093 / 8,094 |
+
+### Half of two CDS blocks held nothing but ambiguity
+
+Worth recording because the first diagnosis was wrong. `NPEV_unified` built at **15,435 nt** before
+2026-08-15, against 2.4.1's 8,502, and the reading offered at the time was that the width was honest
+— that MAFFT's `--lop` placement fix opens insertion columns a badly-placed alignment would have
+scattered, so narrower was worse. The placement metric supported it: 1.3% badly placed against a 5%
+ceiling.
+
+The placement was fine and the conclusion did not follow. Measured against 2.4.1 instead of reasoned
+about, its CDS block carries **the same 43,110 N residues** in 7,677 columns with **zero** columns
+that every occupant spells with ambiguity. 5.0.0's carried 7,130 such columns, 48.8% of the block.
+The non-N part was already 209 columns *narrower* than 2.4.1's; the `--lop` fix bought 0.13
+percentage points of placement and no width at all.
+
+The cause is eleven deposits whose assembly gaps are padded to full length — `PX242045` is 29.9% N
+and opened 2,169 columns by itself, `MG692415` 2,022, `MG692413` 768. MAFFT placed each as one
+contiguous insertion, correctly: an N-run *is* an insertion as far as an aligner can tell.
+`codon.drop_unsequenced_codon_columns` removes codon columns no record spells with a known base,
+discarding **no** unambiguous nucleotide. `POLIO_unified` and the three serotype files are untouched
+by it — they carry no such column — which is the check that it removes padding rather than sequence.
+
+Two properties this separates, and conflating them is what produced the wrong reading:
+`align/placement.py` measures whether rows are placed *coherently*;
+`codon.drop_unsequenced_codon_columns` measures whether columns hold *anything*. A clean result from
+the first says nothing about the second.
 
 The three anchored stacks are the strongest result. `PV1`/`PV2`/`PV3` come out at **zero sparse
 columns and zero single-row columns**, at widths of exactly 7,441 / 7,439 / 7,432 — their own Sabin

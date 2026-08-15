@@ -89,7 +89,7 @@ path itself, only import one already declared in `oracle.parity`, which a dedica
 
 `align/` makes each alignment's row set derivable from `final/canonical/` and `final/audit/` alone:
 `evgc alignment-population` prints all six populations and their tier/family breakdowns from
-metadata, with no aligner installed. Since 2026-08-01 those are 4.0.0's populations — `final/` is
+metadata, with no aligner installed. Since 2026-08-15 those are 5.0.0's populations — `final/` is
 this pipeline's own release — and they are **not** 2.4.1's; see
 [`reproducibility.md`](reproducibility.md) for the measured delta and why it is the point rather
 than a defect. The native toolchain (`mafft`, Infernal) is declared once in `pixi.toml`, pinned twice
@@ -104,7 +104,7 @@ one at a time — concurrent aligner processes are what exhausted memory on a re
 alignment-verify` gates them against metadata-derived populations with no aligner installed, and
 `evgc alignment-shape` writes the shape report and the declared delta against 2.4.1.
 
-All six declared populations are built, at one parameter set, from the 4.0.0 canonical table, and
+All six declared populations are built, at one parameter set, from the 5.0.0 canonical table, and
 promoted into `final/alignments/`. The previous state — five artifacts, two parameter sets, no
 `EV_unified` at all — is what made the promotion worth doing rather than a rename. Each artifact's
 `.provenance.json` records its own parameters, row set digest and tool identity. See

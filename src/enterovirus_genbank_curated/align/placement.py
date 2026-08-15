@@ -5,11 +5,11 @@ putting them in one contiguous run. Downstream that is indistinguishable from a 
 with indels: a 66-residue ORF spread over 223 columns reads as a record with dozens of deletions,
 and every codon it does contribute is compared against a non-homologous reference codon.
 
-**Nothing else in this repository can see it.** `align/verify.py` reads block widths from the
-provenance the same build wrote, and the identity oracle is a whole-population average that does
-not move on gap-penalty changes. So a build could scatter a quarter of its addon rows and every
-existing gate would report PASS — which is exactly what happened upstream, where `--lop` sat at
-MAFFT's default -2.00 through every build and 25.0% of addon rows were badly placed.
+**Nothing else in this repository can see it.** `validation/alignment.py` reads block widths from
+the provenance the same build wrote, and the identity oracle is a whole-population average that
+does not move on gap-penalty changes. So a build could scatter a quarter of its addon rows and
+every existing gate would report PASS — which is exactly what happened upstream, where `--lop` sat
+at MAFFT's default -2.00 through every build and 25.0% of addon rows were badly placed.
 
 Ported 2026-08-15. This repository already carried the *fix* — `CodonSpec.pass2_local_gap_open` is
 -24.0, matching the upstream value screened for it — but not the *check*, which is the worse half to
@@ -35,13 +35,24 @@ A contiguously placed fragment fills nearly every consensus column it spans, so 
 however short it is and wherever it sits. A shredded fragment spans consensus columns it does not
 fill, so it falls toward zero.
 
-## What it says about this release
+## What it says about this release, and what it does not
 
-Run on 5.0.0's own artifacts: NPEV 1.3% badly placed, EV 0.7%, POLIO 0.2%, all against a 5%
-ceiling, with median occupancy 1.000 in every case. That is the number this gate exists to hold
-down, and it is also the answer to why `NPEV_unified` is 15,435 nt wide against 2.4.1's 8,502: the
-2.4.1 bytes predate the `--lop` fix. Narrower was *worse* — fragments scattered into existing
-columns instead of opening honest insertion columns. Width is not the quality signal; this is.
+Run on 5.0.0's artifacts: NPEV 1.3% badly placed, EV 0.7%, POLIO 0.2%, all against a 5% ceiling,
+with median occupancy 1.000 in every case. That is the number this gate exists to hold down.
+
+**It is not an explanation of the block's width, and an earlier version of this docstring claimed it
+was.** That claim — that `NPEV_unified` is wide because the `--lop` fix opens honest insertion
+columns, so "narrower was worse" — is false, and measuring 2.4.1 rather than reasoning about it is
+what showed that. 2.4.1's NPEV CDS is 7,677 columns carrying the *same* 43,110 N residues, with
+**zero** all-N columns and 1.377% badly placed. 5.0.0's was 14,598 with 7,130 all-N and 1.250%. The
+`--lop` fix bought 0.13 percentage points of placement; the entire 6,921-column difference was
+ambiguity padding, and the non-N part of the block is 209 columns *narrower* than 2.4.1's.
+
+The lesson worth keeping is the one that produced the wrong claim: placement being good and width
+being honest are different properties, and this gate measures only the first. Reading a clean
+placement result as a verdict on the width is exactly the substitution it should have prevented.
+`codon.drop_unsequenced_codon_columns` addresses the width; this module addresses placement; and
+neither stands in for the other.
 """
 
 from __future__ import annotations

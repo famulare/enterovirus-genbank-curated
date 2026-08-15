@@ -48,6 +48,7 @@ from collections.abc import Mapping, Sequence
 from enterovirus_genbank_curated.derive.classification import (
     BASIS_ISOLATE_LINKED,
     BASIS_SABIN_LIKE,
+    BASIS_TEXT_ATTESTATION,
     BASIS_TEXT_REFINEMENT,
     BASIS_VDPV,
     BASIS_WILD,
@@ -69,7 +70,18 @@ LINKED_BASIS = BASIS_ISOLATE_LINKED
 
 # Measured, not guessed: propagating either of these to a second record would compound whichever
 # one is wrong rather than carry forward an actual measurement. See the module docstring.
-FIRM_BASES = frozenset({BASIS_SABIN_LIKE, BASIS_VDPV, BASIS_WILD, BASIS_TEXT_REFINEMENT})
+#
+# `BASIS_TEXT_ATTESTATION` joined on 2026-08-15 and is firm for the same reason
+# `BASIS_TEXT_REFINEMENT` is: both rest on the depositor stating something in the record's own
+# fields, and the attestation additionally rests on a divergence measurement that was made and
+# found low. Leaving it out was a real regression, caught by four records — `AJ783776`, `AJ783777`,
+# `AJ783784`, `AJ783787` — that inherit from `AJ783799`/`AJ783800`, a pair whose
+# `/isolation_source` reads "stool specimen from an immunodeficient infant". When those two moved
+# from `Sabin-like` to `iVDPV` the siblings stopped inheriting anything at all and declined, which
+# is strictly worse than inheriting either value.
+FIRM_BASES = frozenset(
+    {BASIS_SABIN_LIKE, BASIS_VDPV, BASIS_WILD, BASIS_TEXT_REFINEMENT, BASIS_TEXT_ATTESTATION}
+)
 
 # the upstream floor: a key this short recurs across unrelated studies by chance, so it is not
 # corroboration on its own.

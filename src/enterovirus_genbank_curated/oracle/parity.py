@@ -192,21 +192,30 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('unresolved', ''): 276,
         ('Sabin-like', ''): 82,
         ('wild', ''): 69,
-        ('Sabin-like', 'VDPV'): 16,
+        # `compare_vp1` learned to skip ambiguous positions on 2026-08-15, and a `cVDPV`/`iVDPV`
+        # attestation learned to survive a Sabin-like measurement on the same day. These 14 and the
+        # 4 below are the second change: records whose `/isolation_source` reads "stool specimen
+        # from an immunodeficient infant" and whose VP1 measures barely diverged, which is what an
+        # early-detected iVDPV looks like. The release calls them Sabin-like; the depositor's own
+        # field says otherwise, and divergence cannot see a host.
+        ('Sabin-like', 'iVDPV'): 14,
         ('VDPV', ''): 13,
         ('Sabin', ''): 10,
         ('defective-interfering particle', ''): 10,
         ('VDPV', 'iVDPV'): 6,
+        ('Sabin-like', 'VDPV'): 5,
         ('cVDPV', 'cVDPV-n'): 5,
         ('engineered/lab', ''): 5,
+        ('Sabin-like', 'cVDPV'): 4,
         ('chimera', ''): 4,
         ('Sabin', 'Sabin-like'): 3,
         ('Sabin-like', 'wild'): 3,
+        # Down from 12 with the ambiguity fix: an `N` or an `R` scored as a substitution was
+        # pushing these over PV2's 0.6% ceiling. `OK634152` carried exactly one `R`.
         ('cVDPV', 'Sabin-like'): 2,
         ('wild', 'VDPV'): 2,
         ('wild', 'engineered/lab'): 2,
         ('Sabin', 'VDPV'): 1,
-        ('Sabin-like', 'cVDPV'): 1,
         ('Sabin-like', 'engineered/lab'): 1,
         ('wild', 'Sabin-like'): 1,
     },

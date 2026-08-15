@@ -365,6 +365,17 @@ def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
     Anchors are restricted to VP1 before the vote. Using a genome-wide offset would let a
     recombinant's non-capsid region choose the diagonal, and in poliovirus that region routinely
     comes from a different serotype than the capsid does.
+
+    **A position counts only when both bases are unambiguous** — the same rule `compare_capsid_nt`
+    and `compare_capsid_aa` already applied, extended here on 2026-08-15. Until then an `N` was
+    scored as a substitution, which is not a measurement of divergence but of how much of a deposit
+    was sequenced. `compare_capsid_nt`'s docstring recorded the effect (315 of 7,728 comparisons
+    move) and declined to touch "an existing, validated computation" — correctly cautious, but it
+    did not measure the consequence. Measured: 320 records shift, and **21 of them cross an
+    R-CLASS-2 band boundary**, every one from `VDPV` to `Sabin-like`. `OR537410` shipped as `VDPV`
+    at 5.876% on 902 nt of which 50 were ambiguous; unambiguous positions alone give 0.352%.
+    A published classification resting on `N` counting as a mismatch is not a history worth
+    preserving. Curator ruling, 2026-08-15.
     """
     best: Vp1Comparison | None = None
     for strand, candidate in (("+", sequence.upper()), ("-", reverse_complement(sequence.upper()))):
@@ -373,22 +384,41 @@ def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
             continue
         first = max(frame.vp1_start, diagonal)
         last = min(frame.vp1_end, len(frame.sequence), len(candidate) + diagonal)
-        compared = last - first
-        if compared < MIN_VP1_NT or (best is not None and compared <= best.compared_nt):
+        # Span, not the comparison size: a cheap pre-filter only. `compared_nt` became the count of
+        # *unambiguous* positions when this function started filtering them, so the strand and
+        # diagonal have to be chosen on that same quantity — comparing a raw span against a filtered
+        # count would let a longer, mostly-ambiguous placement beat a shorter, fully readable one.
+        span = last - first
+        if span < MIN_VP1_NT:
             continue
         mismatches = 0
+        compared_unambiguous = 0
         chunk_divergences: list[float] = []
         for chunk_start in range(first, last, CAPSID_HOMOGENEITY_CHUNK_NT):
             chunk_end = min(chunk_start + CAPSID_HOMOGENEITY_CHUNK_NT, last)
-            chunk_mismatches = sum(
-                1
-                for position in range(chunk_start, chunk_end)
-                if candidate[position - diagonal] != frame.sequence[position]
-            )
+            chunk_compared = chunk_mismatches = 0
+            for position in range(chunk_start, chunk_end):
+                reference_base = frame.sequence[position]
+                query_base = candidate[position - diagonal]
+                if reference_base not in ACGT or query_base not in ACGT:
+                    continue
+                chunk_compared += 1
+                if query_base != reference_base:
+                    chunk_mismatches += 1
             mismatches += chunk_mismatches
-            chunk_length = chunk_end - chunk_start
-            if chunk_length >= MIN_HOMOGENEITY_CHUNK_NT:
-                chunk_divergences.append(chunk_mismatches / chunk_length * 100)
+            compared_unambiguous += chunk_compared
+            # The homogeneity guard reads the same filtered positions, so a chunk that is mostly
+            # ambiguity no longer reports a spurious divergence spike — it reports on what it
+            # could actually compare, or drops below the floor and is not reported at all.
+            if chunk_compared >= MIN_HOMOGENEITY_CHUNK_NT:
+                chunk_divergences.append(chunk_mismatches / chunk_compared * 100)
+        if compared_unambiguous < MIN_VP1_NT:
+            # Enough VP1 span to clear the floor, but not enough *sequenced* VP1. Declining is the
+            # honest answer: the alternative is a divergence over a handful of readable bases.
+            continue
+        compared = compared_unambiguous
+        if best is not None and compared <= best.compared_nt:
+            continue
         divergence = mismatches / compared * 100
         if divergence > IMPLAUSIBLE_DIVERGENCE_PCT:
             continue

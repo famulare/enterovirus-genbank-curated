@@ -19,8 +19,8 @@ from enterovirus_genbank_curated.align import placement
 
 # CDS block offsets for the three unified artifacts, from their own build provenance.
 CDS_BLOCKS = {
-    "NPEV_unified": (738, 14610),
-    "EV_unified": (738, 12843),
+    "NPEV_unified": (738, 7503),
+    "EV_unified": (738, 7992),
     "POLIO_unified": (746, 6816),
 }
 # Measured on release 5.0.0's own artifacts. All three sit far under the 5% ceiling, and well under
@@ -115,11 +115,14 @@ def read_cds_block(path: Path, lo: int, width: int) -> dict[str, str]:
 def test_the_built_artifacts_place_their_addon_rows_well(
     repository_root: Path, name: str
 ) -> None:
-    """The claim the width question turned on, asserted rather than argued.
+    """Placement quality, which is this gate's only claim.
 
-    `NPEV_unified` is 15,435 nt against 2.4.1's 8,502, and this is why that is not a regression:
-    the 2.4.1 bytes predate the `--lop` fix, so their fragments were scattered into existing
-    columns instead of opening honest insertion columns. Narrower was worse.
+    It is deliberately *not* a claim about width. An earlier version of this docstring read the
+    clean placement result as an explanation for `NPEV_unified` being 15,435 nt against 2.4.1's
+    8,502 — "narrower was worse". Measured, that is false: 2.4.1 carries the same 43,110 N residues
+    in 7,677 CDS columns with zero all-N columns. The width was ambiguity padding, now removed by
+    `codon.drop_unsequenced_codon_columns`; the `--lop` fix this gate watches bought 0.13 pp of
+    placement and no width at all.
     """
     from enterovirus_genbank_curated.align import population
 

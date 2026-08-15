@@ -117,11 +117,20 @@ LEDGER_FIELDS = (LEDGER_VERIFIED, LEDGER_CLASSIFICATION)
 
 SABIN_LIKE = "Sabin-like"
 VDPV = "VDPV"
+# The two refinements that assert something a divergence measurement cannot: `cVDPV` says the
+# isolate was linked to a transmission chain, `iVDPV` that its host was immunodeficient. Both
+# outrank a Sabin-like band call; see `poliovirus_classification`. A bare `VDPV` does not, because
+# it asserts only what the band already decides.
+ATTESTED_OVER_SABIN_LIKE = frozenset({"cVDPV", "iVDPV"})
 WILD = "wild"
 
 BASIS_LEDGER = "curated_classification"
 BASIS_OUTSIDE_POLIOVIRUS = "not_applicable_outside_poliovirus"
 BASIS_TEXT_REFINEMENT = "vdpv_refinement_in_record_text"
+# Distinct from the refinement basis above: that one picks *within* the VDPV band, this one keeps a
+# text claim the band would have overturned. Worth telling apart in the audit trail, because the
+# second is the only place text outranks a sequence measurement.
+BASIS_TEXT_ATTESTATION = "transmission_or_host_attestation_over_sabin_like"
 BASIS_SABIN_LIKE = "vp1_divergence_below_sabin_like_threshold"
 BASIS_VDPV = "vp1_divergence_in_vaccine_derived_band"
 BASIS_WILD = "vp1_divergence_at_or_above_wild_threshold"
@@ -241,6 +250,7 @@ def _group_b_text_fallback(text: str, controlled_values: Collection[str]) -> tup
         BASIS_LEDGER,
         BASIS_OUTSIDE_POLIOVIRUS,
         BASIS_TEXT_REFINEMENT,
+        BASIS_TEXT_ATTESTATION,
         BASIS_SABIN_LIKE,
         BASIS_VDPV,
         BASIS_WILD,
@@ -383,6 +393,26 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
     evidence = f"{divergence}% over {compared} nt of {basis} vs {reference}"
 
     if measured < sabin_like_ceiling:
+        # A transmission or host attestation survives a Sabin-like measurement. `cVDPV` and `iVDPV`
+        # are claims the sequence cannot make — one says this isolate was linked to a transmission
+        # chain, the other that its host was immunodeficient — so a depositor stating either has
+        # told us something divergence does not know, and a low divergence does not contradict it.
+        # A cVDPV *can* be a handful of substitutions from Sabin; that is what an early-detected
+        # emergence looks like.
+        #
+        # Curator ruling, 2026-08-15, prompted by `compare_vp1` learning to skip ambiguous
+        # positions: that fix moved 12 records off the VDPV band, and without this branch each
+        # would have silently dropped its depositor's `cVDPV` for a bare `Sabin-like`. The bare
+        # `VDPV` refinement is deliberately *not* here — it asserts nothing beyond the band, so
+        # honouring it over a Sabin-like measurement would let text overrule sequence for free.
+        attested = _stated_refinement(_record_text(view), parameters["controlled_values"])
+        if attested in ATTESTED_OVER_SABIN_LIKE:
+            return RuleOutcome(
+                value=attested,
+                evidence_basis=BASIS_TEXT_ATTESTATION,
+                source_field=DEFINITION_FIELD,
+                source_value=evidence,
+            )
         return RuleOutcome(
             value=SABIN_LIKE,
             evidence_basis=BASIS_SABIN_LIKE,

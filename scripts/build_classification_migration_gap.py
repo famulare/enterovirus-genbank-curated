@@ -54,6 +54,10 @@ CATEGORY_BY_BASIS = {
     "text_classification_no_sequence_signal": "record_text_refines_beyond_the_release",
     "isolate_linked_inference": "sibling_inference_disagrees_with_release",
     "named_wild_reference_strain": "named_wild_reference_strain",
+    # A depositor stating cVDPV or iVDPV in the record's own fields, kept over a Sabin-like
+    # measurement. Its own category rather than folded into the text refinement above: this is the
+    # one place text outranks a sequence measurement instead of refining within it.
+    "transmission_or_host_attestation_over_sabin_like": "record_text_attests_beyond_the_release",
     "vp1_divergence_in_vaccine_derived_band": "sequence_band_disagrees_with_release",
     "vp1_divergence_below_sabin_like_threshold": "sequence_band_disagrees_with_release",
     "vp1_divergence_at_or_above_wild_threshold": "sequence_band_disagrees_with_release",
