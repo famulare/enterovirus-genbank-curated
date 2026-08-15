@@ -19,12 +19,37 @@ Three review rounds have now run against this work:
 | 1 (stage-4 diff) | 10 |
 | 2 (round-1 fixes) | 15 |
 | 3 (whole pipeline, 4 reviewers) | ~59 |
+| 4 (release 5.0.0 settling pass) | 14 |
 
 The rate is not falling. Round 2 found defects *in round 1's fixes*, including two fresh instances
 of the "validation that cannot fail" class that round 1 existed to close. Round 3 found more than
 rounds 1 and 2 combined. The measured rate of new defects introduced per item fixed is close to one,
 so a single 59-item remediation pass would predictably produce a fourth round of comparable size.
 Hence: capture first, fix in small themed batches, each independently reviewed before commit.
+
+**Round 4 (2026-08-12 to 08-14), the release 5.0.0 settling pass.** Fourteen, and the shape is
+different from rounds 1-3: this round was not a review looking for defects but a *feature* pass, and
+the defects surfaced because the features needed the surrounding claims to be true. Six of the
+fourteen were caught by gates this repository had already built — the description-coherence check
+rejecting new prose, the undeclared-input guard stopping a build that globbed `final/`, the
+declared-basis check refusing an undeclared evidence basis, the fast tier's runtime exposing an
+accidental O(n·m). That is the first round where the existing machinery found more than the reviewer
+did, which is the direction the machinery was built for.
+
+The classes, since the class is more useful than the count:
+
+* **A carried artifact disagreeing with its own release** (3): the dictionaries reporting a column
+  fully populated while it was empty; `record_disposition` using a `virus_group` vocabulary its own
+  release had abandoned; the region frame having a producer no build could legally call.
+* **A structurally-true property left unasserted** (2): B5's vouched subset, and the raw manifest and
+  parity contract describing the same archive with nothing comparing them.
+* **A declared gap that was a mis-specification** (2): `sequence_scope` and `collection_date`, both
+  reproduced exactly once the model rather than the measurement was questioned.
+* **A check compared to a copy of itself** (1): `expected_counts` against `EXPECTED_BASELINE_COUNTS`.
+* **A branch that had never executed** (1): `/environmental_sample`, testing the value of a valueless
+  flag since the rule was written.
+* **Mine, introduced during the pass and caught by the suite** (5), including a plan instruction that
+  would have deleted a function `parity-canonical` depends on.
 
 **The data itself is not implicated.** Reviewers independently reproduced every divergence
 measurement, recomputed all 37 declared manifest hashes (all match), confirmed the DuckDB is
@@ -141,7 +166,7 @@ require a **code** edit to move; hashes require only a **data** edit.
 **Fix:** (c) needs a decision between pinning the hashes in code, comparing the declaration files to
 their blobs at the `2.1.5` tag, or signing the release.
 
-### B5. The vouched partition is counted but never identified
+### B5. The vouched partition is counted but never identified — **CLOSED 2026-08-14**
 `src/enterovirus_genbank_curated/contracts.py:489-518`
 
 Row counts of `sequence_metadata_vouched.tsv.gz` and a `curation_status` tally over
@@ -152,6 +177,12 @@ flipping one record's status is caught.
 
 **Fix:** (a) assert the vouched table is exactly the `curation_status == 'vouched'` subset, keyed on
 `version`, column for column.
+
+**Closed** in `export/canonical.write_canonical_table`. The subset relation held *structurally* —
+`vouched` is a filter over `rows` one line above — and a structurally-true property went unasserted
+for three releases; a writer building the two tables from different sources would have shipped an
+orphan in silence. Verified by breaking it: appending one synthetic version to `vouched` fails the
+build with the new message rather than surfacing downstream.
 
 ### B6. `logical_content` is a hash scope nothing ever computes
 `src/enterovirus_genbank_curated/contracts.py:480`, `docs/reproducibility.md:138-139`
@@ -370,7 +401,7 @@ Each of these is a false or misleading statement; the underlying code or data is
 | B31 | `docs/pipeline.md:46-56` | Command list omits both commands that exist (`build-source`, `parity-source`) and lists three that do not (`build`, `verify`, `parity`); the "PR 1" framing is three stages stale. |
 | B32 | `docs/pipeline.md:34-42` | Package boundaries name seven subpackages; two exist. `build.py`, `cli.py`, `contracts.py`, `sandbox.py` appear nowhere, though they implement the `raw` and `validation` responsibilities. |
 | B33 | `registry/legacy/README.md:123`, ledger `D-76ece1bbec32` | DQ205099's provenance is inverted: patent WO2006042156 has priority 2004-10-08 and published 2006-04-20; the paper is J Virol April 2006. The patent **precedes** the paper, so "the study the patent derives from" is backwards. Also "no shipped value changes" conflicts with its own `active` assertion (`classification=engineered`) against canonical `Sabin-like`. The scientific verdict is sound; the surrounding claims are not. |
-| B34 | `README.md:23-24` | "Why every record was in/out" — `exclusion_reason` is blank on 1,008 of 1,181 exclusions. The *coverage* claim (25,727 = full snapshot) is true; the *reason* claim is not. |
+| B34 **CLOSED 2026-08-14** | `README.md:23-24` | "Why every record was in/out" — `exclusion_reason` was blank on 1,008 of 1,181 exclusions, and on 1,253 of 1,426 by the time it was fixed. `export/audit.write_record_disposition` now writes the table from `transport_metadata`'s own record of why each candidate was carved out: **blank on none**. The three reasons are the GenBank lineage naming no Enterovirus genus, a curator confirming the record is not in scope, and a curator carve exclusion. The *coverage* claim (25,727 = full snapshot) is true; the *reason* claim is not. |
 | B35 | `raw/genbank_query.md:7` vs `:10` | Two non-equivalent queries ship. The displayed "User query" lacks 13 `[Organism]` terms present in the results link, including `"Enterovirus C"[Organism]`, under which 16,055 records with no "poliovirus" in the organism name arrive. Probably as-typed vs NCBI-translated, but `README.md:34` calls it *the* defining query. Needs (c). |
 | B36 | `raw/raw_manifest.json` | Declares private-repo paths (`data/genbank/raw/...`) that do not exist in this clone, and **no code reads it** — the authentication `README.md:36-38` credits it with is done by `contracts.verify_raw_input` against `parity.json`. Its five fields agree with the contract today; nothing enforces that. |
 | B37 | `registry/README.md:15` | "310 distinct rationales across all ten registries" — the registries hold 309. The 310th is the migration's own D2 string, in no registry. Overcounts curator work by one. |
