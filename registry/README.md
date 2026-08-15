@@ -303,14 +303,15 @@ the extraction:
 
 ```bash
 rm -rf /tmp/evgc-registries && mkdir -p /tmp/evgc-registries
-git -C ../MAD-VDPV archive <release-build-commit> data/genbank/working \
+git -C <private-registry-repo> archive <release-build-commit> data/genbank/working \
   | tar -x -C /tmp/evgc-registries --strip-components=3
 python scripts/migrate_legacy_registries.py --source-dir /tmp/evgc-registries
 ```
 
 `<release-build-commit>` is the `git_sha` the target release's own
 `final/audit/build_manifest.json` records (for 2.4.1: `67554e2`) — never `HEAD` of the private repo.
-An earlier version of this doc recommended `--source-dir ../MAD-VDPV/data/genbank/working` directly,
+An earlier version of this doc recommended `--source-dir <private-registry-repo>/data/genbank/working`
+directly,
 which is exactly the tip-vs-build-commit mistake the next two paragraphs warn against; that command
 was never actually safe to run as written.
 

@@ -223,7 +223,7 @@ use.
 3.3.0 adds a fallback to the same rule, for records VP1 alone cannot classify. 1,911 carved,
 name-serotyped records have no usable VP1 at all; `derive/evidence.compare_capsid_nt` measures
 divergence over the whole capsid (VP4-VP2-VP3-VP1) instead, over the same thresholds — the same
-VP1-first / P1-fallback precedence MAD-VDPV's own sequence classifier states outright. 148 records
+VP1-first / P1-fallback precedence the upstream sequence classifier states outright. 148 records
 newly resolve, every one agreeing with the shipped classification wherever 2.4.1 has one to compare
 against.
 
@@ -238,10 +238,10 @@ base call in the deposit, not biology. `derive/evidence.py` declines the whole c
 three broken windows this found sit at 21.5, 21.8 and 55.2 percentage points of internal deviation;
 the next-highest genuine one sits at 8.1.
 
-`MIN_VP1_NT`/`MIN_CAPSID_NT` later dropped from 300 to MAD-VDPV's own published floor, 50 nt,
+`MIN_VP1_NT`/`MIN_CAPSID_NT` later dropped from 300 to the upstream published floor, 50 nt,
 recovering 60 more declines, every one agreeing with the shipped classification — but lowering the
 floor without protection surfaced the same single-bad-base failure in VP1 for the first time
-(`AY320423`, `JN092124`, `AY365233`, each 15-24 points more divergent than MAD-VDPV's own alignment
+(`AY320423`, `JN092124`, `AY365233`, each 15-24 points more divergent than the upstream alignment
 over a 171-225 nt window), because the old 300 nt floor had always been enough sequence to dilute one
 bad call rather than be defined by it. `compare_vp1` now shares `compare_capsid_nt`'s
 chunked-homogeneity guard below the old floor, unchanged at or above it.
@@ -280,7 +280,7 @@ including from `isolation_source` and `note`; the 95 that were not are two publi
 studies whose circulation claim lives in the paper rather than in any deposit, and a further 28
 strain-identity/patent (`reference_or_lab_text`) and unpublished-reference (`group_A_text_owned`)
 records are likewise now decisions rather than declines — all traced by decomposing the largest
-remaining discrepancy block into MAD-VDPV's own named mechanisms. Only the 4 `chimera` records remain
+remaining discrepancy block into the upstream pipeline's own named mechanisms. Only the 4 `chimera` records remain
 outside the sequence rule's reach — a recombination-detection rule was built and reverted after it
 misclassified 192 other records, see the migration-gap doc for why.
 
