@@ -131,7 +131,7 @@ def test_a_short_key_declines_without_batch_corroboration() -> None:
 
 
 def test_a_short_key_links_with_batch_corroboration() -> None:
-    """Same prefix, same digit width, within 200 accession numbers: MAD-VDPV's same-batch rule."""
+    """Same prefix, same digit width, within 200 accession numbers: the upstream same-batch rule."""
     views = [
         view("AB000001.1", isolate="L1"),
         view("AB000050.1", isolate="L1"),
@@ -259,11 +259,16 @@ def test_same_batch_matches_prefix_width_and_window() -> None:
 def test_the_real_build_links_the_expected_population(
     repository_root: Path, tmp_path: Path
 ) -> None:
-    """Pinned so the linked population cannot silently grow or shrink between builds."""
+    """Pinned so the linked population cannot silently grow or shrink between builds.
+
+    191 until 2026-08-14, when the named-wild-reference guard took one record off this path: a
+    Saukett deposit that used to inherit its sibling's classification and now reads its own strain
+    name. Inference losing a candidate to a direct determination is the right direction.
+    """
     result = build_metadata_layer(repository_root, tmp_path)
     linked = [
         row
         for row in result.provenance
         if row["canonical_field"] == CLASSIFICATION_FIELD and row["evidence_basis"] == LINKED_BASIS
     ]
-    assert len(linked) == 191
+    assert len(linked) == 190

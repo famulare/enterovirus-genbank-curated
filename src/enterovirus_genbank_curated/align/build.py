@@ -190,7 +190,7 @@ def build_one(
     document = provenance_module.build_provenance(
         repository_root, population, stitched, paths,
         tool_identity=provenance_module.tool_identity(context.toolchain),
-        threads=threads, seconds=seconds, over_length_cap=over_length_cap,
+        threads=threads, over_length_cap=over_length_cap,
         anchored_rows=anchored_rows,
     )
     paths["provenance"] = provenance_module.write_provenance(output_dir, name, document)

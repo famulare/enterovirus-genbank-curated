@@ -30,7 +30,7 @@ def test_alignment_population_reports_every_artifact(
 ) -> None:
     assert cli.main(["alignment-population", "--repository-root", str(repository_root)]) == 0
     out = capsys.readouterr().out
-    assert "canonical records: 24308" in out
+    assert "canonical records: 24305" in out
     for name, spec in contract.ARTIFACTS.items():
         assert f"{name}  {spec.expected_rows} rows" in out, name
     # `UNEXPECTED` is what the command prints when a population misses its declared count, so its

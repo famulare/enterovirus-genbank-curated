@@ -101,7 +101,7 @@ CANONICAL_COLUMNS = (
     "engineered_or_construct",
     "biosample_accession",
 )
-# The date-range field arrived (2026-07-29, MAD-VDPV schema 2.2.0/2.3.0):
+# The date-range field arrived (2026-07-29, upstream schema 2.2.0/2.3.0):
 # collection_year_earliest/latest, populated IFF collection_date_precision == 'range'
 # (121 records upstream), collection_date holding the midpoint on those rows. Declared
 # here only, per this module's own contract -- not added to TRAITS. Whether the bounds
@@ -354,7 +354,7 @@ TRAITS = (
 TRAIT_SCOPE_RECORD = "record"
 
 DEFAULT_SELECTION = "PV1"
-DEFAULT_REGION = REGION_POLYPROTEIN
+DEFAULT_REGION = REGION_P1
 
 # Number of discrete categories given their own hue before the rest collapse into a
 # single `Other` bucket. Seven is not a preference: it is the largest number of hues

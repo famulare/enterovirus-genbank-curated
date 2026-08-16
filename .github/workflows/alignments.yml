@@ -1,7 +1,7 @@
 name: Alignments
 
 # The expensive half of the alignment layer, deliberately kept out of `ci.yml`. A full build runs the
-# native aligners over 24,301 records and takes hours; `ci.yml` keeps only the toolchain-free checks
+# native aligners over 24,305 records and takes hours; `ci.yml` keeps only the toolchain-free checks
 # so every push stays fast. If you are about to add a mafft step to `ci.yml`, this is the workflow it
 # belongs in.
 #

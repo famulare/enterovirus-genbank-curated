@@ -4,7 +4,7 @@
 This is a historical tool, not a pipeline stage. It reads the private curation repository once and
 leaves a committed public artifact behind; after that the ledger is the source of truth and nothing
 in the build ever looks outside the clone again. Run it with `--source-dir` pointing at
-`MAD-VDPV/data/genbank/working`.
+`<private-source-repo>/data/genbank/working`.
 
 ## Decisions this migration encodes
 
@@ -412,7 +412,7 @@ def parse_args() -> argparse.Namespace:
         "--source-dir",
         required=True,
         type=Path,
-        help="the private curation working directory (MAD-VDPV/data/genbank/working)",
+        help="the private curation working directory (<private-source-repo>/data/genbank/working)",
     )
     parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     parser.add_argument("--output", type=Path, default=Path("registry/decisions.tsv"))

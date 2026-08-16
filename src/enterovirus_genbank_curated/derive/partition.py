@@ -52,8 +52,6 @@ from enterovirus_genbank_curated.registry.rules import rule_implementation
 
 POLIOVIRUS = "poliovirus"
 NON_POLIO_ENTEROVIRUS = "non_polio_enterovirus"
-VOUCHED = "vouched"
-PROVISIONAL = "provisional"
 
 # The release's own name for the non-polio partition, which differs from the canonical value.
 # Carried as `source_value` because that is what the shipped provenance records.
@@ -198,7 +196,7 @@ def virus_group(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     if not partition:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_PARTITION,
+            evidence_basis="",
             source_field=PARTITION_SOURCE_FIELD,
             # On a declined row `source_value` records the input the rule examined and could not
             # decide from, which is what lets the queue group by it. Declined rows are never
@@ -245,7 +243,7 @@ def curation_status(parameters: Mapping[str, Any], view: RecordView) -> RuleOutc
     if not partition:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_RELEASE_POLICY,
+            evidence_basis="",
             source_field=PARTITION_SOURCE_FIELD,
             source_value=view.record.get("organism_name", ""),
             unresolved_reason=UNRESOLVED_FOLLOWS_PARTITION,

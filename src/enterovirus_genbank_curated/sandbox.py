@@ -120,7 +120,14 @@ FROZEN_DIRS = ("registry/legacy",)
 # that mattered: a build that reads the previous canonical table can reproduce it perfectly and
 # prove nothing, and that read is exactly the mistake a derive stage makes while someone calibrates
 # a rule against the last release. Writing is a different act and is now allowed; reading is not.
-READ_REFUSED_DIRS = (*FROZEN_DIRS, "final")
+#
+# `releases/2.4.1/canonical/` is named for the same reason and not one directory higher: it holds
+# the preserved 2.4.1 canonical table, which is a previous release's answer key and carries exactly
+# the property `final/` is refused for. The parent cannot be refused — `contracts.py` reads
+# `releases/2.4.1/parity.json` on every build to authenticate the raw archive — so the refusal is
+# pinned to the one subtree a build never needs. Without this the fixture would be a canonical
+# table a guarded build could open, protected by nothing but a docstring.
+READ_REFUSED_DIRS = (*FROZEN_DIRS, "final", "releases/2.4.1/canonical")
 
 _WRITE_FLAGS = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_TRUNC
 

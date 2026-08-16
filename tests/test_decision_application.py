@@ -96,13 +96,87 @@ EXPECTED_TALLY = {
     # moving off. `final/audit/decision_applications.tsv.gz` carries the per-decision proof, and
     # `tests/test_decision_ledger.py` asserts the shipped column against all 13. Net +11, because
     # the two `wild` rows the engineered/lab calls supersede were themselves counted here.
-    "applied_filled_unresolved": 2640 + 115 + 28 - 492 + 2770 + 13 - 2,
-    "applied_exclusion": 173,
-    "not_in_force_retired": 183,
+    # --- restated 2026-08-12, when the counterfactual stopped withholding more than the ledger ---
+    #
+    # Every arithmetic term above describes a measurement taken against a broken counterfactual.
+    # `curate/apply.py:project_without_decisions` rebuilt each `RecordView` by naming five of its
+    # nine fields, so it silently dropped `byte_identical`, `evidence`, `reference_titles` and
+    # `membership_evidence` as well as the ledger. Rules that read those — `derive/engineered.py`,
+    # `derive/classification.py`, `derive/partition.py` — therefore declined in the counterfactual
+    # for want of *evidence*, and a decision that filled the resulting blank was recorded as
+    # `applied_filled_unresolved` when the rule could in fact decide on its own.
+    #
+    # A second omission of the same shape, found by review and fixed with it: the counterfactual
+    # also skipped `apply_isolate_linked_inference`. That pass is part of how the build reaches a
+    # `poliovirus_classification`, so leaving it out claimed the rules could not resolve 21 cells
+    # they do resolve. Running it moves 19 more to `applied_changed` and 2 to `applied_unchanged`.
+    #
+    # Withholding only the ledger moves 1,630 decisions out of `applied_filled_unresolved`: 1,131 to
+    # `applied_changed` (the rule reaches a different answer, so the curator's judgment is doing
+    # real work) and 499 to `applied_unchanged` (the rule now reaches the *same* answer, so the
+    # decision is redundant with the rules as they stand). The totals are unchanged at 5,619
+    # applications; what moved is the attribution, which was the one thing this table exists to
+    # state. `applied_unchanged` going 25 -> 524 is the counterfactual finally doing the job
+    # `build.py` describes it as doing — surfacing curation a rule has made redundant. It went to
+    # 526 the same week, for the same reason and by a different route; see the note below.
+    #
+    # These three are flat numbers rather than sums because there is no honest decomposition: the
+    # history above was measured against the wrong comparison, and re-deriving per-episode terms
+    # from it would be inventing provenance. The commentary is kept as the record of what the
+    # broken counterfactual reported.
+    # 2026-08-12, R-DATE-2's identifier branch: two cells move `applied_changed` ->
+    # `applied_unchanged`, both `AY308802`. Its `collection_year_curated = 1953` decision is now
+    # redundant — withhold it and `country_year_optional_case` reads the same 1953 out of the
+    # strain token `USA53`. The upstream stage had noticed the same coincidence and drawn the
+    # opposite conclusion from it: because the inferred year agreed, an override-shadowing bug
+    # there stayed invisible for weeks. Here it is the counterfactual reporting exactly what it
+    # exists to report, and `AY308802` joins the Phase H population.
+    #
+    # The same day, R-TYPE-2's definition-line reading moves one more: `KC787121`'s
+    # `corrected_type = Coxsackievirus A13` is now derivable, because the record's own title states
+    # `CV-A13`. `applied_filled_unresolved` -> `applied_unchanged`, since the rule went from
+    # declining the cell to reaching the curator's own answer.
+    # And two more the same day, both `surveillance_stream`: `KP004243` and `KP004244` assert
+    # `environmental`, and the `/environmental_sample` flag on each now reaches it unaided. Their
+    # `/isolation_source` is empty, so nothing contradicts the flag.
+    # 2026-08-13, R-ORIGIN-2's GenBank division branch: 53 `origin_class` decisions leave
+    # `applied_filled_unresolved`, because the rule now has an answer of its own on a patent or
+    # environmental deposit where it used to decline. 48 become `applied_changed` and 5
+    # `applied_unchanged`.
+    #
+    # The 48 are the interesting ones and they vindicate the branch rather than contradicting it: 31
+    # assert `human` and 17 `vaccine` on patent deposits the rule now calls `non-human`. A curator
+    # read those particular patents and found a vaccine strain or human-derived material in them;
+    # the rule reads only the division. The ledger wins, as it must, and the counterfactual now
+    # states plainly that the curator's judgement is doing work — which is the whole point of
+    # measuring against one.
+    # +173 on 2026-08-14: every row of the `origin_unknown` projection fills a cell the rules
+    # decline. Including `S61236`'s two, whose *real* values are determined rather than declined:
+    # the counterfactual withholds the whole ledger and takes its `is_poliovirus = FALSE` with it,
+    # so without any decisions the partition declines and the epi rules decline behind it.
+    # -11 on 2026-08-14: the rule-redundant `serotype` retirements. They leave `applied_unchanged`
+    # for `not_in_force_retired` and move no canonical cell, which is what `applied_unchanged` meant
+    # in the first place — verified by rebuilding and diffing the table: 0 rows changed.
+    # 2026-08-14, release 5.0.0's correctness pass. The three carve exclusions take their subjects
+    # out of the carve, so the `classification` and `sampling_frame` decisions already on those
+    # records become `subject_outside_carve` (6 -> 12) and their own new rows land as
+    # `applied_exclusion` (173 -> 176). The five serotype relabels and six engineered TRUEs are
+    # `applied_changed`, since the rules reach a different answer on every one.
+    "applied_filled_unresolved": 3559 - 3,
+    # -4 more on 2026-08-15: four `iVDPV` decisions the attestation branch now reaches unaided,
+    # because the record's own `/isolation_source` names an immunodeficient host and the rule reads
+    # it. `iVDPV` in this tally goes 40 -> 44. They stay active under the 2026-08-14 ruling — the
+    # branch that makes them redundant is a day old.
+    "applied_changed": 1699 - 4 + 8 - 4,
+    # +4 on 2026-08-14 from the named-wild-reference guard: four `classification` decisions
+    # asserting `wild` on a Mahoney, Brunhilde, Lansing or Saukett deposit are now reached by the
+    # rule unaided. They stay active under the 2026-08-14 ruling — R-CLASS-2 is the rule still
+    # moving, and these four became redundant through a branch added this week.
+    "applied_unchanged": 534 - 11 + 4 + 4,
+    "applied_exclusion": 173 + 3,
+    "not_in_force_retired": 183 + 11,
     "no_canonical_field": 123,
-    "applied_changed": 31 + 491,
-    "applied_unchanged": 24 + 1,
-    "subject_outside_carve": 6,
+    "subject_outside_carve": 6 + 6,
     # +3 on 2026-07-31: the vocabulary repairs superseded the three active decisions whose value was
     # outside the controlled vocabulary (`CHAT`, a bare `engineered`, `iVPDV`).
     # +2 on 2026-08-01: `CS406483` and `PU749298`'s `wild` rows, superseded by the `engineered/lab`

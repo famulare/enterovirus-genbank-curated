@@ -361,3 +361,35 @@ def test_segment_all_wires_the_real_table_loader(fixture_root: Path) -> None:
     assert results["ACC1"].aa == "M" + "A" * 20
     assert results["ACC2"].method == "inferred"
     assert len(results["ACC2"].aa) >= SPEC.infer_min_aa
+
+
+# --- the two copies of the same biology --------------------------------------------------------
+#
+# `derive/` and `align/` each carry a codon table and a complement table, and they cannot import
+# each other: `align/contract.py` imports `derive/regions.py`, so the arrow only runs one way. Two
+# copies of the standard genetic code is the shape that drifts, so rather than leave them uncompared
+# these pin them to each other. A deliberate divergence has to delete a test to happen.
+
+
+def test_the_two_codon_tables_agree() -> None:
+    """`derive/evidence.py` types its 64 entries out; `align/segment.py` generates them from
+    `Bio.Seq`. Both are the standard code, so a disagreement is a typo in the hand-written one."""
+    from enterovirus_genbank_curated.derive.evidence import CODON_TABLE
+
+    assert CODON_TABLE == sg._CODON_TABLE
+
+
+def test_the_two_complement_tables_agree() -> None:
+    """Both had the same defect — ambiguity codes other than `N` passed through uncomplemented —
+    and both were fixed on 2026-08-16. Pinned so only one of them can never be fixed again."""
+    from enterovirus_genbank_curated.derive import evidence
+
+    probe = "ACGTNRYWSKMBDHVacgtnryswkmbdhv"
+    assert evidence.reverse_complement(probe) == sg._revcomp(probe)
+
+
+def test_the_complement_is_its_own_inverse() -> None:
+    """The property that catches a mis-paired entry, which equality between two copies cannot."""
+    probe = "ACGTNRYWSKMBDHV"
+    assert sg._revcomp(sg._revcomp(probe)) == probe
+    assert sg._revcomp("ACGTNRYWSKMBDHV") == "BDHVKMSWRYNACGT"

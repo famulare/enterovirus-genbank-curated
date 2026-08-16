@@ -290,9 +290,9 @@ is stated in the figure's own method disclosure, so a reader meets it where it m
 rather than discovering it later.
 
 A record whose type is unrecorded or too thin is therefore reported **unmeasurable**
-in figure set 1, with a count on the figure. In the release as it stands that is 890
-of 14,050 aligned non-polio records: 1,121 carry no `virus_type` at all and 160 sit
-in one of 74 types holding fewer than five sequences. Neither is a data error —
+in figure set 1, with a count on the figure. In the release as it stands that is 1,582
+of 14,218 aligned non-polio records: 1,423 carry no `virus_type` at all and 159 sit
+in one of 76 types holding fewer than five sequences. Neither is a data error —
 they are limits of what GenBank records — and neither costs the record its place in
 the reference-free views.
 

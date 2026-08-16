@@ -1,10 +1,10 @@
 {
   "absence_reasons": {
     "3ncr:below_pop_min": 2,
-    "3ncr:empty_fragment": 1119,
+    "3ncr:empty_fragment": 1120,
     "3ncr:inferred_no_ncr": 155,
     "3ncr:no_cds_untranslatable": 33,
-    "5ncr:empty_fragment": 1082,
+    "5ncr:empty_fragment": 1083,
     "5ncr:inferred_no_ncr": 155,
     "5ncr:no_cds_untranslatable": 33,
     "cds:no_cds_overlap": 86,
@@ -40,9 +40,9 @@
     }
   },
   "artifact_sha256": {
-    "coverage": "cb35947f01b399c8e612a5ef409a1b9a88746b34704f079c928e6110d8bbc267",
-    "fasta": "ce0ef1ba12a365524aa930cb1a7fbff0646241fd67160eec541e7b0ce34333f1",
-    "stockholm": "f78f2d31bf3480d7666d025d175b01f3c28fddf4e60e36360d26bad88904a53e"
+    "coverage": "89416c83baeb1a61f3c7287647b8bb88fee649ae98bb69ec1941861a2eb76709",
+    "fasta": "301b8624442809c3c12c0940cfcbc458ed58d914b2a64bba73248205da6bdf9a",
+    "stockholm": "72a5d01f60dc0c8e195a852c15e5d5437db4b64fd6d7a248ab122d79e0ad8c6c"
   },
   "block_widths": {
     "3ncr": 69,
@@ -50,8 +50,8 @@
     "cds": 6621
   },
   "blocks_present": {
-    "3ncr": 288,
-    "5ncr": 327,
+    "3ncr": 287,
+    "5ncr": 326,
     "cds": 1503
   },
   "covariance_models": {
@@ -81,10 +81,9 @@
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
-  "population_sha256": "86a872b2a5af0505e0492bf2f2c639da2a8e60511eac26b39f155442e8690c67",
+  "population_sha256": "9461cb866765cc4fa1df030402f04bb8825a4ad540f436e740d93f719faa64e3",
   "rows": 1597,
   "schema": 1,
-  "seconds": 443.1,
   "stack": "anchored",
   "threads": 8,
   "tiers": {

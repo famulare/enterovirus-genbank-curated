@@ -117,14 +117,17 @@ COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 # see docs/decision-log.md in the private repo) and a further +15 from 2.4.1's own fix to 11 of
 # those same records (3 regressed or left inconsistent by 2.4.0, plus the 2,643nt/JC0131xx twins
 # it never touched).
-EXPECTED_BASELINE_COUNTS = {
-    "source_records": 25727,
-    "canonical_rows": 24301,
-    "vouched_rows": 10084,
-    "provisional_rows": 14217,
-    "manual_decisions": 2912,
-    "rules": 28,
-}
+RAW_MANIFEST_PATH = "raw/raw_manifest.json"
+# The five fields `raw/raw_manifest.json` and the parity contract both declare about the archive.
+# Nothing compared them until 2026-08-14: two independently-written files describing the same 137 MB
+# of GenBank, either of which could have been edited alone.
+RAW_MANIFEST_SHARED_KEYS = (
+    "record_count",
+    "archive_member",
+    "archive_sha256",
+    "uncompressed_bytes",
+    "uncompressed_sha256",
+)
 
 PARITY_TOP_LEVEL_KEYS = frozenset(
     {
@@ -381,10 +384,15 @@ def validate_parity_spec(path: Path) -> dict[str, Any]:
         if not COMMIT_RE.fullmatch(str(spec[key])):
             raise ContractError(f"parity {key} must be a full 40-character commit SHA")
 
-    if spec["expected_counts"] != EXPECTED_BASELINE_COUNTS:
-        raise ContractError(
-            f"parity counts differ from the frozen baseline: {spec['expected_counts']!r}"
-        )
+    # `expected_counts` is shape-validated and not otherwise checked, deliberately. It was compared
+    # to `EXPECTED_BASELINE_COUNTS`, a hardcoded copy of the same six numbers in this module: two
+    # frozen constants checked against each other, which cannot fail unless somebody edits exactly
+    # one of them. It said `manual_decisions: 2912` and `rules: 28`, and both describe artifacts
+    # this pipeline has since replaced, with no check noticing because neither number was ever
+    # compared to anything built. The copy is gone; the release's own record of what it shipped
+    # stays in `releases/2.4.1/parity.json`, where it is history rather than a live assertion.
+    if not isinstance(spec["expected_counts"], dict) or not spec["expected_counts"]:
+        raise ContractError("parity expected_counts must be a non-empty object")
 
     raw = spec["raw_input"]
     if not isinstance(raw, dict):
@@ -393,8 +401,6 @@ def validate_parity_spec(path: Path) -> dict[str, Any]:
     for key in ("archive_sha256", "uncompressed_sha256"):
         if not SHA256_RE.fullmatch(str(raw[key])):
             raise ContractError(f"parity raw_input.{key} must be a lowercase SHA-256")
-    if raw["record_count"] != EXPECTED_BASELINE_COUNTS["source_records"]:
-        raise ContractError("parity raw record_count does not match source_records")
 
     artifacts = spec["expected_artifacts"]
     if not isinstance(artifacts, list) or not artifacts:
@@ -424,6 +430,33 @@ def validate_parity_spec(path: Path) -> dict[str, Any]:
     if policy["baseline_release_mutable"] is not False:
         raise ContractError(f"the {BASELINE_RELEASE} baseline must be immutable")
     return spec
+
+
+def assert_raw_manifest_agrees(repository_root: Path, raw: dict[str, Any]) -> None:
+    """`raw/raw_manifest.json` and the parity contract must describe the same archive.
+
+    These are two hand-maintained files carrying five of the same fields about the same 137 MB of
+    GenBank, and until 2026-08-14 nothing compared them — so either could be edited alone and the
+    build would authenticate against whichever one it happened to read. This is the check
+    `EXPECTED_BASELINE_COUNTS` stood in for and could not perform: that comparison was between a
+    constant and a copy of itself, while this one is between two independently-written files.
+
+    The manifest is not otherwise a build input. It is the retrieval record — query, date, download
+    provenance — and this makes its archive fields load-bearing rather than decorative.
+    """
+    path = repository_root / RAW_MANIFEST_PATH
+    manifest = load_json(path)
+    disagreements = {
+        key: (manifest.get(key), raw[key])
+        for key in RAW_MANIFEST_SHARED_KEYS
+        if manifest.get(key) != raw[key]
+    }
+    if disagreements:
+        raise ContractError(
+            f"{RAW_MANIFEST_PATH} and the parity contract disagree about the raw archive: "
+            f"{disagreements}. Both describe the same download, so one of them has been edited "
+            f"alone."
+        )
 
 
 def verify_raw_input(repository_root: Path, raw: dict[str, Any]) -> None:

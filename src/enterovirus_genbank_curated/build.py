@@ -31,6 +31,7 @@ from enterovirus_genbank_curated.contracts import (
     PARITY_SPEC_PATH,
     RULES_SCHEMA_PATH,
     ContractError,
+    assert_raw_manifest_agrees,
     load_decision_contract,
     validate_decision_ledger,
     validate_parity_spec,
@@ -51,16 +52,24 @@ from enterovirus_genbank_curated.derive.evidence import (
 )
 from enterovirus_genbank_curated.derive.isolate_linkage import apply_isolate_linked_inference
 from enterovirus_genbank_curated.derive.metadata import transport_metadata
+from enterovirus_genbank_curated.derive.partition import resolved_partition
 from enterovirus_genbank_curated.export.audit import (
     write_classification_divergence,
     write_decision_applications,
     write_membership_rescue,
     write_projection_provenance,
+    write_record_disposition,
+    write_reference_regions,
     write_rules_view,
 )
 from enterovirus_genbank_curated.export.canonical import (
     assemble_canonical_rows,
     write_canonical_table,
+)
+from enterovirus_genbank_curated.export.dictionaries import (
+    source_table_shapes,
+    write_dictionaries,
+    written_audit_shapes,
 )
 from enterovirus_genbank_curated.export.metadata import write_metadata_transport
 from enterovirus_genbank_curated.export.queue import write_curation_queue
@@ -72,18 +81,21 @@ from enterovirus_genbank_curated.export.source import (
 from enterovirus_genbank_curated.genbank.parse import parse_source_tables, read_sequences
 from enterovirus_genbank_curated.registry.decisions import (
     load_active_decisions,
+    load_carve_excluded_accessions,
     load_excluded_accessions,
     load_ledger_rows,
 )
 from enterovirus_genbank_curated.registry.implementations import load_rule_implementations
 from enterovirus_genbank_curated.registry.rules import (
     RULES_CATALOG_PATH,
+    assert_catalog_is_whole,
     bind_rules,
     load_rule_catalog,
     load_rule_contract,
 )
 from enterovirus_genbank_curated.validation.invariants import (
     assert_date_precision_invariant,
+    assert_every_basis_is_declared,
     assert_locality_basis_invariant,
 )
 
@@ -143,6 +155,7 @@ def extracted_flat_file(repository_root: Path) -> Iterator[Path]:
     """
     spec = validate_parity_spec(repository_root / PARITY_SPEC_PATH)
     raw = spec["raw_input"]
+    assert_raw_manifest_agrees(repository_root, raw)
     verify_raw_input(repository_root, raw)
 
     member = raw["archive_member"]
@@ -223,6 +236,11 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     load_rule_implementations()
     rule_contract = load_rule_contract(repository_root / RULES_SCHEMA_PATH)
     catalog = load_rule_catalog(repository_root / RULES_CATALOG_PATH, rule_contract)
+    # Count, binding and description coherence, before the catalog decides anything. `bind_rules`
+    # ran below already; the other two ran only under `evgc validate-contracts`, so until
+    # 2026-08-12 a build would happily project values from a catalog whose declared thresholds
+    # contradicted their own descriptions.
+    assert_catalog_is_whole(catalog)
 
     # Sequences are read before the carve, because the carve now depends on them: R-MEMBERSHIP-AA-1
     # decides membership for the records whose GenBank lineage does not name the genus. Reading the
@@ -233,7 +251,12 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
 
     membership = next(spec for spec in catalog if spec.rule_id == MEMBERSHIP_RULE_ID)
     rescued = measure_membership_rescue(tables, sequences, excluded, membership.parameters)
-    transport = transport_metadata(tables, excluded, frozenset(rescued))
+    transport = transport_metadata(
+        tables,
+        excluded,
+        frozenset(rescued),
+        carve_excluded_accessions=load_carve_excluded_accessions(ledger_path),
+    )
 
     # R-MEMBERSHIP-AA-1's other half: the same catalog parameters, read again for the two-sided band
     # (`derive.evidence.measure_poliovirus_membership_band`) that settles `virus_group` for a carved
@@ -273,6 +296,10 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # table still incoherent, and no single rule can see two columns.
     not_applicable_dates = assert_date_precision_invariant(provenance)
     locality_bases = assert_locality_basis_invariant(provenance, transport.rows)
+    # After the post-pass, deliberately: `project_field` only sees rows it projects, so a pass that
+    # appends provenance directly bypasses the declared-basis check entirely. This is the same
+    # property over the finished table.
+    assert_every_basis_is_declared(provenance, bound)
 
     # Every declined cell becomes exactly one queue row, grouped by the input the rule could not
     # decide from. A rule that declines has done its job; the value still has to come from a
@@ -321,7 +348,7 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # The divergence view was worse than absent — it was computed on every build, used by R-CLASS-2
     # to decide `poliovirus_classification`, and then discarded, so the release published verdicts
     # and withheld the measurements behind them.
-    row_counts["rules_in_baseline_view"] = write_rules_view(output_dir, catalog)
+    row_counts["rules_published"] = write_rules_view(output_dir, catalog)
     # Was `vp1_measured`, then `vp1_divergence_rows`: the length of an in-memory dict, then rows in
     # an artifact a reader can open. Renamed again now that the artifact carries capsid-fallback
     # rows too, so a count still named for one basis would describe only most of what it counts.
@@ -338,6 +365,42 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     write_curation_queue(output_dir, queue)
     write_decision_applications(output_dir, applications)
     write_membership_rescue(output_dir, rescued, tables["records"])
+
+    # The disposition of every candidate record, not just the carved ones. Carried from 2.4.1 until
+    # 2026-08-14 because no build wrote it, and its `exclusion_reason` was blank on 1,253 of 1,426
+    # exclusions (backlog B34). `transport.excluded` carries the reason from where the carve decides
+    # it; a curator-excluded record's `virus_group` comes from the partition rule reading its
+    # organism name, which is the same rule the carved records get rather than a second opinion.
+    excluded_views = build_record_views(
+        tables, (row["version"] for row in transport.excluded), load_active_decisions(ledger_path)
+    )
+    row_counts["record_disposition_rows"] = write_record_disposition(
+        output_dir,
+        canonical,
+        transport.excluded,
+        {view.version: resolved_partition(view) for view in excluded_views},
+    )
+
+    # The Sabin region frame. Carried from 2.4.1 until 2026-08-14 for a circular reason: the
+    # derivation existed and was byte-reproducible, but it read `final/source/normalized_tsv/`, so
+    # no build could call it. Splitting the arithmetic into `derive/regions.py` moved it to this
+    # side of the boundary.
+    row_counts["reference_region_rows"] = write_reference_regions(output_dir, tables, canonical)
+
+    # The four data dictionaries, after every table they describe has been written and before the
+    # manifest that hashes them. They were carried from 2.4.1 as opaque bytes and all four had gone
+    # wrong — see `export/dictionaries.py`. The shapes are read back off what this build just wrote
+    # rather than declared a second time here, so a table gaining a column cannot leave its
+    # dictionary behind.
+    row_counts.update(
+        write_dictionaries(
+            repository_root,
+            output_dir,
+            canonical_rows=canonical,
+            source_shapes=source_table_shapes(tables),
+            audit_shapes=written_audit_shapes(output_dir),
+        )
+    )
 
     # Last, because the file manifest hashes everything above it. A build that failed before here
     # leaves artifacts with no manifest, which is the right way round: an unstamped directory is

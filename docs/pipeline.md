@@ -17,9 +17,10 @@ release remains the immutable parity oracle while the rewrite is developed — c
 `src/enterovirus_genbank_curated/contracts.py`'s `BASELINE_RELEASE`); 2.1.5 and 2.3.0 are retired,
 immutable prior baselines, no longer verified against the tree.
 
-The pipeline has since produced releases of its own, under `release/`: 3.0.0 (the whole dataset from
-public inputs alone), 3.1.0 (retired in place, see `tests/test_release_integrity.py`), and 3.2.0, the
-current one. They are outputs measured against the 2.4.1 oracle, not replacements for it.
+The pipeline has since produced releases of its own, and since 2026-08-01 they are written straight
+into `final/` rather than a staging tree; the current one is 5.0.0. 2.4.1's canonical table is kept
+as a fixture under `releases/2.4.1/` so `evgc parity-canonical` can hold the delta to a declared
+per-class transition table. It is an output measured against that oracle, not a replacement for it.
 
 ## Non-negotiable boundaries
 
@@ -60,9 +61,11 @@ The intended package is `src/enterovirus_genbank_curated/` with these responsibi
 - `validation`: enforce referential closure, parity, and determinism.
 
 All seven exist. `derive/metadata.py` covers the canonical columns whose value is a source value —
-13 of the 26 — and `derive/typing.py`, `derive/classification.py`, `derive/engineered.py` and
-`derive/evidence.py` cover the 12 that are computed. The 26th, `sequence_scope`, is the one column
-still unwritten (`derive.metadata.PENDING_COLUMNS`), so a release now fills 25 of 26.
+13 of the 26 — and `derive/typing.py`, `derive/classification.py`, `derive/engineered.py`,
+`derive/scope.py` and `derive/evidence.py` cover the 13 that are computed.
+`derive.metadata.PENDING_COLUMNS` is **empty**: a release fills 26 of 26. `sequence_scope` was the
+last, and `derive/scope.py` explains why it stayed unwritten so long — the determinant is a record's
+own annotation, not coverage geometry.
 
 One package is not in that list because it is not part of the build: `oracle` is the only place
 permitted to read `final/` or `releases/`. Boundary 1 used to be enforced by care alone, with release
@@ -87,7 +90,7 @@ path itself, only import one already declared in `oracle.parity`, which a dedica
 
 `align/` makes each alignment's row set derivable from `final/canonical/` and `final/audit/` alone:
 `evgc alignment-population` prints all six populations and their tier/family breakdowns from
-metadata, with no aligner installed. Since 2026-08-01 those are 4.0.0's populations — `final/` is
+metadata, with no aligner installed. Since 2026-08-15 those are 5.0.0's populations — `final/` is
 this pipeline's own release — and they are **not** 2.4.1's; see
 [`reproducibility.md`](reproducibility.md) for the measured delta and why it is the point rather
 than a defect. The native toolchain (`mafft`, Infernal) is declared once in `pixi.toml`, pinned twice
@@ -102,11 +105,10 @@ one at a time — concurrent aligner processes are what exhausted memory on a re
 alignment-verify` gates them against metadata-derived populations with no aligner installed, and
 `evgc alignment-shape` writes the shape report and the declared delta against 2.4.1.
 
-All six declared populations are built, at one parameter set, from the 4.0.0 canonical table, and
+All six declared populations are built, at one parameter set, from the 5.0.0 canonical table, and
 promoted into `final/alignments/`. The previous state — five artifacts, two parameter sets, no
 `EV_unified` at all — is what made the promotion worth doing rather than a rename. Each artifact's
-`.provenance.json` records its own parameters, row set digest and tool identity. See
-[`derived/alignments/README.md`](../derived/alignments/README.md).
+`.provenance.json` records its own parameters, row set digest and tool identity.
 
 ## Public commands
 
@@ -117,6 +119,7 @@ evgc build-source   --output DIR
 evgc parity-source
 evgc build-metadata --output DIR
 evgc check-declines
+evgc parity-canonical
 evgc alignment-population
 evgc alignment-toolchain
 evgc alignment-verify-seeds
@@ -156,7 +159,9 @@ no oracle: the build declines exactly where `oracle/parity.py`'s `UNRESOLVED_*` 
 declines, per canonical field, including the named zeros. A rule that quietly starts guessing where
 it used to refuse moves a number there and fails. The row-set gap is still
 declared in code, compared for equality, and invisible to the build; `R-MEMBERSHIP-AA-1` closed most
-of it, leaving two records, and the build now carves 24,308 rows against the shipped 24,301 — see
+of it, leaving two records, and the build carves 24,305 rows against the shipped 24,301 — nine the
+release excludes and this pipeline admits, less two it leaves undecided and three carve-excluded on
+2026-08-14 as laboratory conversions of the Mahoney parental sequence. See
 [`reproducibility.md`](reproducibility.md).
 
 ## Staged delivery
@@ -169,13 +174,14 @@ of it, leaving two records, and the build now carves 24,308 rows against the shi
 5. Deterministic derivation and versioned rules. **Delivered:** the canonical metadata transport
    covers the 13 columns that are source values, the 12 computed columns are
    derived by `derive/typing.py`, `derive/classification.py`, `derive/engineered.py` and
-   `derive/evidence.py`, and `registry/rules.json` declares all 28 rules with their thresholds as
+   `derive/evidence.py`, and `registry/rules.json` declares all 39 rules with their thresholds as
    data, regenerating the shipped rule table byte-for-byte. `locality` is projected through the rule
-   catalog with its provenance row compared to the release on all nine columns. Only `sequence_scope`
-   remains unwritten.
-6. Decision application, disposition, and complete provenance. **Delivered:** 6,106 decision
-   applications from a 4,699-row ledger, 316,004 provenance rows, and 25,865 declined cells
-   collapsed into 295 curation-queue groups.
+   catalog with its provenance row compared to the release on all nine columns. **No column remains
+   unwritten.**
+6. Decision application, disposition, and complete provenance. **Delivered:** 6,306 decision
+   applications from a 4,899-row ledger, 340,270 provenance rows, and 25,065 declined cells
+   collapsed into 268 curation-queue groups. `record_disposition.tsv.gz` gained a producer on
+   2026-08-14 and now carries a reason on every one of its 1,422 exclusions.
 7. Dictionaries, references, and reproducible alignments. **Delivered, except the dictionaries.**
    The alignment layer is built natively by this repository (`evgc alignment-build`) from
    `final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft`

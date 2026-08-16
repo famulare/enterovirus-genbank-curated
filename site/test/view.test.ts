@@ -30,10 +30,10 @@ test("summary declares the five selections the site is built around", () => {
   );
 });
 
-test("the default view is the PV1 polyprotein colored by classification", () => {
+test("the default view is the PV1 capsid colored by classification", () => {
   const view = defaultView(summary);
   assert.equal(view.selection, "PV1");
-  assert.equal(view.region, "polyprotein");
+  assert.equal(view.region, "P1");
   assert.equal(view.trait, "poliovirus_classification");
   assert.equal(view.pinned, null);
 });
@@ -339,7 +339,7 @@ test("P1 coverage per selection is pinned, so a population change cannot pass un
   // PV1 is the lowest and that is the name-derived-typing effect stated above, not a build defect:
   // the serotype files admit fragments 2.4.1's evidence gate excluded.
   const expected: Record<string, number> = {
-    PV1: 3623, PV2: 3434, PV3: 1367, NPEV: 12968, all: 22202,
+    PV1: 3619, PV2: 3435, PV3: 1367, NPEV: 12968, all: 22198,
   };
   for (const [selection, n] of Object.entries(expected)) {
     assert.equal(
@@ -351,13 +351,18 @@ test("P1 coverage per selection is pinned, so a population change cannot pass un
 });
 
 test("population counts match the release figures established during investigation", () => {
-  // Re-measured against release 4.0.0's own alignments, promoted 2026-08-01. The serotype
-  // populations grew (PV1 3,732 -> 4,337 rows) while P1 coverage did not, for the reason the test
-  // above states; P2 and P3 move with the row set.
+  // Re-measured against release 5.0.0's alignments. The serotype populations grew
+  // (PV1 3,732 -> 4,333 rows) while P1 coverage did not, for the reason the test above states;
+  // P2 and P3 move with the row set.
+  //
+  // These moved by small amounts on 2026-08-15 and the cause is the *metadata*, not the alignment:
+  // five `serotype` relabels move records between the three files and three Mahoney-derived patent
+  // conversions left the carve, so PV1 loses four rows and PV2 gains one. The N-column filter that
+  // landed the same day changed no serotype width at all — those artifacts carry no all-N column.
   const expected: Record<string, Record<string, number>> = {
-    PV1: { P1: 3623, P2: 853, P3: 744 },
-    PV2: { P1: 3434, P2: 1391, P3: 1369 },
-    PV3: { P1: 1367, P2: 492, P3: 412 },
+    PV1: { P1: 3619, P2: 851, P3: 742 },
+    PV2: { P1: 3435, P2: 1392, P3: 1370 },
+    PV3: { P1: 1367, P2: 490, P3: 410 },
   };
   for (const [selection, regions] of Object.entries(expected)) {
     for (const [region, n] of Object.entries(regions)) {

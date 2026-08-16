@@ -25,7 +25,7 @@
     "frameshift_recovered": 2,
     "frameshift_recovery_failed": 7,
     "methods": {
-      "codon": 3414,
+      "codon": 3415,
       "codon_ref_inferred": 226,
       "nt_better": 5,
       "nt_cds_fallback": 7,
@@ -36,14 +36,14 @@
     "rows_with_misphased_cds_gap": 0,
     "rows_with_non_multiple_of_three_cds_gap": 3,
     "strands": {
-      "forward": 3784,
+      "forward": 3785,
       "reverse_complement": 6
     }
   },
   "artifact_sha256": {
-    "coverage": "63bd0593149d607ec1316423da33be94725c9e2ce403d67abe491f0c309ea289",
-    "fasta": "52ba1ea51be63f65281e9b3b0ebde7bb88ac05351b6b7f13dbad8fbc57ae31e0",
-    "stockholm": "6de4ebf6eaf4db28b559bb58819222b3f362b19a97d7739727f5c4aa5e6ab223"
+    "coverage": "da5981b4ee68653c0cfe36fb07847ea2b8cda59f81b96f2a91e38c7a2fd8c880",
+    "fasta": "88bc4d70fe20e018f4791b06605076aaa340fe388bef11fb4b4e81d8db47e235",
+    "stockholm": "933d7ec87eb46056c6da3b9a8648c196077985d0333c11d854ab960ab5b9b8d8"
   },
   "block_widths": {
     "3ncr": 68,
@@ -51,9 +51,9 @@
     "cds": 6624
   },
   "blocks_present": {
-    "3ncr": 1200,
-    "5ncr": 1247,
-    "cds": 3655
+    "3ncr": 1201,
+    "5ncr": 1248,
+    "cds": 3656
   },
   "covariance_models": {
     "3p": {
@@ -70,9 +70,9 @@
     }
   },
   "description": "Poliovirus serotype 2 whole-genome multiple sequence alignment, Sabin-anchored",
-  "expected_rows": 3790,
+  "expected_rows": 3791,
   "families": {
-    "PV": 3790
+    "PV": 3791
   },
   "n_reference_columns": 7439,
   "name": "PV2_unified",
@@ -82,15 +82,14 @@
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
-  "population_sha256": "92cb2abee5c427ffff9a006e1721f59364fe46c304ddbcb7421ed6affe64c160",
-  "rows": 3790,
+  "population_sha256": "ffac130e3c24dba70d1daab58a4541f66f322e4be3159bc89029cdea1bd1b3d1",
+  "rows": 3791,
   "schema": 1,
-  "seconds": 1495.8,
   "stack": "anchored",
   "threads": 8,
   "tiers": {
     "addon": 356,
-    "backbone": 3434
+    "backbone": 3435
   },
   "tool_identity": {
     "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
@@ -98,7 +97,7 @@
     "mafft-linsi": "mafft 7.526 h99b78c6_0"
   },
   "types": {
-    "PV2": 3790
+    "PV2": 3791
   },
   "width_nt": 7439
 }

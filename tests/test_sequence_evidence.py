@@ -47,7 +47,7 @@ SHIPPED_COLUMN_COUNT = 21
 
 # 7,728 by VP1 + 159 by the capsid fallback = 7,887.
 #
-# 7,728 = 24,308 carved records
+# 7,728 = the 24,308 records the carve held then (24,305 now, after the FV5370xx exclusions)
 #         − 14,669 whose organism name names no serotype, so there is no reference to measure
 #           against; `derive/evidence.py` will not serotype by sequence to invent one
 #         − 1,708 where no 12-mer diagonal inside VP1 clears `MIN_DIAGONAL_ANCHORS` (754 of those
@@ -61,12 +61,12 @@ SHIPPED_COLUMN_COUNT = 21
 #       single-nucleotide break the module docstring diagnoses, not a real divergence.
 #
 # 7,773 by VP1 + 175 by the capsid fallback = 7,948, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped from
-# 300 to 50 nt on 2026-07-31 (MAD-VDPV's own `MIN_SEROTYPE_COMPARED_NT`). The floor alone would have
+# 300 to 50 nt on 2026-07-31 (the upstream `MIN_SEROTYPE_COMPARED_NT`). The floor alone would have
 # opened more than this: the chunked-homogeneity guard extended to VP1 for the newly-opened sub-300
 # nt territory declines three records that would otherwise measure — `AY320423`, `JN092124`,
 # `AY365233` — where a single bad base in the deposit (not a real indel; VP1 has none relative to
 # Sabin, but the artifact is in the read, not the biology) corrupted a 171-225 nt window enough to
-# move the divergence 15-24 percentage points from MAD-VDPV's own alignment.
+# move the divergence 15-24 percentage points from the upstream alignment.
 #
 # +45 VP1 = 44 genuinely new + `AJ783799`, already measured at 0.660% via the capsid fallback (303
 # nt, just over the old 300 nt floor), which now measures 0.669% via VP1 alone (299 nt, under the
@@ -75,7 +75,8 @@ SHIPPED_COLUMN_COUNT = 21
 # needs. Of the 61 genuinely-new accessions (44 + 17), 60 were previously declined and now agree
 # with the shipped classification; the 61st already had an active ledger decision, so its
 # classification was unaffected — it simply has evidence to cite where it had none before.
-EXPECTED_VP1_ROWS = 7773
+# -3 on 2026-08-14: `FV537075`/`76`/`77` are carve-excluded, so no divergence is measured for them.
+EXPECTED_VP1_ROWS = 7773 - 3
 EXPECTED_CAPSID_FALLBACK_ROWS = 175
 # 392 VP1 + 7 capsid, 2026-08-01: `measure_poliovirus_membership_band` identifies a serotype by
 # capsid-AA distance for every organism-uninformative record that clears its 8%/15% band, and

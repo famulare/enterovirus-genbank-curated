@@ -325,3 +325,60 @@ def test_build_codon_block_refuses_when_no_record_reaches_the_seed_floor(
     )
     """
     assert_refused(run_real(repository_root, body), "no exemplar to seed a backbone from")
+
+
+# --- unsequenced codon columns -------------------------------------------------------------------
+#
+# Added 2026-08-15. `mafft --addfragments` opens a column for an N-run because an N-run *is* an
+# insertion as far as the aligner can tell, and eleven deposits with assembly gaps padded to full
+# length were holding open 7,130 all-N columns in `NPEV_unified` — 48.8% of its CDS block.
+
+
+def test_a_codon_column_no_record_sequenced_is_dropped() -> None:
+    kept, dropped = codon.drop_unsequenced_codon_columns(
+        {"a": "ACGNNNACG", "b": "ACGNNNACG", "c": "ACG---ACG"}, 3
+    )
+    assert dropped == 1
+    assert kept == {"a": "ACGACG", "b": "ACGACG", "c": "ACGACG"}
+
+
+def test_one_sequenced_base_keeps_the_column() -> None:
+    """The filter's whole claim is that nothing readable is discarded, so one base is enough."""
+    kept, dropped = codon.drop_unsequenced_codon_columns(
+        {"a": "ACGNNNACG", "b": "ACGNNGACG"}, 3
+    )
+    assert dropped == 0
+    assert kept == {"a": "ACGNNNACG", "b": "ACGNNGACG"}
+
+
+def test_an_empty_column_is_not_an_unsequenced_one() -> None:
+    """A gap column is left alone. Dropping it would quietly change this from "nobody sequenced
+    it" to "nobody used it", which is a different and much larger claim."""
+    rows = {"a": "ACG---ACG", "b": "ACG---ACG"}
+    assert codon.drop_unsequenced_codon_columns(rows, 3) == (rows, 0)
+
+
+def test_the_width_stays_a_whole_number_of_codons() -> None:
+    """Dropping at codon granularity is what keeps `backtranslate`'s frame intact — a single-column
+    filter would shift every downstream codon by one."""
+    kept, dropped = codon.drop_unsequenced_codon_columns(
+        {"a": "NNNACGNNN", "b": "NNNACGNNN"}, 3
+    )
+    assert dropped == 2
+    assert all(len(row) % 3 == 0 for row in kept.values())
+    assert kept == {"a": "ACG", "b": "ACG"}
+
+
+def test_emptying_a_row_is_refused_rather_than_shipped() -> None:
+    """A row that is `present` and all-gap fails `validation/alignment.py` outright, so this stops
+    at the point the information is still available to explain why."""
+    # `a` occupies exactly one column and it is all-N, so the filter would leave it all-gap.
+    with pytest.raises(ContractError, match="no sequenced CDS"):
+        codon.drop_unsequenced_codon_columns({"a": "NNN---", "b": "---ACG"}, 2)
+
+
+def test_a_row_reduced_to_nothing_is_caught_too() -> None:
+    """The empty-string case, which a truthiness guard skips. Every column goes here, so the rows
+    do not become all-gap — they become nothing at all, and that must not ship either."""
+    with pytest.raises(ContractError, match="no sequenced CDS"):
+        codon.drop_unsequenced_codon_columns({"a": "NNN", "b": "NNN"}, 1)

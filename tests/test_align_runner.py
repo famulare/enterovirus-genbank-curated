@@ -6,7 +6,7 @@ called a second time in one process leaves the *first* guard's hook still instal
 unarmed — verified directly: a second `install_tool_guard` call in the same process refused
 `align.toolchain.resolve()`'s own internal version-probe subprocess call, which never goes through
 `run_tool` and was never meant to be armed at all. One guard, one process, matching how the real
-build uses it (`evgc build-alignments` installs exactly one tool guard for the life of the CLI
+build uses it (`evgc alignment-build` installs exactly one tool guard for the life of the CLI
 invocation).
 
 Fail-closed checks (unknown tool, no declared output, bad basenames) use a *fake* toolchain built

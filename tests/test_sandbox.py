@@ -63,9 +63,22 @@ def test_a_nonexistent_out_of_clone_path_still_fails(repository_root: Path) -> N
     assert_blocked(run_guarded(repository_root, body), "undeclared path")
 
 
-def test_the_private_source_repository_is_not_readable(repository_root: Path) -> None:
-    """The specific failure this exists to prevent: quietly reading MAD-VDPV again."""
-    body = "open(str(ROOT.parent / 'MAD-VDPV' / 'data' / 'genbank' / 'working' / 'x.csv')).read()"
+def test_a_sibling_source_repository_is_not_readable(repository_root: Path) -> None:
+    """The specific failure this exists to prevent: quietly reading the private source tree again.
+
+    This pipeline was extracted from a private repository that, on a curator's machine, sits beside
+    this one. The defect's shape is a build reaching sideways into it for a curated file — which
+    works perfectly for whoever has that checkout and fails for everyone else, the worst possible
+    failure mode for a reproducibility claim.
+
+    The probe names a plausible sibling rather than the real one. The guard keys on the resolved
+    path being outside the clone, so any sibling proves the property, and naming a specific
+    repository would make this read as a test about that repository rather than about the boundary.
+    """
+    body = (
+        "open(str(ROOT.parent / 'private-source-repo' / 'data' / 'genbank' / 'working' / 'x.csv'))"
+        ".read()"
+    )
     assert_blocked(run_guarded(repository_root, body), "undeclared path")
 
 

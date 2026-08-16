@@ -76,7 +76,7 @@ from enterovirus_genbank_curated.derive.partition import (
 # day: 28 more `poliovirus_classification` declines resolve and leave the queue, closing the
 # largest remaining discrepancy block (`declined_too_little_sequence`).
 #
-# 28,153 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (matching MAD-VDPV's own
+# 28,153 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (matching the upstream
 # `MIN_SEROTYPE_COMPARED_NT`) with a chunked-homogeneity guard extended to VP1 for the newly-opened
 # sub-300 nt territory: 60 more `poliovirus_classification` declines resolve, every one agreeing
 # with the shipped classification.
@@ -105,7 +105,21 @@ from enterovirus_genbank_curated.derive.partition import (
 # the 211 above. A record whose partition is decided stops being queued for the partition and starts
 # being queued, where it still has no evidence of its own, for `sample_origin` or
 # `surveillance_stream` on their own reasons. Real work leaves; real work also becomes visible.
-EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334
+# 25,438, 2026-08-12: R-TYPE-2 reads the depositor's own definition line when the organism name
+# states no type, and 427 `virus_type` declines become values. Unlike the moves above this one is
+# pure subtraction — a resolved `virus_type` cell creates no new decline anywhere, because no other
+# rule declines *because* the type was undecided.
+# 25,341, the same day: R-SPECIMEN-2 gains four keyword families (-80) and R-SURVEILLANCE-2's
+# `/environmental_sample` branch fires for the first time (-17). Both are pure subtraction too.
+# 25,240, 2026-08-13: R-ORIGIN-2's GenBank division branch resolves 101 `origin_class` declines
+# (19 `ENV`, 82 `PAT`) and closes 4 groups with them.
+# 25,069, 2026-08-14: the `origin_unknown` curation fills 171 declined cells — 62 `origin_class`
+# and 62 `sampling_frame` on the Rico-Hesse/Kew wild PV1 panel, 11 `origin_class` and 36
+# `sampling_frame` on laboratory and patent deposits. The other 2 of the 173 rows land on `S61236`,
+# whose cells were determined rather than declined, so they were never queued.
+EXPECTED_QUEUE_WORK_ITEMS = (
+    28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334 - 427 - 80 - 17 - 101 - 171 - 1 - 3
+)
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
 # needing two decisions counts twice here on purpose — this is a measure of work, not of records.
@@ -166,7 +180,17 @@ EXPECTED_QUEUE_WORK_ITEMS = 28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1
 # (specimen_type 145, surveillance_stream 57, virus_type 48, origin_class 33,
 # poliovirus_classification 12), every one of them a question about the record's own text rather
 # than about a partition that has since been settled.
-EXPECTED_QUEUE_GROUPS = 302 - 3 + 3 - 7  # 299 (2026-07-31) + 3 (partition band) - 7 (projection)
+#
+# 272 on 2026-08-12: the R-SPECIMEN-2 keyword families close 21 `specimen_type` groups and the
+# `/environmental_sample` fix closes 2 `surveillance_stream` ones. Groups are keyed by the input the
+# rule could not decide from, and each named sewage works — `Rahat Treatment Plant`, `Ayalon Lod
+# Trunk Line` — was its own group, so a family of patterns closes a family of groups. Composition
+# now: specimen_type 124, surveillance_stream 55, virus_type 48, origin_class 33,
+# poliovirus_classification 12.
+# 268 the next day, when the division branch closed 4 `origin_class` groups. Composition:
+# specimen_type 124, surveillance_stream 55, virus_type 48, origin_class 29,
+# poliovirus_classification 12.
+EXPECTED_QUEUE_GROUPS = 302 - 3 + 3 - 7 - 21 - 2 - 4
 
 
 def declined(

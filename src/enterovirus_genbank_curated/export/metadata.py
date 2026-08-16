@@ -73,10 +73,6 @@ def read_written_tsv(path: Path, columns: tuple[str, ...]) -> list[dict[str, str
         raise ContractError(f"cannot read {path}: {exc}") from exc
 
 
-def read_metadata_transport(output_dir: Path) -> list[dict[str, str]]:
-    return read_written_tsv(output_dir / METADATA_TRANSPORT_RELATIVE, TRANSPORT_COLUMN_ORDER)
-
-
 def read_projection_provenance(output_dir: Path) -> list[dict[str, str]]:
     # PROVENANCE_OUTPUT_COLUMNS, not PROVENANCE_COLUMNS: the written artifact carries the tenth
     # column, `unresolved_reason`. Reading it back with the nine release columns made

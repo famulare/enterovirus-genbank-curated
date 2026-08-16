@@ -1,4 +1,4 @@
-"""Isolate-linked classification inference — MAD-VDPV's own `isolate_linked_inference`.
+"""Isolate-linked classification inference — the upstream `isolate_linked_inference`.
 
 A whole-corpus pass, not a per-record rule. `derive.classification.poliovirus_classification`
 sees one `RecordView` at a time and structurally cannot know what a sibling accession's own
@@ -24,7 +24,7 @@ than mined from `definition` text: GenBank's own `P05`/`P05 (2)` clone conventio
 structured qualifier read and does not survive a length-floor regex over free text. A key three
 alphanumeric characters or shorter (`L1`, `P05`, `V14`) recurs across unrelated studies by chance,
 so it is only honoured across accessions in the same deposit batch — same alphabetic prefix, same
-digit width, within 200 accession numbers of this one, MAD-VDPV's own same-batch heuristic — never
+digit width, within 200 accession numbers of this one, the upstream same-batch heuristic — never
 as a bare match on a short string alone.
 
 ## What counts as a sibling with an answer
@@ -46,7 +46,9 @@ import re
 from collections.abc import Mapping, Sequence
 
 from enterovirus_genbank_curated.derive.classification import (
+    BASIS_ISOLATE_LINKED,
     BASIS_SABIN_LIKE,
+    BASIS_TEXT_ATTESTATION,
     BASIS_TEXT_REFINEMENT,
     BASIS_VDPV,
     BASIS_WILD,
@@ -60,16 +62,31 @@ from enterovirus_genbank_curated.derive.partition import POLIOVIRUS, resolved_pa
 from enterovirus_genbank_curated.derive.typing import serotype_from_name
 
 CLASSIFICATION_FIELD = "poliovirus_classification"
-LINKED_BASIS = "isolate_linked_inference"
+# Re-exported from `classification` rather than defined here, so R-CLASS-2 can declare it. This
+# pass writes provenance rows directly and never reaches `derive/apply.py`'s declared-basis check,
+# so a locally-defined string would ship in the release while being declared nowhere — which it
+# did, on 191 rows, until 2026-08-12.
+LINKED_BASIS = BASIS_ISOLATE_LINKED
 
 # Measured, not guessed: propagating either of these to a second record would compound whichever
 # one is wrong rather than carry forward an actual measurement. See the module docstring.
-FIRM_BASES = frozenset({BASIS_SABIN_LIKE, BASIS_VDPV, BASIS_WILD, BASIS_TEXT_REFINEMENT})
+#
+# `BASIS_TEXT_ATTESTATION` joined on 2026-08-15 and is firm for the same reason
+# `BASIS_TEXT_REFINEMENT` is: both rest on the depositor stating something in the record's own
+# fields, and the attestation additionally rests on a divergence measurement that was made and
+# found low. Leaving it out was a real regression, caught by four records — `AJ783776`, `AJ783777`,
+# `AJ783784`, `AJ783787` — that inherit from `AJ783799`/`AJ783800`, a pair whose
+# `/isolation_source` reads "stool specimen from an immunodeficient infant". When those two moved
+# from `Sabin-like` to `iVDPV` the siblings stopped inheriting anything at all and declined, which
+# is strictly worse than inheriting either value.
+FIRM_BASES = frozenset(
+    {BASIS_SABIN_LIKE, BASIS_VDPV, BASIS_WILD, BASIS_TEXT_REFINEMENT, BASIS_TEXT_ATTESTATION}
+)
 
-# MAD-VDPV's own floor: a key this short recurs across unrelated studies by chance, so it is not
+# the upstream floor: a key this short recurs across unrelated studies by chance, so it is not
 # corroboration on its own.
 SHORT_KEY_MAX_ALNUM = 3
-# MAD-VDPV's own same-batch window: two deposits from the same study land within this many
+# the upstream same-batch window: two deposits from the same study land within this many
 # accession numbers of each other, sharing a prefix and digit width.
 BATCH_ACCESSION_WINDOW = 200
 _ACCESSION_SHAPE = re.compile(r"^([A-Za-z]+)(\d+)$")

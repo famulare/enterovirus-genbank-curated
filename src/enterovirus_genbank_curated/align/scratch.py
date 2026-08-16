@@ -6,7 +6,8 @@ directory is not both fresh and writable. `Scratch` is the one place that layout
 
 Only the *root* varies between runs (`tempfile.mkdtemp`, by design — a build must not depend on a
 fixed scratch location). Everything under it is a deterministic function of the call sequence, so
-`align.validation`'s "no committed artifact contains an absolute path" check has exactly one thing
+`validation/alignment.py`'s "no committed artifact contains an absolute path" check has exactly
+one thing
 to strip before comparing two runs: the mkdtemp prefix, not an arbitrarily-ordered set of names.
 """
 

@@ -1,11 +1,45 @@
 """Stamp a build as a release: what it contains, what it is missing, and what it was built from.
 
-`final/` is release 2.4.1 and is immutable here. This module writes the manifests that make a *new*
-build citable in the same way — a build manifest naming its inputs and its coverage, and a file
-manifest hashing every artifact — so a consumer can tell one build from another without diffing
-gigabytes.
+`final/` is this pipeline's own output, not an immutable input — `build.py` writes it, and
+`build.reject_immutable_output` guards `raw/` alone. This module writes the manifests that make a
+build citable: a build manifest naming its inputs and its coverage, and a file manifest hashing
+every artifact, so a consumer can tell one build from another without diffing gigabytes.
 
-## The version is 4.1.0
+## The version is 5.0.0
+
+Release 5.0.0 retires the 2.4.1 inheritance. Two things make it major rather than minor, and both
+are visible to a consumer who changes nothing:
+
+* **`sequence_scope` goes empty → populated on all 24,305 rows.** 3.0.0 blanked it because the
+  determinant was believed to be coverage geometry, which `derive/evidence.py` measured and could
+  not reproduce. It is not geometry: it is the record's own annotation and definition line, and
+  `R-SCOPE-2` (`derive/scope.py`) reproduces 2.4.1's column on **0 differing cells** across the
+  24,296 rows the two releases share.
+* **The carve loses three rows, 24,308 → 24,305.** `FV537075/76/77` are carve-excluded by curator
+  decision. Every alignment artifact moves with it (`align/contract.py`).
+
+Also recovered from declared inputs, none of it new science and all of it verified cell-for-cell
+against the 2.4.1 fixture in `releases/2.4.1/`:
+
+* **1,761 `collection_date` cells** from surveillance identifiers (`derive/date_identifiers.py`,
+  21 naming conventions, `R-DATE-YEAR-FROM-ID-1`). The docs blamed a vanished archival stage; the
+  values were in `/strain`, `/isolate` and the definition line all along.
+* **427 `virus_type` cells** from the definition line (`R-TYPE-2` widened), plus 80 specimen, 53
+  stream and 82 origin cells from pattern and division branches that had never fired.
+* **186 new ledger rows** (4,713 → 4,899): 172 projecting the `origin_unknown` curation, 5 serotype
+  relabels, 3 carve exclusions and 6 `engineered_or_construct` adjudications.
+
+Two correctness fixes move shipped values. `compare_vp1` no longer counts an ambiguity code as a
+mismatch, so divergence is measured over unambiguous sites only; and a depositor's `cVDPV`/`iVDPV`
+attestation now survives a Sabin-like measurement, because the depositor is asserting transmission
+the sequence alone cannot show. The alignment layer drops codon columns no record sequenced
+(`align/codon.drop_unsequenced_codon_columns`), which discards zero unambiguous nucleotides and
+narrows `NPEV_unified`'s CDS from 14,598 columns to 7,503.
+
+What is *not* fixed here: `final/audit/sequence_evidence.tsv.gz` still has no producer, waiting on
+the deferred EV reference-panel pass, and `docs/classification-migration-gap.md` still records 518
+`poliovirus_classification` differences against 2.4.1, 469 of them declines rather than
+disagreements.
 
 Release 4.1.0 is a curation-only patch on 4.0.0's line: thirteen accession-level
 `poliovirus_classification` decisions landed in `registry/decisions.tsv`, and nothing else moved. No
@@ -21,7 +55,7 @@ is a data change even though no code moved.
 
 Release 4.0.0 shipped the accumulated 3.0.0-3.3.0 line below as one major bump, for two reasons.
 First, it is the release at which reconciliation against the hand-curated 2.4.1 baseline is complete
-in the sense this pipeline can make that claim: every one of the 536 remaining
+in the sense this pipeline can make that claim: every one of the remaining
 `poliovirus_classification` differences is categorized rather than merely counted (see
 `docs/classification-migration-gap.md`), 97.8% of the shared carve agrees, and the residue is either
 an epidemiological judgement no sequence property carries or a named, reverted attempt (chimera
@@ -29,14 +63,16 @@ detection) rather than an unexplained gap. Second, this is the version reference
 alignments ship under — not yet in this build, but the version number is reserved for that pairing
 rather than incrementing again once they land.
 
-Release 3.0.0 was the major break within that accumulated line. Three properties of it are
-incompatible with 2.4.1 for anyone reading the columns, and all three still hold here:
+Release 3.0.0 was the major break within that accumulated line. Three properties of it were
+incompatible with 2.4.1 for anyone reading the columns; 5.0.0 closes the second:
 
-* `engineered_or_construct` moves TRUE to FALSE on 511 records, because 2.4.1's predicate matched
+* `engineered_or_construct` moves TRUE to FALSE on 502 records, because 2.4.1's predicate matched
   the database division code as free text and reported where a sequence was deposited;
-* `sequence_scope` is **empty**, where 2.4.1 filled all 24,301 rows;
+* `sequence_scope` was **empty**, where 2.4.1 filled all 24,301 rows. 5.0.0 fills it again, from the
+  determinant 3.0.0 had misidentified;
 * about 3,400 `poliovirus_classification` cells and 2,200 `virus_type` cells are blank-because-
-  undetermined, where 2.4.1 filled them from inputs this pipeline does not have.
+  undetermined, where 2.4.1 filled them from inputs this pipeline does not have. 5.0.0 recovers 427
+  of the `virus_type` cells; the classification residue is 518 differences, 469 of them declines.
 
 3.1.0 added one thing: `R-MEMBERSHIP-AA-1` now decides carve membership for records whose GenBank
 lineage does not name the `Enterovirus` genus, so the row set is 24,308 rather than 24,285. That is
@@ -47,8 +83,9 @@ The 23 are the honest consequence of measuring rather than assuming. 15 of them 
 carves and 3.0.0 could not reach, which was 3.0.0's largest declared gap. The other 8 are records
 2.4.1 does *not* carve and the declared rule says it should: six are byte-identical to a record the
 release already carves, and two are poliovirus capsid by the catalog's own amino-acid threshold.
-`derive/metadata.UNDECLARED_EXCLUSIONS` names all eight and `audit/membership_rescue.tsv` shows the
-distance or the twin that admitted each one.
+`derive/metadata.UNDECLARED_EXCLUSIONS` names all eight — it holds nine, the ninth being
+`AF326751.2`, which the genus predicate rather than the membership rule reaches — and
+`audit/membership_rescue.tsv` shows the distance or the twin that admitted each one.
 
 Two records remain outside: `E00765.1` and `E01571.1`, which sit in the rule's undecided 8-15% band.
 
@@ -74,7 +111,7 @@ changed shape.
 nucleotide fallback for records VP1 alone cannot reach.** 1,911 carved, name-serotyped records have
 no usable VP1; `derive/evidence.compare_capsid_nt` measures divergence over the whole capsid
 instead, over the same published thresholds — the same VP1-first / P1-fallback precedence
-MAD-VDPV's own sequence classifier states outright. 148 records newly resolve, all agreeing with the
+the upstream sequence classifier states outright. 148 records newly resolve, all agreeing with the
 shipped classification wherever 2.4.1 has one to compare against, which is why `audit/
 classification_divergence.tsv.gz` carries that name rather than `vp1_divergence.tsv.gz`: a `basis`
 column now names which region decided each row.
@@ -133,7 +170,7 @@ from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPO
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
-RELEASE_VERSION = "4.1.0"
+RELEASE_VERSION = "5.0.0"
 SCHEMA_VERSION = "2.4.1"
 BASELINE_RELEASE = "2.4.1"
 
@@ -149,11 +186,13 @@ FILE_BYTES = "file_bytes"
 # build's output. Declaring the list also turns a writer that silently stopped emitting something
 # into a failed build rather than a shorter manifest.
 BUILD_ARTIFACT_RELATIVES = (
+    "alignments/reference_region_coordinates.tsv",
     "audit/build_manifest.json",
     "audit/classification_divergence.tsv.gz",
     "audit/decision_applications.tsv.gz",
     "audit/membership_rescue.tsv",
     "audit/projection_provenance.tsv.gz",
+    "audit/record_disposition.tsv.gz",
     "audit/rules.tsv.gz",
     "canonical/metadata_transport_coverage.json",
     "canonical/sequence_metadata.tsv.gz",
@@ -161,6 +200,10 @@ BUILD_ARTIFACT_RELATIVES = (
     "canonical/sequence_metadata_vouched.tsv.gz",
     "canonical/sequences.fasta.gz",
     "curation/curation_queue.tsv",
+    "dictionaries/audit_data_dictionary.tsv",
+    "dictionaries/canonical_data_dictionary.tsv",
+    "dictionaries/controlled_vocabularies.tsv",
+    "dictionaries/source_schema_dictionary.tsv",
 )
 
 

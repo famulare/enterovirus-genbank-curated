@@ -8,12 +8,12 @@ What each check here does and does not protect, stated honestly, because an earl
 file overclaimed and an adversarial review caught it:
 
 - **Invariant A** (`test_same_sequence_patent_and_synthetic_deposits_agree`) constrains
-  same-sequence `PAT`/`SYN` deposits. It is green today, and **it currently has no independent
-  detection power**: every one of the 513 canonical PAT/SYN records ships TRUE, so
-  `test_the_blanket_patent_flag_is_recorded_as_a_known_defect` and the SYN pins together *entail*
-  that no PAT/SYN group can disagree. A exists for the state *after* the rule rewrite, when the
-  population stops being uniform and the invariant starts doing work. Until then it is a
-  placeholder with an exhaustive falsification control, not a live guard.
+  same-sequence `PAT`/`SYN` deposits. It **is a live guard now**, which it was not when this file
+  was written. Then, every one of the canonical PAT/SYN records shipped TRUE, so the blanket-patent
+  test and the SYN pins together *entailed* A's green and it had no independent detection power.
+  R-CONSTRUCT-2 broke that uniformity: of 516 PAT/SYN records the build now ships 31 TRUE (24 PAT,
+  7 SYN) and 485 PAT FALSE, so a same-sequence PAT group *can* disagree and nothing else here would
+  see it. The caveat below is kept as the record of what changed the answer.
 
 - **Invariant B** (`test_same_sequence_splits_match_the_known_defect_set`) is the live guard. It
   constrains every division, pinning the **exact set** of groups that carry a TRUE alongside a
@@ -136,11 +136,13 @@ specific byte content, and every test in this module passes clean against the cu
    `test_same_sequence_splits_match_the_known_defect_set`,
    `test_invariant_b_detects_a_new_split_in_every_agreeing_group`.
 
-What no mutation reddens on its own: `test_same_sequence_patent_and_synthetic_deposits_agree`
-(Invariant A) never fails without a neighbouring check failing too — the concrete form of the "no
-independent detection power" caveat above. Three checks entail its green, not two: the
-blanket-patent test, the SYN pins, and the membership digest. Treat A's green as uninformative
-until the rule rewrite lands.
+What no mutation reddened on its own, **as of that run**: Invariant A never failed without a
+neighbouring check failing too, because three checks entailed its green — the blanket-patent test,
+the SYN pins, and the membership digest. The first of those is gone and the population it described
+is no longer uniform, so that entailment no longer holds and A's green now says something. The
+battery has not been re-run since; two of its nine mutations name a test that no longer exists
+(6 failed / 4 failed become 5 and 3), and re-running it against 5.0.0's bytes is the honest way to
+re-establish what each check detects.
 """
 
 from __future__ import annotations
@@ -194,9 +196,13 @@ LEGITIMATE_SAME_SEQUENCE_SPLITS: dict[tuple[str, ...], str] = {}
 # the defect: `\bPAT\b` matched as free text inside a 20-field blob, so *every* patent-division
 # record is flagged engineered regardless of what its sequence is. When the rule is rewritten this
 # equality is the first thing that should break.
-EXPECTED_TRUE_TOTAL = 38
+# 38 -> 44 on 2026-08-14: the six the 2026-08-12 adjudication ratified TRUE (`M14761`, `S61236`,
+# `S65446`/`447`/`449`/`450`). All six are division VRL, so `EXPECTED_PAT_TRUE` and
+# `EXPECTED_SYN_TRUE` do not move — which is the check that the six are the residue of
+# R-CONSTRUCT-2's structural narrowness and not a widening of it.
+EXPECTED_TRUE_TOTAL = 38 + 6
 EXPECTED_TRUE_AT_LEAST_3000NT = 11
-EXPECTED_PAT_IN_CANONICAL = 512
+EXPECTED_PAT_IN_CANONICAL = 512 - 3
 EXPECTED_PAT_TRUE = 24
 EXPECTED_SYN_IN_CANONICAL = 7
 EXPECTED_SYN_TRUE = 7
@@ -205,19 +211,23 @@ EXPECTED_SYN_TRUE = 7
 # Without this, deleting `SYN` from `DELIBERATE_DEPOSIT_DIVISIONS` is undetectable: all 7 canonical
 # SYN records are sha256 singletons, so they contribute nothing to the group/record pins below and
 # a PAT-only restriction yields *identically* 178/374.
-EXPECTED_SCOPED_RECORDS = 519
+# 519 -> 516 on 2026-08-14: `FV537075`/`76`/`77` are PAT-division records and were carve-excluded,
+# so they leave the scope with the carve.
+EXPECTED_SCOPED_RECORDS = 519 - 3
 
 # Pinned so a future change that *stops* constraining records — by moving them out of PAT/SYN, or
 # by dropping them from canonical — fails loudly instead of turning the invariant into a check over
 # an empty set.
-EXPECTED_CONSTRAINED_GROUPS = 179
-EXPECTED_CONSTRAINED_RECORDS = 381
+EXPECTED_CONSTRAINED_GROUPS = 179 - 1
+EXPECTED_CONSTRAINED_RECORDS = 381 - 2
 
 # Counts alone constrain cardinality, not membership: a compensating swap (one group leaving the
 # scope, another joining) preserves 178/374 exactly. This digest pins *which* groups and which
 # accessions, so such a swap is visible.
+# Re-pinned 2026-08-14 with the three FV5370xx carve exclusions. Two of the three sat in a
+# constrained sha256 group, which is why the record count drops by 2 and the group count by 1.
 EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256 = (
-    "a114cc523ef305e7d9641027988898bc32374d2a4c9f0c37371da8d35fe6811a"
+    "95f8a059bb78a80d5271e6cc3098fe82863c47c8bbed2a01a2563ff1a9bad2da"
 )
 
 # The population the general falsification controls run over.
@@ -226,8 +236,8 @@ EXPECTED_CONSTRAINED_MEMBERSHIP_SHA256 = (
 # canonical records (unaligned non-polio), which collapses 19 identical-sequence groups below two
 # members. Both counts fall by exactly 19 because all 19 were agreeing groups. Purely a
 # population-size effect — re-measured, not derived.
-EXPECTED_MULTI_MEMBER_GROUPS = 1626
-EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1626
+EXPECTED_MULTI_MEMBER_GROUPS = 1626 - 1
+EXPECTED_AGREEING_MULTI_MEMBER_GROUPS = 1626 - 1
 
 # Invariant B's outstanding violations, pinned as the exact set of TRUE members per group.
 #
@@ -535,8 +545,8 @@ def test_the_engineered_population_matches_its_pins(
 # the instruction it carried from the day it was written: "when the rule rewrite lands this test
 # must be deleted along with the pins above, deliberately." It asserted that *every* PAT record
 # ships TRUE — the signature of `\bPAT\b` matching as free text inside a 20-field blob — so that
-# the column could not be quietly half-corrected. R-CONSTRUCT-2 now writes the column and 488 of
-# the 512 patent records ship FALSE, which is the rewrite the test was waiting for rather than the
+# the column could not be quietly half-corrected. R-CONSTRUCT-2 now writes the column and 485 of
+# the 509 patent records ship FALSE, which is the rewrite the test was waiting for rather than the
 # partial migration it was guarding against.
 
 

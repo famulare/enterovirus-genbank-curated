@@ -3,7 +3,7 @@
 Ten Infernal covariance models: four genus-wide, anchor-free models (`POLIO_unified`'s and
 `NPEV_unified`'s 5' and 3' non-coding regions) and six per-serotype, Sabin-anchored models
 (`PV1`/`PV2`/`PV3`'s 5' and 3' non-coding regions) — plus the seed alignment and seed Stockholm each
-was built from. Copied from MAD-VDPV's own "reproducer core" (its `.gitignore` re-includes exactly
+was built from. Copied from the upstream "reproducer core" (its `.gitignore` re-includes exactly
 these files, for exactly this reason: `cmalign` re-runs without redoing the expensive seed-building
 step).
 
@@ -27,7 +27,7 @@ prerequisite **not expected to run even on a fresh clone**.
 
 `EV_unified` does not build its own NCR covariance models. It reuses `npev_ncr_5p.cm` and
 `npev_ncr_3p.cm` as-is (`cmalign` only), matching the shipped `EV_unified.provenance.json`'s
-`cm_reused` field. Confirmed independently: MAD-VDPV's `grand_ev_unified` working tree carries no
+`cm_reused` field. Confirmed independently: the upstream `grand_ev_unified` working tree carries no
 `.cm` files of its own at all.
 
 ## Files

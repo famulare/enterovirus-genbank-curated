@@ -113,7 +113,7 @@ def _write(output_dir: Path, name: str, sto: str, fasta: str, coverage: str) -> 
 
 
 def _tiny_population(
-    pv3: population_module.AlignmentPopulation, sequences: dict[str, str], count: int = 3
+    pv3: population_module.AlignmentPopulation, count: int = 3
 ) -> population_module.AlignmentPopulation:
     """A few real records plus the Sabin reference, with `expected_rows` adjusted to match so the
     declared-count check is satisfied by the fixture rather than skipped."""
@@ -170,7 +170,7 @@ def _wellformed(
 def artifact_dir(
     tmp_path: Path, pv3: population_module.AlignmentPopulation, sequences: dict[str, str]
 ) -> tuple[Path, population_module.AlignmentPopulation]:
-    population = _tiny_population(pv3, sequences)
+    population = _tiny_population(pv3)
     sto, fasta, coverage = _wellformed(population, sequences)
     _write(tmp_path, NAME, sto, fasta, coverage)
     return tmp_path, population

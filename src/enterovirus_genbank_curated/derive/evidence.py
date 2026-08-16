@@ -33,7 +33,7 @@ amino-acid distance reads them as what they are.
 
 `compare_capsid_nt` measures **nucleotide** divergence over the whole capsid (VP4-VP2-VP3-VP1), and
 exists only because VP1 alone is absent or too short on 1,911 carved, name-serotyped records — the
-same fallback MAD-VDPV's own pipeline takes, stated outright in `classify_sequence_tier.py` as
+same fallback the upstream pipeline takes, stated outright in `classify_sequence_tier.py` as
 "VP1-first / P1-fallback". It answers the same question `compare_vp1` does and uses the same
 thresholds; it is not a third kind of evidence, just VP1's question asked over more sequence when
 VP1 itself is not there to answer it.
@@ -73,7 +73,8 @@ poliovirus records, and the errors are systematic rather than at the boundary. 7
 release calls `other_fragment` have complete VP1, complete capsid, or a complete genome by coverage.
 So `record_type` is not a function of coverage against Sabin VP1 alone, whatever else it is, and
 fitting thresholds to 86.7% would assert a wrong determination on 1,332 records.
-`sequence_scope` stays in `PENDING_COLUMNS`.
+`sequence_scope` is projected instead by `R-SCOPE-2` in `derive/scope.py`, off the record's own
+annotation rather than off geometry — the determinant this module measured and rejected.
 
 ## Why the fallback needs a guard `compare_vp1` did not always need
 
@@ -81,13 +82,13 @@ fitting thresholds to 86.7% would assert a wrong determination on 1,332 records.
 — a measured fact, not an assumption, and this module's own justification for skipping an aligner.
 That fact rules out one failure mode (a true evolutionary insertion or deletion) but not another: a
 single wrong base call *in the deposited read itself* — a technical artifact of how the sequence was
-determined, not biology, and so not excluded by "VP1 has no indels" at all. Reproducing MAD-VDPV's
+determined, not biology, and so not excluded by "VP1 has no indels" at all. Reproducing the upstream
 whole-capsid fallback the same way — one diagonal, no gaps — surfaces sequences where this happens;
 lowering `MIN_VP1_NT` far enough surfaces it in VP1 too.
 
 Three carved, name-serotyped records where the naive whole-capsid measurement disagreed with the
 release diagnosed exactly why. `AB162760.1` and `AB162761.1` read >18 percentage points more
-divergent than MAD-VDPV's own alignment reports for the same accessions (9.8-10.1% vs 0.0-0.2%),
+divergent than the upstream alignment reports for the same accessions (9.8-10.1% vs 0.0-0.2%),
 and in both the mismatches begin at one exact position and run at ~74-90% (the unrelated-sequence
 rate) for the rest of the window. Shifting the query by **one nucleotide** from that position on
 restores 98-100% identity. A real indel in a coding, actively-replicating poliovirus genome must be
@@ -98,9 +99,9 @@ window sits on the wrong side of it.
 At the original 300 nt VP1 floor this class of error was apparently rare enough never to surface: a
 ~900 nt region with, evidently, an occasional bad base in the corpus, and 300 nt of it was enough
 sequence to dilute one bad call rather than be defined by it. Lowering `MIN_VP1_NT` to 50 nt (to
-match MAD-VDPV's own floor, 2026-07-31) removed that dilution, and it surfaced exactly this failure
+match the upstream floor, 2026-07-31) removed that dilution, and it surfaced exactly this failure
 in VP1 for the first time — `AY320423`, `JN092124` and `AY365233` each read 15-24 percentage points
-more divergent than MAD-VDPV's own alignment over a 171-225 nt window. The same mechanism, now in
+more divergent than the upstream alignment over a 171-225 nt window. The same mechanism, now in
 the region this module's own no-indels argument does not protect.
 
 So the fallback needs to detect a window that is not internally consistent, not just decline a
@@ -152,7 +153,7 @@ PRODUCT_QUALIFIER = "product"
 # Seed length. Long enough that a 12-mer is rarely shared by chance across 7.4 kb (4^12 = 16.8M
 # possibilities against ~7,400 positions), short enough to survive ~20% divergence.
 SEED = 12
-# MAD-VDPV's own floor (`build_reference_alignments.MIN_SEROTYPE_COMPARED_NT`), adopted 2026-07-31.
+# the upstream floor (`build_reference_alignments.MIN_SEROTYPE_COMPARED_NT`), adopted 2026-07-31.
 # It is safe to match exactly, and not merely close, because it rests on a fact specific to VP1: VP1
 # in poliovirus has no indels relative to Sabin (the module docstring's own justification for a
 # single fixed diagonal at any length), so a shorter window is a smaller sample of the same exact
@@ -172,7 +173,7 @@ MIN_DIAGONAL_ANCHORS = 5
 # expectation. A result this far out is reported as no measurement rather than as a large number.
 IMPLAUSIBLE_DIVERGENCE_PCT = 40.0
 
-# Same floor as `MIN_VP1_NT`, matching MAD-VDPV's own `MIN_SEROTYPE_COMPARED_NT`, adopted 2026-07-31
+# Same floor as `MIN_VP1_NT`, matching the upstream `MIN_SEROTYPE_COMPARED_NT`, adopted 2026-07-31
 # — but unlike VP1, this is a fallback over VP4/VP2/VP3 too, and those regions are not established
 # indel-free the way VP1 is, so the floor alone is not the safety argument here; the strengthened
 # `_capsid_homogeneous` below is.
@@ -200,7 +201,17 @@ MAX_CAPSID_CHUNK_DEVIATION_PCT = 15.0
 
 ACGT = frozenset("ACGT")
 
-_COMPLEMENT = str.maketrans("ACGTacgtNn", "TGCAtgcaNn")
+# The whole IUPAC set. An earlier table listed only `ACGTNacgtn`, which passed every other ambiguity
+# code through unchanged — the reverse complement of an `R` came back `R` instead of `Y`. It made no
+# measured difference here, because `compare_vp1` skips any position either sequence spells with a
+# non-`ACGT` character, but a wrong base is a wrong base and the next reader of this function will
+# not know that. Kept in step with `align/segment._COMPLEMENT`, which had the same defect and where
+# it did reach two shipped nucleotides; `tests/test_align_segment.py` pins the two to agree.
+_IUPAC = "ACGTNRYWSKMBDHV"
+_IUPAC_COMPLEMENT = "TGCANYRWSMKVHDB"
+_COMPLEMENT = str.maketrans(
+    _IUPAC + _IUPAC.lower(), _IUPAC_COMPLEMENT + _IUPAC_COMPLEMENT.lower()
+)
 
 # The standard genetic code, for translating the polyprotein reading frame. A codon containing an
 # ambiguity character is absent here and is skipped rather than guessed at, so an `N` reduces the
@@ -240,10 +251,6 @@ class ReferenceFrame:
     vp1_end: int  # 0-based, exclusive
     capsid_start: int  # 0-based, inclusive; VP4 start, which is also the polyprotein CDS start
     index: Mapping[str, tuple[int, ...]]
-
-    @property
-    def vp1_length(self) -> int:
-        return self.vp1_end - self.vp1_start
 
     @property
     def capsid_end(self) -> int:
@@ -357,7 +364,7 @@ class Vp1Comparison:
 # (2026-07-31): three records where lowering the floor to 50 nt let a single bad base call in the
 # deposit (not a real indel — VP1 has none relative to Sabin, but a technical artifact of the read
 # can land anywhere) corrupt a 171-225 nt window the same way `_capsid_homogeneous`'s own module
-# docstring already diagnoses for the capsid case, each landing at 20-34% where MAD-VDPV's own
+# docstring already diagnoses for the capsid case, each landing at 20-34% where the upstream
 # alignment reports 6-11%. A short window is not exempt from the failure that guard exists for; it
 # was only ever *untested* below 300 nt, because nothing shorter used to reach this far.
 VP1_HOMOGENEITY_FLOOR_NT = 300
@@ -369,6 +376,17 @@ def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
     Anchors are restricted to VP1 before the vote. Using a genome-wide offset would let a
     recombinant's non-capsid region choose the diagonal, and in poliovirus that region routinely
     comes from a different serotype than the capsid does.
+
+    **A position counts only when both bases are unambiguous** — the same rule `compare_capsid_nt`
+    and `compare_capsid_aa` already applied, extended here on 2026-08-15. Until then an `N` was
+    scored as a substitution, which is not a measurement of divergence but of how much of a deposit
+    was sequenced. `compare_capsid_nt`'s docstring recorded the effect (315 of 7,728 comparisons
+    move) and declined to touch "an existing, validated computation" — correctly cautious, but it
+    did not measure the consequence. Measured: 320 records shift, and **21 of them cross an
+    R-CLASS-2 band boundary**, every one from `VDPV` to `Sabin-like`. `OR537410` shipped as `VDPV`
+    at 5.876% on 902 nt of which 50 were ambiguous; unambiguous positions alone give 0.352%.
+    A published classification resting on `N` counting as a mismatch is not a history worth
+    preserving. Curator ruling, 2026-08-15.
     """
     best: Vp1Comparison | None = None
     for strand, candidate in (("+", sequence.upper()), ("-", reverse_complement(sequence.upper()))):
@@ -377,22 +395,41 @@ def compare_vp1(frame: ReferenceFrame, sequence: str) -> Vp1Comparison | None:
             continue
         first = max(frame.vp1_start, diagonal)
         last = min(frame.vp1_end, len(frame.sequence), len(candidate) + diagonal)
-        compared = last - first
-        if compared < MIN_VP1_NT or (best is not None and compared <= best.compared_nt):
+        # Span, not the comparison size: a cheap pre-filter only. `compared_nt` became the count of
+        # *unambiguous* positions when this function started filtering them, so the strand and
+        # diagonal have to be chosen on that same quantity — comparing a raw span against a filtered
+        # count would let a longer, mostly-ambiguous placement beat a shorter, fully readable one.
+        span = last - first
+        if span < MIN_VP1_NT:
             continue
         mismatches = 0
+        compared_unambiguous = 0
         chunk_divergences: list[float] = []
         for chunk_start in range(first, last, CAPSID_HOMOGENEITY_CHUNK_NT):
             chunk_end = min(chunk_start + CAPSID_HOMOGENEITY_CHUNK_NT, last)
-            chunk_mismatches = sum(
-                1
-                for position in range(chunk_start, chunk_end)
-                if candidate[position - diagonal] != frame.sequence[position]
-            )
+            chunk_compared = chunk_mismatches = 0
+            for position in range(chunk_start, chunk_end):
+                reference_base = frame.sequence[position]
+                query_base = candidate[position - diagonal]
+                if reference_base not in ACGT or query_base not in ACGT:
+                    continue
+                chunk_compared += 1
+                if query_base != reference_base:
+                    chunk_mismatches += 1
             mismatches += chunk_mismatches
-            chunk_length = chunk_end - chunk_start
-            if chunk_length >= MIN_HOMOGENEITY_CHUNK_NT:
-                chunk_divergences.append(chunk_mismatches / chunk_length * 100)
+            compared_unambiguous += chunk_compared
+            # The homogeneity guard reads the same filtered positions, so a chunk that is mostly
+            # ambiguity no longer reports a spurious divergence spike — it reports on what it
+            # could actually compare, or drops below the floor and is not reported at all.
+            if chunk_compared >= MIN_HOMOGENEITY_CHUNK_NT:
+                chunk_divergences.append(chunk_mismatches / chunk_compared * 100)
+        if compared_unambiguous < MIN_VP1_NT:
+            # Enough VP1 span to clear the floor, but not enough *sequenced* VP1. Declining is the
+            # honest answer: the alternative is a divergence over a handful of readable bases.
+            continue
+        compared = compared_unambiguous
+        if best is not None and compared <= best.compared_nt:
+            continue
         divergence = mismatches / compared * 100
         if divergence > IMPLAUSIBLE_DIVERGENCE_PCT:
             continue
@@ -767,7 +804,7 @@ def measure_sequence_evidence(
     membership_band: Mapping[str, Mapping[str, str]] | None = None,
 ) -> dict[str, dict[str, str]]:
     """VP1-first, capsid-fallback divergence for every carved record whose organism name names a
-    serotype — the same precedence MAD-VDPV's own `classify_sequence_tier.py` states outright:
+    serotype — the same precedence the upstream `classify_sequence_tier.py` states outright:
     "VP1-first / P1-fallback".
 
     Scoped to name-serotyped records, with one narrow exception. The organism name is what picks the

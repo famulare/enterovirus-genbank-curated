@@ -165,7 +165,7 @@ def main() -> int:
     parser.add_argument(
         "source",
         type=Path,
-        help=f"path to the private {SOURCE_NAME} (MAD-VDPV/data/genbank/working)",
+        help=f"path to the private {SOURCE_NAME} (<private-source-repo>/data/genbank/working)",
     )
     parser.add_argument("--repository-root", type=Path, default=Path.cwd())
     args = parser.parse_args()

@@ -37,18 +37,261 @@ from __future__ import annotations
 import subprocess
 import sys
 import tempfile
+from collections.abc import Mapping
 from pathlib import Path
 
 from enterovirus_genbank_curated.build import build_metadata_layer, build_source_layer
-from enterovirus_genbank_curated.contracts import ContractError, sha256_file
+from enterovirus_genbank_curated.contracts import CANONICAL_COLUMNS, ContractError, sha256_file
+from enterovirus_genbank_curated.export.canonical import read_canonical_table
 from enterovirus_genbank_curated.export.metadata import read_projection_provenance
 from enterovirus_genbank_curated.genbank.parse import TABLE_COLUMNS
-from enterovirus_genbank_curated.oracle.release import SOURCE_LAYER_HASHES
+from enterovirus_genbank_curated.oracle.release import SOURCE_LAYER_HASHES, read_tsv_gz
 
 SHIPPED_SOURCE_DIR = "final/source"
 SHIPPED_CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 VERSION_COLUMN = "version"
 GUARD_PASS_MARKER = "undeclared-input guard: PASS"
+
+# The preserved 2.4.1 canonical table, and the only thing in this repository that can still say
+# what changed between the hand-curated baseline and what the pipeline builds.
+#
+# It is a *fixture*, not an input and not a parity target. `build.py` never sees it; only this
+# module and the tests read it. It exists because the alternative — comparing against nothing —
+# is how two declared deltas drifted unnoticed: the date-family delta moved 4,549 -> 4,564 behind
+# a gate (`SUPERSEDED_FIELD_DELTAS`) that had been deleted, and the classification migration-gap
+# document lost two records out of its own categorisation. A delta nobody can recompute is a delta
+# nobody is checking.
+#
+# It also does the opposite of what it was commissioned for, twice. `sequence_scope` and
+# `collection_date` were both recorded as unreachable from `raw/`; both were reproduced against this
+# fixture and are now absent from `DECLARED_TRANSITIONS` entirely. A comparand is how you find out
+# that a declared gap was a mis-specification.
+#
+# 2.4.1 is not coming back and is not being reproduced. The claim this supports is narrower and
+# permanent: *every* cell that differs from the baseline belongs to a class someone declared below.
+BASELINE_CANONICAL = "releases/2.4.1/canonical/sequence_metadata.tsv.gz"
+
+# The carve delta, by version. Nine records the pipeline admits that 2.4.1 excluded (eight short
+# `synthetic construct` patent deposits that `R-MEMBERSHIP-AA-1` rescues on capsid amino-acid
+# distance, plus `AF326751.2`, which carries `Enterovirus` in its own GenBank lineage and which the
+# release excluded with no recorded reason), and two the pipeline leaves out —
+# `derive/metadata.py`'s `SEQUENCE_RESCUED_INCLUSIONS`, both sitting in R-MEMBERSHIP-AA-1's
+# undecided 8-15% band.
+DECLARED_ROW_DELTA = {
+    "added": (
+        "A06086.1", "A06087.1", "A08076.1", "AF326751.2",
+        "HW505760.1", "HW505761.1", "HW505772.1", "HW505773.1", "HW505774.1",
+    ),
+    "dropped": (
+        "E00765.1", "E01571.1",
+        # Carve-excluded 2026-08-14: three FV5370xx deposits converted from the Mahoney parental
+        # sequence, laboratory products rather than field samples. `FV537074`, the unconverted
+        # Mahoney reference they were made from, stays.
+        "FV537075.1", "FV537076.1", "FV537077.1",
+    ),
+}
+
+# Every canonical cell that differs from the 2.4.1 baseline, by class, over the 24,296 shared rows.
+# The nineteen columns absent from this table are identical on every shared row, `virus_group` and
+# `curation_status` among them — the partition reproduces exactly.
+#
+# Read a `('x', '')` entry as "2.4.1 asserted x and this pipeline declines or blanks", and a
+# `('x', 'y')` entry as "both assert, differently". A blanking is not automatically a loss: 94.8% of
+# the `specimen_type` blankings (5,812 of 6,130) drop `default_stool`, a structural assumption the
+# upstream stage applied after `/isolation_source` failed to match, and the 11,670
+# `('unknown', 'human')` cells are this pipeline reading a `/host` the upstream stage never
+# examined. Both numbers are the table below's own, and must be re-read off it when it moves.
+DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
+    # Two columns are absent from this table, and their absence is the result rather than an
+    # omission. `sequence_scope` held 24,296 cells in 6 classes — every shared row, because the
+    # column shipped empty — and `collection_date` held 1,761 in 59 per-year classes. Both were
+    # recorded as unreachable from `raw/`; both were reproduced exactly on 2026-08-12, by
+    # `R-SCOPE-2` and by `R-DATE-2`'s identifier branch. A column moving from "differs on every row"
+    # to "no declared class at all" is the strongest form this contract can take, and it is why
+    # neither is listed as zero: there is no transition left to declare.
+    #
+    # 427 cells left `virus_type` the same day, when R-TYPE-2 began reading the depositor's own
+    # definition line for the abbreviated type forms an NCBI organism name never uses. What is left
+    # is the population the deferred EV reference-panel pass is for: 883 cells the release typed
+    # from its sequence, on records whose name and title both state nothing.
+    "virus_type": {
+        ('PV2', ''): 149,
+        ('PV3', ''): 96,
+        ('PV1', ''): 90,
+        ('EV-C99', ''): 62,
+        ('CVA13', ''): 58,
+        ('E6', ''): 42,
+        ('CVA24', ''): 40,
+        ('CVB1', ''): 39,
+        ('CVA11', ''): 38,
+        ('E7', ''): 36,
+        ('CVA20', ''): 31,
+        ('E19', ''): 21,
+        ('CVA17', ''): 20,
+        ('CVB3', ''): 13,
+        ('E11', ''): 11,
+        ('E24', ''): 11,
+        ('CVA1', ''): 10,
+        ('CVB4', ''): 10,
+        ('CVB5', ''): 7,
+        ('CVA22', ''): 6,
+        ('CVA9', ''): 6,
+        ('EV-C105', ''): 6,
+        ('E13', ''): 5,
+        ('EV-C96', ''): 5,
+        ('CVA19', ''): 4,
+        ('CVA5', ''): 4,
+        ('E1', ''): 4,
+        ('E20', ''): 4,
+        ('EV-B80', ''): 4,
+        ('EV-B93', ''): 4,
+        ('', 'PV2'): 3,
+        ('CVA16', ''): 3,
+        ('CVA2', ''): 3,
+        ('CVB2', ''): 3,
+        ('E21', ''): 3,
+        ('EV-B75', ''): 3,
+        ('CVA21', ''): 2,
+        ('E12', ''): 2,
+        ('E14', ''): 2,
+        ('E26', ''): 2,
+        ('E3', ''): 2,
+        ('E30', ''): 2,
+        ('EV-B111', ''): 2,
+        ('EV-B97', ''): 2,
+        ('EV-C104', ''): 2,
+        ('EV-C116', ''): 2,
+        ('EV-C117', ''): 2,
+        ('EV-C118', ''): 2,
+        ('', 'CVA18'): 1,
+        ('', 'PV1'): 1,
+        ('CVA18', ''): 1,
+        ('CVA4', ''): 1,
+        ('E25', ''): 1,
+        ('E33', ''): 1,
+        ('E9', ''): 1,
+        ('EV-B100', ''): 1,
+        ('EV-B107', ''): 1,
+        ('EV-C109', ''): 1,
+        # The five relabels where the deposit's organism name and its sequence disagree left on
+        # 2026-08-14, as five `serotype` decisions. R-TYPE-2 reading the name stays correct policy;
+        # a mislabelled deposit is what a decision is for. They sit outside the 2026-07-30 serotype
+        # adjudication, whose population was records under 100 compared capsid codons — these have
+        # 138 to 879, so the measurement is not a short-fragment artifact.
+    },
+    # The named wild parents left on 2026-08-14. `('wild', 'VDPV')` was 14 and is 2 — the 12 that
+    # went were Mahoney, Brunhilde, Lansing and Saukett deposits, and `KY026068`/`AB060337`, not
+    # reference strains, stay with the divergence band. `('wild', 'Sabin-like')` fell 7 -> 1 the
+    # same way.
+    #
+    # The one that remains is `V01132.1`, and it is 2.4.1 disagreeing with itself rather than a
+    # value lost. It is a Leon VP1 fragment measuring 0.222% over 900 nt — the same measurement to
+    # the digit as `V01540.1` and `AY082684.1`, which 2.4.1 calls `wild`. All three are `wild` now.
+    # The tiny divergence is the whole point: Sabin 3 differs from its Leon parent by a handful of
+    # nucleotides, so the band reads "Sabin-like" on a record that *is* the wild ancestor.
+    "poliovirus_classification": {
+        ('unresolved', ''): 276,
+        ('Sabin-like', ''): 82,
+        ('wild', ''): 69,
+        # `compare_vp1` learned to skip ambiguous positions on 2026-08-15, and a `cVDPV`/`iVDPV`
+        # attestation learned to survive a Sabin-like measurement on the same day. These 14 and the
+        # 4 below are the second change: records whose `/isolation_source` reads "stool specimen
+        # from an immunodeficient infant" and whose VP1 measures barely diverged, which is what an
+        # early-detected iVDPV looks like. The release calls them Sabin-like; the depositor's own
+        # field says otherwise, and divergence cannot see a host.
+        ('Sabin-like', 'iVDPV'): 14,
+        ('VDPV', ''): 13,
+        ('Sabin', ''): 10,
+        ('defective-interfering particle', ''): 10,
+        ('VDPV', 'iVDPV'): 6,
+        ('Sabin-like', 'VDPV'): 5,
+        ('cVDPV', 'cVDPV-n'): 5,
+        ('engineered/lab', ''): 5,
+        ('Sabin-like', 'cVDPV'): 4,
+        ('chimera', ''): 4,
+        ('Sabin', 'Sabin-like'): 3,
+        ('Sabin-like', 'wild'): 3,
+        # Down from 12 with the ambiguity fix: an `N` or an `R` scored as a substitution was
+        # pushing these over PV2's 0.6% ceiling. `OK634152` carried exactly one `R`.
+        ('cVDPV', 'Sabin-like'): 2,
+        ('wild', 'VDPV'): 2,
+        ('wild', 'engineered/lab'): 2,
+        ('Sabin', 'VDPV'): 1,
+        ('Sabin-like', 'engineered/lab'): 1,
+        ('wild', 'Sabin-like'): 1,
+    },
+    # The GenBank division branch landed 2026-08-13 (curator ruling) and resolves 571 records: 112
+    # `ENV` and 459 `PAT`. Against the baseline that is 19 + 56 = 75 cells recovered — declines the
+    # release fills — and 21 + 395 = 416 moved off the release's `unknown`.
+    #
+    # The moved cells are not a new kind of claim. They land in the two classes below that already
+    # count 11,649 and 149 of exactly this correction: a record whose GenBank division states its
+    # origin structurally, which 2.4.1 left `unknown` because its `origin_class` was curated for
+    # poliovirus only. The 21 are non-poliovirus sewage isolates, every one already streamed
+    # `environmental`; the 377 of the 395 that were not previously declined are non-poliovirus
+    # patent deposits, not samples taken from an organism whatever their virus group. That is a
+    # fact about the upstream process rather than about the record — the same 2026-07-30 decision
+    # this rule already applies to `/host`, which is why the branch sits above the partition scope.
+    "sample_origin": {
+        ('unknown', 'human'): 11670,
+        ('human', ''): 2680,
+        ('unknown', 'non-human'): 544,
+        ('vaccine', ''): 24,
+        ('unknown', ''): 17,
+        ('non-human', 'unknown'): 10,
+        ('non-human', ''): 7,
+        ('human', 'non-human'): 1,
+    },
+    "surveillance_stream": {
+        ('AFP/clinical', ''): 6676,
+        ('not_applicable', 'environmental'): 2354,
+        ('not_applicable', 'AFP/clinical'): 920,
+        ('environmental', ''): 260,
+        ('unknown', ''): 225,
+        ('not_applicable', ''): 192,
+        ('not_applicable', 'healthy/community'): 111,
+        ('AFP/clinical', 'healthy/community'): 92,
+        ('engineered/lab', ''): 46,
+        ('vaccine/reference', ''): 49,
+        ('AFP/clinical', 'environmental'): 6,
+        ('unknown', 'not_applicable'): 6,
+        ('engineered/lab', 'not_applicable'): 2,
+        ('non-human experimental', 'not_applicable'): 3,
+        ('AFP/clinical', 'not_applicable'): 2,
+        ('unknown', 'environmental'): 2,
+    },
+    # 80 cells left on 2026-08-12, when R-SPECIMEN-2 gained the keyword families its declined
+    # population turned out to name: 'treatment plant' and 'trunk line' for the Israeli sewage
+    # series, the bare 'environment', and 'central nervous system' for one deposit. The
+    # `('CNS', '')` class went to zero and is gone rather than listed. What is left is almost all
+    # `default_stool`: 5,812 records where 2.4.1 assumed stool after `/isolation_source` failed to
+    # match, which is a surveillance context and not a material.
+    "specimen_type": {
+        ('stool', ''): 5812,
+        ('environmental', ''): 314,
+        ('respiratory', ''): 4,
+        ('stool', 'environmental'): 1,
+    },
+    # `collection_date`'s own 1,761 blankings are the ones the header above records as gone — the
+    # population `docs/reproducibility.md` blamed on an archival reconstruction outside this
+    # repository, recovered from `/strain`, `/isolate`, the definition line and the other `source`
+    # qualifiers at the year 2.4.1 shipped.
+    #
+    # (Its 59 per-year classes were themselves a correction worth keeping in mind here. The first
+    # draft folded the from-side to a wildcard and measured green while the 1,761 blankings were
+    # *relocated* onto different records, because only the total was checked. Every from-value in
+    # this table is enumerated for that reason.)
+    #
+    # What is left below is the vocabulary break and nothing else: 2,800 records that deposited no
+    # date and whose identifier carries no year either. 2.4.1 called their precision `unknown`; a
+    # record with no date has no precision, so this pipeline calls it `NA`.
+    "collection_date_precision": {
+        ('unknown', 'NA'): 2800,
+    },
+    "engineered_or_construct": {
+        ('TRUE', 'FALSE'): 502,
+    },
+}
 
 # `final/` paths the alignment layer (`align/`) derives from, declared here rather than in
 # `align/contract.py` so that module has exactly one path to `final/canonical/sequence_metadata`
@@ -191,7 +434,7 @@ def verify_source_parity(repository_root: Path, *, guarded: bool = False) -> dic
 # The whole +23 of the membership rescue lands here, and that is the expected shape rather than a
 # surprise: a record is rescued *because* its organism name is `unidentified`, `synthetic construct`
 # or `Homo sapiens`, which is exactly the name the partition rule cannot decide from. The sequence
-# settles membership in the carve; it does not write the column — R-PARTITION-2 reads the name.
+# settles membership in the carve; it does not write the column — R-PARTITION-1 reads the name.
 #
 # 1,596 fell to 1,385 on 2026-08-01: `derive.evidence.measure_poliovirus_membership_band` resolves
 # 211 of them directly, using the parameters R-MEMBERSHIP-AA-1 already declares for the carve-rescue
@@ -199,7 +442,7 @@ def verify_source_parity(repository_root: Path, *, guarded: bool = False) -> dic
 # (140), at or above 15.0% confirms `non_polio_enterovirus` (71), and the 8-15% middle (or under 50
 # compared codons) stays declined exactly as before. Validated per record against the shipped
 # `virus_group`: all 71 `non_polio_enterovirus` calls agree; of the 140 `poliovirus` calls, 138
-# agree and the other 2 are not in the 24,299 shared rows at all (not a disagreement — there is
+# agree and the other 2 are not in the 24,296 shared rows at all (not a disagreement — there is
 # nothing on the release side to disagree with). `poliovirus_classification` benefits too: a
 # `poliovirus`-banded record with no name serotype now measures VP1/capsid divergence against the
 # band's own identified serotype (`BASIS_VP1_BY_MEMBERSHIP_BAND`/`BASIS_CAPSID_BY_MEMBERSHIP_BAND`
@@ -217,10 +460,16 @@ def verify_source_parity(repository_root: Path, *, guarded: bool = False) -> dic
 # nobody pinned. It is also the load-bearing one — `align/population.py` requires a partition on
 # every row, so a decline here is not a blank cell but a broken alignment layer.
 UNRESOLVED_PARTITION_ROWS = 0
-# `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: those where no keyword matches
-# `/isolation_source` and 4 where two categories match, naming two specimens rather than one. All 23
-# rescued records decline — patent deposits carry no `/isolation_source` — so this moved with them.
-UNRESOLVED_SPECIMEN_ROWS = 12700
+# `specimen_type` rows R-SPECIMEN-2 declines, over the built carve: 10,265 that deposit no
+# `/isolation_source` at all, 2,351 where it names no keyword the patterns recognise, and 4 where
+# two categories match, naming two specimens rather than one. All 23 rescued records decline —
+# patent deposits carry no `/isolation_source` — so this moved with them.
+#
+# Down 80 from 12,780 on 2026-08-12: the treatment-plant, trunk-line, bare-environment and
+# central-nervous-system keyword families. What is left of the second group is mostly text naming
+# an epidemiological frame rather than a material — `AFP case`, `paralytic polio case` — which 2.4.1
+# resolved with the `default_stool` assumption this pipeline declines to inherit.
+UNRESOLVED_SPECIMEN_ROWS = 12617
 # `sample_origin` rows R-ORIGIN-2 declines, over the built carve: poliovirus records that
 # deposited neither a `/host` nor a recognisable human specimen, plus those whose partition is
 # itself undecided and so cannot be scoped either way. 19 of the 23 rescued records decline; the
@@ -233,11 +482,20 @@ UNRESOLVED_SPECIMEN_ROWS = 12700
 # for 140 more records: 21 of them deposit a `/host` and so read it here for the first time; the
 # other 119 have none and stay declined.
 #
+# Down a further 101, 2026-08-13, with the GenBank division branch: 19 `ENV` records and 82 `PAT`
+# ones were declining and now resolve. The branch reaches 571 records in all; the other 470 were
+# already answered by their `/host` or by the outside-scope value. See the transition note above.
+#
+# Down a further 73, 2026-08-14: the `origin_unknown` curation reaches the ledger. 62 are the
+# Rico-Hesse/Kew wild PV1 panel, whose 150 nt deposits carry neither `/host` nor `/isolation_source`
+# and whose human origin is in the paper; 11 are laboratory constructs outside the patent division,
+# which the rule above cannot reach.
+#
 # Down a further 759 the same day, when the upstream partition projection closed `virus_group`
 # entirely: those 759 are now scoped and read their `/host`. The rest of the 1,385 newly-partitioned
 # records deposit no `/host` and no recognisable human specimen, so they stay declined here — a
 # resolved partition makes the question askable, not answered.
-UNRESOLVED_ORIGIN_ROWS = 2902
+UNRESOLVED_ORIGIN_ROWS = 2728
 # `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
 # its values — plus those whose partition is undecided and so cannot be scoped either way. 20 of the
@@ -250,7 +508,18 @@ UNRESOLVED_ORIGIN_ROWS = 2902
 # Down a further 1,023 the same day, with the upstream partition projection. Same shape as
 # `sample_origin` above: a scoped record can be asked the question, and 1,023 of the newly-scoped
 # ones name a surveillance context in their own text. The others name none.
-UNRESOLVED_STREAM_ROWS = 7571
+#
+# Down a further 98, 2026-08-14, with the `origin_unknown` curation: 62 wild PV1 panel records take
+# `AFP/clinical` from the paper and 36 laboratory or patent deposits take `engineered/lab`. Neither
+# is derivable — a patent deposit's surveillance frame is a statement about what it is *not*, and no
+# rule in this pipeline asserts a frame from the absence of one.
+#
+# Down 17 before that, 2026-08-12, when the `/environmental_sample` branch fired for the first time.
+# It had tested the *value* of a valueless GenBank flag since the rule was written, so it had never
+# resolved anything; presence is the signal. Only 17 rather than the 148 flagged records in the
+# carve, because 95 already read `environmental` from their own text and 36 name an individual's
+# specimen, which the flag does not overrule — see `derive/epi.py`.
+UNRESOLVED_STREAM_ROWS = 7456
 # `engineered_or_construct` now declines on nothing. It declined on `LY501105` and `LZ216100`, the
 # CAVA cold-adaptation pair Appendix B of the re-adjudication recorded as open in either direction,
 # and the curator closed both FALSE on 2026-07-31 on the precedent already set inside patent
@@ -259,13 +528,16 @@ UNRESOLVED_STREAM_ROWS = 7571
 # such record left. Kept as a named zero so the next one to appear fails this gate rather than
 # passing.
 UNRESOLVED_ENGINEERED_ROWS = 0
-# `virus_type` rows R-TYPE-2 declines: 2,179 whose organism name states no type — species-level
-# names like `Enterovirus C`, the pre-2016 bare numbering (`Enterovirus 19`), simian species outside
-# A-to-D scheme (`Enterovirus J115`), and the chimera label `Enterovirus coxsackiepol` the release
-# types PV2 — plus 37 where an active decision records the type as `unknown`, which is a curator
-# stating that it is undetermined. All 23 rescued records land in the first group, for the same
-# reason they land in `UNRESOLVED_PARTITION_ROWS`.
-UNRESOLVED_TYPE_ROWS = 2216
+# `virus_type` rows R-TYPE-2 declines: 1,752 whose organism name *and* definition line both state no
+# type — species-level names like `Enterovirus C`, the pre-2016 bare numbering (`Enterovirus 19`),
+# simian species outside the A-to-D scheme (`Enterovirus J115`), and the chimera label
+# `Enterovirus coxsackiepol` the release types PV2 — plus 37 where an active decision records the
+# type as `unknown`, which is a curator stating that it is undetermined. All 23 rescued records land
+# in the first group, for the same reason they land in `UNRESOLVED_PARTITION_ROWS`.
+#
+# Down 427 from 2,216 on 2026-08-12, when the definition-line reading landed. Every one of the 427
+# lands on the type 2.4.1 shipped; none gains a type the release leaves blank.
+UNRESOLVED_TYPE_ROWS = 1789
 # `poliovirus_classification` rows R-CLASS-2 declines: 1,596 whose virus group is itself undecided,
 # 1,409 poliovirus records with too little usable sequence by either basis to measure divergence
 # over, 33 with no serotype in the organism name to pick a Sabin reference with, and 3 whose active
@@ -295,7 +567,7 @@ UNRESOLVED_TYPE_ROWS = 2216
 # divergence measurement) and 4 more `group_A_text_owned` `cVDPV` records, none of which had a prior
 # decision, so all 28 leave the declined population for the first time.
 #
-# Down a further 60 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (MAD-VDPV's own
+# Down a further 60 the same day, when `MIN_VP1_NT`/`MIN_CAPSID_NT` dropped to 50 nt (the upstream
 # `MIN_SEROTYPE_COMPARED_NT`), guarded by extending the chunked-homogeneity check to VP1 below its
 # old 300 nt floor. Every one of the 60 agrees with the shipped classification.
 #
@@ -324,8 +596,10 @@ UNRESOLVED_TYPE_ROWS = 2216
 # `not_applicable_outside_poliovirus`, since the projection lands far more records in
 # `non_polio_enterovirus` than in `poliovirus`), and 21 are newly-scoped poliovirus records that
 # still have too little usable sequence to measure divergence over.
-UNRESOLVED_CLASSIFICATION_ROWS = 476
-PARTITION_FIELDS = ("virus_group", "curation_status")
+#
+# Down 1 on 2026-08-14, with the named-wild-reference guard: one record was declining for want of a
+# usable divergence measurement and its strain name settles it without one.
+UNRESOLVED_CLASSIFICATION_ROWS = 475
 
 
 # Canonical field -> the declared decline count above. Every field a rule can decline appears here,
@@ -390,3 +664,100 @@ def verify_metadata_declines(
         )
         raise ContractError(f"declined-cell counts moved — {detail}")
     return observed
+
+
+def load_baseline_canonical(repository_root: Path) -> dict[str, dict[str, str]]:
+    """Read the preserved 2.4.1 canonical table, keyed on `version`."""
+    header, rows = read_tsv_gz(repository_root / BASELINE_CANONICAL)
+    if VERSION_COLUMN not in header:
+        raise ContractError(f"{BASELINE_CANONICAL} declares no {VERSION_COLUMN} column")
+    return {row[header.index(VERSION_COLUMN)]: dict(zip(header, row, strict=True)) for row in rows}
+
+
+def measure_transitions(
+    baseline: Mapping[str, Mapping[str, str]], built: Mapping[str, Mapping[str, str]]
+) -> dict[str, dict[tuple[str, str], int]]:
+    """Every differing cell over the shared rows, tallied by (baseline value, built value)."""
+    shared = sorted(set(baseline) & set(built))
+    observed: dict[str, dict[tuple[str, str], int]] = {}
+    for version in shared:
+        before, after = baseline[version], built[version]
+        for column in before.keys() & after.keys():
+            was, now = before[column], after[column]
+            if was == now:
+                continue
+            observed.setdefault(column, {})
+            observed[column][(was, now)] = observed[column].get((was, now), 0) + 1
+    return observed
+
+
+def compare_to_baseline(
+    baseline: Mapping[str, Mapping[str, str]], built: Mapping[str, Mapping[str, str]]
+) -> dict[str, dict[tuple[str, str], int]]:
+    """Require every difference from the 2.4.1 baseline to be one somebody declared.
+
+    Pure, so the falsification battery in `tests/test_canonical_transitions.py` can mutate the
+    declarations and watch this go red without paying for a 25,727-record rebuild each time. The
+    build lives in `verify_canonical_transitions` below, which is a thin wrapper over this.
+
+    This is not a parity gate and cannot become one: 2.4.1 is superseded and reproducing it is not
+    the goal. What it establishes is that the *set of ways* this release differs from the last
+    hand-curated one is closed and reviewed — an undeclared class is a rule change nobody wrote
+    down, and a declared class whose count moved is one whose blast radius nobody re-measured. Both
+    are what went unnoticed while there was no baseline to compare against.
+    """
+    # The column set first, because every check below compares only the intersection: a built table
+    # that dropped a column would otherwise have that column silently uncompared rather than
+    # reported, which is the shape of a gate that passes by having nothing to look at.
+    for label, table in (("2.4.1 baseline", baseline), ("the build", built)):
+        columns = {column for row in table.values() for column in row}
+        if columns != set(CANONICAL_COLUMNS):
+            missing = sorted(set(CANONICAL_COLUMNS) - columns)
+            extra = sorted(columns - set(CANONICAL_COLUMNS))
+            raise ContractError(
+                f"{label} does not carry the declared canonical columns: missing {missing}, "
+                f"undeclared {extra}"
+            )
+
+    added = tuple(sorted(set(built) - set(baseline)))
+    dropped = tuple(sorted(set(baseline) - set(built)))
+    if added != tuple(DECLARED_ROW_DELTA["added"]) or dropped != tuple(
+        DECLARED_ROW_DELTA["dropped"]
+    ):
+        raise ContractError(
+            f"the carve delta against {BASELINE_CANONICAL} moved — built adds {list(added)} and "
+            f"drops {list(dropped)}; declared adds {list(DECLARED_ROW_DELTA['added'])} and drops "
+            f"{list(DECLARED_ROW_DELTA['dropped'])}"
+        )
+
+    observed = measure_transitions(baseline, built)
+    problems: list[str] = []
+    for column in sorted(set(observed) | set(DECLARED_TRANSITIONS)):
+        seen = observed.get(column, {})
+        declared = DECLARED_TRANSITIONS.get(column, {})
+        for key in sorted(set(seen) | set(declared)):
+            if seen.get(key, 0) != declared.get(key, 0):
+                problems.append(
+                    f"{column} {key[0]!r}->{key[1]!r}: built {seen.get(key, 0)}, "
+                    f"declared {declared.get(key, 0)}"
+                )
+    if problems:
+        raise ContractError(
+            "canonical transitions against the 2.4.1 baseline are not the declared ones — "
+            + "; ".join(problems)
+        )
+    return observed
+
+
+def verify_canonical_transitions(
+    repository_root: Path, *, guarded: bool = False
+) -> dict[str, dict[tuple[str, str], int]]:
+    """Rebuild the canonical table and compare it to the preserved 2.4.1 baseline."""
+    baseline = load_baseline_canonical(repository_root)
+    with tempfile.TemporaryDirectory(prefix="evgc-canonical-") as scratch:
+        if guarded:
+            run_guarded_build(repository_root, "build-metadata", Path(scratch))
+        else:
+            build_metadata_layer(repository_root, Path(scratch))
+        built = {row[VERSION_COLUMN]: row for row in read_canonical_table(Path(scratch))}
+    return compare_to_baseline(baseline, built)

@@ -28,18 +28,23 @@ wrong value is worse than a declared disagreement.
 
 ## `sample_origin`, and the release inconsistency behind it
 
-The release gives **different values to records with byte-identical inputs**: `/host=Homo sapiens`
-alone ships 3,177 `human`, 55 `unknown` and 3 `vaccine`; adding `/isolation_source=human stool`
-ships 46 `human` and 64 `unknown`; `sewage` ships 383 and 36. So `sample_origin` is not a function
-of its declared inputs, and the measured "ceiling" was mostly the release contradicting itself — a
-rule scoring at that ceiling would be reproducing the contradiction by accident.
+The release gives **different values to records with byte-identical inputs**. Re-measured
+2026-08-12 against `releases/2.4.1/canonical/`, which is now preserved and makes these
+recomputable: over the 24,296 shared rows, the 17,081 carrying `/host=Homo sapiens` exactly are
+shipped as 5,662 `human`, 11,416 `unknown` and 3 `vaccine`. So `sample_origin` is not a function of
+its declared inputs, and the measured "ceiling" was mostly the release contradicting itself — a rule
+scoring at that ceiling would be reproducing the contradiction by accident.
 
 Curator decision, 2026-07-30: **a human host means a human-origin sample.** R-ORIGIN-2 reads `/host`
-first and falls back to human-specimen keywords in `/isolation_source`, so the 228 records where the
-release says otherwise are a declared correction rather than a failure to reproduce. Two are worth
-naming: three the release calls `vaccine` on a `/host=Homo sapiens` deposit — the vaccine-derived
-fact belongs in `poliovirus_classification`, which already records it — and one `/host=nonhuman
-primate` the release calls `human`, which is simply wrong.
+first and falls back to human-specimen keywords in `/isolation_source`, so the 11,416 records where
+the release says `unknown` over a stated human host are a declared correction rather than a failure
+to reproduce. Two cases are worth naming: three the release calls `vaccine` on a `/host=Homo
+sapiens` deposit — the vaccine-derived fact belongs in `poliovirus_classification`, which already
+records it — and one `/host=nonhuman primate` the release calls `human`, which is simply wrong.
+
+The figures that stood here until 2026-08-12 — 3,177 `human`, 55 `unknown`, 228 corrections — were
+measured against a carve that no longer exists and reconcile with nothing in the tree. They are
+replaced rather than adjusted, because there is no population under which they are right.
 
 **A deposited `/host` is read whatever the virus group** (curator decision, 2026-07-30). The
 partition scope exists because the *curated master* covered poliovirus only, which is a fact about
@@ -152,7 +157,7 @@ def specimen_type(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
         )
     return RuleOutcome(
         value="",
-        evidence_basis=BASIS_ISOLATION_SOURCE,
+        evidence_basis="",
         source_field=SPECIMEN_SOURCE_FIELD,
         source_value=source,
         unresolved_reason=reason,
@@ -164,6 +169,8 @@ ORIGIN_SOURCE_FIELD = "origin_class"
 
 BASIS_HOST_SPECIES = "host_species"
 BASIS_HUMAN_SPECIMEN = "human_specimen"
+BASIS_GENBANK_DIVISION = "genbank_division"
+DIVISION_FIELD = "division"
 BASIS_OUTSIDE_POLIOVIRUS = "not_determined_outside_poliovirus"
 UNRESOLVED_NO_ORIGIN_EVIDENCE = "no_host_or_specimen_evidence"
 UNRESOLVED_FOLLOWS_PARTITION = "follows_unresolved_virus_group"
@@ -172,8 +179,19 @@ LEDGER_ORIGIN_FIELD = "origin_class"
 
 @rule_implementation(
     "derive.epi.sample_origin",
-    parameters=("human_host_pattern", "human_specimen_pattern", "origins", "outside_scope_value"),
-    evidence_bases=(BASIS_HOST_SPECIES, BASIS_HUMAN_SPECIMEN, BASIS_OUTSIDE_POLIOVIRUS),
+    parameters=(
+        "human_host_pattern",
+        "human_specimen_pattern",
+        "origins",
+        "outside_scope_value",
+        "origin_by_division",
+    ),
+    evidence_bases=(
+        BASIS_HOST_SPECIES,
+        BASIS_HUMAN_SPECIMEN,
+        BASIS_GENBANK_DIVISION,
+        BASIS_OUTSIDE_POLIOVIRUS,
+    ),
 )
 def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     """Who was sampled, scoped by the partition that decides whether the question was asked.
@@ -209,13 +227,39 @@ def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
             source_value=host,
         )
 
+    # Two GenBank divisions state the origin structurally, and are read below `/host` — a deposit
+    # that names its host has answered directly — and above the specimen text, which is where a
+    # record whose `/isolation_source` is a place name or absent would otherwise fall through.
+    #
+    # `ENV` means the sequence came from an environmental sample, and in poliovirus surveillance
+    # that sample is sewage: human waste from a human population. 2.4.1 ships `human` on all 19 of
+    # the records this rule was declining. `PAT` means a patent deposit, which is not a sample taken
+    # from an organism at all, so it is `non-human`.
+    #
+    # The `origin_class` vocabulary has no environmental value and needs none. `sample_origin`
+    # records *who* was sampled and `surveillance_stream` records *which system* sampled them;
+    # conflating them is what the two-axis split exists to prevent.
+    #
+    # Both branches reach past the records 2.4.1 answers, and deliberately. `ENV` moves 21 further
+    # records `unknown` -> `human` and `PAT` moves 18 `unknown` -> `non-human`: cells where the
+    # release recorded a placeholder rather than a determination, which is the same inheritance the
+    # `default_stool` and `not_applicable` reviews refused elsewhere. Curator ruling, 2026-08-13.
+    division = parameters["origin_by_division"].get(view.record.get(DIVISION_FIELD, ""))
+    if division:
+        return RuleOutcome(
+            value=division,
+            evidence_basis=BASIS_GENBANK_DIVISION,
+            source_field=DIVISION_FIELD,
+            source_value=view.record.get(DIVISION_FIELD, ""),
+        )
+
     # With no host the scope matters again: the specimen-text fallback was calibrated on poliovirus
     # and there is no evidence it carries to a population it was never measured against.
     partition = resolved_partition(view)
     if not partition:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_HOST_SPECIES,
+            evidence_basis="",
             source_field=ORIGIN_SOURCE_FIELD,
             source_value=view.record.get("organism_name", ""),
             unresolved_reason=UNRESOLVED_FOLLOWS_PARTITION,
@@ -238,7 +282,7 @@ def sample_origin(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcom
         )
     return RuleOutcome(
         value="",
-        evidence_basis=BASIS_HOST_SPECIES,
+        evidence_basis="",
         source_field=ORIGIN_SOURCE_FIELD,
         source_value=specimen,
         unresolved_reason=UNRESOLVED_NO_ORIGIN_EVIDENCE,
@@ -250,13 +294,14 @@ STREAM_SOURCE_FIELD = "sampling_frame"
 LEDGER_STREAM_FIELD = "sampling_frame"
 
 BASIS_SPECIMEN_CONTEXT = "specimen_context"
+BASIS_ENVIRONMENTAL_FLAG = "environmental_sample_flag"
 UNRESOLVED_NO_STREAM_EVIDENCE = "no_surveillance_context_in_record"
 
 
 @rule_implementation(
     "derive.epi.surveillance_stream",
-    parameters=("streams", "outside_scope_value"),
-    evidence_bases=(BASIS_SPECIMEN_CONTEXT, BASIS_OUTSIDE_POLIOVIRUS),
+    parameters=("streams", "outside_scope_value", "individual_specimen_pattern"),
+    evidence_bases=(BASIS_SPECIMEN_CONTEXT, BASIS_ENVIRONMENTAL_FLAG, BASIS_OUTSIDE_POLIOVIRUS),
 )
 def surveillance_stream(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     """Which surveillance system produced the sample, and mostly a refusal to say.
@@ -286,9 +331,7 @@ def surveillance_stream(parameters: Mapping[str, Any], view: RecordView) -> Rule
 
     specimen = view.qualifier(ISOLATION_SOURCE_QUALIFIER).strip().lower()
     # As for `/host` in R-ORIGIN-2: where the record states the context, read it whatever the group.
-    if view.qualifier(ENVIRONMENTAL_FLAG_QUALIFIER).strip() or re.search(
-        streams["environmental_pattern"], specimen
-    ):
+    if re.search(streams["environmental_pattern"], specimen):
         stream = streams["environmental"]
     elif re.search(streams["healthy_pattern"], specimen):
         stream = streams["healthy_community"]
@@ -305,11 +348,32 @@ def surveillance_stream(parameters: Mapping[str, Any], view: RecordView) -> Rule
             source_value=specimen,
         )
 
+    # `/environmental_sample` is a **valueless** flag: all 278 occurrences store `''`, so the
+    # `.strip()` this branch used to sit behind was always falsy and it had never fired in any
+    # release. Presence is the signal.
+    #
+    # It runs *below* the specimen text rather than above it, which is the difference between +17
+    # cells and 36 wrong ones. 36 flagged records name their own specimen — 31 stool or faeces, 2 a
+    # nasopharyngeal swab, 3 a healthy contact's stool — and a stool sample from a person is not an
+    # environmental sample however the sampling programme was labelled. The flag is a statement
+    # about the *study*; `/isolation_source` is a statement about *this material*, and the more
+    # specific one wins. Where the record names an individual's specimen, the flag is not read, and
+    # the record keeps the answer the text gives it, which is what 2.4.1 ships on all 36.
+    if ENVIRONMENTAL_FLAG_QUALIFIER in view.qualifiers and not re.search(
+        parameters["individual_specimen_pattern"], specimen
+    ):
+        return RuleOutcome(
+            value=streams["environmental"],
+            evidence_basis=BASIS_ENVIRONMENTAL_FLAG,
+            source_field=ENVIRONMENTAL_FLAG_QUALIFIER,
+            source_value=specimen,
+        )
+
     partition = resolved_partition(view)
     if not partition:
         return RuleOutcome(
             value="",
-            evidence_basis=BASIS_SPECIMEN_CONTEXT,
+            evidence_basis="",
             source_field=STREAM_SOURCE_FIELD,
             source_value=view.record.get("organism_name", ""),
             unresolved_reason=UNRESOLVED_FOLLOWS_PARTITION,
@@ -323,7 +387,7 @@ def surveillance_stream(parameters: Mapping[str, Any], view: RecordView) -> Rule
         )
     return RuleOutcome(
         value="",
-        evidence_basis=BASIS_SPECIMEN_CONTEXT,
+        evidence_basis="",
         source_field=STREAM_SOURCE_FIELD,
         source_value=specimen,
         unresolved_reason=UNRESOLVED_NO_STREAM_EVIDENCE,

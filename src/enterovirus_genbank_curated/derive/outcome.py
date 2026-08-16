@@ -61,6 +61,15 @@ class RecordView:
     text-classification fallback does, and only for a record with no sequence signal of its own to
     ask instead.
 
+    `features` holds every annotated feature on the record — not just the `source` one — as `key`,
+    `label` and `length`. `qualifiers` above deliberately covers only the first value of each
+    qualifier on the `source` feature, which is what every rule needed until `R-SCOPE-2`: the
+    genomic scope of a deposit is a statement about its *annotation*, so it has to see the CDS and
+    `mat_peptide` features and how long each one is. `label` is the feature type joined with its
+    naming qualifiers, matching how the frozen upstream stage composed the string it matched on, and
+    `length` is summed over `feature_location_parts` so a joined feature counts once at its full
+    span.
+
     `membership_evidence` holds `derive.evidence.measure_poliovirus_membership_band`'s result for a
     record whose organism name is one of `derive.partition.UNINFORMATIVE_ORGANISMS` — the capsid
     amino-acid distance to the nearest poliovirus reference, banded into `poliovirus` or
@@ -78,6 +87,7 @@ class RecordView:
     evidence: Mapping[str, str] = NO_EVIDENCE
     reference_titles: str = ""
     membership_evidence: Mapping[str, str] = NO_EVIDENCE
+    features: tuple[Mapping[str, str], ...] = ()
 
     def qualifier(self, name: str) -> str:
         return self.qualifiers.get(name, "")
@@ -104,4 +114,22 @@ class RuleOutcome:
             raise ValueError(
                 f"an unresolved outcome must not carry a value: {self.value!r} with reason "
                 f"{self.unresolved_reason!r}"
+            )
+        # A declined cell has no branch, so it must not name one. Until 2026-08-12 every one of the
+        # seventeen declining branches returned the same `evidence_basis` a *resolving* branch of
+        # the same rule uses — there was no decline-only basis anywhere in the layer — and all
+        # 25,865 declined cells shipped in `projection_provenance.tsv.gz` claiming an evidence basis
+        # they had not used. 422 of them read `too_little_sequence_compared_to_measure_divergence`
+        # alongside `vp1_divergence_below_sabin_like_threshold`: the reason says no divergence could
+        # be measured and the basis says one was, on the same row. (The other 54 of that column's
+        # 476 declines carried the same basis under a different reason.)
+        #
+        # `unresolved_reason` is the field that carries why. Refusing the pair here rather than
+        # fixing the seventeen call sites is what stops the class coming back: the state is no
+        # longer expressible.
+        if self.unresolved_reason and self.evidence_basis:
+            raise ValueError(
+                f"an unresolved outcome must not name an evidence basis: "
+                f"{self.evidence_basis!r} with reason {self.unresolved_reason!r}; the reason is "
+                f"what carries why a rule declined"
             )

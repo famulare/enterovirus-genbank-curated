@@ -115,7 +115,7 @@ LEDGER_ONLY_ADDITIONS = (
 # 115 rows landed 2026-07-31, the same day and under the same `source_artifact` as the vocabulary
 # repairs and the CAVA parental pair above but a different act: not a repair of a malformed value
 # and not an engineered_or_construct call, a curation decision closing a classification gap traced
-# by reading MAD-VDPV's own working tree. Not enumerated as 115 literal tuples, for the same reason
+# by reading the upstream working tree. Not enumerated as 115 literal tuples, for the same reason
 # the VDPV_SOURCE allowlist below is not: identified by `source_artifact`, excluding the 3
 # vocabulary-repair and 2 CAVA-parental subjects that share it, and pinned by count, value
 # distribution, and agreement with the shipped column — a fabricated or altered row fails against
@@ -130,7 +130,7 @@ LEDGER_ONLY_ADDITIONS = (
 #
 # 28 more landed the same day, same `source_artifact`, closing the largest remaining discrepancy
 # block (`declined_too_little_sequence`) the same way: 24 `reference_or_lab_text` records traced by
-# MAD-VDPV's own working tree to strain-identity/patent evidence too short to ever reach a
+# the upstream working tree to strain-identity/patent evidence too short to ever reach a
 # divergence measurement (12 `Sabin`, 10 `engineered/lab`, 1 `recombinant/lab`, 1 `reference/lab`),
 # and 4 more `group_A_text_owned` `cVDPV` records. Folded into the same population rather than a
 # second one: same act (a curation decision closing a text-derived classification gap), same source,
@@ -166,7 +166,23 @@ CANONICAL_METADATA = "final/canonical/sequence_metadata.tsv.gz"
 # 162 rows were retired on 2026-07-30 because a *rule* now derives their value, not because another
 # decision replaced them. That is a second meaning for `retired` and the reason the invariant below
 # had to be split.
-RULE_REDUNDANT_RETIREMENTS = 162
+#
+# 11 more on 2026-08-14, under the same reasoning and after a per-group review of all 534
+# `applied_unchanged` decisions: bare `serotype` assertions on records whose organism name states
+# the serotype outright (`AJ699401`, `EU598475`, `A37539`, `A37564`, `DI499171`-`176`, `JC013129`).
+# R-TYPE-2 reaches all 11 with the whole ledger withheld.
+#
+# **Only** those 11, and the reason the other 523 stay is the interesting half. 500 are
+# `poliovirus_classification` made redundant by R-CLASS-2 — a rule rewritten six times in three
+# weeks, so a decision agreeing with it today agrees with something still moving. The rest became
+# redundant within the last week, through branches added in this release. The branch that retires
+# these 11 is R-TYPE-2's oldest and most stable, measured at 220 of 223 organism names mapping to
+# exactly one type, and it cannot change without failing `tests/test_typing.py`.
+#
+# `applied_unchanged` is also a health metric worth keeping non-zero: a rising count means the rules
+# are absorbing curation, which is the direction of travel. Driving it to zero each release deletes
+# the signal. Curator ruling, 2026-08-14.
+RULE_REDUNDANT_RETIREMENTS = 162 + 11
 
 # A third meaning for `retired`, landed 2026-07-31: an adjudication overturned the assertion. Four
 # rows, all `engineered_or_construct` TRUEs — `AJ512791`/`AJ512792` (Appendix B Q8, a wild PV1
@@ -218,6 +234,40 @@ EXPECTED_POLIO_CLASSIFICATION_VALUES = {
 }
 POLIO_CLASSIFICATION_SUPERSEDES = 2
 
+# The `origin_unknown` curation of 2026-05-28, projected on 2026-08-14: 115 accessions were reviewed
+# and 110 are asserted here, as 74 `origin_class` rows and 99 `sampling_frame` ones.
+#
+# Three filters cut 115 x 2 down to 173, and each is a rule about what a ledger row is for:
+#
+#   − 5 accessions   the four `classical_reference` records and `M37321` carry per-record
+#                    dispositions rather than a group rule, and every one of them already holds
+#                    active rows; `M37321`'s own recommendation is `unknown / unknown`, which is
+#                    not an assertion
+#   − 11 rows        `DI499146`/`147`/`171`-`176`, `FV537074`, `FW503126`, `HZ037987` already hold
+#                    an active `sampling_frame`, asserting `vaccine/reference` where this pass says
+#                    `engineered/lab`. A later human decision supersedes an earlier codex layer —
+#                    the constraint the `M37321` date exchange established
+#   − 36 rows        the patent-division records take `origin_class` from R-ORIGIN-2's GenBank
+#                    division branch instead. A generic reason belongs in a rule, and 36
+#                    accession-level rows asserting what `division == PAT` already entails would be
+#                    redundant curation the day they landed
+#
+# What is left is the part no rule can reach: the paper's word for the 62-record Rico-Hesse/Kew wild
+# PV1 panel, whose 150 nt deposits carry neither `/host` nor `/isolation_source`, and the
+# `engineered/lab` frame for laboratory and patent deposits — a statement about what a record is
+# *not*, which no rule in this pipeline asserts from an absence.
+EXPECTED_ORIGIN_UNKNOWN_ROWS = 173
+
+# Release 5.0.0's own correctness pass, 2026-08-14. Fourteen rows, three kinds:
+#   3  `carve_exclusion` on `FV537075`/`76`/`77` — laboratory conversions of the Mahoney parental
+#      sequence, out of the canonical carve on the same footing as `AH004344`
+#   5  `serotype` relabels where the organism name and the capsid sequence disagree and the
+#      sequence wins (`OR208596`, `AY830709`, `HM537010`, `MG212473`, `AY297766`)
+#   6  `engineered_or_construct = TRUE` on the six R-CONSTRUCT-2's two structural tests cannot
+#      reach (`M14761`, `S61236`, `S65446`/`447`/`449`/`450`), ratified 2026-08-12
+EXPECTED_RELEASE_5_ROWS = 3 + 5 + 6
+RELEASE_5_ADJUDICATION_SOURCE = "curator_adjudication_2026-08-14"
+
 EXPECTED_STATUS = {
     "active": (
         2895
@@ -232,6 +282,8 @@ EXPECTED_STATUS = {
         + len(CAVA_PARENTAL_ADDITIONS)
         + VOCABULARY_REPAIR_NET_ACTIVE
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
+        + EXPECTED_ORIGIN_UNKNOWN_ROWS
+        + EXPECTED_RELEASE_5_ROWS
     ),
     "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
     "superseded": 10 + len(VOCABULARY_REPAIR_ADDITIONS) + POLIO_CLASSIFICATION_SUPERSEDES,
@@ -240,12 +292,6 @@ EXPECTED_STATUS = {
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
 # so a registry rename does not rehash every id.
 ID_COLUMNS = ("decision_type", "subject_key", "field_name", "new_value")
-
-# The six reasons the release shipped truncated, because an earlier tool split the note on a comma
-# and stringified the remainder into an unnamed column. These are the only rows whose text may
-# differ from the release, and only by holding MORE of it.
-REPAIRED_ACCESSIONS = {"A27232", "A27233", "DI499165", "KY748286", "S72981", "S72984"}
-
 
 def assertion_key(row: dict[str, str]) -> tuple[str, str, str]:
     return (row["subject_key"], row["field_name"], row["new_value"])
@@ -271,6 +317,8 @@ def test_ledger_satisfies_its_own_contract(
         + EXPECTED_UPSTREAM_PARTITION_ROWS
         + EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
         + EXPECTED_POLIO_CLASSIFICATION_ROWS
+        + EXPECTED_ORIGIN_UNKNOWN_ROWS
+        + EXPECTED_RELEASE_5_ROWS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -343,10 +391,22 @@ def test_the_cvdpv_and_strain_identity_decisions_agree_with_the_shipped_column(
             r["accession"]: r["poliovirus_classification"]
             for r in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
         }
+    # A carve-excluded record has no shipped classification to agree with, and that is not a
+    # disagreement. Checked rather than skipped: the records absent from the column must be exactly
+    # the ones the ledger itself excludes, so a record vanishing for any other reason still fails.
+    carve_excluded = {
+        r["accession"] for r in ledger
+        if r["decision_type"] == "carve_exclusion" and r["status"] == "active"
+    }
+    absent = {r["accession"] for r in rows if r["accession"] not in shipped}
+    assert absent <= carve_excluded, (
+        f"decisions on records the release does not carry, and the ledger does not exclude: "
+        f"{sorted(absent - carve_excluded)}"
+    )
     disagreements = {
         r["accession"]: (r["new_value"], shipped.get(r["accession"]))
         for r in rows
-        if shipped.get(r["accession"]) != r["new_value"]
+        if r["accession"] in shipped and shipped[r["accession"]] != r["new_value"]
     }
     assert not disagreements, f"decisions the release does not already reflect: {disagreements}"
 
@@ -768,11 +828,14 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     honest answer fail.
 
     Eleven since 2026-07-30: `vdpv_wild_reconciliation.csv` is the locked reconciliation allowlist,
-    the last input to `poliovirus_classification` that had no counterpart here.
+    the last input to `poliovirus_classification` that had no counterpart here. Twelve since
+    2026-08-14, with `origin_unknown_curation.csv` — deliberately *not* a
+    `curator_adjudication_<date>` name, a prefix this file restricts to `classification` and
+    `engineered_or_construct` rows.
     """
     sources = Counter(r["source_artifact"] for r in ledger)
     registries = {s for s in sources if s.endswith(".csv")}
-    assert len(registries) == 11
+    assert len(registries) == 12
     assert sources[VDPV_SOURCE] == EXPECTED_VDPV_ROWS
     assert sources["curator_adjudication_2026-07-29"] == len(D2_ADDITIONS) + len(
         ENGINEERED_READJUDICATION_ADDITIONS
@@ -783,6 +846,10 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
     )
     assert sources[POLIO_CLASSIFICATION_SOURCE] == EXPECTED_POLIO_CLASSIFICATION_ROWS
+    # The 2026-08-14 adjudication asserts `engineered_or_construct` only, which is what the
+    # `curator_adjudication_` prefix permits. The carve exclusions and serotype relabels landing the
+    # same day went to `carve_exclusions_confirmed.csv` and `manual_review_overrides.csv` instead.
+    assert sources[RELEASE_5_ADJUDICATION_SOURCE] == 6
     assert sources[UPSTREAM_PARTITION_SOURCE] == EXPECTED_UPSTREAM_PARTITION_ROWS
     assert (
         sources[SHORT_PATENT_MEMBERSHIP_SOURCE] == EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
@@ -791,6 +858,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         "curator_adjudication_2026-07-29",
         "curator_adjudication_2026-07-31",
         POLIO_CLASSIFICATION_SOURCE,
+        RELEASE_5_ADJUDICATION_SOURCE,
         UPSTREAM_PARTITION_SOURCE,
         SHORT_PATENT_MEMBERSHIP_SOURCE,
     }
@@ -813,7 +881,13 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
             # source rather than by subject: two of its records (`CS406483`, `PU749298`) also carry
             # `engineered_or_construct` rows from the 2026-07-29 adjudication, so a subject-keyed
             # rule would demand the wrong field of those.
-            if (
+            # 2026-08-14 is keyed by source for the same reason, and it is the case that proves
+            # the point: `M14761` carries a `classification = recombinant/lab` row from the
+            # 2026-07-31 adjudication *and* an `engineered_or_construct = TRUE` row from this one.
+            # A subject-keyed rule demands `classification` of both.
+            if row["source_artifact"] == RELEASE_5_ADJUDICATION_SOURCE:
+                assert row["field_name"] == "engineered_or_construct"
+            elif (
                 row["source_artifact"] == POLIO_CLASSIFICATION_SOURCE
                 or row["subject_key"] in classification_subjects
             ):

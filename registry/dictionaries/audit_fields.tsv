@@ -1,0 +1,49 @@
+table_name	column_name	definition	logical_type	physical_type	nullable	key_role
+record_disposition	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key
+record_disposition	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per candidate record)
+record_disposition	candidate_query_member	TRUE if the record was in the GenBank query result set that produced raw/. TRUE on every row: the query result is the candidate set, and the column states the denominator rather than leaving it to be inferred.	string	string	FALSE	
+record_disposition	virus_group	Dataset partition. For an included record the canonical value; for a record excluded by lineage or by a curator membership exclusion, non_ev_other, which the exclusion itself establishes; for a carve exclusion, what the partition rule reads from the organism name.	string	string	FALSE	FK -> controlled_vocabularies virus_group
+record_disposition	curation_status	vouched, provisional or excluded. Every non-included candidate is excluded by definition.	string	string	FALSE	FK -> controlled_vocabularies curation_status
+record_disposition	canonical_included	TRUE if the record appears in the canonical table.	string	string	FALSE	
+record_disposition	exclusion_reason	Why the record is not in canonical, blank when it is. One of three: the GenBank lineage names no Enterovirus genus, a curator confirmed the record is not in scope, or a curator carve exclusion left an in-scope record out. Blank on 1,253 of 1,426 excluded rows in the carried 2.4.1 copy; blank on none now.	string	string	TRUE	
+record_disposition	sequence_sha256	SHA-256 of the nucleotide sequence.	string	string	FALSE	content hash; FK -> source.records.sequence_sha256
+projection_provenance	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key
+projection_provenance	version	accession.version the row concerns.	string	string	FALSE	composite PK (version, canonical_field)
+projection_provenance	canonical_field	Canonical column whose provenance this row records.	string	string	FALSE	composite PK (version, canonical_field)
+projection_provenance	final_value	Value written to the canonical column.	string	string	TRUE	
+projection_provenance	source_field	Upstream curated field the canonical value was projected from.	string	string	FALSE	
+projection_provenance	source_value	Value of that upstream field.	string	string	TRUE	
+projection_provenance	winning_rule_id	Rule id (FK -> rules.rule_id) governing the projection.	string	string	FALSE	FK -> rules.rule_id
+projection_provenance	evidence_basis	Basis for the value (e.g. name_derived, sequence_derived_confident, canonical_projection).	string	string	FALSE	
+projection_provenance	manual_override	TRUE if any normalized human decision asserts a field aliasing to this canonical column for this accession (P2; DECISION_FIELD_TO_CANONICAL).	string	string	FALSE	
+projection_provenance	unresolved_reason	Why the rule declined this cell, when it did. Blank on a resolved cell. This is the column that makes a blank canonical value readable: the table cannot tell a value a rule chose to leave empty from one it could not decide, and this says which.	string	string	TRUE	
+decision_applications	decision_id	Content-stable id of the curation decision this row reports on (FK -> registry ledger).	string	string	FALSE	primary key (one row per decision per canonical field)
+decision_applications	accession	Unversioned GenBank accession the decision concerns.	string	string	TRUE	join key (blank for accession-less decisions)
+decision_applications	registry_field	The ledger's own field name, as written by the curator.	string	string	FALSE	
+decision_applications	canonical_field	Canonical column the ledger field maps to, or blank when it maps to none.	string	string	TRUE	
+decision_applications	asserted_value	Value the decision asserts.	string	string	FALSE	
+decision_applications	value_without_decision	What the rules alone reach for this cell, measured by projecting the corpus with the whole ledger withheld. Blank means the rules decline.	string	string	TRUE	
+decision_applications	final_value	Value actually shipped in the canonical column.	string	string	TRUE	
+decision_applications	application_status	What became of the decision: applied_changed, applied_filled_unresolved, applied_unchanged (the rules now reach the same value unaided), applied_exclusion, not_in_force_retired, not_in_force_superseded, no_canonical_field, subject_outside_carve.	string	string	FALSE	FK -> controlled_vocabularies application_status
+classification_divergence	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key
+classification_divergence	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per measured record)
+classification_divergence	reference_serotype	Sabin serotype the divergence was measured against (1/2/3).	string	string	FALSE	
+classification_divergence	reference_version	accession.version of the Sabin reference used.	string	string	FALSE	FK -> canonical.version
+classification_divergence	divergence_pct	Percent nucleotide divergence from that reference over the compared span.	number	string	FALSE	
+classification_divergence	compared_nt	Number of nucleotide positions compared; the denominator of divergence_pct.	integer	string	FALSE	
+classification_divergence	strand	Which strand the comparison was made on; a reverse-complement deposit is compared as deposited.	string	string	FALSE	
+classification_divergence	basis	Region the divergence was measured on (VP1, or the P1 capsid fallback), and how the serotype reference was chosen.	string	string	FALSE	
+membership_rescue	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key
+membership_rescue	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per rescued record)
+membership_rescue	organism_name	NCBI organism name, which for every rescued record states no poliovirus membership.	string	string	FALSE	
+membership_rescue	membership_basis	Why the record was admitted: capsid amino-acid distance to a poliovirus reference, or a byte-identical twin the release already carved.	string	string	FALSE	
+membership_rescue	reference_serotype	Serotype of the reference the distance was measured against.	string	string	TRUE	
+membership_rescue	reference_version	accession.version of that reference.	string	string	TRUE	
+membership_rescue	capsid_aa_distance_pct	Percent capsid amino-acid p-distance to that reference.	number	string	TRUE	
+membership_rescue	capsid_codons_compared	Number of capsid codons compared; below the declared floor the band does not decide.	integer	string	TRUE	
+membership_rescue	byte_identical_twin	accession of a record with the identical nucleotide sequence that the release already carved, when that is the basis.	string	string	TRUE	
+rules	rule_id	Stable rule identifier.	string	string	FALSE	primary key
+rules	rule_version	Schema version the rule text is pinned to.	string	string	FALSE	
+rules	field_name	The canonical field or threshold parameter this rule governs.	string	string	FALSE	
+rules	description	Human-readable rule statement (thresholds interpolated from code constants).	string	string	FALSE	
+rules	status	active, deprecated or superseded. Published so a deprecated rule and its successor are distinguishable in this table rather than only in the catalog.	string	string	FALSE	FK -> controlled_vocabularies rule_status

@@ -32,14 +32,18 @@ Every path below still reads `final/`, and `final/` is now this pipeline's own r
 2.4.1. Nothing in this module changed to make that happen — the paths were always declared once,
 and the tree under them moved — but the populations did:
 
-| artifact | 2.4.1 | 4.0.0 | why |
-|---|---|---|---|
-| `EV_unified` | 24,301 | 24,308 | the carve: +9 `UNDECLARED_EXCLUSIONS`, −2 rescued |
-| `POLIO_unified` | 10,084 | 10,090 | +6, short patent deposits the ledger calls poliovirus |
-| `NPEV_unified` | 14,217 | 14,218 | +1, `AF326751.2` |
-| `PV1_unified` | 4,427 | 4,337 | `virus_type` is now R-TYPE-2's name-derived |
-| `PV2_unified` | 3,939 | 3,790 | column, which declines where 2.4.1 asserted a |
-| `PV3_unified` | 1,693 | 1,597 | serotype from curated data this repo lacks |
+| artifact | 2.4.1 | 4.0.0 | 5.0.0 | why |
+|---|---|---|---|---|
+| `EV_unified` | 24,301 | 24,308 | 24,305 | the carve: +9 `UNDECLARED_EXCLUSIONS`, −2 rescued |
+| `POLIO_unified` | 10,084 | 10,090 | 10,087 | +6, short patent deposits the ledger calls polio |
+| `NPEV_unified` | 14,217 | 14,218 | 14,218 | +1, `AF326751.2` |
+| `PV1_unified` | 4,427 | 4,337 | 4,333 | `virus_type` is now R-TYPE-2's name-derived |
+| `PV2_unified` | 3,939 | 3,790 | 3,791 | column, which declines where 2.4.1 asserted a |
+| `PV3_unified` | 1,693 | 1,597 | 1,597 | serotype from curated data this repo lacks |
+
+The 5.0.0 column is 4.0.0 less the three `FV5370xx` carve exclusions — all poliovirus, hence NPEV
+holding — plus five serotype relabels (`OR208596→PV1`, `AY830709→PV2`, `HM537010→PV3`,
+`MG212473→PV2`, `AY297766→PV3`), which is why `PV2_unified` gains a row while the rest lose or hold.
 
 The serotype files are the consequential row. **366 poliovirus records now carry a blank
 `virus_type`, against 25 before**, so they are members of `POLIO_unified` and `EV_unified` and of no
@@ -78,6 +82,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from enterovirus_genbank_curated.align.seeds import SEED_DIR
+from enterovirus_genbank_curated.derive.regions import SABIN_REFERENCES as _SABIN_REFERENCES
 from enterovirus_genbank_curated.oracle.parity import (
     SHIPPED_CANONICAL_FASTA,
     SHIPPED_CANONICAL_METADATA,
@@ -362,7 +367,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="POLIO_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,)),
-        expected_rows=10_090,
+        expected_rows=10_087,
         description=(
             "All-serotype poliovirus whole-genome multiple sequence alignment "
             "(5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
@@ -384,7 +389,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="EV_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS, NON_POLIO)),
-        expected_rows=24_308,
+        expected_rows=24_305,
         description=(
             "All-enterovirus (poliovirus and non-polio) whole-genome multiple sequence "
             "alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
@@ -395,7 +400,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="PV1_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV1",)),
-        expected_rows=4_337,
+        expected_rows=4_333,
         description=(
             "Poliovirus serotype 1 whole-genome multiple sequence alignment, Sabin-anchored"
         ),
@@ -406,7 +411,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="PV2_unified",
         stack="anchored",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,), virus_types=("PV2",)),
-        expected_rows=3_790,
+        expected_rows=3_791,
         description=(
             "Poliovirus serotype 2 whole-genome multiple sequence alignment, Sabin-anchored"
         ),
@@ -428,8 +433,8 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
 
 # The Sabin references, and the accession each `PV{n}_unified` is anchored on. Their canonical
 # `sequence_length_nt` — 7,441 / 7,439 / 7,432 — equals the shipped
-# `n_sabin_reference_columns` exactly, which gives the anchored stack a free integer invariant.
-SABIN_REFERENCES = {"PV1": "AY184219", "PV2": "AY184220", "PV3": "AY184221"}
+# `n_reference_columns` exactly, which gives the anchored stack a free integer invariant.
+SABIN_REFERENCES = _SABIN_REFERENCES
 
 # Reasons a row present in a shipped alignment is absent from the rebuild. Closed vocabulary: a
 # drop with no reason is a bug, and a new reason is a source edit that gets reviewed.

@@ -27,7 +27,6 @@ from enterovirus_genbank_curated.contracts import (
     verify_raw_input,
 )
 from enterovirus_genbank_curated.oracle.release import (
-    DICTIONARY_HASHES,
     SOURCE_LAYER_HASHES,
     read_tsv_gz,
     verify_build_manifest,
@@ -112,7 +111,7 @@ def test_quoted_multiline_fields_are_counted_as_one_row(tmp_path: Path) -> None:
 def test_drifted_carried_bytes_are_caught(tmp_path: Path, repository_root: Path) -> None:
     """A carried file that no longer matches the hash pinned in code fails, byte for byte."""
     perturbed = sorted(SOURCE_LAYER_HASHES)[0]
-    for relative in (*SOURCE_LAYER_HASHES, *DICTIONARY_HASHES):
+    for relative in SOURCE_LAYER_HASHES:
         target = tmp_path / "final" / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(repository_root / "final" / relative, target)

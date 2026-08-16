@@ -3,9 +3,9 @@ backbone tier joins with `--add`, the addon tier joins as fragments with `--addf
 steeper local gap-open, and the resulting gapped amino-acid alignment is backtranslated onto each
 record's own unaligned nucleotide ORF.
 
-Ported from MAD-VDPV's `build_{ev,polio,grand_ev}_cds_codon_msa.py` — structurally identical across
-all three upstream scripts, so this repo needs one implementation rather than three; a population
-plus its `CodonSpec` already carries everything that varied between them.
+Ported from the upstream `build_{ev,polio,grand_ev}_cds_codon_msa.py` — structurally identical
+across all three upstream scripts, so this repo needs one implementation rather than three; a
+population plus its `CodonSpec` already carries everything that varied between them.
 
 ## Where this diverges from upstream
 
@@ -125,6 +125,81 @@ def backtranslate(aa_aln: dict[str, str], orf_nt: dict[str, str], width_aa: int)
             )
         aligned_nt[accession] = joined
     return aligned_nt
+
+
+# A codon column every occupant spells with ambiguity carries no homology signal — nobody's base is
+# known there, so nothing can be aligned to anything. `mafft --addfragments` opens such columns
+# faithfully, because an N-run *is* an insertion as far as the aligner can tell, and the result was
+# 7,130 all-N columns in `NPEV_unified` — 48.8% of its CDS block — held open by eleven deposits with
+# assembly gaps padded to full length. `PX242045` alone opened 2,169.
+#
+# Measured on the diagnostic run that motivated this filter: 2.4.1's NPEV CDS carried the *same*
+# 43,110 N residues in 7,677 columns with **zero** all-N columns. So the width was not a cost of the
+# `--lop` placement fix, which is what an earlier reading of it claimed. The padding is the whole
+# difference.
+#
+# Dropped at codon granularity because `backtranslate` emits `"---"` or a whole codon, so removing a
+# single column would break the reading frame and the whole-codon width invariant with it. That is
+# also why the shipped `NPEV_unified` still has 9 gap-or-N columns: an ambiguous nucleotide whose
+# two codon partners carry real bases is not droppable, and dropping it would be wrong.
+#
+# The filter discards **no** unambiguous nucleotide, and that is a property of the predicate rather
+# than a measurement to re-take: a column only goes if *every* row spells it from `AMBIGUOUS_CODON`.
+# `tests/test_align_codon.py` pins it constructively. On the shipped bytes NPEV's CDS goes 14,598 ->
+# 7,503 columns and 43,110 -> 25,155 N residues, with POLIO and every PV{n} file unchanged — their
+# blocks had no all-ambiguous codon to drop. N's that MAFFT placed on shared columns stay: those are
+# informative, meaning "unsequenced at this homologous position", which is a different statement
+# from a deletion and one the p-distance readers already handle.
+AMBIGUOUS_CODON = frozenset("Nn-.")
+
+
+def drop_unsequenced_codon_columns(
+    aligned_nt: dict[str, str], width_aa: int
+) -> tuple[dict[str, str], int]:
+    """Remove codon columns no record spells with a known base. Returns the rows and how many went.
+
+    A column with no occupant at all is left alone: that is an ordinary gap column, and dropping it
+    would silently change the meaning of this function from "unsequenced" to "unused".
+    """
+    doomed: list[int] = []
+    for codon in range(width_aa):
+        start = 3 * codon
+        occupied = False
+        informative = False
+        for row in aligned_nt.values():
+            triplet = row[start : start + 3]
+            if triplet == "---":
+                continue
+            occupied = True
+            if any(base not in AMBIGUOUS_CODON for base in triplet):
+                informative = True
+                break
+        if occupied and not informative:
+            doomed.append(codon)
+    if not doomed:
+        return aligned_nt, 0
+
+    cut = set(doomed)
+    kept = {
+        accession: "".join(
+            row[3 * codon : 3 * codon + 3] for codon in range(width_aa) if codon not in cut
+        )
+        for accession, row in aligned_nt.items()
+    }
+    # A row emptied by this filter would be `present` and all-gap, which `validation/alignment.py`
+    # fails outright. No row is emptied today — every affected record keeps thousands of real
+    # bases — and if one ever would be, that is a record whose CDS is *entirely* unsequenced and
+    # the honest response is to stop rather than to ship a blank row.
+    # `not row` matters as much as the all-gap case: a row whose every column is dropped becomes
+    # the empty string, which a truthiness guard would skip straight past.
+    emptied = sorted(a for a, row in kept.items() if not row or set(row) <= set("-."))
+    if emptied:
+        raise ContractError(
+            f"dropping unsequenced codon columns would empty {len(emptied)} row(s) "
+            f"({emptied[:5]}); those records carry no sequenced CDS at all and must not ship "
+            f"as blank rows"
+        )
+    return kept, len(doomed)
 
 
 def build_codon_block(
@@ -254,6 +329,8 @@ def build_codon_block(
 
     orf_nt = {acc: segmentations[acc].orf_nt for acc in expected}
     aligned_nt = backtranslate(aa_aln, orf_nt, width_aa)
+    aligned_nt, dropped_codons = drop_unsequenced_codon_columns(aligned_nt, width_aa)
+    width_aa -= dropped_codons
 
     return CodonAlignment(
         width_aa=width_aa,

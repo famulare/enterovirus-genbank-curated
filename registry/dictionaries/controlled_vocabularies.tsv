@@ -1,0 +1,62 @@
+field	value	definition
+virus_group	poliovirus	Poliovirus partition (vouched carve).
+virus_group	non_polio_enterovirus	Non-polio enterovirus partition (provisional).
+curation_status	vouched	Reviewed poliovirus carve; shipped as gold-standard.
+curation_status	provisional	Non-polio EV; typing/classification not vouched.
+curation_status	excluded	Candidate record removed from canonical (see record_disposition; audit only).
+sequence_scope	complete_genome	Whole-genome record.
+sequence_scope	capsid	P1/capsid region.
+sequence_scope	vp1_complete	Complete VP1.
+sequence_scope	vp1_partial	Partial VP1.
+sequence_scope	other_fragment	Non-VP1 or other fragment.
+sequence_scope	unknown	No scope determination: every non_polio_enterovirus row (record_type is a poliovirus-only, Sabin-VP1-coordinate derivation), or an unmapped poliovirus record_type. Distinct from other_fragment, which is a positive finding that the record IS a fragment.
+collection_date_precision	day	Full YYYY-MM-DD.
+collection_date_precision	month	YYYY-MM.
+collection_date_precision	year	YYYY.
+collection_date_precision	range	The deposit gave an ISO 8601 interval /collection_date (e.g. 2014/2015, 1945/1955). collection_date carries the R-DATE-RANGE-1 midpoint -- floor of the mean of the endpoint years, so it is derived rather than measured -- and collection_year_earliest/latest carry the exact bounds. Added 2.2.0; these rows were previously 'unknown' with an unparseable interval string in collection_date.
+collection_date_precision	unknown	Precision not determinable, or collection date absent (P3: was observed but undeclared in 2.1.0).
+boolean	TRUE	Boolean true.
+boolean	FALSE	Boolean false.
+decision_type	manual_override	A per-accession manual field override (manual_review_overrides.csv).
+decision_type	carve_exclusion	Confirmed exclusion from the shipped carve (carve_exclusions_confirmed.csv).
+decision_type	membership_exclusion	Confirmed exclusion from the poliovirus-membership set (membership_exclusions_confirmed.csv).
+decision_type	isolate_linkage_approval	Approved isolate-linkage classification (isolate_linkage_manual_verified.csv).
+decision_type	canonical_reference_confirmation	Canonical-reference decision (canonical_reference_confirmed.csv): with a canonical_accession, confirms canonical_reference=TRUE for that accession; accession-less, asserts canonical_reference_available=FALSE for the labeled reference family (e.g. Lansing).
+decision_type	legacy_classification_override	Legacy accession classification override (legacy_accession_classification_overrides.csv).
+decision_type	date_override	Curated collection-date override (date_review_overrides.csv).
+decision_type	membership_confirmation_polio	Confirmed poliovirus membership (membership_poliovirus_confirmed.csv).
+decision_type	membership_confirmation_not_polio	Confirmed non-poliovirus with corrected type (membership_not_poliovirus_confirmed.csv).
+decision_type	polio_recovery_confirmation	Confirmed recovered poliovirus serotype (polio_recovery_confirmed.csv).
+poliovirus_classification	Sabin	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	Sabin-like	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	VDPV	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	VDPV-n	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	cVDPV	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	cVDPV-n	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	chimera	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	defective-interfering particle	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	engineered/lab	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	iVDPV	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	nOPV	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	nOPV-L	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	recombinant/lab	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	reference/lab	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	unresolved	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	vaccine	GPLN reconciled poliovirus classification tier (observed value).
+poliovirus_classification	wild	GPLN reconciled poliovirus classification tier (observed value).
+sample_origin	human	The sample was taken from a person. From a /host matching the declared human pattern, a human-specimen keyword in /isolation_source, or the ENV GenBank division, since sewage is human waste from a human population.
+sample_origin	non-human	The sample was not taken from a person: a named non-human /host, or the PAT GenBank division, since a patent deposit is not a sample taken from an organism at all.
+sample_origin	vaccine	Curated: the material is a vaccine strain rather than a sample from a host. Asserted only by a decision; no rule emits it.
+sample_origin	unknown	Determined non-determination: outside poliovirus, where the curated master never asked the question, and the record deposits no host of its own. Not the same as blank, which means the rule declined and the cell is queued.
+surveillance_stream	AFP/clinical	Acute flaccid paralysis or other clinical case detection. From clinical-case keywords in /isolation_source.
+surveillance_stream	healthy/community	A healthy individual or a case contact, sampled outside clinical presentation. Tested before the clinical pattern, because a healthy contact of a case mentions both.
+surveillance_stream	environmental	Sewage or other environmental sampling. From environmental keywords in /isolation_source, or from the valueless /environmental_sample flag where the record names no specimen of its own.
+surveillance_stream	vaccine/reference	Curated: a vaccine seed or reference deposit rather than a surveillance sample. Asserted only by a decision.
+surveillance_stream	engineered/lab	Curated: a laboratory construct or patent deposit, which is a statement about what the record is not. Asserted only by a decision; no rule derives a frame from an absence.
+surveillance_stream	not_applicable	Determined non-determination: outside poliovirus, where the field was curated for poliovirus only, and the record names no surveillance context of its own.
+specimen_type	stool	Faecal material. The default poliovirus surveillance specimen, but emitted only where /isolation_source names it: the release's default_stool assumption is deliberately not inherited.
+specimen_type	respiratory	Throat, nasal, nasopharyngeal, oropharyngeal or sputum material.
+specimen_type	environmental	Sewage, wastewater, effluent, a named treatment plant or sewer trunk line.
+specimen_type	CNS	Central nervous system material: CSF, brain or spinal tissue.
+specimen_type	serum	Serum, blood or plasma.
+virus_type	open	Not a closed enum. Enterovirus type in the genus-and-number form the release uses -- PV1/PV2/PV3 for poliovirus, CVA and CVB with a number for coxsackieviruses, E with a number for echoviruses, EV- and RV- with a species letter and number for the rest. 217 distinct values ship. Read from the NCBI organism name, or from the depositor's own definition line where the name states none.

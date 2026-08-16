@@ -22,6 +22,7 @@ from enterovirus_genbank_curated.derive.metadata import (
     UNDECLARED_EXCLUSIONS,
 )
 from enterovirus_genbank_curated.oracle.release import read_tsv_gz
+from enterovirus_genbank_curated.registry.decisions import load_carve_excluded_accessions
 
 
 @dataclass(frozen=True)
@@ -169,7 +170,9 @@ def tier_of(metadata_row: dict[str, str], evidence_row: dict[str, str] | None) -
 
 
 def assert_evidence_covers_the_carve(
-    metadata: dict[str, dict[str, str]], evidence: dict[str, dict[str, str]]
+    metadata: dict[str, dict[str, str]],
+    evidence: dict[str, dict[str, str]],
+    carve_excluded: frozenset[str] = frozenset(),
 ) -> None:
     """The tier oracle is a 2.4.1 artifact; its gap against the carve must be the declared one.
 
@@ -180,7 +183,7 @@ def assert_evidence_covers_the_carve(
     for non-polio, which is a guess wearing a rule's clothes).
 
     Carrying it is defensible; carrying it *silently* is not. It covers 24,301 records and the
-    carve holds 24,308, and `tier_of` reads a missing row as `addon` — so nine records would take
+    carve holds 24,305, and `tier_of` reads a missing row as `addon` — so nine records would take
     a tier by default, with nothing saying they had. That is the shape of defect this repository
     keeps finding: a real decision expressed as an absent key.
 
@@ -203,11 +206,19 @@ def assert_evidence_covers_the_carve(
             f"UNDECLARED_EXCLUSIONS; unexpected: {sorted(uncovered - UNDECLARED_EXCLUSIONS)}, "
             f"newly covered: {sorted(UNDECLARED_EXCLUSIONS - uncovered)}"
         )
-    if orphaned != SEQUENCE_RESCUED_INCLUSIONS:
+    # `sequence_evidence.tsv.gz` is still 2.4.1's, so it describes 2.4.1's carve. Two kinds of
+    # record are legitimately in it and not in ours: the membership-rescue pair the release carves
+    # and this pipeline declines (`SEQUENCE_RESCUED_INCLUSIONS`), and anything a curator has
+    # carve-excluded since. The second set is read from the ledger rather than listed here, so
+    # excluding a record does not also require editing this module — which is what it required on
+    # 2026-08-14, when `FV537075`/`76`/`77` were excluded and this check stopped the alignment
+    # layer.
+    declared_absent = SEQUENCE_RESCUED_INCLUSIONS | carve_excluded
+    if orphaned != declared_absent:
         raise ContractError(
             f"{contract.SEQUENCE_EVIDENCE} carries rows for records the carve does not hold, "
-            f"beyond the declared SEQUENCE_RESCUED_INCLUSIONS: "
-            f"{sorted(orphaned - SEQUENCE_RESCUED_INCLUSIONS)}"
+            f"beyond SEQUENCE_RESCUED_INCLUSIONS and the ledger's carve exclusions: "
+            f"{sorted(orphaned - declared_absent)}"
         )
 
 
@@ -223,7 +234,15 @@ def load_all_records(repository_root: Path) -> dict[str, AlignedRecord]:
     ev_header, ev_rows = read_tsv_gz(repository_root / contract.SEQUENCE_EVIDENCE)
     evidence = _indexed(ev_header, ev_rows, contract.SEQUENCE_EVIDENCE)
 
-    assert_evidence_covers_the_carve(metadata, evidence)
+    # Loaded once. Calling this inside the comprehension re-parsed the whole 4,899-row ledger for
+    # every one of the 24,301 evidence rows and took the fast test tier from 70 seconds to minutes.
+    carve_excluded = load_carve_excluded_accessions(repository_root / "registry/decisions.tsv")
+    excluded_versions = frozenset(
+        row[contract.VERSION]
+        for key, row in evidence.items()
+        if key.split(".", 1)[0] in carve_excluded
+    )
+    assert_evidence_covers_the_carve(metadata, evidence, excluded_versions)
 
     sequences = load_sequences(repository_root / contract.CANONICAL_FASTA)
 

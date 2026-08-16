@@ -1,106 +1,112 @@
 {
-  "release_version": "4.1.0",
+  "release_version": "5.0.0",
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "4d0ebd9deb9df3e397e1196da5b21980f7f48aedb8fb2d5e3d035aecbbca6aa7",
+  "code_sha256": "df44b351c1695bef205ec779a374aa9aefd210f94734653b5ee33c3226475036",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "ca5e0ab90ebaf9b102d69a16f585c54d8c0155070fdfdfd27fde05dab7bf5ecd",
-    "rules_sha256": "6c29c28e49ba2c740fbacfe65025a8069c05bac1ef55b15dad360d47ccf179e7"
+    "decisions_sha256": "7b81a314ceb7985ed44649340a38c86264e1de8adf1809cd6b2b4205108a0362",
+    "rules_sha256": "1d073672a8db0eeb66d03d5e4f92f30536228889ec789a84b4034b29f6f1573c"
   },
   "row_counts": {
     "source_records": 25727,
-    "transported": 24308,
-    "excluded_by_ledger": 173,
+    "transported": 24305,
+    "excluded_by_ledger": 176,
     "excluded_as_non_enterovirus": 1246,
     "included_by_membership_rescue": 23,
-    "provenance_rows": 316004,
-    "dates_not_applicable": 4573,
-    "localities_without_geography": 2055,
-    "curation_queue_groups": 295,
-    "decision_applications": 6119,
-    "curation_queue_records": 25865,
-    "canonical_rows": 24308,
-    "vouched_rows": 10090,
-    "rules_in_baseline_view": 28,
-    "classification_divergence_rows": 8347
+    "provenance_rows": 340270,
+    "dates_not_applicable": 2809,
+    "localities_without_geography": 2052,
+    "curation_queue_groups": 268,
+    "decision_applications": 6306,
+    "curation_queue_records": 25065,
+    "canonical_rows": 24305,
+    "vouched_rows": 10087,
+    "rules_published": 39,
+    "classification_divergence_rows": 8344,
+    "record_disposition_rows": 25727,
+    "reference_region_rows": 39,
+    "canonical_dictionary_rows": 26,
+    "source_dictionary_rows": 70,
+    "audit_dictionary_rows": 48,
+    "controlled_vocabulary_rows": 61
   },
   "decision_applications": {
     "no_canonical_field": 123,
-    "applied_exclusion": 173,
-    "applied_changed": 522,
-    "applied_unchanged": 25,
-    "applied_filled_unresolved": 5072,
+    "applied_exclusion": 176,
+    "applied_unchanged": 531,
+    "applied_changed": 1699,
+    "not_in_force_retired": 194,
+    "applied_filled_unresolved": 3556,
     "not_in_force_superseded": 15,
-    "not_in_force_retired": 183,
-    "subject_outside_carve": 6
+    "subject_outside_carve": 12
   },
   "completeness": {
     "canonical_columns": 26,
     "transported": 13,
-    "projected": 13,
-    "pending": [
-      "sequence_scope"
-    ],
+    "projected": 14,
+    "pending": [],
     "columns_with_declined_cells": {
-      "poliovirus_classification": 476,
-      "sample_origin": 2902,
-      "specimen_type": 12700,
-      "surveillance_stream": 7571,
-      "virus_type": 2216
+      "poliovirus_classification": 475,
+      "sample_origin": 2728,
+      "specimen_type": 12617,
+      "surveillance_stream": 7456,
+      "virus_type": 1789
     },
     "reading_a_blank_cell": "A blank is not a claim that the value is absent in nature. It is either a value a rule chose (a locality that would repeat admin1) or a cell no rule could decide. audit/projection_provenance.tsv.gz carries unresolved_reason per cell and curation/curation_queue.tsv groups the undecided ones into questions."
   },
   "column_coverage": {
     "accession": {
       "source": "transported",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0
     },
     "version": {
       "source": "transported",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0
     },
     "sequence_sha256": {
       "source": "transported",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0
     },
     "sequence_length_nt": {
       "source": "transported",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0
     },
     "sequence_scope": {
-      "source": "pending",
-      "filled": 0,
-      "blank": 24308,
+      "source": "projected",
+      "filled": 24305,
+      "blank": 0,
       "declined": 0,
-      "pending_reason": "needs record_type. The sequence stage exists and measures coverage against the Sabin frame, but coverage does not reproduce record_type: fitted against every threshold combination it agrees on 86.7% of poliovirus records with systematic rather than boundary errors — 745 records the release calls other_fragment have a complete VP1, capsid or genome — so record_type is not a function of coverage against Sabin VP1 alone. See derive/evidence.py."
+      "rules": [
+        "R-SCOPE-2"
+      ]
     },
     "ncbi_taxid": {
       "source": "transported",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0
     },
     "organism_name": {
       "source": "transported",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0
     },
     "virus_group": {
       "source": "projected",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0,
       "rules": [
@@ -109,25 +115,25 @@
     },
     "virus_type": {
       "source": "projected",
-      "filled": 22092,
-      "blank": 2216,
-      "declined": 2216,
+      "filled": 22516,
+      "blank": 1789,
+      "declined": 1789,
       "rules": [
         "R-TYPE-2"
       ]
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 9614,
-      "blank": 14694,
-      "declined": 476,
+      "filled": 9612,
+      "blank": 14693,
+      "declined": 475,
       "rules": [
         "R-CLASS-2"
       ]
     },
     "curation_status": {
       "source": "projected",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0,
       "rules": [
@@ -137,52 +143,52 @@
     "isolate_name": {
       "source": "transported",
       "filled": 17222,
-      "blank": 7086,
+      "blank": 7083,
       "declined": 0
     },
     "strain_name": {
       "source": "transported",
       "filled": 7944,
-      "blank": 16364,
+      "blank": 16361,
       "declined": 0
     },
     "host_name": {
       "source": "transported",
       "filled": 17460,
-      "blank": 6848,
+      "blank": 6845,
       "declined": 0
     },
     "sample_origin": {
       "source": "projected",
-      "filled": 21406,
-      "blank": 2902,
-      "declined": 2902,
+      "filled": 21577,
+      "blank": 2728,
+      "declined": 2728,
       "rules": [
         "R-ORIGIN-2"
       ]
     },
     "surveillance_stream": {
       "source": "projected",
-      "filled": 16737,
-      "blank": 7571,
-      "declined": 7571,
+      "filled": 16849,
+      "blank": 7456,
+      "declined": 7456,
       "rules": [
         "R-SURVEILLANCE-2"
       ]
     },
     "specimen_type": {
       "source": "projected",
-      "filled": 11608,
-      "blank": 12700,
-      "declined": 12700,
+      "filled": 11688,
+      "blank": 12617,
+      "declined": 12617,
       "rules": [
         "R-SPECIMEN-2"
       ]
     },
     "collection_date": {
       "source": "projected",
-      "filled": 19735,
-      "blank": 4573,
+      "filled": 21496,
+      "blank": 2809,
       "declined": 0,
       "rules": [
         "R-DATE-2"
@@ -190,7 +196,7 @@
     },
     "collection_date_precision": {
       "source": "projected",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0,
       "rules": [
@@ -200,7 +206,7 @@
     "collection_year_earliest": {
       "source": "projected",
       "filled": 121,
-      "blank": 24187,
+      "blank": 24184,
       "declined": 0,
       "rules": [
         "R-DATE-RANGE-2"
@@ -209,7 +215,7 @@
     "collection_year_latest": {
       "source": "projected",
       "filled": 121,
-      "blank": 24187,
+      "blank": 24184,
       "declined": 0,
       "rules": [
         "R-DATE-RANGE-2"
@@ -218,19 +224,19 @@
     "country": {
       "source": "transported",
       "filled": 22253,
-      "blank": 2055,
+      "blank": 2052,
       "declined": 0
     },
     "admin1": {
       "source": "transported",
       "filled": 5266,
-      "blank": 19042,
+      "blank": 19039,
       "declined": 0
     },
     "locality": {
       "source": "transported_and_projected",
       "filled": 1033,
-      "blank": 23275,
+      "blank": 23272,
       "declined": 0,
       "rules": [
         "R-GEO-LOCALITY-2"
@@ -238,7 +244,7 @@
     },
     "engineered_or_construct": {
       "source": "projected",
-      "filled": 24308,
+      "filled": 24305,
       "blank": 0,
       "declined": 0,
       "rules": [
@@ -248,7 +254,7 @@
     "biosample_accession": {
       "source": "transported",
       "filled": 88,
-      "blank": 24220,
+      "blank": 24217,
       "declined": 0
     }
   }

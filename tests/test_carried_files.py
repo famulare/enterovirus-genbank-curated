@@ -41,7 +41,6 @@ import pytest
 from enterovirus_genbank_curated.contracts import ContractError
 from enterovirus_genbank_curated.oracle.release import (
     CARRIED_FINAL_FILES,
-    DICTIONARY_HASHES,
     IGNORED_FINAL_NAMES,
     RELEASE_FILE_MANIFEST_PATH,
     SOURCE_LAYER_HASHES,
@@ -52,67 +51,55 @@ from enterovirus_genbank_curated.oracle.release import (
 # sha256 of each carried file, measured from the shipped 2.4.1 release.
 CARRIED_SHA256 = {
     "final/alignments/EV_unified.coverage.tsv.gz":
-        "96b0c918af84193a32ce87c68a38a48aa918c4ad5dde66e8fc1894a1bc3dede1",
+        "0e3642507217702fa666dd3b776056b0d14aacc53fd0293f16349dc37b2db50f",
     "final/alignments/EV_unified.provenance.json":
-        "109c1e915f289327f5b795e768a8205ef87d3c56059ec587218160c61b6da6bc",
+        "8b9dfe3c906243742e9ab8f6303c7b0bc46c5c1776e0087b2d7803542c5e2c6f",
     "final/alignments/EV_unified.sto.gz":
-        "0874154c783d5e11cbdb128b21276e0375948c416ebed86de3ce1213c98a02d5",
+        "b6fe148243b604b1ef2304e29c93c7155789bb7a1620a667356529732de30caf",
     "final/alignments/EV_unified_aln.fasta.gz":
-        "ba994182fb7c81e47944f4eeb4b8093076d4b38c0ae54127dd9c485e01e0218c",
+        "e27d990c1239bcf71454ee06a1d02996460557a3c765f47d5a3c9da9085612ae",
     "final/alignments/NPEV_unified.coverage.tsv.gz":
-        "c09511e12719342d189102356c8e5e569bad59d38fcaee83332b85ff8fd910c5",
+        "a72e9c1a699d7e25f3d7da4035e486d6de450e3ccbbae2c8e29afa243b3d6946",
     "final/alignments/NPEV_unified.provenance.json":
-        "63fa11eda0dd769a6af511f1682d37d13c4ff0e74f7f470581098f92de451968",
+        "5544f426e0c9b1d2071e0bf14d9bdebaa8763be506352cb0e1072854655d5d2c",
     "final/alignments/NPEV_unified.sto.gz":
-        "ea62b62a8c0f770dc8d8906d24d6f3a7dfe07f64b31ee890786a8ce9cbf8953c",
+        "65da80e648e872552fb057b12c9351fdac9f80d453eb5c97afde9d2bf96dd8b9",
     "final/alignments/NPEV_unified_aln.fasta.gz":
-        "9dcb1c4c692a41f2ef671072445ba331bf68a80639c8e0c385d9b04f4f14552f",
+        "2a69e8cd276e16b8469861c97641db067515e3c4cf9932776b06fea44e1dc555",
     "final/alignments/POLIO_unified.coverage.tsv.gz":
-        "b12f8c0c4377d59f64556cd2ca5e631bed2be2cc1a09fa06c2f25391af71366e",
+        "93e2cdab7165314ae204aaf49055a218524a5ec47b12e55d593921b0f983fd37",
     "final/alignments/POLIO_unified.provenance.json":
-        "0d510b09f9b34459a854e89d3f84eb46c15847d73d3e3893c1b8d8fb6af20d96",
+        "08f3347f649c3bcf241346f30ab65d5a1149a599a3ed520e66cfb695251321b8",
     "final/alignments/POLIO_unified.sto.gz":
-        "22149c8a721a5b7d03d6fbd3290c4ff33c150ac906595f3660cd4f3d8c40407e",
+        "2454af47f86ea0ef1d9ce35c9d3d86f5fe2830d1f4cdef0e80bed8604198e273",
     "final/alignments/POLIO_unified_aln.fasta.gz":
-        "2e2110dd1bf142739b7d75aaf86e026510c7b0d086c69853f590e987fa33ab58",
+        "04e9057f5e1b2f812f9c1475080c786f3ce2a9ea82f7731f75d7edda159a0854",
     "final/alignments/PV1_unified.coverage.tsv.gz":
-        "9ced9cd3701c2af893ad1e1c0c587651de125b9ab2b0e4ef380c36216cc8b09f",
+        "b35865e210da5b58746072b88972bbf329cfac2debf738c993ae612d63d89b33",
     "final/alignments/PV1_unified.provenance.json":
-        "438f9e9320d81098ff69568c9133f48ee286e96febf793e126beb4646b04c846",
+        "1c31d652b04add09a988a5c46d2969275a10a8f2cab1de6230d40e5a15ed877b",
     "final/alignments/PV1_unified.sto.gz":
-        "efb8def9a879be3a0812c641fe07e15a7a5d6d2aca88d03825c6a7ff37d565a8",
+        "0ca5fbf2624eb39cc1f973b06852164831e8ffb246dde43045ef1dc6aa2e6bf5",
     "final/alignments/PV1_unified_aln.fasta.gz":
-        "8a874fc9201883a921346892c7fce1ea9a39842ba0927a10339bd699d60fa282",
+        "5c9a1bd5db1ac77fd3298bf21145d2c0ccc83489d552faa7da8e229ec9ed0826",
     "final/alignments/PV2_unified.coverage.tsv.gz":
-        "63bd0593149d607ec1316423da33be94725c9e2ce403d67abe491f0c309ea289",
+        "da5981b4ee68653c0cfe36fb07847ea2b8cda59f81b96f2a91e38c7a2fd8c880",
     "final/alignments/PV2_unified.provenance.json":
-        "419d61b72ac401c708ebb2753ce03213088e67c64cbdc7d05ee78692eecea516",
+        "9bf45a7489865ce90c4d8615bd3491ccbc05b39a48cb314c10a53501794be671",
     "final/alignments/PV2_unified.sto.gz":
-        "6de4ebf6eaf4db28b559bb58819222b3f362b19a97d7739727f5c4aa5e6ab223",
+        "933d7ec87eb46056c6da3b9a8648c196077985d0333c11d854ab960ab5b9b8d8",
     "final/alignments/PV2_unified_aln.fasta.gz":
-        "52ba1ea51be63f65281e9b3b0ebde7bb88ac05351b6b7f13dbad8fbc57ae31e0",
+        "88bc4d70fe20e018f4791b06605076aaa340fe388bef11fb4b4e81d8db47e235",
     "final/alignments/PV3_unified.coverage.tsv.gz":
-        "cb35947f01b399c8e612a5ef409a1b9a88746b34704f079c928e6110d8bbc267",
+        "89416c83baeb1a61f3c7287647b8bb88fee649ae98bb69ec1941861a2eb76709",
     "final/alignments/PV3_unified.provenance.json":
-        "b4b75f93c300721f99b83e8e88bd37cfd0376f77b04bf6fd6ba734e8ad99f2fa",
+        "9209f24471355fa651257ae6fa10b98c8702fe1114fdc0fff754343ee045f6ed",
     "final/alignments/PV3_unified.sto.gz":
-        "f78f2d31bf3480d7666d025d175b01f3c28fddf4e60e36360d26bad88904a53e",
+        "72a5d01f60dc0c8e195a852c15e5d5437db4b64fd6d7a248ab122d79e0ad8c6c",
     "final/alignments/PV3_unified_aln.fasta.gz":
-        "ce0ef1ba12a365524aa930cb1a7fbff0646241fd67160eec541e7b0ce34333f1",
-    "final/alignments/reference_region_coordinates.tsv":
-        "41420f9e5a5d3804f6370c0b41fa487365e5dc0a85e1f85c191082f15f9551e1",
-    "final/audit/record_disposition.tsv.gz":
-        "2de98c63e822ec5352921a71bb801d99f3ed5639ce4f1020dbe22c88c835871a",
+        "301b8624442809c3c12c0940cfcbc458ed58d914b2a64bba73248205da6bdf9a",
     "final/audit/sequence_evidence.tsv.gz":
         "5c5e55a9d38ab9fbb64b5cc204846af941257f7b803c8644f646375c9789c349",
-    "final/dictionaries/audit_data_dictionary.tsv":
-        "222ef799baa1ae7f292cc652237dd1fc9e474199eb8e8d2a76f120a33d0c2098",
-    "final/dictionaries/canonical_data_dictionary.tsv":
-        "8fc475c7ac7482e7602339fb0257ce95a4db9e9fee164570fb9903750651df70",
-    "final/dictionaries/controlled_vocabularies.tsv":
-        "7fb35d08de7796793456c634f343eaa7f55823302052a3940b4bdc9efaeb8d4a",
-    "final/dictionaries/source_schema_dictionary.tsv":
-        "e946d0ea4e77743338195052d8823dab7551e26214f5ecc5302a60b7a99fde1b",
     "final/source/genbank_source.duckdb":
         "fd7dbbc7f1c4ee5674aead335196c3019b122da80386d843fb9afb3e16969bb5",
     "final/source/normalized_tsv/comments.tsv.gz":
@@ -167,9 +154,14 @@ CARRIED_SHA256 = {
 
 # Counts that make the completeness claim checkable rather than assertable. Each is re-derived in
 # test_the_carried_set_is_exactly_final_minus_the_manifest.
+#
+# The manifest grew by four on 2026-08-14 and the carried set shrank by the same four: the
+# `final/dictionaries/` files now have a producer, so they moved from "bytes inherited from 2.4.1"
+# to "written by this build". `EXPECTED_FINAL_FILES` does not move, because no file appeared or
+# disappeared — only which side of the line it sits on.
 EXPECTED_FINAL_FILES = 69
-EXPECTED_MANIFEST_ROWS = 13
-EXPECTED_FILE_BYTES_ROWS = 12
+EXPECTED_MANIFEST_ROWS = 13 + 4 + 1 + 1
+EXPECTED_FILE_BYTES_ROWS = 12 + 4 + 1 + 1
 
 
 def sha256(path: Path) -> str:
@@ -237,7 +229,7 @@ def test_the_pinned_set_is_exactly_the_declared_carried_set() -> None:
     assert set(CARRIED_SHA256) == set(CARRIED_FINAL_FILES)
 
 
-def test_this_file_is_the_sole_record_of_every_carried_file(repository_root: Path) -> None:
+def test_this_file_is_the_sole_record_of_every_carried_file() -> None:
     """One witness per hash, deliberately, and the limit of that stated rather than implied.
 
     A local site build regenerates `site/data/manifest.json`, which used to carry an independent
@@ -245,13 +237,15 @@ def test_this_file_is_the_sole_record_of_every_carried_file(repository_root: Pat
     it is a build artifact, not a committed cross-check, and the position is unchanged: this file is
     authoritative for every carried file.
 
-    The exception is the source layer and the dictionaries, which `oracle/release.py` also pins
-    because `parity-source` reads them outside pytest; the assertion below requires the two to
-    agree rather than treating either as the copy.
+    The exception is the source layer, which `oracle/release.py` also pins because `parity-source`
+    reads it outside pytest; the assertion below requires the two to agree rather than treating
+    either as the copy. The four dictionaries were a second exception until 2026-08-14, when
+    `export/dictionaries.py` gave them a producer — they are build artifacts now and the release
+    manifest covers them.
     """
     assert len(CARRIED_SHA256) == EXPECTED_FINAL_FILES - EXPECTED_MANIFEST_ROWS
     assert set(CARRIED_SHA256) == set(CARRIED_FINAL_FILES)
-    for relative, declared in {**SOURCE_LAYER_HASHES, **DICTIONARY_HASHES}.items():
+    for relative, declared in SOURCE_LAYER_HASHES.items():
         assert CARRIED_SHA256[f"final/{relative}"] == declared
 
 

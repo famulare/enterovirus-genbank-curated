@@ -1,7 +1,8 @@
 """Negative controls for the cross-column invariants.
 
 A review established that replacing both invariant functions with no-ops left the entire suite
-green — `pytest`, `pytest -m slow`, `validate-contracts` and `parity-metadata` all passed. So the
+green — `pytest`, `pytest -m slow`, `validate-contracts` and the then-current `parity-metadata`
+(retired 2026-08-01, replaced by `check-declines`) all passed. So the
 claims in `derive/geo.py` and `docs/reproducibility.md` that these are *enforced* were prose with
 nothing behind them: R2 exactly, and specifically the standard `docs/reproducibility.md` holds the
 sandbox to — every rule has a test that fails when the rule is removed.
@@ -21,6 +22,7 @@ from enterovirus_genbank_curated.derive.geo import (
     BASIS_PARSED,
     BASIS_SUPPRESSED,
 )
+from enterovirus_genbank_curated.derive.outcome import RuleOutcome
 from enterovirus_genbank_curated.validation.invariants import (
     assert_date_precision_invariant,
     assert_locality_basis_invariant,
@@ -162,3 +164,43 @@ def test_a_conforming_date_set_passes() -> None:
     assert assert_date_precision_invariant(
         date_rows("2013", "year", "A.1") + date_rows("", PRECISION_NOT_APPLICABLE, "B.1")
     ) == 1
+
+
+def test_a_declined_outcome_may_not_name_an_evidence_basis() -> None:
+    """The guard that made 25,865 contradictory provenance cells unexpressible.
+
+    Every declining branch in the layer used to return the same basis a *resolving* branch of the
+    same rule uses, so the shipped table carried rows whose `unresolved_reason` said no evidence was
+    found and whose `evidence_basis` named the evidence. Refusing the pair in the constructor is
+    what stops it recurring; without a test the guard itself is unprotected.
+    """
+    with pytest.raises(ValueError, match="must not name an evidence basis"):
+        RuleOutcome(
+            value="",
+            evidence_basis="host_species",
+            source_field="origin_class",
+            source_value="",
+            unresolved_reason="no_origin_evidence",
+        )
+
+
+def test_a_declined_outcome_with_no_basis_is_fine() -> None:
+    """Negative control: the guard must not refuse the shape every decline now uses."""
+    outcome = RuleOutcome(
+        value="",
+        evidence_basis="",
+        source_field="origin_class",
+        source_value="",
+        unresolved_reason="no_origin_evidence",
+    )
+    assert not outcome.resolved
+
+
+def test_a_resolved_outcome_still_requires_its_basis_downstream() -> None:
+    """The constructor allows a blank basis on a resolved outcome; `project_field` is what refuses
+    it. Recording the division of labour, so a future reader does not move the check and find the
+    decline case newly forbidden."""
+    outcome = RuleOutcome(
+        value="human", evidence_basis="", source_field="origin_class", source_value="x"
+    )
+    assert outcome.resolved

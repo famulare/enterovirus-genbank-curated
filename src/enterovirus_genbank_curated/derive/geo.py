@@ -83,7 +83,7 @@ def parse_geo_loc_name(value: str) -> GeoParse:
 
 
 def unsuppressed_locality(value: str) -> str:
-    """The locality before R-GEO-LOCALITY-1 blanks it: the whole remainder after the first colon.
+    """The locality before R-GEO-LOCALITY-2 blanks it: the whole remainder after the first colon.
 
     This is what the release records as `source_value`, not the raw qualifier — verified against all
     24,301 shipped provenance rows. Recording the raw string would lose the distinction between "no

@@ -1,7 +1,7 @@
 """The Sabin-anchored CDS block: a pairwise reference-frame projection, no MAFFT at all.
 
-Ported from MAD-VDPV's `codon_align.py` (the TAB engine), `build_reference_alignments.py` (BS0a, the
-nucleotide anchor) and `build_reference_msa.py` (BS0b, the projection). Where the unified stack
+Ported from the upstream `codon_align.py` (the TAB engine), `build_reference_alignments.py` (BS0a,
+the nucleotide anchor) and `build_reference_msa.py` (BS0b, the projection). Where the unified stack
 builds one profile alignment over a whole population, this aligns each record independently against
 one Sabin reference and writes it onto that reference's own coordinate frame. Two consequences worth
 stating plainly, because they are the whole reason the second stack exists:
@@ -11,6 +11,27 @@ stating plainly, because they are the whole reason the second stack exists:
 - **Insertions relative to the reference are dropped.** A query base with no reference position has
   nowhere to go in a fixed reference frame. This is lossy by construction and reported as such; the
   unified stack is where insertions survive.
+
+## The dropped residues, measured — an accepted cost, not an oversight
+
+Curator ruling, 2026-08-15: these references live in the Sabin frame, and the clipping that requires
+is accepted. Recorded here with a number so nobody has to rediscover its size.
+
+Measured on `PV1_unified`: **118 full-length rows lose 7,245 nucleotides** between them, every one a
+base that sits outside Sabin 1's coordinates. Corpus-wide the artifact places 6,207,875 residues, so
+the loss is about 0.1% of what it carries — but it is concentrated, not spread: a record with a real
+insertion loses exactly that insertion, and a record without one loses nothing.
+
+This is why the three serotype artifacts come out at exactly 7,441 / 7,439 / 7,432 nt — their own
+Sabin genome lengths. That exactness is a *consequence of the clip*, not independent evidence that
+the projection is right, and an earlier reading of it as "the strongest result" had the implication
+backwards. What it does establish is that the frame is intact: no column is a consensus, so a column
+number is a genome coordinate.
+
+**Where to look instead if you need the insertions.** `EV_unified` and `POLIO_unified` carry every
+record's full CDS, insertions included, at the cost of columns that are not genome coordinates. The
+two stacks answer different questions and neither subsumes the other: use the anchored stack when
+you need to name a position, the unified stack when you need every base.
 
 ## TAB: translate, align, backtranslate
 
@@ -585,7 +606,7 @@ class AnchorInputs:
 def load_anchor_inputs(repository_root: Path) -> AnchorInputs:
     cds_by_record, parts_by_feature, codon_starts = segment._load_cds_index(repository_root)
     return AnchorInputs(
-        region_rows=tuple(regions.derive_regions(repository_root)),
+        region_rows=tuple(regions.regions_from_release(repository_root)),
         cds_by_record=cds_by_record,
         parts_by_feature=parts_by_feature,
         codon_starts=codon_starts,

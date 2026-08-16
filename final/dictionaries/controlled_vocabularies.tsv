@@ -44,3 +44,19 @@ poliovirus_classification	reference/lab	GPLN reconciled poliovirus classificatio
 poliovirus_classification	unresolved	GPLN reconciled poliovirus classification tier (observed value).
 poliovirus_classification	vaccine	GPLN reconciled poliovirus classification tier (observed value).
 poliovirus_classification	wild	GPLN reconciled poliovirus classification tier (observed value).
+sample_origin	human	The sample was taken from a person. From a /host matching the declared human pattern, a human-specimen keyword in /isolation_source, or the ENV GenBank division, since sewage is human waste from a human population.
+sample_origin	non-human	The sample was not taken from a person: a named non-human /host, or the PAT GenBank division, since a patent deposit is not a sample taken from an organism at all.
+sample_origin	vaccine	Curated: the material is a vaccine strain rather than a sample from a host. Asserted only by a decision; no rule emits it.
+sample_origin	unknown	Determined non-determination: outside poliovirus, where the curated master never asked the question, and the record deposits no host of its own. Not the same as blank, which means the rule declined and the cell is queued.
+surveillance_stream	AFP/clinical	Acute flaccid paralysis or other clinical case detection. From clinical-case keywords in /isolation_source.
+surveillance_stream	healthy/community	A healthy individual or a case contact, sampled outside clinical presentation. Tested before the clinical pattern, because a healthy contact of a case mentions both.
+surveillance_stream	environmental	Sewage or other environmental sampling. From environmental keywords in /isolation_source, or from the valueless /environmental_sample flag where the record names no specimen of its own.
+surveillance_stream	vaccine/reference	Curated: a vaccine seed or reference deposit rather than a surveillance sample. Asserted only by a decision.
+surveillance_stream	engineered/lab	Curated: a laboratory construct or patent deposit, which is a statement about what the record is not. Asserted only by a decision; no rule derives a frame from an absence.
+surveillance_stream	not_applicable	Determined non-determination: outside poliovirus, where the field was curated for poliovirus only, and the record names no surveillance context of its own.
+specimen_type	stool	Faecal material. The default poliovirus surveillance specimen, but emitted only where /isolation_source names it: the release's default_stool assumption is deliberately not inherited.
+specimen_type	respiratory	Throat, nasal, nasopharyngeal, oropharyngeal or sputum material.
+specimen_type	environmental	Sewage, wastewater, effluent, a named treatment plant or sewer trunk line.
+specimen_type	CNS	Central nervous system material: CSF, brain or spinal tissue.
+specimen_type	serum	Serum, blood or plasma.
+virus_type	open	Not a closed enum. Enterovirus type in the genus-and-number form the release uses -- PV1/PV2/PV3 for poliovirus, CVA and CVB with a number for coxsackieviruses, E with a number for echoviruses, EV- and RV- with a species letter and number for the rest. 217 distinct values ship. Read from the NCBI organism name, or from the depositor's own definition line where the name states none.

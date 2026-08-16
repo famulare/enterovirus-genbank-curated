@@ -1,7 +1,7 @@
 """One segmentation pass over every canonical record: the primary CDS split into 5'NCR / ORF /
 3'NCR, or a 6-frame inference fallback when no CDS is annotated at all.
 
-Ported from MAD-VDPV's `build_ev_segmentation.py` (`build_polio_segmentation.py` re-used its logic
+Ported from the upstream `build_ev_segmentation.py` (`build_polio_segmentation.py` re-used its logic
 verbatim, pointed at a different carve). Upstream ran this twice — once per carve — and merged the
 two caches; here it runs once over the whole union, the same simplification `align.population`
 already made for tiering.
@@ -62,7 +62,19 @@ ABSENCE_ANNOTATED_REJECTED_UNTRANSLATABLE = "annotated_rejected_untranslatable"
 
 _DEFAULT_CODON_SPEC = contract.CodonSpec()
 
-_COMPLEMENT = str.maketrans("ACGTN", "TGCAN")
+# The whole IUPAC set, not just ACGTN. `str.maketrans("ACGTN", "TGCAN")` passes every other
+# ambiguity code through unchanged, so the reverse complement of an `R` (A-or-G) came back as `R`
+# where it should be `Y` (C-or-T) — a wrong base, not a lost one, and one the translator hides
+# because both spell `X`. Measured on release 5.0.0's shipped bytes before this was fixed: of 728
+# records carrying a non-`N` ambiguity code, 2 are placed reverse-complemented in `EV_unified` with
+# such a code inside the placed span — `JX006787` and `JN393113`, one nucleotide each. Those two
+# nucleotides carry the old value until the next alignment rebuild is promoted; nothing else in the
+# release is reachable from here.
+_IUPAC = "ACGTNRYWSKMBDHV"
+_IUPAC_COMPLEMENT = "TGCANYRWSMKVHDB"
+_COMPLEMENT = str.maketrans(
+    _IUPAC + _IUPAC.lower(), _IUPAC_COMPLEMENT + _IUPAC_COMPLEMENT.lower()
+)
 _CODON_TABLE = {
     a + b + c: str(Seq(a + b + c).translate()) for a in "ACGT" for b in "ACGT" for c in "ACGT"
 }

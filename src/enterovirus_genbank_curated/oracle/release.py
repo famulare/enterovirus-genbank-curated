@@ -19,6 +19,7 @@ from typing import Any
 from enterovirus_genbank_curated.contracts import (
     PARITY_SPEC_PATH,
     ContractError,
+    assert_raw_manifest_agrees,
     load_json,
     sha256_file,
     validate_contract_shape,
@@ -36,19 +37,20 @@ RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
 # `BUILD_ARTIFACT_RELATIVES`), because as of 2026-08-01 `final/` *is* that build's destination.
 # Everything else under `final/` is carried from an earlier release and is listed here:
 #
-# * the twenty-four alignment artifacts and `reference_region_coordinates.tsv`. "Carried" here means
-#   only that `build-metadata` does not write them — they are this repository's own output, from
-#   `evgc alignment-build`, promoted into the release on 2026-08-01. Their pins move when a rebuild
-#   is promoted, which is a reviewed act rather than a data edit. (2.4.1's nineteen files, produced
-#   by a private pipeline whose scripts are not here, moved to `releases/2.4.1/alignments/`, where
-#   `alignment-shape` measures the declared delta against them.)
-# * the source layer and the four dictionaries, whose hashes are pinned in `SOURCE_LAYER_HASHES`
-#   and `DICTIONARY_HASHES` below rather than only in tests, because `parity-source` compares a
-#   rebuild against them;
-# * `audit/record_disposition.tsv.gz` and `audit/sequence_evidence.tsv.gz`, which are 2.4.1 audit
-#   views with no successor in the new build and are *live inputs to the alignment layer*
-#   (`align/shape.py`, `align/contract.py`). They are carried deliberately until the alignment
-#   layer is repointed; deleting them breaks `align/`;
+# * the twenty-four alignment artifacts. "Carried" here means only that `build-metadata` does not
+#   write them — they are this repository's own output, from `evgc alignment-build`, promoted into
+#   the release on 2026-08-01. Their pins move when a rebuild is promoted, which is a reviewed act
+#   rather than a data edit. (2.4.1's nineteen files, produced by a private pipeline whose scripts
+#   are not here, moved to `releases/2.4.1/alignments/`, where `alignment-shape` measures the
+#   declared delta against them.)
+# * the source layer, whose hashes are pinned in `SOURCE_LAYER_HASHES` below rather than only in
+#   tests, because `parity-source` compares a rebuild against them;
+# * `audit/sequence_evidence.tsv.gz`, the last 2.4.1 audit view with no successor in the new build
+#   and a *live input to the alignment layer* (`align/population.py`'s tier predicate). It is
+#   carried deliberately until the deferred EV reference-panel pass gives it a producer; deleting
+#   it breaks `align/`. `audit/record_disposition.tsv.gz` and the four `final/dictionaries/` files
+#   left this set on 2026-08-14, when `export/audit.py` and `export/dictionaries.py` gained
+#   producers for them, and `alignments/reference_region_coordinates.tsv` left with them;
 # * the manifest itself, which cannot declare its own hash without becoming self-referential.
 #
 # Their sha256s are pinned in `tests/test_carried_files.py`, following the same pattern as
@@ -81,13 +83,7 @@ CARRIED_FINAL_FILES = frozenset({
     "final/alignments/PV3_unified.provenance.json",
     "final/alignments/PV3_unified.sto.gz",
     "final/alignments/PV3_unified_aln.fasta.gz",
-    "final/alignments/reference_region_coordinates.tsv",
-    "final/audit/record_disposition.tsv.gz",  # 2.4.1; still read by align/shape.py
     "final/audit/sequence_evidence.tsv.gz",
-    "final/dictionaries/audit_data_dictionary.tsv",
-    "final/dictionaries/canonical_data_dictionary.tsv",
-    "final/dictionaries/controlled_vocabularies.tsv",
-    "final/dictionaries/source_schema_dictionary.tsv",
     "final/source/genbank_source.duckdb",
     *(f"final/source/normalized_tsv/{name}.tsv.gz" for name in (
         "comments", "feature_location_parts", "feature_qualifiers", "features",
@@ -168,16 +164,11 @@ SOURCE_LAYER_HASHES = {
 
 # Same provenance as `SOURCE_LAYER_HASHES`, for the four carried dictionaries. Separate because
 # nothing rebuilds them: these are checked, not compared against a rebuild.
-DICTIONARY_HASHES = {
-    "dictionaries/audit_data_dictionary.tsv":
-        "222ef799baa1ae7f292cc652237dd1fc9e474199eb8e8d2a76f120a33d0c2098",
-    "dictionaries/canonical_data_dictionary.tsv":
-        "8fc475c7ac7482e7602339fb0257ce95a4db9e9fee164570fb9903750651df70",
-    "dictionaries/controlled_vocabularies.tsv":
-        "7fb35d08de7796793456c634f343eaa7f55823302052a3940b4bdc9efaeb8d4a",
-    "dictionaries/source_schema_dictionary.tsv":
-        "e946d0ea4e77743338195052d8823dab7551e26214f5ecc5302a60b7a99fde1b",
-}
+# `DICTIONARY_HASHES` stood here and held exactly the four `final/dictionaries/` files. It is
+# gone with them: `export/dictionaries.py` writes all four from `registry/dictionaries/` plus
+# live counts, so they are build artifacts declared in the release manifest rather than carried
+# bytes needing a pinned hash. Pinning the hash of a file this build writes would be pinning the
+# build's output against itself.
 
 # Filesystem debris that is never release content, so `verify_manifest_completeness` must not
 # demand a hash for it. Narrow by name rather than a dotfile glob, because "skip anything starting
@@ -191,8 +182,6 @@ DICTIONARY_HASHES = {
 IGNORED_FINAL_NAMES = frozenset({".DS_Store"})
 
 CURATION_STATUS_COLUMN = "curation_status"
-VOUCHED_STATUS = "vouched"
-PROVISIONAL_STATUS = "provisional"
 
 
 def read_tsv_gz(path: Path) -> tuple[list[str], list[list[str]]]:
@@ -250,8 +239,7 @@ def verify_release_manifest_hashes(repository_root: Path) -> int:
     (backlog B7). Recomputing all of them here subsumes the split rather than adding a fourth place
     that has to remember which subset it owns — and it is why the manifest shrinking to the build's
     own twelve artifacts did not reopen the hole: the files that left it gained pins in code
-    (`SOURCE_LAYER_HASHES`, `DICTIONARY_HASHES`, `tests/test_carried_files.py`) rather than losing
-    a hash.
+    (`SOURCE_LAYER_HASHES`, `tests/test_carried_files.py`) rather than losing a hash.
 
     `logical_content` entries are skipped, and deliberately: no code in this repository computes a
     logical digest, so a check here would either be a no-op or invent a definition (backlog B6).
@@ -341,14 +329,20 @@ def verify_manifest_completeness(repository_root: Path) -> None:
 def verify_carried_hashes(repository_root: Path) -> int:
     """Re-hash every carried file whose sha256 is pinned in this module.
 
-    The source layer and the four dictionaries used to be gated by their rows in
-    `release_file_manifest.tsv`. That manifest is now regenerated by every metadata build, so it
-    can no longer gate anything it does not itself produce; these hashes moved into code and this
-    is what checks them. Returns the number recomputed so a caller can assert it is not zero.
+    The source layer used to be gated by its rows in `release_file_manifest.tsv`. That manifest is
+    now regenerated by every metadata build, so it can no longer gate anything it does not itself
+    produce; these hashes moved into code and this is what checks them. Returns the number
+    recomputed so a caller can assert it is not zero.
+
+    The four `final/dictionaries/` files were checked here too until 2026-08-14, against
+    `DICTIONARY_HASHES`. They are build artifacts now — `export/dictionaries.py` writes them from
+    `registry/dictionaries/` plus counts measured over this build's own tables — so they are covered
+    by the release manifest like every other written file. A pinned hash on a file the build writes
+    pins the build's output against itself.
     """
     checked = 0
     final_root = repository_root / "final"
-    for relative, declared in sorted({**SOURCE_LAYER_HASHES, **DICTIONARY_HASHES}.items()):
+    for relative, declared in sorted(SOURCE_LAYER_HASHES.items()):
         target = final_root / relative
         if not target.is_file():
             raise ContractError(f"carried release file is missing: final/{relative}")
@@ -400,7 +394,7 @@ def verify_release_baseline(repository_root: Path, spec: dict[str, Any]) -> None
     Two of the six checks retired on 2026-08-01, with the metadata parity gate:
     `verify_expected_artifacts` and `verify_expected_counts` compared `final/` against 2.4.1's
     declared hashes and row counts, and `final/` no longer holds 2.4.1 — it holds this pipeline's
-    own output, which carves 24,308 rows against the shipped 24,301 and derives twelve columns the
+    own output, which carves 24,305 rows against the shipped 24,301 and derives fourteen columns the
     release projected. Retaining them would have meant either failing every run or rewriting the
     numbers to match the build, and a contract rewritten from the thing it gates is not a contract.
 
@@ -410,6 +404,7 @@ def verify_release_baseline(repository_root: Path, spec: dict[str, Any]) -> None
     of the two.
     """
     verify_build_manifest(repository_root, spec)
+    assert_raw_manifest_agrees(repository_root, spec["raw_input"])
     verify_raw_input(repository_root, spec["raw_input"])
     verify_release_manifest_hashes(repository_root)
     verify_carried_hashes(repository_root)

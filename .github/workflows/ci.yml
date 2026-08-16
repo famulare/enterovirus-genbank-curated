@@ -59,7 +59,7 @@ jobs:
       # against the hashes the release manifest declares, plus the canonical metadata transport
       # cell-compared against the shipped table. ~50s, so it belongs on every push.
       #
-      # The alignment stage does NOT belong here: it runs the native aligners over 24,301 records
+      # The alignment stage does NOT belong here: it runs the native aligners over 24,305 records
       # and takes hours. It has its own workflow, `alignments.yml`, on workflow_dispatch plus a
       # weekly drift schedule plus a path filter. This job keeps only the cheap, toolchain-free
       # half — the alignment CLI tests above, which now include `alignment-verify` and
@@ -67,17 +67,29 @@ jobs:
       # push-time verbs spawn no child process. If you are about to add a step here that invokes
       # mafft, that is the signal you are in the wrong workflow.
       #
-      # `evgc parity-metadata` is not a separate step: this tier runs it twice already — unguarded
+      # `evgc check-declines` is not a separate step: this tier runs it twice already — unguarded
       # through test_metadata_transport_matches_the_shipped_canonical, and as a guarded child
       # process through test_the_guarded_parity_verb_actually_runs. The second exists because the
-      # guarded path was broken for its whole existence and the unguarded test could not see it:
-      # it keeps rows in memory and never reads the written artifact back.
+      # guarded path of its predecessor `parity-metadata` (retired 2026-08-01) was broken for its
+      # whole existence and the unguarded test could not see it: it keeps rows in memory and never
+      # reads the written artifact back.
       #
       # Neither `evgc parity-source` nor `evgc parity-source --guard-inputs` is a separate step, on
       # purpose. This tier already invokes both: `test_the_real_source_build_runs_clean_under_the
       # _guard` shells out to the guarded CLI against the real corpus and asserts both PASS lines.
       # Adding a step would run a second full corpus build for no extra coverage. If you are here to
       # add one, check that test first.
+      #
+      # `evgc parity-canonical` is not a separate step for the same reason. This tier runs the verb
+      # itself — `test_the_guarded_cli_verb_runs_the_real_build_and_passes` calls `cli.main` with
+      # `--guard-inputs`, so the CLI branch, the guarded child and a real 25,727-record rebuild are
+      # all covered by one test rather than by a step that would repeat the build.
+      #
+      # Its falsification battery is deliberately *not* here. `compare_to_baseline` is pure, so the
+      # eleven mutations that must fail — deleted class, moved count, relocated blanking, moved
+      # carve delta, dropped column, empty/truncated baseline — run in the fast tier above against
+      # the committed `final/`, in milliseconds. An earlier draft paid for four corpus builds to
+      # reach the same assertions.
       - name: Test against the full corpus
         run: pixi run -e align pytest -m slow
 

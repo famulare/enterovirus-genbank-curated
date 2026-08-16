@@ -19,12 +19,71 @@ Three review rounds have now run against this work:
 | 1 (stage-4 diff) | 10 |
 | 2 (round-1 fixes) | 15 |
 | 3 (whole pipeline, 4 reviewers) | ~59 |
+| 4 (release 5.0.0 settling pass) | 14 |
+| 5 (5.0.0 pre-ship doc/code sweep) | 14 prose + 12 code |
 
 The rate is not falling. Round 2 found defects *in round 1's fixes*, including two fresh instances
 of the "validation that cannot fail" class that round 1 existed to close. Round 3 found more than
 rounds 1 and 2 combined. The measured rate of new defects introduced per item fixed is close to one,
 so a single 59-item remediation pass would predictably produce a fourth round of comparable size.
 Hence: capture first, fix in small themed batches, each independently reviewed before commit.
+
+**Round 4 (2026-08-12 to 08-14), the release 5.0.0 settling pass.** Fourteen, and the shape is
+different from rounds 1-3: this round was not a review looking for defects but a *feature* pass, and
+the defects surfaced because the features needed the surrounding claims to be true. Six of the
+fourteen were caught by gates this repository had already built — the description-coherence check
+rejecting new prose, the undeclared-input guard stopping a build that globbed `final/`, the
+declared-basis check refusing an undeclared evidence basis, the fast tier's runtime exposing an
+accidental O(n·m). That is the first round where the existing machinery found more than the reviewer
+did, which is the direction the machinery was built for.
+
+The classes, since the class is more useful than the count:
+
+* **A carried artifact disagreeing with its own release** (3): the dictionaries reporting a column
+  fully populated while it was empty; `record_disposition` using a `virus_group` vocabulary its own
+  release had abandoned; the region frame having a producer no build could legally call.
+* **A structurally-true property left unasserted** (2): B5's vouched subset, and the raw manifest and
+  parity contract describing the same archive with nothing comparing them.
+* **A declared gap that was a mis-specification** (2): `sequence_scope` and `collection_date`, both
+  reproduced exactly once the model rather than the measurement was questioned.
+* **A check compared to a copy of itself** (1): `expected_counts` against `EXPECTED_BASELINE_COUNTS`.
+* **A branch that had never executed** (1): `/environmental_sample`, testing the value of a valueless
+  flag since the rule was written.
+* **Mine, introduced during the pass and caught by the suite** (5), including a plan instruction that
+  would have deleted a function `parity-canonical` depends on.
+
+**Round 5 (2026-08-16), the pre-ship sweep.** An independent Opus reviewer was given the whole
+5.0.0 diff with one charter: does any docstring, comment or document say something the shipped bytes
+contradict? Fourteen confirmed, and unlike round 4 none of them is a code defect — the code was
+right in every case and the prose around it had gone stale. The classes:
+
+* **A denominator that moved and was not chased** (5 sites, one class): the 2026-08-14 carve
+  exclusion moved the carve 24,308 → 24,305 and the shared set 24,299 → 24,296. Present-tense claims
+  in `align/build.py`, `align/population.py`, `oracle/parity.py`, `align/contract.py` and four test
+  modules still carried the old figures — including `oracle/parity.py` contradicting itself eleven
+  lines apart.
+* **A statement about a constant that had been emptied** (`PENDING_COLUMNS`) or deleted
+  (`DICTIONARY_HASHES`, `test_the_blanket_patent_flag_is_recorded_as_a_known_defect`), still cited
+  as live by three or four other places each.
+* **A file described as having no producer** after D1/D2 gave it one — `record_disposition`, the
+  four dictionaries, `reference_region_coordinates`.
+* **A number measured on a pre-rebuild artifact** and never re-measured against the shipped bytes:
+  the ambiguity-filter widths in `align/codon.py` and `align/placement.py`.
+* **`export/release.py` declaring `RELEASE_VERSION = "5.0.0"` with no 5.0.0 entry in the release
+  narrative that docstring *is*.** The worst one, because it is the release notes.
+
+A second reviewer took the same diff with a code-only charter and found twelve, all fixed here
+except where noted. One is a real defect in shipped bytes and is recorded as **B54** below; the rest
+were dead constants (7), a `sha256(path)` helper written four times, two copies of the standard
+genetic code with nothing comparing them, a branch whose condition its own predecessor entails, and
+eight test signatures requesting fixtures they never read — one of which leaked a temp tree per run.
+
+The lesson is narrower than round 4's and worth stating plainly: **a count in prose is a measurement
+with no gate on it.** `oracle/parity.py`'s `DECLARED_TRANSITIONS` was exact in every one of its seven
+columns — the reviewer recomputed all of them — while the paragraph directly above it was wrong
+twice. The numbers that live in a data structure the build reads stayed right; the numbers that live
+in sentences drifted. Where a figure matters, the fix is to put it somewhere something reads it, not
+to check it harder.
 
 **The data itself is not implicated.** Reviewers independently reproduced every divergence
 measurement, recomputed all 37 declared manifest hashes (all match), confirmed the DuckDB is
@@ -141,7 +200,7 @@ require a **code** edit to move; hashes require only a **data** edit.
 **Fix:** (c) needs a decision between pinning the hashes in code, comparing the declaration files to
 their blobs at the `2.1.5` tag, or signing the release.
 
-### B5. The vouched partition is counted but never identified
+### B5. The vouched partition is counted but never identified — **CLOSED 2026-08-14**
 `src/enterovirus_genbank_curated/contracts.py:489-518`
 
 Row counts of `sequence_metadata_vouched.tsv.gz` and a `curation_status` tally over
@@ -152,6 +211,12 @@ flipping one record's status is caught.
 
 **Fix:** (a) assert the vouched table is exactly the `curation_status == 'vouched'` subset, keyed on
 `version`, column for column.
+
+**Closed** in `export/canonical.write_canonical_table`. The subset relation held *structurally* —
+`vouched` is a filter over `rows` one line above — and a structurally-true property went unasserted
+for three releases; a writer building the two tables from different sources would have shipped an
+orphan in silence. Verified by breaking it: appending one synthetic version to `vouched` fails the
+build with the new message rather than surfacing downstream.
 
 ### B6. `logical_content` is a hash scope nothing ever computes
 `src/enterovirus_genbank_curated/contracts.py:480`, `docs/reproducibility.md:138-139`
@@ -370,7 +435,7 @@ Each of these is a false or misleading statement; the underlying code or data is
 | B31 | `docs/pipeline.md:46-56` | Command list omits both commands that exist (`build-source`, `parity-source`) and lists three that do not (`build`, `verify`, `parity`); the "PR 1" framing is three stages stale. |
 | B32 | `docs/pipeline.md:34-42` | Package boundaries name seven subpackages; two exist. `build.py`, `cli.py`, `contracts.py`, `sandbox.py` appear nowhere, though they implement the `raw` and `validation` responsibilities. |
 | B33 | `registry/legacy/README.md:123`, ledger `D-76ece1bbec32` | DQ205099's provenance is inverted: patent WO2006042156 has priority 2004-10-08 and published 2006-04-20; the paper is J Virol April 2006. The patent **precedes** the paper, so "the study the patent derives from" is backwards. Also "no shipped value changes" conflicts with its own `active` assertion (`classification=engineered`) against canonical `Sabin-like`. The scientific verdict is sound; the surrounding claims are not. |
-| B34 | `README.md:23-24` | "Why every record was in/out" — `exclusion_reason` is blank on 1,008 of 1,181 exclusions. The *coverage* claim (25,727 = full snapshot) is true; the *reason* claim is not. |
+| B34 **CLOSED 2026-08-14** | `README.md:23-24` | "Why every record was in/out" — `exclusion_reason` was blank on 1,008 of 1,181 exclusions, and on 1,253 of 1,426 by the time it was fixed. `export/audit.write_record_disposition` now writes the table from `transport_metadata`'s own record of why each candidate was carved out: **blank on none**. The three reasons are the GenBank lineage naming no Enterovirus genus, a curator confirming the record is not in scope, and a curator carve exclusion. The *coverage* claim (25,727 = full snapshot) is true; the *reason* claim is not. |
 | B35 | `raw/genbank_query.md:7` vs `:10` | Two non-equivalent queries ship. The displayed "User query" lacks 13 `[Organism]` terms present in the results link, including `"Enterovirus C"[Organism]`, under which 16,055 records with no "poliovirus" in the organism name arrive. Probably as-typed vs NCBI-translated, but `README.md:34` calls it *the* defining query. Needs (c). |
 | B36 | `raw/raw_manifest.json` | Declares private-repo paths (`data/genbank/raw/...`) that do not exist in this clone, and **no code reads it** — the authentication `README.md:36-38` credits it with is done by `contracts.verify_raw_input` against `parity.json`. Its five fields agree with the contract today; nothing enforces that. |
 | B37 | `registry/README.md:15` | "310 distinct rationales across all ten registries" — the registries hold 309. The 310th is the migration's own D2 string, in no registry. Overcounts curator work by one. |
@@ -382,7 +447,7 @@ Each of these is a false or misleading statement; the underlying code or data is
 | B43 | `README.md:84` | Says the parse loss affects five records; four lose content. |
 | B44 | `README.md:28-31` | Describes five alignment sets; six ship (`POLIO_unified` omitted). |
 | B45 | `README.md:26-27` | Promises "controlled vocabulary, observed population … for every table above", but only `canonical_data_dictionary.tsv` has those columns; `release_file_manifest.tsv` and `reference_region_coordinates.tsv` ship undocumented. |
-| B46 | `src/enterovirus_genbank_curated/genbank/parse.py:21` | Cites `VERBATIM_COLUMNS`; the constant is `RAW_COLUMNS` and the stale name exists nowhere else. |
+| B46 **CLOSED 2026-08-16** | `src/enterovirus_genbank_curated/genbank/parse.py:21` | Cited `VERBATIM_COLUMNS`; the constant is `RAW_COLUMNS` and the stale name existed nowhere else. Fixed in round 5's sweep. |
 | B47 | `registry/README.md:109` | References "D1" as a labelled decision; only D2 is defined anywhere in the repo. |
 | B48 | `registry/schemas/rules.schema.json:43-46` | `status` enum is `active`/`deprecated`; `deprecated` appears in no document, and the decisions vocabulary uses `retired` for the same concept. Three different "status" vocabularies across the repo, two sharing `active` with different meanings. |
 | B49 | ledger, `AH004344` | The reason cites "**shipped** 71.875% over only 32 codons", but `AH004344` is excluded and appears in neither `sequence_evidence.tsv.gz` nor the provenance table — the figure is in no shipped artifact. |
@@ -497,6 +562,26 @@ verification were the same act and must not be.
    defect-dense as original work; three rounds now say so.
 6. **Nothing self-certified.** The adversarial-reviewer pattern found ~59 defects across four
    charters with near-zero overlap. It is a standing gate, not an escalation.
+
+### B54. `_revcomp` did not complement ambiguity codes other than `N` — **FIXED 2026-08-16, two shipped nucleotides still stale**
+
+`align/segment._COMPLEMENT` was `str.maketrans("ACGTN", "TGCAN")`, and `derive/evidence._COMPLEMENT`
+the same with case folding. Every other IUPAC code — `R Y W S K M B D H V` — passed through
+untranslated, so the reverse complement of an `R` (A-or-G) came back `R` rather than `Y` (C-or-T). A
+wrong base, not a lost one, and invisible downstream because both spell `X` on translation.
+
+Measured on 5.0.0's shipped bytes rather than argued about. 728 canonical records carry a non-`N`
+ambiguity code, 2,904 codes between them. Of those, five are placed reverse-complemented in
+`EV_unified`, and **two have such a code inside the placed span: `JX006787` and `JN393113`, one
+nucleotide each.** Nothing else in the release is reachable from here — `derive/evidence.compare_vp1`
+skips any position either sequence spells outside `ACGT`, so the divergence measurements never saw
+it.
+
+Both tables now carry the full IUPAC set and `tests/test_align_segment.py` pins them to agree with
+each other and to be their own inverse. The two nucleotides in `final/alignments/` carry the old
+value until an alignment rebuild is promoted, which is a reviewed act; 2 nt against 6,207,875 placed
+residues did not justify a 6.5-hour rebuild on the day of the release, and stating the residue is
+the alternative to pretending it is not there.
 
 ### B52. The seventeen patent-division poliovirus records the transport cannot carve
 `src/enterovirus_genbank_curated/derive/metadata.py` (`SEQUENCE_RESCUED_INCLUSIONS`)

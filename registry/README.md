@@ -273,10 +273,20 @@ this ledger, and a mapping that generalizes belongs in a rule's `parameters` wit
 bump.
 
 The catalog is JSON because `parameters` is an object, and a TSV cell holding one would need the
-quote-escaping this ledger exists to avoid. It carries all 28 rules in the shipped order — the order
-is data, because `export/audit.py` regenerates `final/audit/rules.tsv.gz` from it byte-for-byte.
-Thresholds are decimal strings compared with `Fraction`, and every declared value must appear verbatim
-in its own `description`, so the published prose and the executable value cannot drift.
+quote-escaping this ledger exists to avoid. It carries all 39 rules in the shipped order — the order
+is data, because `export/audit.py` regenerates `final/audit/rules.tsv.gz` from it.
+Since 2026-08-12 the published view is the whole catalog rather than the 28 rules 2.4.1 carried;
+before that, the release cited rules in its provenance table that its own rule table did not
+contain, on 84.6% of rows.
+
+Thresholds are decimal strings, parsed at the point of use — `Decimal` in
+`derive/classification.py`, `float`/`int` in `derive/evidence.py`; the `Fraction` this paragraph
+claimed until 2026-08-12 appears nowhere in the repository. Coherence with the prose is enforced in
+both directions: every declared value must appear verbatim in its own `description`
+(`assert_parameters_are_described`), and every decimal in a `description` must be a declared value
+or a named citation (`assert_no_orphaned_thresholds`). One direction alone is not enough — a
+threshold moving onto a value the prose already states passes the first check while stranding the
+old value in the text.
 
 ## Migration
 
@@ -293,14 +303,15 @@ the extraction:
 
 ```bash
 rm -rf /tmp/evgc-registries && mkdir -p /tmp/evgc-registries
-git -C ../MAD-VDPV archive <release-build-commit> data/genbank/working \
+git -C <private-registry-repo> archive <release-build-commit> data/genbank/working \
   | tar -x -C /tmp/evgc-registries --strip-components=3
 python scripts/migrate_legacy_registries.py --source-dir /tmp/evgc-registries
 ```
 
 `<release-build-commit>` is the `git_sha` the target release's own
 `final/audit/build_manifest.json` records (for 2.4.1: `67554e2`) — never `HEAD` of the private repo.
-An earlier version of this doc recommended `--source-dir ../MAD-VDPV/data/genbank/working` directly,
+An earlier version of this doc recommended `--source-dir <private-registry-repo>/data/genbank/working`
+directly,
 which is exactly the tip-vs-build-commit mistake the next two paragraphs warn against; that command
 was never actually safe to run as written.
 

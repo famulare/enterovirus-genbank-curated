@@ -2,26 +2,33 @@
 
 ## Current state
 
-**`final/` is what this pipeline builds.** As of 2026-08-01 it holds release 4.1.0 — 4.0.0 plus
-thirteen accession-level `poliovirus_classification` decisions, no rule or threshold change: canonical,
-audit and curation trees written by `evgc build-metadata` from `raw/` and `registry/` alone, and
-alignments written by `evgc alignment-build` from those. It is a build destination now, not a parity
+**`final/` is what this pipeline builds.** As of 2026-08-14 it holds release 5.0.0: canonical, audit,
+curation and dictionary trees written by `evgc build-metadata` from `raw/` and `registry/` alone,
+and alignments written by `evgc alignment-build` from those. It is a build destination, not a parity
 target, and `build.reject_immutable_output` guards only `raw/` — the frozen input of record, where a
 build that can overwrite its own input has no oracle left at all.
 
-The 2.4.1 release it replaced is not gone. `releases/2.4.1/parity.json` still describes the raw
-archive, and `releases/2.4.1/alignments/` holds the nineteen carved-in alignment files, which is
-what `evgc alignment-shape` still measures the rebuild's declared delta against. What retired with
-the promotion is the *metadata* parity gate: comparing the build to `final/` cell by cell would now
-read the build's own bytes and pass by construction, and a gate that cannot fail is worse than an
-absent one. `evgc check-declines` replaced it with a claim that needs no oracle — the build declines
-exactly where this repository declares it declines.
+The 2.4.1 release it replaced is not gone, and 5.0.0 is the release where that stopped being
+sentiment. `releases/2.4.1/canonical/sequence_metadata.tsv.gz` is preserved as a **fixture** — the
+only thing in the tree that can still say what changed between the last hand-curated release and
+what this pipeline builds. `oracle/parity.py`'s `DECLARED_TRANSITIONS` declares every differing cell
+by class, and `evgc parity-canonical` checks it on demand. Twice already it has done the opposite of
+what it was commissioned for: `sequence_scope` and `collection_date` were both recorded as
+unreachable from `raw/`, and both were reproduced *exactly* against it. A comparand is how you find
+out that a declared gap was a mis-specification.
 
-What that does *not* mean: 4.0.0 is not 2.4.1 rebuilt. It carves 24,308 rows against the shipped
+What that does *not* mean: 5.0.0 is not 2.4.1 rebuilt. It carves 24,305 rows against the shipped
 24,301, it declines values the release asserts, and it supersedes some the release got wrong. Every
 one of those differences is declared as a count or a witness rather than absorbed, and the rest of
-this document is the accounting. One structural gap remains open and has its own section:
-`sequence_scope` is the one canonical column still unwritten.
+this document is the accounting. **No canonical column is unwritten.** `sequence_scope` was the last
+one, and it was unwritten for the wrong reason — its determinant is a record's own annotation, not
+coverage geometry, and read that way it reproduces 2.4.1 on every one of the 24,296 rows both
+tables carry.
+
+Against the baseline, 36,738 cells differ across seven columns, all declared. What is left is not a
+backlog of unreached values: `specimen_type`'s 5,812 are the `default_stool` assumption this
+pipeline declines to inherit, `sample_origin`'s 11,670 are a `/host` the upstream stage never read,
+and `virus_type`'s 888 and `poliovirus_classification`'s 518 need a sequence stage or a paper.
 
 **Reproducible today — `final/source/`.** `evgc parity-source` re-authenticates
 `raw/sequence.gb.zip`, reparses all 25,727 records, and compares every one of the twelve
@@ -54,7 +61,7 @@ string.
 that: reproducing a value while mislabelling which way the rule went is right by luck, so the cheapest
 place to establish that the rule catalog, the outcome type and the provenance writer all agree with the
 release is on one closed-form rule before a harder column is attempted. Its **value** matches the
-release on all 24,299 shared records. Its **branch label** does not, and comparing the label is what
+release on all 24,296 shared records. Its **branch label** does not, and comparing the label is what
 found that the shipped label was wrong — see [the second deliberate break](#the-second-deliberate-break-localitys-basis).
 
 `virus_group` and `curation_status` are projected the same way, and they are where the rewrite first
@@ -74,25 +81,38 @@ disagreements rather than by its inputs is the specific mistake being avoided he
 entailment has since resolved part of it and neither figure has been re-measured; the argument does
 not depend on the exact values.)
 
-The declined population is now **1,596 rows** — `oracle/parity.py`'s `UNRESOLVED_PARTITION_ROWS`,
-which the parity gate checks rather than trusts. Of the remaining 22,703 of 24,299 shared rows, every
-one matches the release, including `manual_override` — TRUE on exactly the seventeen records the
+The declined population is now **zero** — `oracle/parity.py`'s `UNRESOLVED_PARTITION_ROWS`, which
+the parity gate checks rather than trusts, and which is kept as a *named zero* rather than deleted so
+the next organism name the rule cannot decide fails the gate instead of appearing as a new key nobody
+pinned. It reached zero in stages: the capsid-AA membership band, then the upstream partition
+projection into `is_poliovirus` decisions, then six short patent deposits the curator called
+directly. `virus_group` matches the release on every shared row, including `manual_override` — TRUE on exactly the 1,402 records the
 ledger's `is_poliovirus` decisions resolve. That is the first place a recorded decision is shown to
 reach a generated provenance row rather than merely existing in the ledger, which is the D2 failure
 stated positively.
 
 ### Being hash-gated is not the same claim as being regenerable
 
-`final/audit/release_file_manifest.tsv` covers 38 of the 58 files in `final/`; the other twenty had
-no hash anywhere at all, so truncating all nineteen `final/alignments/` files to zero bytes and
-deleting one outright left every gate reporting PASS. `oracle.release.verify_release_manifest_hashes`
-now recomputes all thirty-seven `file_bytes` hashes the manifest declares (previously six were), and
-`verify_manifest_completeness` requires every file under `final/` to be covered by either the
-manifest or `oracle.release.CARRIED_FINAL_FILES` — bidirectionally, so an undeclared new file fails
-as loudly as a deleted declared one. The twenty carried hashes are pinned in
-`tests/test_carried_files.py`, in code rather than in a new `releases/2.4.1/parity.json` key, because
-a data key would give them a single declaration computed from the very bytes it gates and movable by
-a data edit.
+`final/audit/release_file_manifest.tsv` covered 38 of the 58 files in `final/` when this section was
+written; the other twenty had no hash anywhere at all, so truncating all nineteen
+`final/alignments/` files to zero bytes and deleting one outright left every gate reporting PASS.
+`oracle.release.verify_release_manifest_hashes` recomputes every `file_bytes` hash the manifest
+declares (previously six of thirty-seven), and `verify_manifest_completeness` requires every file
+under `final/` to be covered by either the manifest or `oracle.release.CARRIED_FINAL_FILES` —
+bidirectionally, so an undeclared new file fails as loudly as a deleted declared one. The carried
+hashes are pinned in `tests/test_carried_files.py`, in code rather than in a new
+`releases/2.4.1/parity.json` key, because a data key would give them a single declaration computed
+from the very bytes it gates and movable by a data edit.
+
+**The split as of release 5.0.0: 69 files, 19 declared in the manifest, 50 carried.** Of the 50, 49
+are the alignment layer — 24 artifacts plus the source layer — and the fiftieth is
+`final/audit/sequence_evidence.tsv.gz`, which waits on the deferred EV reference-panel pass. Six
+files moved from carried to declared in this release when they stopped being inherited bytes and
+gained producers: the four `final/dictionaries/` files (`export/dictionaries.py`),
+`audit/record_disposition.tsv.gz` (`export/audit.py`) and
+`alignments/reference_region_coordinates.tsv` (`derive/regions.py`). `EXPECTED_FINAL_FILES` did not
+move across that, because no file appeared or disappeared — only which side of the line it sits on,
+which is the distinction this section is about.
 
 None of this makes `final/alignments/` reproducible. It makes it *immutable in a way something
 checks*, which is the weaker property that was missing. See "The alignment layer" below for what
@@ -104,17 +124,26 @@ The date family does not reproduce the release, on purpose. This is the first pl
 corrects rather than reproduces, and the second follows it.
 
 For every record that deposited a `/collection_date`, the canonical date **is** the ISO normalization
-of that qualifier and the precision **is** its shape — 19,732 carved records, no curated input,
+of that qualifier and the precision **is** its shape — 19,735 carved records, no curated input,
 including the floor-of-mean midpoint on all 121 interval records. The release describes these as
 projections of curated fields; for these rows those curated fields evidently just held the normalized
 source value.
 
-The problem is the 4,569 records that deposited **no** date. The release splits them: 2,805 get
-precision `unknown`, and 1,764 get precision `year` with a year recovered outside GenBank by an
-archival reconstruction whose inputs are not in this repository. Nothing in `raw/` separates those two
-groups, so the split cannot be reproduced, and guessing it would fabricate 4,569 values.
+4,570 records deposited **no** `/collection_date`. The release split them: 2,805 got precision
+`unknown`, and 1,764 got precision `year` with a year attributed to an archival reconstruction
+outside this repository.
 
-**Curator decision, 2026-07-30: a record with no date has no precision.** Those rows now carry `NA`
+**That attribution was wrong, and it was never measured.** 1,690 of those years are readable from a
+GPEI surveillance identifier in `/strain`, `/isolate`, the definition line or the other `source`
+qualifiers, and 71 more from an explicit four-digit year in a strain designation — every one of them
+from a field `final/source/` already carries, and **none** from the archival reconstruction.
+`derive/date_identifiers.py` reads them (R-DATE-2's identifier branch, 2026-08-12) and reproduces
+2.4.1's year on **1,761 of 1,761** shared rows.
+
+What is left of the split is the 2,809 with no date and no identifier year either, of which 2,800
+are in the rows both tables carry.
+
+**Curator decision, 2026-07-30: a record with no date has no precision.** Those rows carry `NA`
 and a blank date.
 
 **Invariant broken, and its replacement.** 2.4.1 guaranteed
@@ -130,17 +159,26 @@ about one that is. It is enforced against the build's own output by `validation/
 anything is written, so it holds for a fresh clone with no `final/` present and cannot be satisfied by
 copying. `unknown` is also freed to mean what it says — a date exists but its precision is unclear.
 
-The break is counted, not just described: **1,761** records differ on `collection_date` and **4,549**
-on `collection_date_precision`, declared in `oracle/parity.py` and required to match exactly, so a
-deliberate delta changing size fails the gate. The 1,764 whose year came from identifier parsing are
-recoverable later — the frozen archival-dates extract labels 21 identifier rule families, usable as a
-validation oracle rather than an input — and each one recovered moves a row from `NA` back to `year`,
-never the reverse.
+The break is counted, not just described: **2,803** records differ on `collection_date_precision`
+and **none** on `collection_date`, declared in `oracle/parity.py`'s `DECLARED_TRANSITIONS` and
+compared against the preserved 2.4.1 baseline on every `evgc parity-canonical` run, so a deliberate
+delta changing size fails the gate.
+
+It said 1,761 and 4,549 until 2026-08-12, and cited a gate that had been deleted.
+`SUPERSEDED_FIELD_DELTAS` went in commit `c245dd3`; the prose kept promising it for eleven days, and
+the delta moved to 4,564 underneath — the 15 are release 3.1.0's membership-rescue records, which
+deposit no date on either side. The replacement is stronger than what it restores: per transition
+*class* rather than per column, so a from-value has to be right and not just a column total. That is
+what made the identifier recovery above measurable one convention at a time, and it is why
+`collection_date` could leave the contract entirely rather than shrink.
 
 R-DATE-1 and R-DATE-PRECISION-1 are therefore `deprecated` in the catalog and superseded by R-DATE-2
-and R-DATE-PRECISION-2 on real semver. `final/audit/rules.tsv.gz` still regenerates byte-for-byte,
-because the view emits only rules carrying the baseline's own `rule_version` — which is how the
-catalog can evolve without moving a published artifact.
+and R-DATE-PRECISION-2 on real semver. `final/audit/rules.tsv.gz` used to regenerate byte-for-byte
+against 2.4.1's, because the view emitted only rules carrying the baseline's own `rule_version`. That
+pin was removed on 2026-08-01: it meant 84.6% of provenance rows named a `winning_rule_id` that
+resolved to nothing in the shipped table. The view now emits all 39 catalog rules with a fifth
+`status` column, and `tests/test_rule_catalog.py` checks referential closure instead of byte
+identity.
 
 ### `specimen_type`: the first column recovered from text rather than projected
 
@@ -149,7 +187,7 @@ curated-master field, so 24,301 values carry no record of how they were decided.
 the first one recovered.
 
 R-SPECIMEN-2 matches one regex per category against `/isolation_source`, after an active ledger
-`specimen_type` decision. Over the carved records it **resolves 11,608, declines 12,700 rather than
+`specimen_type` decision. Over the carved records it **resolves 11,688, declines 12,617 rather than
 guessing, and disagrees with the release on one**. The patterns are declared in the catalog, and the
 decline count is `oracle/parity.py`'s `UNRESOLVED_SPECIMEN_ROWS`.
 
@@ -161,8 +199,8 @@ rather than absorbed: `GQ331952.1` deposits `groundwater` and ships `stool`, whi
 upstream error, and a rule bent to reproduce a wrong value would be worse than a declared
 disagreement.
 
-**`sample_origin` and `surveillance_stream` are now projected, and they decline heavily — 3,682 and
-8,650 rows respectively (`UNRESOLVED_ORIGIN_ROWS`, `UNRESOLVED_STREAM_ROWS`). The measurement below is
+**`sample_origin` and `surveillance_stream` are now projected, and they decline heavily — 2,728 and
+7,456 rows respectively (`UNRESOLVED_ORIGIN_ROWS`, `UNRESOLVED_STREAM_ROWS`). The measurement below is
 why the declines are that large rather than a rule being pushed to cover them.** Their ceilings were
 measured over progressively richer feature sets:
 
@@ -184,7 +222,7 @@ irreducibly ambiguous and belong in a curation queue rather than in a rule.
 Declining honestly is only half the design. `evgc build-metadata` now also writes
 `curation/curation_queue.tsv`, and it is what stops `unresolved_reason` being a note nobody acts on.
 
-**28,392 declined cells collapse into 302 groups**, because records decline for the *same* reason:
+**25,065 declined cells collapse into 268 groups**, because records decline for the *same* reason:
 every record whose `/isolation_source` is `conjunctival swab` is one decision, not 462. The queue is
 keyed on the input the rule examined and could not decide from, so resolving one group resolves every
 record in it. `queue_id` is derived from that content rather than allocated sequentially, so
@@ -210,15 +248,15 @@ transport.
 ### The second deliberate break: `locality`'s basis
 
 The same defect, found by the same method. 2.4.1 labels **every** blank `locality`
-`duplicate_of_admin1_suppressed`. Measured, only **4,233 of 23,268** are suppressions:
+`duplicate_of_admin1_suppressed`. Measured, only **4,233 of 23,272** are suppressions:
 
 | n | what the record deposited | the release said | the rewrite says |
 |---|---|---|---|
 | 4,233 | `Country: Region` | suppressed | `duplicate_of_admin1_suppressed` |
 | 16,987 | `Country` only, no region | suppressed | `no_admin1_deposited` |
-| 2,048 | no `/geo_loc_name` at all | suppressed | `no_geography_deposited` |
+| 2,052 | no `/geo_loc_name` at all | suppressed | `no_geography_deposited` |
 
-So the label asserts a determination that was never made on 19,035 records. The two new bases stay
+So the label asserts a determination that was never made on 19,039 records. The two new bases stay
 distinct deliberately: a record naming only a country *did* deposit geography, so folding it into
 "nothing deposited" would replace one overstatement with another.
 
@@ -247,8 +285,9 @@ break is legible and a disagreement in an unexpected column fails.
 **The row-set gap is down to eleven records, and it is pinned rather than absorbed.** The transport
 carves on two closed predicates — the GenBank lineage names the `Enterovirus` genus, and the ledger
 does not actively exclude the accession — plus R-MEMBERSHIP-AA-1, which recovers patent-division
-deposits by capsid amino-acid distance. That reproduces 24,299 of the 24,301 shipped rows, and the
-build's own carve is 24,308.
+deposits by capsid amino-acid distance. That reproduces 24,296 of the 24,301 shipped rows, and the
+build's own carve is 24,305 — nine the release excludes and this pipeline admits, less two it leaves
+undecided and three carve-excluded on 2026-08-14.
 
 - Two shipped records it cannot reach: `E00765.1` and `E01571.1`, which land in
   R-MEMBERSHIP-AA-1's undecided 8–15% band. Both look like patent transcription artifacts — their
@@ -266,14 +305,17 @@ record drifting in or out of the carve fails rather than being reported as a sli
 The build never reads them — a transport that patched itself against a declared diff would pass
 parity while proving nothing.
 
-**Still not regenerated — `final/dictionaries/` and two audit views.** The list is down to six
-files. `final/dictionaries/`'s four tables have no producer in this repository, and
-`final/audit/record_disposition.tsv.gz` and `final/audit/sequence_evidence.tsv.gz` are 2.4.1 audit
-views the new build writes no successor to — the second is the alignment layer's tier oracle, and
-"The alignment layer's anchor" below records why it has no 4.0.0-native replacement and what checks
-it instead. All six are carried with their hashes pinned in code
-(`oracle/release.CARRIED_FINAL_FILES`, `tests/test_carried_files.py`), and every other file under
-`final/` is now written by a verb in this repository.
+**Still not regenerated — one file.** `final/audit/sequence_evidence.tsv.gz` is the alignment
+layer's tier oracle and has no native producer: `derive/evidence.py` deliberately writes a narrower
+schema, so the tier predicate in `align/population.py` still reads 2.4.1's table. "The alignment
+layer's anchor" below records what checks it instead.
+
+The other five left the carried set in 5.0.0 when they gained producers: `final/dictionaries/`'s
+four tables (`export/dictionaries.py`, which computes `nonempty_count`/`row_count` live rather than
+inheriting frozen ones) and `final/audit/record_disposition.tsv.gz` (`export/audit.py`, which fills
+the `exclusion_reason` 2.4.1 left blank on 1,008 of 1,181 rows — blank on none of 1,422 now). The
+remaining carried files are the alignment layer and the source layer, hashes pinned in code
+(`oracle/release.CARRIED_FINAL_FILES`, `tests/test_carried_files.py`).
 
 ### Inherited parse loss
 
@@ -288,27 +330,32 @@ shipped data.
 Because parity is byte-exact, this loss cannot be corrected without deliberately breaking the gate
 and cutting a new release. That is a real constraint, not an oversight.
 
-### The one column not written: `sequence_scope`
+### The column that was not written, and why it stayed that way: `sequence_scope`
 
-`derive.metadata.PENDING_COLUMNS` holds exactly one entry, and that set shrinking from twelve to one
-is the measure of what the derivation stages delivered. `assert_every_column_is_accounted_for` uses it
-as the allowlist for a column blank on every row, so this is a *declared* absence — a column going
-blank without an entry is a build failure.
+`derive.metadata.PENDING_COLUMNS` is **empty**. It held twelve entries, then one, and the last of
+them was `sequence_scope` — the column this section existed to explain. It is kept because *why* it
+stayed unwritten for so long is the more useful lesson than the fact that it is written now.
 
-It is not blocked on a missing stage. `derive/evidence.py` builds the Sabin 1/2/3 reference frame
-from the frozen archive's own `mat_peptide` features and reproduces the shipped
-`reference_region_coordinates.tsv` exactly. What does not follow is the column: fitted against every
-threshold combination, coverage geometry against Sabin VP1 agrees with the shipped `sequence_scope` on
-86.7% of poliovirus records, and the 13.3% are systematic rather than boundary errors — 745 records
-the release calls `other_fragment` have a complete VP1, capsid or genome. So the shipped column is
-not a function of Sabin-VP1 coverage alone, and a rule fitted to 86.7% would assert a wrong
-determination on the remaining 13.3% — on the order of thirteen hundred records.
+It was never blocked on a missing stage. What was measured, and correctly, is that coverage geometry
+against Sabin VP1 agrees with the shipped column on only **86.7%** of poliovirus records, with the
+13.3% systematic rather than boundary errors: 745 records the release calls `other_fragment` have a
+complete VP1, capsid or genome by coverage. The conclusion drawn was that the determinant was
+unknown and a rule fitted to 86.7% would assert a wrong determination on some thirteen hundred
+records. That reasoning was right, and the refusal to ship a fitted rule was right.
 
-That is the same argument as the `virus_group` decline, applied to a column rather than a row set:
-scoring well against the oracle is not evidence the rule is right when the disagreements have
-structure. The column stays declared-pending until the determinant the release actually used is
-known. It is the clearest single item for a metadata pass to close, because the measurement that
-would settle it is already written — what is missing is the *definition*.
+**The measurement was right and the model was wrong.** `sequence_scope` is not a function of
+coverage at all, so no threshold on coverage was ever going to find it. It is a statement about a
+record's own *annotation* — a seven-branch precedence over which region the deposit names, with
+three length floors — and read that way it reproduces the shipped column on **24,296 of 24,296**
+rows. The 745 that looked like errors are where the final `else` lands: a deposit that names no
+region is `other_fragment` regardless of how much sequence it has. Reading the column as a
+completeness measure is what made them look like a defect in the data.
+
+Two things worth keeping from that. First, a well-measured 86.7% against the wrong model is
+indistinguishable from a hard problem, and the thing that broke the deadlock was asking what the
+column *means* rather than fitting harder. Second, none of it was checkable until
+`releases/2.4.1/canonical/` was preserved: the reproduction is a claim about 24,301 specific cells,
+and there was a period when nothing in the tree could evaluate it.
 
 ## The alignment layer
 
@@ -319,17 +366,67 @@ repository's own alignments** — `evgc alignment-build` produces them from `fin
 same shape as `site/data/`. 2.4.1's nineteen files are retired to `releases/2.4.1/alignments/`,
 where the declared delta is still measured against them.
 
-**All six declared populations are built, at one parameter set, from the 4.0.0 canonical table.**
-The previous state is what made that worth doing: five artifacts, `EV_unified` never built at all,
-and two different gap-extension settings — `POLIO_unified` and `NPEV_unified` carried MAFFT
+**All six declared populations are built, at one parameter set, from the 5.0.0 canonical table.**
+The state before 4.0.0 is what made that worth doing: five artifacts, `EV_unified` never built at
+all, and two different gap-extension settings — `POLIO_unified` and `NPEV_unified` carried MAFFT
 `--ep 0.5` while `PV1`/`PV2`/`PV3` predated it. Build times, one artifact at a time on eight
-threads: PV3 7.4 min, PV1 13.5, PV2 24.9, POLIO 25.9, NPEV 74.5, EV 234.4.
+threads: PV3 7.4 min, PV1 13.3, POLIO 25.6, PV2 24.6, NPEV 74.4, EV 232.3 — about seven hours, run
+strictly in series because concurrent aligner processes once reached ~50 GB.
 
-The three anchored stacks are the strongest result. `PV1`/`PV2`/`PV3` come out at **zero sparse
-columns and zero single-row columns**, at widths of exactly 7,441 / 7,439 / 7,432 — their own Sabin
-genome lengths. Nothing enforces that; it falls out of the per-serotype covariance models being
-`cmbuild --hand` against each serotype's reference, and it is the check that the anchored projection
-is doing what it claims.
+| artifact | rows | width | 2.4.1 |
+|---|---:|---:|---:|
+| `EV_unified` | 24,305 | 8,817 | 9,942 |
+| `NPEV_unified` | 14,218 | 8,328 | 8,502 |
+| `POLIO_unified` | 10,087 | 7,632 | 8,928 |
+| `PV1`/`PV2`/`PV3` | 4,333 / 3,791 / 1,597 | 7,441 / 7,439 / 7,432 | 7,866 / 8,093 / 8,094 |
+
+### Half of two CDS blocks held nothing but ambiguity
+
+Worth recording because the first diagnosis was wrong. `NPEV_unified` built at **15,435 nt** before
+2026-08-15, against 2.4.1's 8,502, and the reading offered at the time was that the width was honest
+— that MAFFT's `--lop` placement fix opens insertion columns a badly-placed alignment would have
+scattered, so narrower was worse. The placement metric supported it: 1.3% badly placed against a 5%
+ceiling.
+
+The placement was fine and the conclusion did not follow. Measured against 2.4.1 instead of reasoned
+about, its CDS block carries **the same 43,110 N residues** in 7,677 columns with **zero** columns
+that every occupant spells with ambiguity. 5.0.0's carried 7,130 such columns, 48.8% of the block.
+The non-N part was already 209 columns *narrower* than 2.4.1's; the `--lop` fix bought 0.13
+percentage points of placement and no width at all.
+
+The cause is eleven deposits whose assembly gaps are padded to full length — `PX242045` is 29.9% N
+and opened 2,169 columns by itself, `MG692415` 2,022, `MG692413` 768. MAFFT placed each as one
+contiguous insertion, correctly: an N-run *is* an insertion as far as an aligner can tell.
+`codon.drop_unsequenced_codon_columns` removes codon columns no record spells with a known base,
+discarding **no** unambiguous nucleotide. `POLIO_unified` and the three serotype files are untouched
+by it — they carry no such column — which is the check that it removes padding rather than sequence.
+
+Two properties this separates, and conflating them is what produced the wrong reading:
+`align/placement.py` measures whether rows are placed *coherently*;
+`codon.drop_unsequenced_codon_columns` measures whether columns hold *anything*. A clean result from
+the first says nothing about the second.
+
+### The anchored stacks live in the Sabin frame, and that costs residues
+
+`PV1`/`PV2`/`PV3` come out at **zero sparse columns and zero single-row columns**, at widths of
+exactly 7,441 / 7,439 / 7,432 — their own Sabin genome lengths. Every column is a real Sabin genome
+position, so a column number is a coordinate a reader can look up, and `#=GC RF` is the Sabin
+sequence rather than a consensus.
+
+**That exactness is a consequence of the frame, not independent evidence for it**, and this
+paragraph read it the other way round until 2026-08-15. A fixed reference frame has nowhere to put
+a base that sits outside the reference, so an insertion relative to Sabin is dropped. Zero sparse
+columns is what clipping *guarantees*; it cannot also be the check that the clipping was right.
+
+The cost, measured rather than described: on `PV1_unified`, **118 full-length rows lose 7,245
+nucleotides** between them — about 0.1% of the 6,207,875 residues the artifact places, but
+concentrated rather than spread, since a record loses exactly its insertion or nothing at all.
+
+**Curator ruling, 2026-08-15: accepted.** These references are wanted in the Sabin frame, and
+coordinate-addressability is worth the clip. The insertions are not lost from the release —
+`EV_unified` and `POLIO_unified` carry every record's full CDS, at the cost of columns that are not
+genome coordinates. The two stacks answer different questions: use the anchored one to name a
+position, the unified one when you need every base.
 
 None of this is a parity claim on the shipped bytes, and it never can be: those bytes came from code
 that no longer exists in that form, built at an unrecorded thread count with accidental
@@ -350,7 +447,7 @@ that proves it fires.
 **Two properties the anchored stack gets for free, and they are checked.** For `PV{1,2,3}` every
 column is a real Sabin genome position, because the per-serotype covariance models are
 `cmbuild --hand` against that serotype's own reference. So the three block widths sum to exactly the
-reference genome length — 7,441 / 7,439 / 7,432, matching the shipped `n_sabin_reference_columns` —
+reference genome length — 7,441 / 7,439 / 7,432, matching the shipped `n_reference_columns` —
 the reference row projected onto its own frame equals its genome byte-for-byte, and `#=GC RF` *is*
 that genome. Confirmed on real builds, not asserted.
 
@@ -404,14 +501,14 @@ alignment, so 2,169 private columns — 30% of its own length — is a placement
 shredded.
 
 **`EV_unified` settles half the question at no extra cost.** It contains every `NPEV_unified` row
-plus the 10,090 poliovirus records, built at the same parameters in the same run — and there
+plus the 10,087 poliovirus records, built at the same parameters in the same run — and there
 `PX242045` occupies **0** columns alone. The same record, the same settings, a superset of the same
 corpus, placed correctly. So this is not an unalignable deposit: the NPEV placement is the artifact,
 and a claim that the record is simply divergent would be false.
 
 | | NPEV_unified | EV_unified |
 |---|---|---|
-| rows | 14,218 | 24,308 |
+| rows | 14,218 | 24,305 |
 | CDS columns | 14,598 | 12,942 |
 | single-row columns | 5,205 | 2,994 |
 | `PX242045` private columns | 2,169 | **0** |
@@ -443,18 +540,18 @@ stays distinguishable from "deleted" without inventing an alignment character.
 **2.4.1's alignments were not 1-to-1 with the release they shipped beside; 4.0.0's are, by
 construction.** The delta each artifact declares against `releases/2.4.1/alignments/`, as built:
 
-| artifact | 2.4.1 rows | 4.0.0 rows | delta |
+| artifact | 2.4.1 rows | 5.0.0 rows | delta |
 |---|---|---|---|
-| `POLIO_unified` | 9,988 | 10,090 | +106 / −4 |
+| `POLIO_unified` | 9,988 | 10,087 | +106 / −7 |
 | `NPEV_unified` | 14,050 | 14,218 | +168 / −0 |
-| `EV_unified` | 24,038 | 24,308 | +272 / −2 |
-| `PV1_unified` | 3,732 | 4,337 | +717 / −112 |
-| `PV2_unified` | 3,604 | 3,790 | +357 / −171 |
-| `PV3_unified` | 1,425 | 1,597 | +263 / −91 |
+| `EV_unified` | 24,038 | 24,305 | +272 / −5 |
+| `PV1_unified` | 3,732 | 4,333 | +715 / −114 |
+| `PV2_unified` | 3,604 | 3,791 | +356 / −169 |
+| `PV3_unified` | 1,425 | 1,597 | +261 / −89 |
 
 Every dropped row carries a reason from a closed vocabulary, and an *undeclared* drop raises rather
-than being absorbed. Across the three serotype files the 374 drops are 332 `virus_type_lost`, 37
-`serotype_relabelled`, 3 `carve_excluded` and 2 `group_moved`.
+than being absorbed. Across the three serotype files the 372 drops are 332 `virus_type_lost`, 32
+`serotype_relabelled`, 6 `carve_excluded` and 2 `group_moved`.
 
 `evgc alignment-population` derives the row set: upstream tied *membership* to evidence confidence
 (a record its typing could not resolve confidently was simply absent), and the rebuild ties
@@ -462,7 +559,7 @@ membership to curated `virus_group`/`virus_type` instead, using evidence only to
 seed/backbone/addon tier. That inversion is why the serotype files both grow and shrink — they
 admit fragments upstream's evidence gate excluded, and they decline records upstream typed from
 curated data that R-TYPE-2 will not type from an organism name stating no serotype. It is also why
-PV1's P1 coverage is 3,623 of 4,337 rather than all of them: a deposit named "Poliovirus 1" now
+PV1's P1 coverage is 3,619 of 4,333 rather than all of them: a deposit named "Poliovirus 1" now
 joins PV1 with or without a capsid, and the 714 rows without P1 are almost exactly the 717 the
 population added. The `serotype_relabelled` drops were adjudicated 2026-07-30 — 40 of the 43
 relabelled records have fewer than 100 capsid codons compared (mean 58.3), so the coverage-guarded
@@ -560,9 +657,9 @@ its coverage gap against the carve to be *exactly* the two residual sets `derive
 already declares, in both directions. Before that check, nine carved records had no evidence row and
 took `addon` by default, with nothing anywhere saying they had.
 
-**2. The six `expected_rows` tripwires are re-derived against 4.0.0.** EV 24,301 -> 24,308,
-POLIO 10,084 -> 10,090, NPEV 14,217 -> 14,218, and the serotype files 4,427/3,939/1,693 ->
-4,337/3,790/1,597. The serotype drop is the consequential one and it is a typing change, not a
+**2. The six `expected_rows` tripwires are re-derived against 5.0.0.** EV 24,301 -> 24,305,
+POLIO 10,084 -> 10,087, NPEV 14,217 -> 14,218, and the serotype files 4,427/3,939/1,693 ->
+4,333/3,791/1,597. The serotype drop is the consequential one and it is a typing change, not a
 membership change: 366 poliovirus records now carry a blank `virus_type` against 25 before, because
 R-TYPE-2 reads the organism name and declines where the name states no serotype. They are members of
 `POLIO_unified` and `EV_unified` and of no `PV{n}` file. 92 of the 366 are >=3,000 nt, so this is
@@ -712,7 +809,7 @@ Passing parity means at minimum:
 - identical vouched/provisional partitions;
 - identical FASTA identifiers and nucleotide sequences;
 - migration of all 2,912 human decisions the release shipped, and 28 deterministic rules. The ledger
-  now holds 3,168 — 2,975 `active`, 183 `retired`, 10 `superseded` — and the difference is approved
+  now holds 4,899 — 4,690 `active`, 194 `retired`, 15 `superseded` — and the difference is approved
   curation history rather than a parity failure, itemised by `source_artifact`. The largest single
   block is the 243-row locked VDPV/wild reconciliation allowlist, migrated 2026-07-30: the last input
   to `poliovirus_classification` with no counterpart here, and every row already agrees with the
@@ -742,18 +839,24 @@ had become of it. `evgc build-metadata` now writes `audit/decision_applications.
 decision per canonical field it can reach, and **a decision with no row is a build failure** rather
 than an absence.
 
-The measured tally, 3,190 application rows over the 3,168-row ledger (`release/3.2.0/audit/
-decision_applications.tsv.gz`):
+The measured tally, 6,306 application rows over the 4,899-row ledger
+(`final/audit/decision_applications.tsv.gz`):
 
 | status | n | what it means |
 |---|---|---|
-| `applied_filled_unresolved` | 2,640 | the decision is the only reason the cell has a value |
-| `not_in_force_retired` / `_superseded` | 183 / 10 | the curator took it back |
-| `applied_exclusion` | 173 | the record is absent from the carve *because* the ledger says so |
+| `applied_filled_unresolved` | 3,556 | the decision is the only reason the cell has a value |
+| `applied_changed` | 1,699 | in force, and the value differs from the rule's |
+| `applied_unchanged` | 531 | **a rule now reaches the same value on its own** |
+| `not_in_force_retired` / `_superseded` | 194 / 15 | the curator took it back |
+| `applied_exclusion` | 176 | the record is absent from the carve *because* the ledger says so |
 | `no_canonical_field` | 123 | reference-selection curation the canonical schema has no column for |
-| `applied_changed` | 31 | in force, and the value differs from the rule's |
-| `applied_unchanged` | 24 | **a rule now reaches the same value on its own** |
-| `subject_outside_carve` | 6 | no canonical value exists to change |
+| `subject_outside_carve` | 12 | no canonical value exists to change |
+
+`applied_changed` and `applied_unchanged` were 31 and 24 when this table was first written, and the
+jump is not new curation — it is the counterfactual being fixed on 2026-08-12. It had been
+withholding four `RecordView` fields along with the ledger, so rules that read *evidence* declined
+for want of it and every decision filling the resulting blank was miscounted as
+`applied_filled_unresolved`.
 
 **`field_not_projected` is gone.** It held 2,553 rows when this table was first measured — decisions
 whose field had no rule to reach it. Every one of those fields is now projected, so the bucket is
@@ -795,7 +898,7 @@ carrying it fell through to `non_polio_enterovirus`, along with four named for a
 type. One of the 95 ships as `EV-C96`, inside that very species. Every one of the 99 happens to ship
 `non_polio_enterovirus`, so the rule scored 100% on the group and parity agreed: the top declared risk,
 realized in the same commit whose docstring warns against sizing an ambiguity by its disagreements.
-The declined population was **1,832** after the fix, not 1,733. (It is 1,596 today; curated-
+The declined population was **1,832** after the fix, not 1,733. (It is zero today; curated-
 classification entailment resolved part of the group afterwards. The number above is what the review
 measured, kept as written because this section records what changed on that date.)
 

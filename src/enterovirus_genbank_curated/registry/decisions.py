@@ -37,6 +37,25 @@ def load_excluded_accessions(ledger_path: Path) -> frozenset[str]:
     )
 
 
+CARVE_EXCLUSION_TYPE = "carve_exclusion"
+
+
+def load_carve_excluded_accessions(ledger_path: Path) -> frozenset[str]:
+    """Accessions excluded by a `carve_exclusion` rather than a `membership_exclusion`.
+
+    The distinction is a claim about the record, not a bookkeeping detail. A membership exclusion
+    says the record is not the virus being catalogued, which settles its partition; a carve
+    exclusion says the record *is* in scope and is being left out anyway, which settles nothing
+    about what it is. `export/audit.write_record_disposition` needs the two apart to fill
+    `virus_group`.
+    """
+    return frozenset(
+        row["accession"]
+        for row in _read_active(ledger_path)
+        if row["decision_type"] == CARVE_EXCLUSION_TYPE
+    )
+
+
 def load_active_decisions(ledger_path: Path) -> dict[str, dict[str, str]]:
     """`{accession: {field_name: new_value}}` for every active assertion.
 
