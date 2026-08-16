@@ -401,9 +401,7 @@ def test_a_missing_platform_entry_fails(declaration_copy: Path, resolved: tc.Too
 
 
 @REQUIRES_ENV
-def test_a_tool_missing_from_the_prefix_is_refused(
-    repository_root: Path, tmp_path: Path, scratch: Path
-) -> None:
+def test_a_tool_missing_from_the_prefix_is_refused(tmp_path: Path, scratch: Path) -> None:
     """A prefix with no binaries must raise with the reconstruction command, not resolve empty."""
     empty = tmp_path / "repo"
     (empty / ".pixi/envs/align/bin").mkdir(parents=True)

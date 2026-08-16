@@ -175,7 +175,6 @@ def test_rows_are_in_declared_order(
 
 def tier_by_column(
     repository_root: Path,
-    records: dict[str, population.AlignedRecord],
     row_ids: frozenset[str],
     column: str,
 ) -> dict[str, int]:
@@ -207,7 +206,6 @@ def tier_by_column(
 )
 def test_the_substituted_column_reproduces_the_shipped_tiers_exactly(
     repository_root: Path,
-    records: dict[str, population.AlignedRecord],
     name: str,
     column: str,
     backbone: int,
@@ -227,7 +225,7 @@ def test_the_substituted_column_reproduces_the_shipped_tiers_exactly(
     goes through canonical, does move.
     """
     shipped = shipped_row_ids(repository_root, name)
-    assert tier_by_column(repository_root, records, shipped, column) == {
+    assert tier_by_column(repository_root, shipped, column) == {
         "backbone": backbone,
         "addon": addon,
     }
@@ -282,9 +280,7 @@ def test_the_tier_difference_is_attributable_to_jx181922(
     assert movers == ["JX181922"]
 
 
-def test_a_blank_confidence_value_falls_to_addon(
-    records: dict[str, population.AlignedRecord],
-) -> None:
+def test_a_blank_confidence_value_falls_to_addon() -> None:
     """The third state: 125 non-polio records have a blank confidence column, not FALSE."""
     row = {
         contract.ACCESSION: "X",
@@ -449,7 +445,7 @@ def test_blank_types_take_the_sentinel_for_their_own_group(
     turned out to state their type in their own title. The sentinel population is the *residue* of a
     typing gap, so it shrinking is the gap closing.
 
-    **`type_sort_key` is also the alignment row order** (`population.select_records`), so those 427
+    **`type_sort_key` is also the alignment row order** (`population.select`), so those 427
     records move within `NPEV_unified` and `EV_unified`. That is why the alignment rebuild covers
     all six artifacts and not the five the population arithmetic alone would imply.
     """

@@ -47,7 +47,7 @@ SHIPPED_COLUMN_COUNT = 21
 
 # 7,728 by VP1 + 159 by the capsid fallback = 7,887.
 #
-# 7,728 = 24,308 carved records
+# 7,728 = the 24,308 records the carve held then (24,305 now, after the FV5370xx exclusions)
 #         − 14,669 whose organism name names no serotype, so there is no reference to measure
 #           against; `derive/evidence.py` will not serotype by sequence to invent one
 #         − 1,708 where no 12-mer diagonal inside VP1 clears `MIN_DIAGONAL_ANCHORS` (754 of those

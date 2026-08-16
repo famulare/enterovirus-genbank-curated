@@ -183,7 +183,7 @@ def assert_evidence_covers_the_carve(
     for non-polio, which is a guess wearing a rule's clothes).
 
     Carrying it is defensible; carrying it *silently* is not. It covers 24,301 records and the
-    carve holds 24,308, and `tier_of` reads a missing row as `addon` — so nine records would take
+    carve holds 24,305, and `tier_of` reads a missing row as `addon` — so nine records would take
     a tier by default, with nothing saying they had. That is the shape of defect this repository
     keeps finding: a real decision expressed as an absent key.
 

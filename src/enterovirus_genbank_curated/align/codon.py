@@ -133,16 +133,22 @@ def backtranslate(aa_aln: dict[str, str], orf_nt: dict[str, str], width_aa: int)
 # 7,130 all-N columns in `NPEV_unified` — 48.8% of its CDS block — held open by eleven deposits with
 # assembly gaps padded to full length. `PX242045` alone opened 2,169.
 #
-# Measured before this was written: 2.4.1's NPEV CDS carried the *same* 43,110 N residues in 7,677
-# columns with **zero** all-N columns. So this is not a cost of the `--lop` placement fix, which is
-# what an earlier reading of the width claimed; the non-N part of the block is 209 columns narrower
-# than 2.4.1's. The padding is the whole difference.
+# Measured on the diagnostic run that motivated this filter: 2.4.1's NPEV CDS carried the *same*
+# 43,110 N residues in 7,677 columns with **zero** all-N columns. So the width was not a cost of the
+# `--lop` placement fix, which is what an earlier reading of it claimed. The padding is the whole
+# difference.
 #
 # Dropped at codon granularity because `backtranslate` emits `"---"` or a whole codon, so removing a
-# single column would break the reading frame and the whole-codon width invariant with it. The
-# filter discards **no** unambiguous nucleotide: over both affected artifacts it removes 35,931
-# residues and every one is an ambiguity code. N's that MAFFT placed on shared columns stay — those
-# are informative, meaning "unsequenced at this homologous position", which is a different statement
+# single column would break the reading frame and the whole-codon width invariant with it. That is
+# also why the shipped `NPEV_unified` still has 9 gap-or-N columns: an ambiguous nucleotide whose
+# two codon partners carry real bases is not droppable, and dropping it would be wrong.
+#
+# The filter discards **no** unambiguous nucleotide, and that is a property of the predicate rather
+# than a measurement to re-take: a column only goes if *every* row spells it from `AMBIGUOUS_CODON`.
+# `tests/test_align_codon.py` pins it constructively. On the shipped bytes NPEV's CDS goes 14,598 ->
+# 7,503 columns and 43,110 -> 25,155 N residues, with POLIO and every PV{n} file unchanged — their
+# blocks had no all-ambiguous codon to drop. N's that MAFFT placed on shared columns stay: those are
+# informative, meaning "unsequenced at this homologous position", which is a different statement
 # from a deletion and one the p-distance readers already handle.
 AMBIGUOUS_CODON = frozenset("Nn-.")
 

@@ -113,7 +113,6 @@ LEDGER_CONFIRMED_SEROTYPE = "confirmed_serotype"
 LEDGER_SEROTYPE = "serotype"
 # Most specific first: an explicit correction outranks a confirmation, which outranks the original.
 LEDGER_TYPE_FIELDS = (LEDGER_CORRECTED_TYPE, LEDGER_CONFIRMED_SEROTYPE, LEDGER_SEROTYPE)
-LEDGER_UNKNOWN = "unknown"
 
 BASIS_LEDGER = "curated_type"
 BASIS_SEROTYPE_NAME = "poliovirus_serotype_in_organism_name"

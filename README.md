@@ -53,16 +53,16 @@ site/                 Source for the browser data explorer linked above, plus th
                       precomputed artifacts it serves and the gate that keeps them
                       in step with final/.
 src/                  Pipeline foundation and executable contract validation.
-final/                Release 4.1.0 — what this pipeline produces, rebuilt from raw/ and
+final/                Release 5.0.0 — what this pipeline produces, rebuilt from raw/ and
                       registry/ alone. A build destination, not a comparison target: a
                       guarded build may write it and may not read a file it did not write.
 releases/2.4.1/       The superseded release, retired rather than rewritten: its parity
-                      contract, and the nineteen alignment files evgc alignment-shape
+                      contract, and the eighteen alignment files evgc alignment-shape
                       still measures the declared delta against. (releases/2.1.5/ and
                       releases/2.3.0/ are historical records, no longer verified against
                       the tree — see src/enterovirus_genbank_curated/contracts.py.)
 derived/alignments/   Where evgc alignment-build writes; final/alignments/ is the promoted
-                      copy. See derived/alignments/README.md.
+                      copy, promoted into final/alignments/.
 docs/                 Pipeline architecture and the reproducibility boundary.
 ```
 
@@ -75,10 +75,11 @@ Every included sequence gets one row in `final/canonical/sequence_metadata.tsv.g
 never presented as vouched gold-standard.
 
 Every curated field (classification, sample origin, surveillance stream, collection date, virus
-type, ...) has a corresponding row in `final/audit/canonical_projection_provenance.tsv.gz` naming
+type, ...) has a corresponding row in `final/audit/projection_provenance.tsv.gz` naming
 exactly which upstream field it was projected from, under which versioned rule
 (`final/audit/rules.tsv.gz`), and whether a human decision touched it — traceable to the specific
-decision in `final/audit/manual_decisions.tsv.gz`.
+decision in `registry/decisions.tsv`, through
+`final/audit/decision_applications.tsv.gz`.
 
 ## Reproducibility status
 
@@ -106,31 +107,32 @@ evgc check-declines                # every declined cell equals its declared cou
 evgc build-metadata --output final # write the whole dataset, manifests included
 ```
 
-From `raw/` and `registry/` alone this carves the canonical row set and fills **25 of the 26
-canonical columns**.
+From `raw/` and `registry/` alone this carves the canonical row set and fills **all 26 canonical
+columns**.
 
 *Thirteen transported columns* — identity, sequence hash and length, taxid, organism,
 isolate/strain/host, parsed country/admin1/locality, BioSample — where the canonical value **is** the
 GenBank value. Every cell equals the shipped cell, in the same row order.
 
-*Twelve projected columns*, each produced with a machine-readable provenance row naming the rule that
+*Fourteen projected columns*, each produced with a machine-readable provenance row naming the rule that
 decided it and which branch of that rule fired: `virus_group`, `curation_status`, `virus_type`,
 `poliovirus_classification`, `sample_origin`, `surveillance_stream`, `specimen_type`,
-`collection_date`, `collection_date_precision`, the `collection_year_*` pair, and
+`collection_date`, `collection_date_precision`, the `collection_year_*` pair, `sequence_scope` and
 `engineered_or_construct` — plus `locality`, which is both transported and projected. Several
 deliberately **differ** from the release, because the shipped value asserted a determination that was
 never made; each break retires a weak guarantee, states a stronger one enforced against the build's
 own output, and pins the difference as an exact count *and a witness hash over the disagreeing
 records*, so a substituted disagreement fails the gate even when the count does not move.
 
-**One column is not written: `sequence_scope`.** The sequence stage that would produce it exists —
-`derive/evidence.py` builds the Sabin 1/2/3 reference frame from the frozen archive's own
-`mat_peptide` features, reproducing the shipped `reference_region_coordinates.tsv` exactly — and its
-coverage geometry does *not* reproduce the shipped column. Fitted against every threshold
-combination it agrees on 86.7% of poliovirus records, with systematic rather than boundary errors:
-745 records the release calls `other_fragment` have a complete VP1, capsid or genome. So
-`record_type` is not a function of coverage against Sabin VP1 alone, and fitting to 86.7% would
-assert a wrong determination on 1,332 records. It stays declared-pending instead.
+**`sequence_scope` was the last column written, and it was unwritten for the wrong reason.** It was
+recorded as blocked on coverage geometry: fitted against every threshold combination, coverage
+against Sabin VP1 agrees with the shipped column on only 86.7% of poliovirus records, with
+systematic rather than boundary errors — 745 records the release calls `other_fragment` have a
+complete VP1, capsid or genome. The measurement was right and the model was wrong. Scope is a
+statement about a deposit's own *annotation*, not about how much genome it spans, so no threshold on
+coverage was ever going to find it. Read as a seven-branch precedence over which region the record
+names, `R-SCOPE-2` reproduces 2.4.1's column on **every one of the 24,296 rows both tables carry**,
+and the 745 are where its final `else` correctly lands.
 
 What that same stage *does* support is classification. `poliovirus_classification` is decided by
 nucleotide divergence from the matching Sabin reference — VP1 first, and where VP1 alone is absent
@@ -141,27 +143,27 @@ below 1% and every `wild` record above 18%, so the published thresholds are reco
 rather than imposed on it.
 
 Three properties matter as much as the coverage. A rule that cannot decide from declared inputs
-**declines** rather than guessing — 12,700 records whose `/isolation_source` carries no specimen
-keyword, 3,041 whose classification no sequence or ledger row settles, 2,216 whose organism name
-states no type, 1,596 whose organism name cannot settle poliovirus membership — and every declined
+**declines** rather than guessing — 12,617 records whose `/isolation_source` carries no specimen
+keyword, 1,789 whose organism name and definition line both state no type, 475 whose classification
+no sequence or ledger row settles, and **zero** whose membership is unsettled — and every declined
 cell becomes one row in a curation queue, grouped by the input the rule could not decide from, so
-that 28,244 declined cells reduce to 302 curator questions. The build cannot read `final/` at all:
+that 25,065 declined cells reduce to 268 curator questions. The build cannot read `final/` at all:
 the undeclared-input guard refuses it, so a rule cannot quietly reproduce the answer it is being
 compared against. And a blank cell is never a claim — `audit/projection_provenance.tsv.gz` carries
 `unresolved_reason` per cell, and `audit/build_manifest.json` states per column how many cells are
 filled, how many are blank and how many were declined.
 
 Every curation decision also gets a recorded outcome. `audit/decision_applications.tsv.gz` says what
-became of each of the 3,168 ledger rows — applied and changed something, applied and made no
+became of each of the 4,899 ledger rows — applied and changed something, applied and made no
 difference, filled a cell a rule declined, withdrawn, or reaching no canonical column — and a decision
 with *no* row is a build failure. That is the D2 lesson as an artifact: the failure it prevents is an
 assertion sitting in the ledger for two releases while the pipeline quietly recomputed the value. As
 of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
 canonical column now reaches a rule that projects it.
 
-### Release 4.1.0
+### Release 5.0.0
 
-`final/` **is** release 4.1.0 — the dataset this pipeline produces end to end from public inputs.
+`final/` **is** release 5.0.0 — the dataset this pipeline produces end to end from public inputs.
 
 4.1.0 is a curation-only correction on top of 4.0.0: thirteen accession-level
 `poliovirus_classification` decisions in [`registry/decisions.tsv`](registry/decisions.tsv), no rule
@@ -176,15 +178,16 @@ confirm the value the band already reaches.
 
 4.0.0 shipped the accumulated 3.0.0-3.3.0 line below as one major bump: reconciliation against the
 hand-curated 2.4.1 baseline is now complete in the sense this pipeline can make that claim (every
-one of the 536 remaining `poliovirus_classification` differences is categorized, not just counted —
+one of the 518 remaining `poliovirus_classification` differences is categorized, not just counted —
 see [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md)), and it pairs
 that metadata with reference multiple-sequence alignments built by this repository rather than
 carried from a private pipeline.
 
-3.0.0 was the **major** break within that accumulated line: `engineered_or_construct` flips TRUE to FALSE on 511 records (2.4.1's predicate
-matched the database division code as free text, so it largely reported *where* a sequence was
-deposited); `sequence_scope` is empty; and several thousand cells are blank-because-undetermined where
-2.4.1 filled them from inputs this pipeline does not have.
+3.0.0 was the **major** break within that accumulated line: `engineered_or_construct` flips TRUE to
+FALSE on 502 records (2.4.1's predicate matched the database division code as free text, so it
+largely reported *where* a sequence was deposited), and several thousand cells are
+blank-because-undetermined where 2.4.1 filled them from inputs this pipeline does not have.
+`sequence_scope` was empty then too; 5.0.0 writes it.
 
 3.1.0 closed 3.0.0's largest declared gap. `R-MEMBERSHIP-AA-1` now decides carve membership for
 records whose GenBank lineage does not name the `Enterovirus` genus, by capsid **amino-acid**
@@ -273,8 +276,8 @@ rule now measures VP1/capsid divergence against it exactly as it would a name-st
 more records resolve, 130 agreeing with the shipped classification.
 
 [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
-one of the 536 remaining differences from 2.4.1's `poliovirus_classification` by category — 97.8%
-of the shared carve agrees, and 470 of the 536 are a decline rather than a contradiction. The
+one of the 518 remaining differences from 2.4.1's `poliovirus_classification` by category — 97.9%
+of the shared carve agrees, and 469 of the 518 are a decline rather than a contradiction. The
 epidemiological refinement `cVDPV`/`iVDPV` is now emitted wherever the record itself states it,
 including from `isolation_source` and `note`; the 95 that were not are two published environmental
 studies whose circulation claim lives in the paper rather than in any deposit, and a further 28
@@ -292,22 +295,21 @@ those same four hashes against the committed release directory on every test run
 registry change that lands without a matching rebuild fails immediately rather than shipping a
 release whose manifest describes a build that no longer exists.
 
-**What is still not true:** of `final/audit/` only `rules.tsv.gz` is regenerated; the rest of it,
-`final/dictionaries/` and `final/alignments/` are not. And two records the shipped carve reaches are
-not in this one — `E00765.1` and `E01571.1`, which land in R-MEMBERSHIP-AA-1's undecided 8-15% band.
+**What is still not true:** one file under `final/` has no producer here —
+`audit/sequence_evidence.tsv.gz`, the alignment layer's tier oracle, which waits on the deferred EV
+reference-panel pass. And two records the shipped carve reaches are not in this one — `E00765.1`
+and `E01571.1`, which land in R-MEMBERSHIP-AA-1's undecided 8-15% band.
 Both look like patent transcription artifacts (their same-patent siblings sit at 0.2-0.6%), but
 moving a published threshold to catch two records would be fitting the parameter to the answer, so
 they stay a declared gap awaiting a curator decision about the patent text.
 
-For `final/alignments/`, the alignment layer now builds its own. `evgc alignment-build` writes
-Stockholm and FASTA artifacts to `derived/alignments/`, five of the six declared populations so far,
-and `evgc alignment-shape` reports each one's shape against the shipped 2.4.1 alignment. They are
-not byte-identical to the shipped files and cannot be. Two things are still true and worth stating
-plainly: the row set `evgc alignment-population` derives from `final/canonical/` and `final/audit/`
-is not the population the shipped alignments carry, and the whole alignment layer reads the frozen
-2.4.1 release rather than the release this pipeline now produces. See
-[`docs/reproducibility.md`](docs/reproducibility.md) for both measured gaps, and
-[`derived/alignments/README.md`](derived/alignments/README.md) for what the committed artifacts are.
+For `final/alignments/`, the alignment layer builds its own. `evgc alignment-build` writes Stockholm
+and FASTA artifacts for **all six** declared populations into `derived/alignments/`, and promotion
+into `final/alignments/` is a separate reviewed copy. `evgc alignment-shape` reports each one's shape
+against the retired 2.4.1 alignments, which are kept in `releases/2.4.1/alignments/` as the
+comparand. They are not byte-identical to those files and cannot be — that code no longer exists in
+that form, and was run at an unrecorded thread count. What replaces byte parity is a declared delta.
+See [`docs/reproducibility.md`](docs/reproducibility.md) for the measured gaps and the build times.
 
 The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
 never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the

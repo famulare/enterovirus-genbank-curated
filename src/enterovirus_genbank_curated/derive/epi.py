@@ -30,7 +30,7 @@ wrong value is worse than a declared disagreement.
 
 The release gives **different values to records with byte-identical inputs**. Re-measured
 2026-08-12 against `releases/2.4.1/canonical/`, which is now preserved and makes these
-recomputable: over the 24,299 shared rows, the 17,081 carrying `/host=Homo sapiens` exactly are
+recomputable: over the 24,296 shared rows, the 17,081 carrying `/host=Homo sapiens` exactly are
 shipped as 5,662 `human`, 11,416 `unknown` and 3 `vaccine`. So `sample_origin` is not a function of
 its declared inputs, and the measured "ceiling" was mostly the release contradicting itself — a rule
 scoring at that ceiling would be reproducing the contradiction by accident.

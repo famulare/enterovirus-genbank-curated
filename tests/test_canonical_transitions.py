@@ -285,7 +285,7 @@ def test_an_empty_baseline_fails(built: dict[str, dict[str, str]]) -> None:
 
 
 def test_a_truncated_baseline_fails(
-    repository_root: Path, built: dict[str, dict[str, str]], tmp_path: Path, monkeypatch
+    repository_root: Path, built: dict[str, dict[str, str]], tmp_path: Path
 ) -> None:
     """Half a fixture is the one corruption that still has the right column set."""
     source = repository_root / BASELINE_CANONICAL

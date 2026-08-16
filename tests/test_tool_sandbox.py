@@ -12,10 +12,12 @@ every test below except the ones in the last section.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import sys
 import tempfile
 import textwrap
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -45,13 +47,20 @@ guard = se.install_tool_guard(ROOT, scratch_root=SCRATCH, allowed_executables=fr
 
 
 @pytest.fixture
-def scratch_dirs(tmp_path_factory) -> tuple[Path, Path]:
-    """A real `mkdtemp`-style scratch tree and a run dir inside it — required by
-    `install_tool_guard`, which refuses a `scratch_root` outside the default scratch tree."""
+def scratch_dirs() -> Iterator[tuple[Path, Path]]:
+    """A real `mkdtemp` scratch tree and a run dir inside it.
+
+    `tmp_path_factory` will not do: `install_tool_guard` refuses a `scratch_root` outside the
+    default scratch tree, and pytest's tmp dir is not in it. So this makes its own and removes it
+    — it used to make its own and leak it, taking `tmp_path_factory` as an argument it ignored.
+    """
     scratch = Path(tempfile.mkdtemp())
     run_dir = scratch / "0000-test"
     run_dir.mkdir()
-    return scratch, run_dir
+    try:
+        yield scratch, run_dir
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
 
 
 def run_guarded(

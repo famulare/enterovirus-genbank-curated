@@ -229,7 +229,7 @@ def test_the_pinned_set_is_exactly_the_declared_carried_set() -> None:
     assert set(CARRIED_SHA256) == set(CARRIED_FINAL_FILES)
 
 
-def test_this_file_is_the_sole_record_of_every_carried_file(repository_root: Path) -> None:
+def test_this_file_is_the_sole_record_of_every_carried_file() -> None:
     """One witness per hash, deliberately, and the limit of that stated rather than implied.
 
     A local site build regenerates `site/data/manifest.json`, which used to carry an independent

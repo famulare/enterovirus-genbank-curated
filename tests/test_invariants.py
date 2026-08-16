@@ -1,7 +1,8 @@
 """Negative controls for the cross-column invariants.
 
 A review established that replacing both invariant functions with no-ops left the entire suite
-green — `pytest`, `pytest -m slow`, `validate-contracts` and `parity-metadata` all passed. So the
+green — `pytest`, `pytest -m slow`, `validate-contracts` and the then-current `parity-metadata`
+(retired 2026-08-01, replaced by `check-declines`) all passed. So the
 claims in `derive/geo.py` and `docs/reproducibility.md` that these are *enforced* were prose with
 nothing behind them: R2 exactly, and specifically the standard `docs/reproducibility.md` holds the
 sandbox to — every rule has a test that fails when the rule is removed.

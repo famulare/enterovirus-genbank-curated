@@ -20,7 +20,10 @@ coverage at all, so no threshold on coverage was ever going to find it.
 A seven-branch precedence over the record's **annotation and its own text**, plus three length
 floors. The frozen upstream stage computed it as `record_type` and the release writer mapped that
 onto the shipped vocabulary; the mapping is one-to-one and is reproduced in `SCOPE_BY_RECORD_TYPE`
-below. Ported here, it reproduces 2.4.1's column on **24,301 of 24,301 rows**.
+below. Ported here, it reproduces 2.4.1's column on **24,296 of 24,296 rows** — every row the two
+releases share. The other 9 of the built carve's 24,305 are not in 2.4.1 at all, so there is nothing
+to reproduce for them; a claim over 24,301 would be a claim over a population that does not exist on
+both sides.
 
 That also explains the 745 that looked like errors. `other_fragment` is where the final `else`
 lands, and the `else` is reached by a record whose annotations and definition name no region at
@@ -46,7 +49,7 @@ exactly those 311 rows, and it was measured rather than reasoned.
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from enterovirus_genbank_curated.derive.outcome import RecordView, RuleOutcome
@@ -101,6 +104,13 @@ NOT_POLIOVIRUS_SYNTHETIC = (r"synthetic .*anti-?poliovirus", r"anti-?polio virus
 POLIOVIRUS_ORGANISM = r"(^|\b)(human )?poliovirus( |-|$)"
 POLIOVIRUS_CORROBORATION = (r"\bvp1\b", r"\bpolyprotein\b", r"\bcapsid\b", r"\bcomplete genome\b")
 
+# Deliberately *not* shared with `derive/typing.py`'s `_SEROTYPE`, which looks almost identical and
+# is not the same rule. The two are ports of two different frozen upstream stages, and each column
+# is pinned cell-for-cell against 2.4.1's own value for it, so merging them would move one of the
+# two columns to match the other's regex. The visible differences are real: this one accepts
+# `\s*` where typing requires `\s+`, and typing carries a `(?![0-9])` guard this one does not need
+# because `\b` already ends the group. If they ever should be one function, that is a measured
+# change to both columns, not a tidy-up.
 SEROTYPE_PATTERNS = (
     r"\bpoliovirus\s*(?:type\s*)?([123])\b",
     r"\bpolio\s*virus\s*(?:type\s*)?([123])\b",
@@ -123,7 +133,7 @@ SEROTYPE_FIELDS = ("serotype", "strain", "isolate", "note")
 UNKNOWN_SEROTYPE = "unknown"
 
 
-def _matches(text: str, patterns) -> bool:
+def _matches(text: str, patterns: Iterable[str]) -> bool:
     return any(re.search(pattern, text, flags=re.IGNORECASE) for pattern in patterns)
 
 
@@ -243,14 +253,15 @@ def sequence_scope(parameters: Mapping[str, Any], view: RecordView) -> RuleOutco
     elif any(int(f["length"]) >= polyprotein_nt for f in polyprotein) or (
         length >= polyprotein_nt and _matches(blob, POLYPROTEIN_TEXT)
     ):
-        # A polyprotein long enough to be one is a genome if the record is genome-length and the
-        # capsid otherwise. The upstream stage resolved it by length, not by the feature.
-        record_type = "whole_genome" if length >= whole_genome_nt else "P1"
-        basis = BASIS_WHOLE_GENOME if record_type == "whole_genome" else BASIS_CAPSID
-        source = definition
+        # The upstream stage resolved this branch by length, not by the feature: a polyprotein is
+        # a genome if the record is genome-length and the capsid otherwise. Here it can only ever
+        # be the capsid, because reaching this `elif` entails `length < whole_genome_nt` — the
+        # branch above tests exactly that. The port's two-way form is not reproduced, since a
+        # conditional whose other arm is unreachable reads as a live case and is not one.
+        record_type, basis, source = "P1", BASIS_CAPSID, definition
     elif any(int(f["length"]) >= vp1_nt for f in vp1):
         record_type, basis, source = "VP1_complete", BASIS_VP1_COMPLETE, definition
-    elif vp1 or _matches(blob, (VP1_TEXT,)):
+    elif vp1 or re.search(VP1_TEXT, blob, flags=re.IGNORECASE):
         longest = max([int(f["length"]) for f in vp1] + [length])
         record_type = "VP1_partial" if longest < vp1_nt else "other"
         basis = BASIS_VP1_PARTIAL if record_type == "VP1_partial" else BASIS_NO_REGION_NAMED

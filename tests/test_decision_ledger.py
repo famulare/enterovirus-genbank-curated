@@ -256,7 +256,6 @@ POLIO_CLASSIFICATION_SUPERSEDES = 2
 # PV1 panel, whose 150 nt deposits carry neither `/host` nor `/isolation_source`, and the
 # `engineered/lab` frame for laboratory and patent deposits — a statement about what a record is
 # *not*, which no rule in this pipeline asserts from an absence.
-ORIGIN_UNKNOWN_SOURCE = "origin_unknown_curation.csv"
 EXPECTED_ORIGIN_UNKNOWN_ROWS = 173
 
 # Release 5.0.0's own correctness pass, 2026-08-14. Fourteen rows, three kinds:
@@ -293,12 +292,6 @@ EXPECTED_STATUS = {
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
 # so a registry rename does not rehash every id.
 ID_COLUMNS = ("decision_type", "subject_key", "field_name", "new_value")
-
-# The six reasons the release shipped truncated, because an earlier tool split the note on a comma
-# and stringified the remainder into an unnamed column. These are the only rows whose text may
-# differ from the release, and only by holding MORE of it.
-REPAIRED_ACCESSIONS = {"A27232", "A27233", "DI499165", "KY748286", "S72981", "S72984"}
-
 
 def assertion_key(row: dict[str, str]) -> tuple[str, str, str]:
     return (row["subject_key"], row["field_name"], row["new_value"])

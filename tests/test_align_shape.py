@@ -37,12 +37,21 @@ def test_shipped_row_ids_reads_the_real_shipped_pv3(repository_root: Path) -> No
     assert len(ids) == 1425, "the shipped PV3_unified row count is a fixed historical fact"
 
 
-def test_carve_exclusions_finds_the_one_active_exclusion(repository_root: Path) -> None:
-    """`AH004344` is the ledger's carve exclusion, and it is the reason the vocabulary entry can
-    fire at all. If this returns nothing, `carve_excluded` becomes unreachable."""
+def test_carve_exclusions_finds_the_active_exclusions(repository_root: Path) -> None:
+    """The ledger's carve exclusions are the reason the vocabulary entry can fire at all. If this
+    returns nothing, `carve_excluded` becomes unreachable.
+
+    The map covers every excluded record, keyed by reason, so the pin is on the `curator_carve_
+    exclusion` subset only — four as of 5.0.0: `AH004344`, plus `FV537075`/`76`/`77` added
+    2026-08-14. Pinned as a set rather than as a count so an exclusion appearing or vanishing is
+    named here, not silently absorbed."""
     excluded = shape.carve_exclusions(repository_root)
-    assert "AH004344" in excluded
-    assert excluded["AH004344"]
+    carved = {
+        accession
+        for accession, reason in excluded.items()
+        if reason == "curator_carve_exclusion"
+    }
+    assert carved == {"AH004344", "FV537075", "FV537076", "FV537077"}
 
 
 # --- the drop-reason vocabulary ------------------------------------------------------------------

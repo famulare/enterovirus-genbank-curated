@@ -61,9 +61,7 @@ def test_every_row_is_categorised(repository_root: Path) -> None:
     assert all(row["category"] for row in rows)
 
 
-def test_a_difference_the_script_cannot_explain_is_refused(
-    repository_root: Path, builder, monkeypatch
-) -> None:
+def test_a_difference_the_script_cannot_explain_is_refused(builder, monkeypatch) -> None:
     """The load-bearing half: an unknown provenance must stop the build, not become a blank cell.
 
     Two rows once sat uncategorised in the hand-maintained file. Withdrawing the largest category's

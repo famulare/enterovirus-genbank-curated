@@ -22,8 +22,9 @@ be missing: a parameter is only known-good while something measures it.
   `EV_unified`: median 50 runs for confident backbone rows against 4 for the addon tier.
 * **Dilution (span / residues).** At matched length (<= 90 aa) the addon tier's median is 3.19
   against the backbone's 3.28 — indistinguishable.
-* **Occupancy against globally well-covered columns.** Degenerate: only 280 of 3,039 columns are
-  filled by half of *all* rows, so a short fragment outside them scores a vacuous 1.0.
+* **Occupancy against globally well-covered columns.** Degenerate: on `EV_unified`'s CDS only 831
+  of 7,992 columns are filled by half of *all* rows, so a short fragment outside them scores a
+  vacuous 1.0.
 
 What separates them is normalising by **local depth** — the rows that had the opportunity to fill a
 column, meaning those whose own first-to-last span covers it:
@@ -43,10 +44,15 @@ with median occupancy 1.000 in every case. That is the number this gate exists t
 **It is not an explanation of the block's width, and an earlier version of this docstring claimed it
 was.** That claim — that `NPEV_unified` is wide because the `--lop` fix opens honest insertion
 columns, so "narrower was worse" — is false, and measuring 2.4.1 rather than reasoning about it is
-what showed that. 2.4.1's NPEV CDS is 7,677 columns carrying the *same* 43,110 N residues, with
-**zero** all-N columns and 1.377% badly placed. 5.0.0's was 14,598 with 7,130 all-N and 1.250%. The
-`--lop` fix bought 0.13 percentage points of placement; the entire 6,921-column difference was
-ambiguity padding, and the non-N part of the block is 209 columns *narrower* than 2.4.1's.
+what showed that. 2.4.1's NPEV CDS is 7,677 columns over 14,050 rows carrying 43,110 N residues with
+**zero** all-N columns, at 1.377% badly placed. The pre-filter 5.0.0 build was 14,598 columns
+carrying the *same* 43,110 N, at 1.250%. The `--lop` fix bought 0.13 percentage points of placement
+and no width at all; the entire ~6,900-column difference was ambiguity padding.
+
+The shipped block, measured on 5.0.0's own bytes: 7,503 CDS columns over 14,218 rows, 25,155 N
+residues, 9 columns that are gap-or-N throughout. Those 9 are not a leak — the filter drops whole
+*codons*, so an ambiguous nucleotide column whose two codon partners carry real bases stays, and
+must.
 
 The lesson worth keeping is the one that produced the wrong claim: placement being good and width
 being honest are different properties, and this gate measures only the first. Reading a clean

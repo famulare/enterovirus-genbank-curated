@@ -26,6 +26,7 @@ from pathlib import Path
 
 from enterovirus_genbank_curated.align.population import AlignmentPopulation
 from enterovirus_genbank_curated.align.stitch import BLOCK_CDS, StitchedAlignment
+from enterovirus_genbank_curated.contracts import sha256_file
 
 SCHEMA = 1
 PROVENANCE_SUFFIX = ".provenance.json"
@@ -53,8 +54,6 @@ PARAMETER_DEPARTURES = {
 }
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def build_provenance(
@@ -89,7 +88,7 @@ def build_provenance(
             model_path = repository_root / side_spec.cm_path
             models[side] = {
                 "cm_path": side_spec.cm_path,
-                "cm_sha256": _sha256(model_path),
+                "cm_sha256": sha256_file(model_path),
                 "pop_min_nt": side_spec.pop_min_nt,
                 "pop_max_nt": side_spec.pop_max_nt,
             }
@@ -126,7 +125,7 @@ def build_provenance(
         # stderr for the operator who wants it.
         "parameter_departures": PARAMETER_DEPARTURES,
         "artifact_sha256": {
-            key: _sha256(path) for key, path in sorted(paths.items()) if path.is_file()
+            key: sha256_file(path) for key, path in sorted(paths.items()) if path.is_file()
         },
     }
     if spec.stack == "anchored":

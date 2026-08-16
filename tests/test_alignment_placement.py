@@ -120,9 +120,9 @@ def test_the_built_artifacts_place_their_addon_rows_well(
     It is deliberately *not* a claim about width. An earlier version of this docstring read the
     clean placement result as an explanation for `NPEV_unified` being 15,435 nt against 2.4.1's
     8,502 — "narrower was worse". Measured, that is false: 2.4.1 carries the same 43,110 N residues
-    in 7,677 CDS columns with zero all-N columns. The width was ambiguity padding, now removed by
-    `codon.drop_unsequenced_codon_columns`; the `--lop` fix this gate watches bought 0.13 pp of
-    placement and no width at all.
+    in 7,677 CDS columns with zero all-N columns. The width was ambiguity padding, since removed by
+    `codon.drop_unsequenced_codon_columns` — the shipped CDS is 7,503 columns with 25,155 N — and
+    the `--lop` fix this gate watches bought 0.13 pp of placement and no width at all.
     """
     from enterovirus_genbank_curated.align import population
 

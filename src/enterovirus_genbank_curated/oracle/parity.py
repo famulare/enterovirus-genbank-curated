@@ -96,13 +96,14 @@ DECLARED_ROW_DELTA = {
 # `curation_status` among them — the partition reproduces exactly.
 #
 # Read a `('x', '')` entry as "2.4.1 asserted x and this pipeline declines or blanks", and a
-# `('x', 'y')` entry as "both assert, differently". A blanking is not automatically a loss: 98.8% of
-# the `specimen_type` blankings drop `default_stool`, a structural assumption the upstream stage
-# applied after `/isolation_source` failed to match, and the 11,649 `('unknown', 'human')` cells are
-# this pipeline reading a `/host` the upstream stage never examined.
+# `('x', 'y')` entry as "both assert, differently". A blanking is not automatically a loss: 94.8% of
+# the `specimen_type` blankings (5,812 of 6,130) drop `default_stool`, a structural assumption the
+# upstream stage applied after `/isolation_source` failed to match, and the 11,670
+# `('unknown', 'human')` cells are this pipeline reading a `/host` the upstream stage never
+# examined. Both numbers are the table below's own, and must be re-read off it when it moves.
 DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
     # Two columns are absent from this table, and their absence is the result rather than an
-    # omission. `sequence_scope` held 24,299 cells in 6 classes — every shared row, because the
+    # omission. `sequence_scope` held 24,296 cells in 6 classes — every shared row, because the
     # column shipped empty — and `collection_date` held 1,761 in 59 per-year classes. Both were
     # recorded as unreachable from `raw/`; both were reproduced exactly on 2026-08-12, by
     # `R-SCOPE-2` and by `R-DATE-2`'s identifier branch. A column moving from "differs on every row"
@@ -281,7 +282,7 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
     # *relocated* onto different records, because only the total was checked. Every from-value in
     # this table is enumerated for that reason.)
     #
-    # What is left below is the vocabulary break and nothing else: 2,803 records that deposited no
+    # What is left below is the vocabulary break and nothing else: 2,800 records that deposited no
     # date and whose identifier carries no year either. 2.4.1 called their precision `unknown`; a
     # record with no date has no precision, so this pipeline calls it `NA`.
     "collection_date_precision": {
@@ -433,7 +434,7 @@ def verify_source_parity(repository_root: Path, *, guarded: bool = False) -> dic
 # The whole +23 of the membership rescue lands here, and that is the expected shape rather than a
 # surprise: a record is rescued *because* its organism name is `unidentified`, `synthetic construct`
 # or `Homo sapiens`, which is exactly the name the partition rule cannot decide from. The sequence
-# settles membership in the carve; it does not write the column — R-PARTITION-2 reads the name.
+# settles membership in the carve; it does not write the column — R-PARTITION-1 reads the name.
 #
 # 1,596 fell to 1,385 on 2026-08-01: `derive.evidence.measure_poliovirus_membership_band` resolves
 # 211 of them directly, using the parameters R-MEMBERSHIP-AA-1 already declares for the carve-rescue
@@ -441,7 +442,7 @@ def verify_source_parity(repository_root: Path, *, guarded: bool = False) -> dic
 # (140), at or above 15.0% confirms `non_polio_enterovirus` (71), and the 8-15% middle (or under 50
 # compared codons) stays declined exactly as before. Validated per record against the shipped
 # `virus_group`: all 71 `non_polio_enterovirus` calls agree; of the 140 `poliovirus` calls, 138
-# agree and the other 2 are not in the 24,299 shared rows at all (not a disagreement — there is
+# agree and the other 2 are not in the 24,296 shared rows at all (not a disagreement — there is
 # nothing on the release side to disagree with). `poliovirus_classification` benefits too: a
 # `poliovirus`-banded record with no name serotype now measures VP1/capsid divergence against the
 # band's own identified serotype (`BASIS_VP1_BY_MEMBERSHIP_BAND`/`BASIS_CAPSID_BY_MEMBERSHIP_BAND`
@@ -599,7 +600,6 @@ UNRESOLVED_TYPE_ROWS = 1789
 # Down 1 on 2026-08-14, with the named-wild-reference guard: one record was declining for want of a
 # usable divergence measurement and its strain name settles it without one.
 UNRESOLVED_CLASSIFICATION_ROWS = 475
-PARTITION_FIELDS = ("virus_group", "curation_status")
 
 
 # Canonical field -> the declared decline count above. Every field a rule can decline appears here,

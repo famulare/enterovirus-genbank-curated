@@ -7,7 +7,7 @@ records. The measurement was right; the model was wrong. Scope is a statement ab
 deposit covers.
 
 `tests/test_canonical_transitions.py` pins the corpus result (zero differences from the preserved
-2.4.1 column over all 24,299 shared rows). This file pins the reasoning, so a future edit that
+2.4.1 column over all 24,296 shared rows). This file pins the reasoning, so a future edit that
 happens to keep the total right still has to keep each branch right.
 """
 

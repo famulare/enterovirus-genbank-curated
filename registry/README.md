@@ -273,8 +273,8 @@ this ledger, and a mapping that generalizes belongs in a rule's `parameters` wit
 bump.
 
 The catalog is JSON because `parameters` is an object, and a TSV cell holding one would need the
-quote-escaping this ledger exists to avoid. It carries all 38 rules in the shipped order — the order
-is data, because `export/audit.py` regenerates `final/audit/rules.tsv.gz` from it byte-for-byte.
+quote-escaping this ledger exists to avoid. It carries all 39 rules in the shipped order — the order
+is data, because `export/audit.py` regenerates `final/audit/rules.tsv.gz` from it.
 Since 2026-08-12 the published view is the whole catalog rather than the 28 rules 2.4.1 carried;
 before that, the release cited rules in its provenance table that its own rule table did not
 contain, on 84.6% of rows.

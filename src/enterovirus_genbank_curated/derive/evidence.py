@@ -73,7 +73,8 @@ poliovirus records, and the errors are systematic rather than at the boundary. 7
 release calls `other_fragment` have complete VP1, complete capsid, or a complete genome by coverage.
 So `record_type` is not a function of coverage against Sabin VP1 alone, whatever else it is, and
 fitting thresholds to 86.7% would assert a wrong determination on 1,332 records.
-`sequence_scope` stays in `PENDING_COLUMNS`.
+`sequence_scope` is projected instead by `R-SCOPE-2` in `derive/scope.py`, off the record's own
+annotation rather than off geometry — the determinant this module measured and rejected.
 
 ## Why the fallback needs a guard `compare_vp1` did not always need
 
@@ -200,7 +201,17 @@ MAX_CAPSID_CHUNK_DEVIATION_PCT = 15.0
 
 ACGT = frozenset("ACGT")
 
-_COMPLEMENT = str.maketrans("ACGTacgtNn", "TGCAtgcaNn")
+# The whole IUPAC set. An earlier table listed only `ACGTNacgtn`, which passed every other ambiguity
+# code through unchanged — the reverse complement of an `R` came back `R` instead of `Y`. It made no
+# measured difference here, because `compare_vp1` skips any position either sequence spells with a
+# non-`ACGT` character, but a wrong base is a wrong base and the next reader of this function will
+# not know that. Kept in step with `align/segment._COMPLEMENT`, which had the same defect and where
+# it did reach two shipped nucleotides; `tests/test_align_segment.py` pins the two to agree.
+_IUPAC = "ACGTNRYWSKMBDHV"
+_IUPAC_COMPLEMENT = "TGCANYRWSMKVHDB"
+_COMPLEMENT = str.maketrans(
+    _IUPAC + _IUPAC.lower(), _IUPAC_COMPLEMENT + _IUPAC_COMPLEMENT.lower()
+)
 
 # The standard genetic code, for translating the polyprotein reading frame. A codon containing an
 # ambiguity character is absent here and is skipped rather than guessed at, so an `N` reduces the

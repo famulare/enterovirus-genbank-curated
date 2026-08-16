@@ -50,9 +50,10 @@ from enterovirus_genbank_curated.registry.rules import (
 )
 
 SHIPPED_RULES = "final/audit/rules.tsv.gz"
-# One provenance row per carved record per implemented field: 14 fields over 24,308 records.
-# Pinned so the closure check below cannot be satisfied by a truncated table. Grew by 24,308 on
-# 2026-08-12 when R-SCOPE-2 made `sequence_scope` the fourteenth projected field.
+# One provenance row per carved record per implemented field: 14 fields over 24,305 records.
+# Pinned so the closure check below cannot be satisfied by a truncated table. Grew by one field's
+# worth on 2026-08-12, when R-SCOPE-2 made `sequence_scope` the fourteenth projected field and the
+# carve still held 24,308.
 # 340,312 until 2026-08-14, when three FV5370xx records were carve-excluded: 14 canonical columns
 # times 3 records is the 42 that left.
 PROVENANCE_ROWS = 340312 - 42

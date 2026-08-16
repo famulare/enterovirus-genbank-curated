@@ -55,9 +55,10 @@ corpus counts, so a raw refresh that starts exercising one of them shows up as a
 rather than as silence.
 
 Location is not carried. The upstream function also inferred a country, an admin1 and an admin2
-from these tokens and no consumer ever read them; `country` and `admin1` come from R-GEO-1 over
-`/geo_loc_name`. So `COUNTRY_CODES` here is a membership test and nothing else, which also retires
-the upstream table's `SAA`/`SOA` Saudi-Arabia-vs-South-Africa defect rather than porting it.
+from these tokens and no consumer ever read them; `country` and `admin1` come from
+R-GEO-LOCALITY-2 over `/geo_loc_name`. So `COUNTRY_CODES` here is a membership test and nothing
+else, which also retires the upstream table's `SAA`/`SOA` Saudi-Arabia-vs-South-Africa defect
+rather than porting it.
 """
 
 from __future__ import annotations

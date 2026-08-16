@@ -8,12 +8,12 @@ What each check here does and does not protect, stated honestly, because an earl
 file overclaimed and an adversarial review caught it:
 
 - **Invariant A** (`test_same_sequence_patent_and_synthetic_deposits_agree`) constrains
-  same-sequence `PAT`/`SYN` deposits. It is green today, and **it currently has no independent
-  detection power**: every one of the 513 canonical PAT/SYN records ships TRUE, so
-  `test_the_blanket_patent_flag_is_recorded_as_a_known_defect` and the SYN pins together *entail*
-  that no PAT/SYN group can disagree. A exists for the state *after* the rule rewrite, when the
-  population stops being uniform and the invariant starts doing work. Until then it is a
-  placeholder with an exhaustive falsification control, not a live guard.
+  same-sequence `PAT`/`SYN` deposits. It **is a live guard now**, which it was not when this file
+  was written. Then, every one of the canonical PAT/SYN records shipped TRUE, so the blanket-patent
+  test and the SYN pins together *entailed* A's green and it had no independent detection power.
+  R-CONSTRUCT-2 broke that uniformity: of 516 PAT/SYN records the build now ships 31 TRUE (24 PAT,
+  7 SYN) and 485 PAT FALSE, so a same-sequence PAT group *can* disagree and nothing else here would
+  see it. The caveat below is kept as the record of what changed the answer.
 
 - **Invariant B** (`test_same_sequence_splits_match_the_known_defect_set`) is the live guard. It
   constrains every division, pinning the **exact set** of groups that carry a TRUE alongside a
@@ -136,11 +136,13 @@ specific byte content, and every test in this module passes clean against the cu
    `test_same_sequence_splits_match_the_known_defect_set`,
    `test_invariant_b_detects_a_new_split_in_every_agreeing_group`.
 
-What no mutation reddens on its own: `test_same_sequence_patent_and_synthetic_deposits_agree`
-(Invariant A) never fails without a neighbouring check failing too — the concrete form of the "no
-independent detection power" caveat above. Three checks entail its green, not two: the
-blanket-patent test, the SYN pins, and the membership digest. Treat A's green as uninformative
-until the rule rewrite lands.
+What no mutation reddened on its own, **as of that run**: Invariant A never failed without a
+neighbouring check failing too, because three checks entailed its green — the blanket-patent test,
+the SYN pins, and the membership digest. The first of those is gone and the population it described
+is no longer uniform, so that entailment no longer holds and A's green now says something. The
+battery has not been re-run since; two of its nine mutations name a test that no longer exists
+(6 failed / 4 failed become 5 and 3), and re-running it against 5.0.0's bytes is the honest way to
+re-establish what each check detects.
 """
 
 from __future__ import annotations
@@ -543,8 +545,8 @@ def test_the_engineered_population_matches_its_pins(
 # the instruction it carried from the day it was written: "when the rule rewrite lands this test
 # must be deleted along with the pins above, deliberately." It asserted that *every* PAT record
 # ships TRUE — the signature of `\bPAT\b` matching as free text inside a 20-field blob — so that
-# the column could not be quietly half-corrected. R-CONSTRUCT-2 now writes the column and 488 of
-# the 512 patent records ship FALSE, which is the rewrite the test was waiting for rather than the
+# the column could not be quietly half-corrected. R-CONSTRUCT-2 now writes the column and 485 of
+# the 509 patent records ship FALSE, which is the rewrite the test was waiting for rather than the
 # partial migration it was guarding against.
 
 

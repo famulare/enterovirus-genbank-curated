@@ -50,7 +50,6 @@ GAP_RF = "."
 BLOCK_5NCR = "5ncr"
 BLOCK_CDS = "cds"
 BLOCK_3NCR = "3ncr"
-BLOCKS = (BLOCK_5NCR, BLOCK_CDS, BLOCK_3NCR)
 
 # A record whose segmentation succeeded via inference has no NCR at all by design — not a
 # failure, and not one of align.segment's own ABSENCE_* reasons (those are for method == "none").

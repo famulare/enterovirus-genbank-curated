@@ -13,12 +13,11 @@ not here.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 from pathlib import Path
 
-from enterovirus_genbank_curated.contracts import ContractError
+from enterovirus_genbank_curated.contracts import ContractError, sha256_file
 
 SEED_DIR = "registry/alignment_seeds"
 HASH_MANIFEST = "seeds.sha256"
@@ -29,8 +28,6 @@ PROVENANCE_FILE = "seed_provenance.json"
 NOT_HASHED = frozenset({HASH_MANIFEST, PROVENANCE_FILE, "README.md"})
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _load_hash_manifest(seed_dir: Path) -> dict[str, str]:
@@ -91,7 +88,7 @@ def verify_seeds(repository_root: Path) -> int:
     checked = 0
     for name, expected in sorted(manifest.items()):
         path = seed_dir / name
-        actual = _sha256(path)
+        actual = sha256_file(path)
         if actual != expected:
             raise ContractError(
                 f"{name}: sha256 {actual} does not match {HASH_MANIFEST}'s {expected}. These "

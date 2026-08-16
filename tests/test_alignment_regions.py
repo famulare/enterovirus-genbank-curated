@@ -70,7 +70,7 @@ def test_the_sabin_frame_width_matches_the_canonical_sequence_length(
     repository_root: Path,
 ) -> None:
     """7,441 / 7,439 / 7,432 — the same integers the shipped provenance calls
-    `n_sabin_reference_columns`, giving the anchored stack a free invariant."""
+    `n_reference_columns`, giving the anchored stack a free invariant."""
     from enterovirus_genbank_curated.oracle.release import read_tsv_gz
 
     header, rows = read_tsv_gz(repository_root / contract.CANONICAL_METADATA)

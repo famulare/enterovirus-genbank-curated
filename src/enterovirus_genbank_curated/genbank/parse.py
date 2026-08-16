@@ -18,7 +18,7 @@ Text handling has exactly two modes, and the distinction is load-bearing:
 ## Known upstream loss — this layer is NOT fully loss-preserving
 
 Biopython's GenBank scanner silently discards text it cannot fit to the structured-comment grammar,
-and we inherit that. Measured on the v2.1.5 corpus (see `VERBATIM_COLUMNS` and the warning-count
+and we inherit that. Measured on the v2.1.5 corpus (see `RAW_COLUMNS` and the warning-count
 test):
 
 * MH484164.1, MH484165.1, MH484166.1 — the entire `##Assembly-Data-START##` block is dropped

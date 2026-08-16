@@ -10,7 +10,7 @@ investigations, and 1,506 of the ledger's active rows already cite a PMID for ex
 **A coarsened value is a lost judgement, not a conservative one**, and this file names precisely
 which ones are still lost so they can be migrated rather than rediscovered.
 
-`docs/classification-migration-gap.tsv` is the machine-readable list — **all 512 differing
+`docs/classification-migration-gap.tsv` is the machine-readable list — **all 518 differing
 records**, one row each, with the value 2.4.1 ships, the value this pipeline emits, the
 `unresolved_reason` if it declined, and a category.
 
@@ -23,28 +23,37 @@ provenance the script does not recognise raises rather than writing a blank cell
 
 That mattered. This file was hand-maintained until 2026-08-14 and drifted twice — it claimed 536
 differing records when there were 529, then 512, and two rows sat in no category while the headline
-above said every row has one. Both drifts happened for the same reason the date-family delta drifted
+above said every row has one. The prose totals below are regenerated with the table; the narrative
+sections further down quote the counts as they stood when each was written and say so. Both drifts happened for the same reason the date-family delta drifted
 behind a deleted gate: nothing recomputed it.
 
-Over the 24,296 records both datasets carve, the column now **agrees on 23,784 (97.9%)**.
+Over the 24,296 records both datasets carve, the column now **agrees on 23,778 (97.9%)**.
 
 An earlier version of this file covered only the rows where 2.4.1 ships a *refinement* or `wild`.
 That was the interesting subset, not the whole difference, and scoping a reconciliation to the
 interesting subset is how the rest would have gone unnoticed.
 
-## All 512, by category
+## All 518, by category
 
 | category | n | what it means |
 |---|---:|---|
 | `declined_too_little_sequence` | 421 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over, and no text or sibling to fall back to |
 | `declined_no_serotype_in_name` | 48 | no serotype in the organism name, or in a sequence-identified membership band, to pick a Sabin reference |
-| `sequence_band_disagrees_with_release` | 22 | both resolved, divergence lands in a different band |
+| `record_text_attests_beyond_the_release` | 13 | the depositor states `cVDPV` or `iVDPV` and the sequence measures Sabin-like; the attestation wins |
+| `sequence_band_disagrees_with_release` | 11 | both resolved, divergence lands in a different band |
 | `record_text_refines_beyond_the_release` | 11 | the record's own text is *finer* than 2.4.1 |
 | `ledger_refines_beyond_the_release` | 9 | the ledger is *finer* than 2.4.1 |
+| `sibling_inference_disagrees_with_release` | 4 | an isolate-linked sibling settles it differently |
 | `named_wild_reference_strain` | 1 | `V01132.1`, a Leon VP1 fragment — see below |
 
-Twenty of these are records where this pipeline is **more** specific than the release, not less. A
-reconciliation that only counted losses would have reported them as noise.
+Thirty-three of these are records where this pipeline is **more** specific than the release, not
+less. A reconciliation that only counted losses would have reported them as noise.
+
+`record_text_attests_beyond_the_release` is new in 5.0.0 and is the one category where text outranks
+a sequence measurement rather than refining within it. A depositor writing `cVDPV` is asserting
+transmission, which a Sabin-like divergence cannot rule out — the whole point of a circulating
+vaccine-derived lineage is that it is close to Sabin. Folding these into the text-refinement category
+would hide that difference in kind.
 
 `named_wild_reference_strain` is one row and worth its own category. `V01132.1` measures 0.222% over
 900 nt against Sabin 3 — the same measurement to the digit as `V01540.1` and `AY082684.1`, which

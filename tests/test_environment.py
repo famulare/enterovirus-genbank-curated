@@ -111,9 +111,7 @@ def test_the_lock_resolves_the_pinned_versions_on_both_platforms(repository_root
     assert "/python-3.13." not in block, "python 3.13 leaked into the build environment"
 
 
-def test_the_seed_environment_is_isolated_and_single_platform(
-    pixi_manifest: dict, repository_root: Path
-) -> None:
+def test_the_seed_environment_is_isolated_and_single_platform(pixi_manifest: dict) -> None:
     """`seed` may carry python 3.13, but must not carry the project nor share its solve."""
     assert pixi_manifest["feature"]["seed"]["platforms"] == ["osx-arm64"]
     assert "pypi-dependencies" not in pixi_manifest["feature"]["seed"]

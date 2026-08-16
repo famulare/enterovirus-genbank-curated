@@ -4,16 +4,17 @@ This is the *transport* half of canonical metadata: the columns whose shipped va
 GenBank value moved into a canonical column, with at most a documented, closed-form
 transformation. It deliberately stops short of the derivation half — the columns whose value
 comes from sequence comparison against a reference panel or from the curated master — because
-those inputs do not exist in this clone. `PENDING_COLUMNS` names each one and why.
+those inputs did not exist in this clone. `PENDING_COLUMNS` named each one and why; it is
+empty now.
 
-The split is not a judgement call. `final/audit/canonical_projection_provenance.tsv.gz` carries a
-row for exactly fourteen canonical columns, naming the upstream field each was projected from;
-those fourteen are the derived half, minus `locality`, whose projection is a closed-form rule over
-one GenBank string (R-GEO-LOCALITY-1) and so transports. The remaining twelve columns carry no
-projection row because there is no projection: the value is the source value.
+The split is not a judgement call. `final/audit/projection_provenance.tsv.gz` carries a row for
+exactly fourteen canonical columns, naming the field each was projected from. `locality` is in that
+fourteen and also transports, because its rule is closed-form over one GenBank string
+(R-GEO-LOCALITY-2; R-GEO-LOCALITY-1 is deprecated and projects nothing). The other twelve columns
+carry no projection row because there is no projection: the value is the source value.
 
-Thirteen of the fourteen now have a rule here. `sequence_scope` is the one that does not, and
-`PENDING_COLUMNS` says why.
+All fourteen have a rule now. `sequence_scope` was the last holdout and `derive/scope.py` explains
+why it stayed unwritten so long — the determinant is a record's annotation, not coverage geometry.
 
 The row *set* is also decided here, by `transport_metadata`'s three inclusion predicates. The third
 of them — membership rescue by capsid amino-acid distance — is measured in `derive/evidence.py` and
@@ -23,9 +24,9 @@ with the other sequence work.
 Two things this module must not do, both of them boundary 1 in `docs/pipeline.md`:
 
 * read anything under `final/` — the shipped release is the comparison target, never an input;
-* consult the residual sets below to fix up its own output. `verify_metadata_parity` uses them to
-  state a known gap; the build does not see them. A transport that patched itself against a
-  declared diff would pass parity while proving nothing.
+* consult the residual sets below to fix up its own output. `align/population.py` and
+  `oracle/parity.py` use them to state a known gap; the build does not see them. A transport that
+  patched itself against a declared diff would pass parity while proving nothing.
 """
 
 from __future__ import annotations
@@ -63,9 +64,9 @@ TRANSPORTED_COLUMNS = (
     "biosample_accession",
 )
 
-# The canonical columns no rule projects at all, and why. Everything else in `CANONICAL_COLUMNS` is
-# either transported here or projected by a rule in `registry/rules.json` — which is what this set
-# shrinking from twelve entries to one records.
+# The canonical columns no rule projects at all, and why. Empty since 5.0.0: every column in
+# `CANONICAL_COLUMNS` is now either transported here or projected by a rule in
+# `registry/rules.json`, which is what this set shrinking from twelve entries to none records.
 #
 # `assert_every_column_is_accounted_for` uses it as the allowlist for a column blank on every row,
 # so an entry here is a *declared* absence and a column going blank without one is a build failure.

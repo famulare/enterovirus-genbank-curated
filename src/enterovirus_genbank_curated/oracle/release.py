@@ -37,19 +37,20 @@ RELEASE_FILE_MANIFEST_PATH = "final/audit/release_file_manifest.tsv"
 # `BUILD_ARTIFACT_RELATIVES`), because as of 2026-08-01 `final/` *is* that build's destination.
 # Everything else under `final/` is carried from an earlier release and is listed here:
 #
-# * the twenty-four alignment artifacts and `reference_region_coordinates.tsv`. "Carried" here means
-#   only that `build-metadata` does not write them — they are this repository's own output, from
-#   `evgc alignment-build`, promoted into the release on 2026-08-01. Their pins move when a rebuild
-#   is promoted, which is a reviewed act rather than a data edit. (2.4.1's nineteen files, produced
-#   by a private pipeline whose scripts are not here, moved to `releases/2.4.1/alignments/`, where
-#   `alignment-shape` measures the declared delta against them.)
-# * the source layer and the four dictionaries, whose hashes are pinned in `SOURCE_LAYER_HASHES`
-#   and `DICTIONARY_HASHES` below rather than only in tests, because `parity-source` compares a
-#   rebuild against them;
-# * `audit/record_disposition.tsv.gz` and `audit/sequence_evidence.tsv.gz`, which are 2.4.1 audit
-#   views with no successor in the new build and are *live inputs to the alignment layer*
-#   (`align/shape.py`, `align/contract.py`). They are carried deliberately until the alignment
-#   layer is repointed; deleting them breaks `align/`;
+# * the twenty-four alignment artifacts. "Carried" here means only that `build-metadata` does not
+#   write them — they are this repository's own output, from `evgc alignment-build`, promoted into
+#   the release on 2026-08-01. Their pins move when a rebuild is promoted, which is a reviewed act
+#   rather than a data edit. (2.4.1's nineteen files, produced by a private pipeline whose scripts
+#   are not here, moved to `releases/2.4.1/alignments/`, where `alignment-shape` measures the
+#   declared delta against them.)
+# * the source layer, whose hashes are pinned in `SOURCE_LAYER_HASHES` below rather than only in
+#   tests, because `parity-source` compares a rebuild against them;
+# * `audit/sequence_evidence.tsv.gz`, the last 2.4.1 audit view with no successor in the new build
+#   and a *live input to the alignment layer* (`align/population.py`'s tier predicate). It is
+#   carried deliberately until the deferred EV reference-panel pass gives it a producer; deleting
+#   it breaks `align/`. `audit/record_disposition.tsv.gz` and the four `final/dictionaries/` files
+#   left this set on 2026-08-14, when `export/audit.py` and `export/dictionaries.py` gained
+#   producers for them, and `alignments/reference_region_coordinates.tsv` left with them;
 # * the manifest itself, which cannot declare its own hash without becoming self-referential.
 #
 # Their sha256s are pinned in `tests/test_carried_files.py`, following the same pattern as
@@ -181,8 +182,6 @@ SOURCE_LAYER_HASHES = {
 IGNORED_FINAL_NAMES = frozenset({".DS_Store"})
 
 CURATION_STATUS_COLUMN = "curation_status"
-VOUCHED_STATUS = "vouched"
-PROVISIONAL_STATUS = "provisional"
 
 
 def read_tsv_gz(path: Path) -> tuple[list[str], list[list[str]]]:
@@ -240,8 +239,7 @@ def verify_release_manifest_hashes(repository_root: Path) -> int:
     (backlog B7). Recomputing all of them here subsumes the split rather than adding a fourth place
     that has to remember which subset it owns — and it is why the manifest shrinking to the build's
     own twelve artifacts did not reopen the hole: the files that left it gained pins in code
-    (`SOURCE_LAYER_HASHES`, `DICTIONARY_HASHES`, `tests/test_carried_files.py`) rather than losing
-    a hash.
+    (`SOURCE_LAYER_HASHES`, `tests/test_carried_files.py`) rather than losing a hash.
 
     `logical_content` entries are skipped, and deliberately: no code in this repository computes a
     logical digest, so a check here would either be a no-op or invent a definition (backlog B6).
@@ -396,7 +394,7 @@ def verify_release_baseline(repository_root: Path, spec: dict[str, Any]) -> None
     Two of the six checks retired on 2026-08-01, with the metadata parity gate:
     `verify_expected_artifacts` and `verify_expected_counts` compared `final/` against 2.4.1's
     declared hashes and row counts, and `final/` no longer holds 2.4.1 — it holds this pipeline's
-    own output, which carves 24,308 rows against the shipped 24,301 and derives twelve columns the
+    own output, which carves 24,305 rows against the shipped 24,301 and derives fourteen columns the
     release projected. Retaining them would have meant either failing every run or rewriting the
     numbers to match the build, and a contract rewritten from the thing it gates is not a contract.
 

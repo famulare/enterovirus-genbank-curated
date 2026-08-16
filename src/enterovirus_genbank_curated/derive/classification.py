@@ -37,9 +37,9 @@ sequence carries it.
 Nor is it in the record. Of the 1,767 `cVDPV` records the release ships, only 283 say `cVDPV`
 anywhere in their definition, strain or isolate name; of 203 `iVDPV`, only 29. So the attribution
 came from outside GenBank, and where it is not in the ledger either, this rule emits `VDPV` — the
-the sequence supports — rather than picking one of its three refinements. That is a deliberate
-coarsening and it is declared as such: `VDPV` is true of every record in the band, and `cVDPV` is a
-claim about transmission that this pipeline has no input for.
+only reading the sequence supports — rather than picking one of its three refinements. That is a
+deliberate coarsening and it is declared as such: `VDPV` is true of every record in the band, and
+`cVDPV` is a claim about transmission that this pipeline has no input for.
 
 A record whose definition or strain *does* name the refinement gets it, since that is the depositor
 stating it.
@@ -56,7 +56,7 @@ threshold logic below is identical either way.
 ## Order of precedence, and where it declines
 
 1. Outside poliovirus the column is **blank by determination**, not declined — the vocabulary is
-   poliovirus-specific and the release ships blank for all 14,217 non-poliovirus rows.
+   poliovirus-specific and the release ships blank for all 14,218 non-poliovirus rows.
 2. An undecided partition declines: nothing can be said until membership is settled.
 3. An active `verified_classification` or `classification` decision wins outright.
 4. A refinement named in the record's own text wins over the bare band.

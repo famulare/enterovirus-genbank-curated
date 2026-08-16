@@ -8,9 +8,8 @@ These were carried from release 2.4.1 as opaque bytes, and by 2026-08-14 all fou
   entirely blank is worse than no dictionary.
 * `audit_data_dictionary.tsv` documented `manual_decisions`, which has not shipped since the
   promotion, and `canonical_projection_provenance`, which ships as `projection_provenance.tsv.gz`.
-  It pinned `rules` at 28 rows and 4 columns against 39 and 5, and omitted four tables that do ship
-  — `classification_divergence`, `decision_applications`, `membership_rescue` and
-  `release_file_manifest`.
+  It pinned `rules` at 28 rows and 4 columns against 39 and 5, and omitted three tables that do
+  ship — `classification_divergence`, `decision_applications` and `membership_rescue`.
 * `controlled_vocabularies.tsv` declared seven field vocabularies and omitted `sample_origin`,
   `surveillance_stream`, `specimen_type` and `virus_type` — the four columns whose ledger assertions
   are written with no vocabulary check at all, which is precisely where a declared vocabulary earns
@@ -202,18 +201,17 @@ def written_audit_shapes(output_dir: Path) -> dict[str, tuple[Sequence[str], int
 
     The file set comes from `BUILD_ARTIFACT_RELATIVES`, not from listing the directory. An earlier
     draft globbed `audit/` and the undeclared-input guard stopped the build on
-    `record_disposition.tsv.gz` — a *carried* file, sitting in `final/audit/` and written by
-    nothing.
-    Globbing a build destination is how you read the previous release by accident, which is the one
-    thing this pipeline must never do.
+    `record_disposition.tsv.gz`, which was then a carried file written by nothing. It has a writer
+    now (`export/audit.py`) and is documented like any other. Globbing a build destination is how
+    you read the previous release by accident, which is the one thing this pipeline must never do,
+    so the file set is still declared rather than discovered.
 
     So this documents what `build-metadata` writes, which is not everything under `final/audit/`.
-    Two files ship there without a producer and are deliberately absent from the dictionary rather
-    than described from a remembered shape: `sequence_evidence.tsv.gz`, carried until the deferred
-    EV reference-panel pass gives it one, and `release_file_manifest.tsv`, which is the manifest
-    rather than an audit table and declares its own columns while hashing the rest. Describing
-    a carried file from a remembered shape is how this dictionary went wrong in the first place.
-    `record_disposition.tsv.gz` joins as soon as it has a writer.
+    Two files ship there and are deliberately absent from the dictionary rather than described from
+    a remembered shape: `sequence_evidence.tsv.gz`, carried without a producer until the deferred EV
+    reference-panel pass gives it one, and `release_file_manifest.tsv`, which is the manifest rather
+    than an audit table and declares its own columns while hashing the rest. Describing a carried
+    file from a remembered shape is how this dictionary went wrong in the first place.
     """
     import csv
     import gzip

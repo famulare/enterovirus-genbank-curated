@@ -17,9 +17,10 @@ release remains the immutable parity oracle while the rewrite is developed — c
 `src/enterovirus_genbank_curated/contracts.py`'s `BASELINE_RELEASE`); 2.1.5 and 2.3.0 are retired,
 immutable prior baselines, no longer verified against the tree.
 
-The pipeline has since produced releases of its own, under `release/`: 3.0.0 (the whole dataset from
-public inputs alone), 3.1.0 (retired in place, see `tests/test_release_integrity.py`), and 3.2.0, the
-current one. They are outputs measured against the 2.4.1 oracle, not replacements for it.
+The pipeline has since produced releases of its own, and since 2026-08-01 they are written straight
+into `final/` rather than a staging tree; the current one is 5.0.0. 2.4.1's canonical table is kept
+as a fixture under `releases/2.4.1/` so `evgc parity-canonical` can hold the delta to a declared
+per-class transition table. It is an output measured against that oracle, not a replacement for it.
 
 ## Non-negotiable boundaries
 
@@ -107,8 +108,7 @@ alignment-verify` gates them against metadata-derived populations with no aligne
 All six declared populations are built, at one parameter set, from the 5.0.0 canonical table, and
 promoted into `final/alignments/`. The previous state — five artifacts, two parameter sets, no
 `EV_unified` at all — is what made the promotion worth doing rather than a rename. Each artifact's
-`.provenance.json` records its own parameters, row set digest and tool identity. See
-[`derived/alignments/README.md`](../derived/alignments/README.md).
+`.provenance.json` records its own parameters, row set digest and tool identity.
 
 ## Public commands
 
@@ -119,6 +119,7 @@ evgc build-source   --output DIR
 evgc parity-source
 evgc build-metadata --output DIR
 evgc check-declines
+evgc parity-canonical
 evgc alignment-population
 evgc alignment-toolchain
 evgc alignment-verify-seeds

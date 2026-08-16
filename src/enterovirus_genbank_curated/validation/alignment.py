@@ -25,7 +25,6 @@ genome position, so the total is that genome's length, and that is checked.
 from __future__ import annotations
 
 import gzip
-import hashlib
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -33,7 +32,7 @@ from pathlib import Path
 from enterovirus_genbank_curated.align import contract
 from enterovirus_genbank_curated.align import population as population_module
 from enterovirus_genbank_curated.align.provenance import PROVENANCE_SUFFIX
-from enterovirus_genbank_curated.contracts import ContractError
+from enterovirus_genbank_curated.contracts import ContractError, sha256_file
 from enterovirus_genbank_curated.export.alignment import (
     COVERAGE_COLUMNS,
     COVERAGE_SUFFIX,
@@ -83,8 +82,6 @@ class LoadedArtifact:
     coverage: tuple[dict[str, str], ...]
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _read_gzip_text(path: Path) -> str:
@@ -317,7 +314,7 @@ def verify_artifact(
             ("stockholm", STOCKHOLM_SUFFIX), ("fasta", FASTA_SUFFIX), ("coverage", COVERAGE_SUFFIX)
         ):
             declared = document.get("artifact_sha256", {}).get(key)
-            actual = _sha256(output_dir / f"{name}{suffix}")
+            actual = sha256_file(output_dir / f"{name}{suffix}")
             report.check(
                 declared == actual,
                 f"{name}: provenance sha256 for {key} is {declared}, file hashes to {actual}",

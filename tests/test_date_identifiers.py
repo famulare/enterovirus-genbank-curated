@@ -2,7 +2,7 @@
 
 The 1,761 records this recovers were recorded for months as unreachable from `raw/`. They were
 reachable all along, and `tests/test_canonical_transitions.py` pins the corpus result (zero
-differences from 2.4.1's `collection_date` over all 24,299 shared rows). This file pins the
+differences from 2.4.1's `collection_date` over all 24,296 shared rows). This file pins the
 reasoning, because a cascade whose total is right can still have every branch wrong.
 
 Three things are tested that a total cannot see:

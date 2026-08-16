@@ -52,8 +52,6 @@ from enterovirus_genbank_curated.registry.rules import rule_implementation
 
 POLIOVIRUS = "poliovirus"
 NON_POLIO_ENTEROVIRUS = "non_polio_enterovirus"
-VOUCHED = "vouched"
-PROVISIONAL = "provisional"
 
 # The release's own name for the non-polio partition, which differs from the canonical value.
 # Carried as `source_value` because that is what the shipped provenance records.
