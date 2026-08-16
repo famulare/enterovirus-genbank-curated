@@ -138,3 +138,49 @@ def test_the_built_artifacts_place_their_addon_rows_well(
     assert not failures, failures
     assert summary["badly_placed_share"] <= CORPUS_BADLY_PLACED_CEILING
     assert summary["median_occupancy"] == 1.0
+
+
+# --- the private-column ceiling ------------------------------------------------------------------
+#
+# Largest owner per artifact after the ambiguity filter, measured on 5.0.0. These are pinned as a
+# *table* rather than one worst-case number so a single artifact regressing cannot hide behind the
+# others being fine.
+LARGEST_PRIVATE_OWNER = {"EV_unified": 96, "NPEV_unified": 66, "POLIO_unified": 27}
+
+
+def test_one_record_hogging_columns_is_refused() -> None:
+    """The `PX242045` shape, in miniature: one row alone in a wide block of its own columns."""
+    block = {f"r{i}": "ACGT" * 4 + "-" * 40 for i in range(20)}
+    block["hog"] = "-" * 16 + "A" * 40
+    owners, failures = placement.check_private_columns(block, "probe", ceiling=10)
+    assert owners["hog"] == 40
+    assert failures and "holding a block open" in failures[0]
+
+
+def test_an_ordinary_insertion_is_not_refused() -> None:
+    """Negative control. A ceiling that fired on every insertion would just be a width limit."""
+    block = {f"r{i}": "ACGT" * 4 + "-" * 6 for i in range(20)}
+    block["small"] = "ACGT" * 4 + "ACGTAG"
+    owners, failures = placement.check_private_columns(block, "probe", ceiling=10)
+    assert owners["small"] == 6
+    assert not failures
+
+
+def test_a_column_two_records_share_is_not_private() -> None:
+    """Privateness is the whole predicate: two occupants means somebody agreed it is homologous."""
+    block = {"a": "ACGTAA", "b": "ACGTAA", "c": "ACGT--"}
+    assert placement.private_column_owners(block) == {}
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("name", sorted(CDS_BLOCKS))
+def test_no_record_holds_a_shipped_block_open_by_itself(
+    repository_root: Path, name: str
+) -> None:
+    built = repository_root / "final/alignments" / f"{name}_aln.fasta.gz"
+    if not built.is_file():
+        pytest.skip(f"{name} not promoted yet")
+    lo, width = CDS_BLOCKS[name]
+    owners, failures = placement.check_private_columns(read_cds_block(built, lo, width), name)
+    assert not failures, failures
+    assert max(owners.values()) == LARGEST_PRIVATE_OWNER[name]

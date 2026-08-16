@@ -187,3 +187,58 @@ def check_addon_placement(
                 f"{MAX_SHORT_EXCESS_FACTOR:.0f}x ceiling"
             )
     return summary, failures
+
+# No single record may open more than this many columns nobody else occupies.
+#
+# This is a *ceiling*, not a fix, and it exists because of what got through without one. `PX242045`
+# opened 2,169 private columns in `NPEV_unified` and `MG692415` 2,022 — between them and
+# `MG692413`, 95% of that block's single-row columns and half its width — and every gate in the
+# repository reported PASS. `validation/alignment.py` reads widths from the provenance the same
+# build wrote; `check_addon_placement` above measures whether rows are *coherent*, and those three
+# were perfectly coherent, each a single contiguous run. The defect was visible only by eye, and
+# only once somebody asked why the artifact was wide.
+#
+# `codon.drop_unsequenced_codon_columns` removed the cause — all three runs were ambiguity padding
+# — but a filter for the mechanism you already found is not a check for the next one. After it, the
+# largest owner in any artifact is 96 columns (`OR129570`, 32 codons in a ~2,200-codon polyprotein,
+# real bases): a normal insertion. 200 leaves that room to double while still catching anything of
+# the scale that went unnoticed, and there is nothing between 96 and 2,169 to be precise about.
+MAX_PRIVATE_COLUMNS_PER_RECORD = 200
+
+
+def private_column_owners(block: Mapping[str, str]) -> dict[str, int]:
+    """How many columns each record is the only occupant of. Records owning none are omitted."""
+    rows = list(block.values())
+    if not rows:
+        return {}
+    width = len(rows[0])
+    occupied = [0] * width
+    for row in rows:
+        for index, character in enumerate(row):
+            if character not in GAP_CHARACTERS:
+                occupied[index] += 1
+    private = [index for index in range(width) if occupied[index] == 1]
+    owners: dict[str, int] = {}
+    for accession, row in block.items():
+        count = sum(1 for index in private if row[index] not in GAP_CHARACTERS)
+        if count:
+            owners[accession] = count
+    return owners
+
+
+def check_private_columns(
+    block: Mapping[str, str], label: str, ceiling: int = MAX_PRIVATE_COLUMNS_PER_RECORD
+) -> tuple[dict[str, int], list[str]]:
+    """`(owners, failures)`. A record above `ceiling` is holding the block open by itself."""
+    owners = private_column_owners(block)
+    over = sorted(
+        ((count, accession) for accession, count in owners.items() if count > ceiling),
+        reverse=True,
+    )
+    failures = [
+        f"{label}: {accession} alone occupies {count} columns, over the {ceiling}-column ceiling. "
+        f"One record holding a block open is how 7,130 columns of ambiguity padding shipped "
+        f"unnoticed; check what that record actually carries there before raising this."
+        for count, accession in over
+    ]
+    return owners, failures
