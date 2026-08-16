@@ -24,6 +24,13 @@ from enterovirus_genbank_curated.registry.rules import BoundRule
 DATE_FIELD = "collection_date"
 PRECISION_FIELD = "collection_date_precision"
 LOCALITY_FIELD = "locality"
+CLASSIFICATION_FIELD = "poliovirus_classification"
+WILD = "wild"
+# Every tier that asserts descent from an OPV strain. `Sabin` and the `nOPV` pair are here for the
+# same reason `Sabin-like` is: all of them say the material came from a vaccine lineage.
+SABIN_DERIVED_TIERS = frozenset(
+    {"Sabin-like", "Sabin", "nOPV", "nOPV-L", "VDPV", "cVDPV", "iVDPV", "VDPV-n", "cVDPV-n"}
+)
 
 
 def assert_locality_basis_invariant(
@@ -83,6 +90,74 @@ def assert_locality_basis_invariant(
             "indistinguishable from one that is not running"
         )
     return counts
+
+
+def assert_byte_identical_classification_coherence(
+    rows: Iterable[dict[str, str]], transport: Iterable[dict[str, str]]
+) -> int:
+    """Records with the same `sequence_sha256` must not split across the `wild` boundary.
+
+    Ancestry is a property of the sequence, so one genotype cannot be both a wild poliovirus and a
+    descendant of an OPV strain. Two deposits of the same bytes may legitimately disagree about
+    *which* Sabin-derived tier they are — `cVDPV` says the isolate was linked to a transmission
+    chain and `iVDPV` that its host was immunodeficient, neither of which the sequence knows, and
+    `R-CLASS-2` deliberately lets such an attestation outrank a `Sabin-like` measurement. Three
+    byte-identical groups exercise exactly that today and are not breaches. `wild` is the one
+    boundary no attestation crosses, because crossing it would mean the same molecule both is and
+    is not descended from a vaccine strain.
+
+    A blank is not a claim, so it is compatible with anything and is skipped rather than counted as
+    a disagreement. That is deliberate and it costs coverage: `JC013131` shipped blank beside a
+    byte-identical twin shipping `wild`, which this check would not have caught. What it does catch
+    is the case that had no curator behind it at all — `HC025129`, the tenth deposit of the Mahoney
+    genome, where nine twins carried an active `wild` decision and the divergence band called the
+    tenth `Sabin-like` at 0.993% because `R-CLASS-2`'s named-wild-reference guard reads `/strain`
+    and `/isolate` and that deposit carries neither.
+
+    Measured before it was written, over 7,888 byte-identical groups in the poliovirus carve: 338
+    groups contain a `wild` record, they span 41 nt to 7,502 nt, and exactly one breached. There is
+    therefore **no length floor here**, because none was needed to make it pass — an unmeasured
+    constant that happens to be satisfied is worse than no constant. A future short conserved
+    fragment shared between a wild and a vaccine-derived deposit would fail this and should be
+    read as a real question about that fragment rather than as a reason to invent a floor.
+
+    Returns the number of multi-record groups actually examined, so a vacuous pass is visible.
+    """
+    digests = {row["version"]: row["sequence_sha256"] for row in transport}
+    by_digest: dict[str, dict[str, str]] = {}
+    for row in rows:
+        if row["canonical_field"] != CLASSIFICATION_FIELD or not row["final_value"]:
+            continue
+        digest = digests.get(row["version"])
+        if digest is None:
+            raise ContractError(
+                f"{row['version']}: a projected {CLASSIFICATION_FIELD} row has no transport row, "
+                f"so the sequence its coherence would be checked against cannot be found"
+            )
+        by_digest.setdefault(digest, {})[row["version"]] = row["final_value"]
+
+    breaches: list[str] = []
+    examined = 0
+    for digest, assigned in sorted(by_digest.items()):
+        if len(assigned) < 2:
+            continue
+        examined += 1
+        values = set(assigned.values())
+        if WILD in values and values & SABIN_DERIVED_TIERS:
+            members = ", ".join(f"{version}={value}" for version, value in sorted(assigned.items()))
+            breaches.append(f"{digest[:12]}: {members}")
+    if breaches:
+        shown = "; ".join(breaches[:5])
+        raise ContractError(
+            f"{len(breaches)} byte-identical sequence groups are classified both {WILD} and "
+            f"vaccine-derived, which asserts two ancestries for one genotype — {shown}"
+        )
+    if not examined:
+        raise ContractError(
+            "the byte-identical classification invariant examined no groups; an invariant that "
+            "passes vacuously is indistinguishable from one that is not running"
+        )
+    return examined
 
 
 def assert_date_precision_invariant(rows: Iterable[dict[str, str]]) -> int:

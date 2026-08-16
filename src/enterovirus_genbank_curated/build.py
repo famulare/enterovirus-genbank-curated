@@ -94,6 +94,7 @@ from enterovirus_genbank_curated.registry.rules import (
     load_rule_contract,
 )
 from enterovirus_genbank_curated.validation.invariants import (
+    assert_byte_identical_classification_coherence,
     assert_date_precision_invariant,
     assert_every_basis_is_declared,
     assert_locality_basis_invariant,
@@ -296,6 +297,11 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
     # table still incoherent, and no single rule can see two columns.
     not_applicable_dates = assert_date_precision_invariant(provenance)
     locality_bases = assert_locality_basis_invariant(provenance, transport.rows)
+    # Also after the post-pass: isolate-linked inference writes `poliovirus_classification` values
+    # of its own, so checking before it would check a table that is not the one shipped.
+    coherent_digest_groups = assert_byte_identical_classification_coherence(
+        provenance, transport.rows
+    )
     # After the post-pass, deliberately: `project_field` only sees rows it projects, so a pass that
     # appends provenance directly bypasses the declared-basis check entirely. This is the same
     # property over the finished table.
@@ -328,6 +334,7 @@ def build_metadata_layer(repository_root: Path, output_dir: Path) -> MetadataBui
         "provenance_rows": len(provenance),
         "dates_not_applicable": not_applicable_dates,
         "localities_without_geography": locality_bases.get("no_geography_deposited", 0),
+        "coherent_digest_groups": coherent_digest_groups,
         "curation_queue_groups": len(queue),
         "decision_applications": len(applications),
         "curation_queue_records": sum(len(group.versions) for group in queue),

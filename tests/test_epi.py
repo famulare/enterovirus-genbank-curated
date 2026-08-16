@@ -82,7 +82,12 @@ RECOVERED_BY_THE_FLAG = 17
 RECOVERED_SPECIMEN_KEYWORDS = 80
 # 571 until the three FV5370xx patent conversions were carve-excluded on 2026-08-14; they were
 # PAT-division records this branch resolved, so they left with the carve.
-RESOLVED_BY_THE_DIVISION = 571 - 3
+#
+# +2 on 2026-08-16: `JC013131` and `DI499174` held `origin_class = human` decisions that outranked
+# this branch. Retiring them did not change what the rule believes about those records — it removed
+# two overrides that were asserting the opposite of what the rule and the vocabulary both say a PAT
+# deposit is. So the branch gains two records it could always have resolved and was never asked to.
+RESOLVED_BY_THE_DIVISION = 571 - 3 + 2
 
 
 def view(

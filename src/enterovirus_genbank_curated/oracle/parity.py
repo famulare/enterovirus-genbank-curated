@@ -189,10 +189,29 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
     # the digit as `V01540.1` and `AY082684.1`, which 2.4.1 calls `wild`. All three are `wild` now.
     # The tiny divergence is the whole point: Sabin 3 differs from its Leon parent by a handful of
     # nucleotides, so the band reads "Sabin-like" on a record that *is* the wild ancestor.
+    # Eight of the classes below moved on 2026-08-16, and all eight are one review: `wild` records
+    # whose synonymous capsid distance from Sabin was too low for the label. Nineteen records, every
+    # movement traceable to a named record, so the classes are restated rather than loosened:
+    #
+    #   12  ('wild', 'Sabin-like') 1 -> 13, then back to 12 when `HC025129` was corrected: the
+    #       byte-identical-classification invariant added by the same review found the tenth deposit
+    #       of the Mahoney genome shipping `Sabin-like`, which 2.4.1 had right, so fixing it removes
+    #       a transition rather than adding one. The twelve that remain are the eleven
+    #       Dahourou/Crainic India VP1-2A deposits
+    #       `AJ248491`-`AJ248501` and `AB111812`, each 0-2/150 nt from its Sabin reference while its
+    #       own batch-mates sit at 24-45/150. R-CLASS-2 had read `wild` out of a paper title.
+    #    2  ('Sabin-like', 'wild') 3 -> 1 and ('Sabin-like', 'VDPV') 5 -> 6. `AB467472` returns to
+    #       the baseline's own value and `AF065158` moves past it; both had shipped `wild` on a
+    #       26% divergence that a 6 nt in-frame VP1 deletion had manufactured.
+    #    3  ('Sabin-like', '') 82 -> 81, ('VDPV', '') 13 -> 11. `AJ248525`, `AY320423` and
+    #       `AJ248538` were declines; two now agree with the baseline and one moves to
+    #       ('VDPV', 'Sabin-like'), a class that had no members before.
+    #    1  ('wild', '') 69 -> 68. `JC013131` was a decline on a record byte-identical to a twin
+    #       that shipped `wild`; it now says what its twin says.
     "poliovirus_classification": {
         ('unresolved', ''): 276,
-        ('Sabin-like', ''): 82,
-        ('wild', ''): 69,
+        ('Sabin-like', ''): 81,
+        ('wild', ''): 68,
         # `compare_vp1` learned to skip ambiguous positions on 2026-08-15, and a `cVDPV`/`iVDPV`
         # attestation learned to survive a Sabin-like measurement on the same day. These 14 and the
         # 4 below are the second change: records whose `/isolation_source` reads "stool specimen
@@ -200,17 +219,17 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         # early-detected iVDPV looks like. The release calls them Sabin-like; the depositor's own
         # field says otherwise, and divergence cannot see a host.
         ('Sabin-like', 'iVDPV'): 14,
-        ('VDPV', ''): 13,
+        ('VDPV', ''): 11,
         ('Sabin', ''): 10,
         ('defective-interfering particle', ''): 10,
         ('VDPV', 'iVDPV'): 6,
-        ('Sabin-like', 'VDPV'): 5,
+        ('Sabin-like', 'VDPV'): 6,
         ('cVDPV', 'cVDPV-n'): 5,
         ('engineered/lab', ''): 5,
         ('Sabin-like', 'cVDPV'): 4,
         ('chimera', ''): 4,
         ('Sabin', 'Sabin-like'): 3,
-        ('Sabin-like', 'wild'): 3,
+        ('Sabin-like', 'wild'): 1,
         # Down from 12 with the ambiguity fix: an `N` or an `R` scored as a substitution was
         # pushing these over PV2's 0.6% ceiling. `OK634152` carried exactly one `R`.
         ('cVDPV', 'Sabin-like'): 2,
@@ -218,7 +237,8 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('wild', 'engineered/lab'): 2,
         ('Sabin', 'VDPV'): 1,
         ('Sabin-like', 'engineered/lab'): 1,
-        ('wild', 'Sabin-like'): 1,
+        ('wild', 'Sabin-like'): 12,
+        ('VDPV', 'Sabin-like'): 1,
     },
     # The GenBank division branch landed 2026-08-13 (curator ruling) and resolves 571 records: 112
     # `ENV` and 459 `PAT`. Against the baseline that is 19 + 56 = 75 cells recovered — declines the
@@ -240,7 +260,11 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('unknown', ''): 17,
         ('non-human', 'unknown'): 10,
         ('non-human', ''): 7,
-        ('human', 'non-human'): 1,
+        # 1 -> 3 on 2026-08-16. `JC013131` and `DI499174` held `origin_class = human` decisions that
+        # outranked R-ORIGIN-2's PAT branch and asserted the opposite of what the vocabulary says a
+        # patent deposit is. Retiring the two rows lets the rule reach the value it reaches on the
+        # other 456 carved PAT records.
+        ('human', 'non-human'): 3,
     },
     "surveillance_stream": {
         ('AFP/clinical', ''): 6676,
@@ -602,7 +626,15 @@ UNRESOLVED_TYPE_ROWS = 1789
 #
 # Down 1 on 2026-08-14, with the named-wild-reference guard: one record was declining for want of a
 # usable divergence measurement and its strain name settles it without one.
-UNRESOLVED_CLASSIFICATION_ROWS = 475
+#
+# Down 4 on 2026-08-16, from the low-synonymous-capsid review: `AJ248525`, `AJ248538`, `AY320423`
+# and `JC013131` were declining for want of a measurable window — three because `compare_vp1` cannot
+# reach a VP1 window under ~180 comparable nt, one because 127 nt is below every floor — and each
+# now carries an accession-level decision. The other 14 rows that review wrote change a value rather
+# than fill a decline, so they do not move this number. Filling a decline by ledger row is the
+# intended escape hatch for a rule that correctly refuses to guess; it is not a substitute for
+# B56's R1, which is that the refusal is unsatisfiable rather than merely conservative.
+UNRESOLVED_CLASSIFICATION_ROWS = 471
 
 
 # Canonical field -> the declared decline count above. Every field a rule can decline appears here,

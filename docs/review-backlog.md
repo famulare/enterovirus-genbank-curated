@@ -563,6 +563,105 @@ verification were the same act and must not be.
 6. **Nothing self-certified.** The adversarial-reviewer pattern found ~59 defects across four
    charters with near-zero overlap. It is a standing gate, not an escalation.
 
+### B56. `wild` was reachable without a sequence measurement, and unreachable *with* one — **CURATION CLOSED 2026-08-16, R4 CLOSED, R1-R3 open**
+
+Found by screening every `wild` record against the synonymous capsid distance the explorer already
+plots (`site/data/panels/PV*.json`, `divergence.P1.synonymous / .assessable`). 40 records sit below
+0.20 synonymous differences per assessable codon. They partition by *how* the label was reached, and
+the partition is the whole finding — the 1,860 records whose `wild` came from an actual VP1
+measurement have a **minimum** of 0.417, so nothing in that tier is near the boundary:
+
+| basis | n | verdict |
+|---|---:|---|
+| `named_wild_reference_strain` | 10 | correct — Mahoney, Leon and Brunhilde are what Sabin was attenuated *from* |
+| `curated_classification` | 17 | 15 correct; 2 overturned (`AF065158`, `AB467472`) |
+| `text_classification_no_sequence_signal` | 13 | 12 overturned |
+
+Twenty records changed value; see `low_synonymous_capsid_review_2026-08-16` in the ledger — the
+twentieth, `HC025129`, was found by R4's own check rather than by this screen, see below. The
+curation is closed. What stays open is why the pipeline reached those values, which is three
+separate mechanisms and not one.
+
+**R1. `compare_vp1` cannot measure any VP1 window between 50 and ~180 comparable nt — the guard is
+unsatisfiable, not failed.** Below `VP1_HOMOGENEITY_FLOOR_NT` (300) `compare_vp1` requires
+`_capsid_homogeneous`, which returns `False` below `MIN_HOMOGENEITY_CHUNKS` (2) qualifying chunks;
+chunks are `CAPSID_HOMOGENEITY_CHUNK_NT` (150) wide and need `MIN_HOMOGENEITY_CHUNK_NT` (30)
+comparable each, so two of them need ≥180 nt. `MIN_VP1_NT = 50` therefore buys nothing below 180.
+All 71 records of the Dahourou/Crainic submission carry exactly 90 comparable VP1 nt and every one
+declines.
+
+*Do not close this by shrinking the chunk width.* Measured: a genuine wild Indian PV1 from that same
+submission (`AJ248502`) reads **13.3%** over this 90 nt 3'-terminal VP1 window — below the 15% `wild`
+floor. The published 1% / 15% thresholds are calibrated on whole VP1 and this window is
+systematically more conserved, so making the guard satisfiable would move genuine wilds into the
+undecided band. The one-sided inference (0/90 from Sabin cannot be wild) is safe; the two-sided band
+is not. Any fix has to say which of the two it is asserting.
+
+**R2. `compare_vp1` skips the homogeneity guard entirely at `compared >= 300`, so a real in-frame
+indel inflates divergence silently.** `AF065158` and `AB467472` each carry a 6 nt deletion in the
+VP1 BC loop; the ungapped diagonal fits the 606 nt downstream, the 300 nt upstream reads at the
+unrelated-sequence rate, and the six-chunk profiles `77 80 1 0 0 0` and `77 80 1 0 1 1` average to
+26%. `evidence.py`'s own docstring reasons that a real indel must be a multiple of three and
+therefore that a break must be a bad base call — these are multiples of three, biological, and land
+in exactly the blind spot that reasoning creates. A rescan of all 8,006 measurable records finds 46
+accepted past the guard's own 15-point tolerance for this reason. Two cross a band boundary and are
+fixed here. **The other ~35 are not artifacts** — `FJ859185`-`192`, `GU380277`-`281`, `MG212468/477`,
+`JX275070`-`288`, `OR537547`-`564` and others show a real recombination breakpoint inside VP1 (clean
+Sabin upstream, 25-35% from ~column 3230 on). Their labels are right; their shipped
+`divergence_pct` is an average across a breakpoint and should not be read as a lineage age.
+
+**The open decision is what to do with those ~35, and it is a release-semantics call rather than a
+bug fix.** Turning the guard on unconditionally is not it: that would decline all 46, including 35
+whose classification is correct, trading a wrong number on two records for a lost value on
+thirty-five. The additive option is to carry the measured chunk deviation as a column in
+`classification_divergence.tsv.gz`, so a consumer can see that a divergence figure spans a
+discontinuity without any value changing — the same shape as the 3.2.0 additions. That is a new
+column in a shipped artifact and has not been done. The scan that produced these figures is
+reproducible from `derive/evidence.compare_vp1` by retaining `chunk_divergences`.
+
+**R3. `_group_b_text_fallback` can assert `wild` from a cited paper's *title*.** 516 records take
+`wild` this way (plus 176 `VDPV`, 16 `Sabin-like`). `R-CLASS-2` matched "wild-type" in *"Genetic
+recombination in wild-type poliovirus"* and stamped it on all 49 records of that submission, 11 of
+which are 0-2/150 nt from Sabin. Of the 516, 315 have no capsid coverage at all so nothing can check
+them; 201 can be checked and 13 were contradicted. This is a policy question rather than a bug —
+`wild` is the most consequential value in the column and this is the only tier where it rests on a
+study's subject rather than on the deposit. Open: should the fallback emit `wild` at all, or decline
+and queue?
+
+**R4. Byte-identical records could carry contradictory `poliovirus_classification` — CLOSED
+2026-08-16.** `JC013131` shipped blank while `DI499174`, same `sequence_sha256` and same patent
+sequence number, shipped `wild`.
+
+The obvious invariant — identical bytes, identical value — is **wrong**, and measuring before
+writing is what showed it. 33 byte-identical groups carry more than one value and most are
+legitimate: `R-CLASS-2` deliberately lets a `cVDPV` or `iVDPV` attestation outrank a `Sabin-like`
+measurement, because those tiers assert transmission and host immunodeficiency, which no sequence
+knows. Three groups exercise exactly that. A strict check would have called all three defects and
+forced the attestations off.
+
+What *is* sound is narrower: ancestry is a property of the sequence, so one genotype cannot be both
+`wild` and descended from an OPV strain. `validation/invariants.assert_byte_identical_classification
+_coherence` enforces that and nothing more, and runs after the isolate-linkage post-pass because
+that pass writes classification values of its own. Measured over 7,888 groups: 338 contain a `wild`
+record, spanning 41 nt to 7,502 nt, and **exactly one breached** — so there is no length floor,
+because none was needed to make it pass. An unmeasured constant that happens to be satisfied is
+worse than no constant.
+
+The one breach is the finding. `HC025129` is the tenth deposit of the Mahoney genome, byte-identical
+across all 7,440 nt to `V01149` and `NC_002058`; nine of its twins already carried an active `wild`
+decision from the `c1_construct_reference_resolution` batch and the tenth shipped `Sabin-like` at
+0.993%. It was missed because `R-CLASS-2`'s named-wild-reference guard reads `/strain` and
+`/isolate` and this deposit carries neither — its own `misc_feature` note says `polio virus 1
+Mahoney`, which no rule reads. 2.4.1 had it right, so the fix removes a declared transition rather
+than adding one. Nine curator decisions and a name-keyed rule all pointed at it and none of them
+could see it; a check over the bytes could.
+
+**What this check deliberately does not cover:** a blank is not a claim, so it is compatible with
+anything. `JC013131`'s own case — blank beside a `wild` twin — would *not* have been caught. That is
+recorded in the invariant's docstring and in `tests/test_invariants.py` rather than left implicit,
+because the gap is a real one and the alternative (treating a decline as a contradiction) would
+break the pipeline's own rule that a blank cell is never a claim.
+
 ### B55. `DQ205099`'s ledger annotation asserted a value the build stopped producing — **CLOSED 2026-08-16**
 
 The `notes` on `D-76ece1bbec32` ended "canonical engineered_or_construct=TRUE stands and no shipped

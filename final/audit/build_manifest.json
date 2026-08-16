@@ -3,12 +3,12 @@
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "1edced3258342360c41a0a4de38cfd6fdb570953caaa3b49ef83a05d2def22f0",
+  "code_sha256": "642560d9e21e725afa7f9706e5c060665c6c364fe672534a707358ac74b1fd54",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "967529ae7481f5e6d9a35cdb0f8e969bd5c26d86cf8cf32013782360d89662ea",
+    "decisions_sha256": "5ed44fd878b5d3abda15aa19ff312ee9edcf4f5fdbdf525419e59f7530adce4c",
     "rules_sha256": "a40dc867418d64cb51611829a21706fecbb0607935acf55094533c12bbee992f"
   },
   "row_counts": {
@@ -20,9 +20,10 @@
     "provenance_rows": 340270,
     "dates_not_applicable": 2809,
     "localities_without_geography": 2052,
+    "coherent_digest_groups": 737,
     "curation_queue_groups": 268,
-    "decision_applications": 6307,
-    "curation_queue_records": 25065,
+    "decision_applications": 6326,
+    "curation_queue_records": 25061,
     "canonical_rows": 24305,
     "vouched_rows": 10087,
     "rules_published": 39,
@@ -37,11 +38,11 @@
   "decision_applications": {
     "no_canonical_field": 123,
     "applied_exclusion": 176,
-    "applied_unchanged": 531,
-    "applied_changed": 1700,
-    "not_in_force_retired": 194,
-    "applied_filled_unresolved": 3556,
-    "not_in_force_superseded": 15,
+    "applied_unchanged": 529,
+    "applied_changed": 1713,
+    "not_in_force_retired": 196,
+    "applied_filled_unresolved": 3560,
+    "not_in_force_superseded": 17,
     "subject_outside_carve": 12
   },
   "completeness": {
@@ -50,7 +51,7 @@
     "projected": 14,
     "pending": [],
     "columns_with_declined_cells": {
-      "poliovirus_classification": 475,
+      "poliovirus_classification": 471,
       "sample_origin": 2728,
       "specimen_type": 12617,
       "surveillance_stream": 7456,
@@ -124,9 +125,9 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 9612,
-      "blank": 14693,
-      "declined": 475,
+      "filled": 9616,
+      "blank": 14689,
+      "declined": 471,
       "rules": [
         "R-CLASS-2"
       ]

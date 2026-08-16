@@ -106,7 +106,7 @@ Q-6f4e05aea8c2	surveillance_stream	surveillance_stream	R-SURVEILLANCE-2	no_surve
 Q-6f904eaa1710	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	conjuctival swab	11	OR610291.1 OR610292.1 OR610293.1	rule_parameter
 Q-6fc775673105	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	SP	2	MN246008.1 MN246040.1	rule_parameter
 Q-71a1dbb45f14	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	envirnmental sample	1	KM225628.1	rule_parameter
-Q-72b29ee90590	poliovirus_classification	poliovirus_classification	R-CLASS-2	too_little_sequence_compared_to_measure_divergence		421	A01868.1 AB111500.1 AB111501.1	decision
+Q-72b29ee90590	poliovirus_classification	poliovirus_classification	R-CLASS-2	too_little_sequence_compared_to_measure_divergence		417	A01868.1 AB111500.1 AB111501.1	decision
 Q-74758a15c2b4	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	VAPP patient on day 60 from paralysis onset	1	AY649328.1	rule_parameter
 Q-75203860b899	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	VAPP patient on day 3 from paralysis onset	1	AY649327.1	rule_parameter
 Q-7591f1d7490a	specimen_type	specimen_type	R-SPECIMEN-2	no_specimen_keyword_in_isolation_source	acute hemorrhagic conjunctivitis patient	43	EF591117.1 EF591118.1 EF591119.1	rule_parameter

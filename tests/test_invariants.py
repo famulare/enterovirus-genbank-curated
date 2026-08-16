@@ -24,6 +24,7 @@ from enterovirus_genbank_curated.derive.geo import (
 )
 from enterovirus_genbank_curated.derive.outcome import RuleOutcome
 from enterovirus_genbank_curated.validation.invariants import (
+    assert_byte_identical_classification_coherence,
     assert_date_precision_invariant,
     assert_locality_basis_invariant,
 )
@@ -164,6 +165,101 @@ def test_a_conforming_date_set_passes() -> None:
     assert assert_date_precision_invariant(
         date_rows("2013", "year", "A.1") + date_rows("", PRECISION_NOT_APPLICABLE, "B.1")
     ) == 1
+
+
+# --- byte-identical classification coherence ------------------------------------------------------
+
+
+def classification_row(value: str, version: str) -> dict[str, str]:
+    return {
+        "version": version,
+        "canonical_field": "poliovirus_classification",
+        "final_value": value,
+    }
+
+
+def digest_row(digest: str, version: str) -> dict[str, str]:
+    return {"version": version, "sequence_sha256": digest}
+
+
+def test_one_genotype_may_not_be_both_wild_and_vaccine_derived() -> None:
+    """`HC025129` exactly: nine deposits of the Mahoney genome `wild`, the tenth `Sabin-like`."""
+    with pytest.raises(ContractError, match="both wild and vaccine-derived"):
+        assert_byte_identical_classification_coherence(
+            [classification_row("wild", "A.1"), classification_row("Sabin-like", "B.1")],
+            [digest_row("f" * 64, "A.1"), digest_row("f" * 64, "B.1")],
+        )
+
+
+@pytest.mark.parametrize("tier", ["VDPV", "cVDPV", "iVDPV", "Sabin", "nOPV-L"])
+def test_every_vaccine_derived_tier_breaches_against_wild(tier: str) -> None:
+    """Named one by one. A check written over only `Sabin-like` would pass four of these."""
+    with pytest.raises(ContractError, match="both wild and vaccine-derived"):
+        assert_byte_identical_classification_coherence(
+            [classification_row("wild", "A.1"), classification_row(tier, "B.1")],
+            [digest_row("f" * 64, "A.1"), digest_row("f" * 64, "B.1")],
+        )
+
+
+def test_disagreement_within_the_vaccine_derived_tiers_is_not_a_breach() -> None:
+    """The behavior `R-CLASS-2` intends: a `cVDPV`/`iVDPV` attestation outranks a Sabin-like band.
+
+    Three byte-identical groups in the real corpus rely on this. An invariant written as "identical
+    bytes, identical value" would call all three defects and force the attestations off.
+    """
+    assert (
+        assert_byte_identical_classification_coherence(
+            [classification_row("Sabin-like", "A.1"), classification_row("cVDPV", "B.1")],
+            [digest_row("f" * 64, "A.1"), digest_row("f" * 64, "B.1")],
+        )
+        == 1
+    )
+
+
+def test_a_blank_is_not_a_claim_and_does_not_breach() -> None:
+    """`JC013131` before it was fixed: blank beside a byte-identical twin shipping `wild`.
+
+    A second, conforming group carries the vacuity guard, so this asserts the blank's effect rather
+    than colliding with "examined no groups" — the blank leaves one value behind, and a group of one
+    is not examined at all. That is the coverage this invariant deliberately does not have.
+    """
+    assert (
+        assert_byte_identical_classification_coherence(
+            [
+                classification_row("wild", "A.1"),
+                classification_row("", "B.1"),
+                classification_row("Sabin-like", "C.1"),
+                classification_row("Sabin-like", "D.1"),
+            ],
+            [
+                digest_row("f" * 64, "A.1"),
+                digest_row("f" * 64, "B.1"),
+                digest_row("e" * 64, "C.1"),
+                digest_row("e" * 64, "D.1"),
+            ],
+        )
+        == 1
+    )
+
+
+def test_different_sequences_may_disagree_freely() -> None:
+    with pytest.raises(ContractError, match="examined no groups"):
+        assert_byte_identical_classification_coherence(
+            [classification_row("wild", "A.1"), classification_row("Sabin-like", "B.1")],
+            [digest_row("a" * 64, "A.1"), digest_row("b" * 64, "B.1")],
+        )
+
+
+def test_a_classification_row_with_no_transport_row_cannot_be_checked_and_fails() -> None:
+    with pytest.raises(ContractError, match="has no transport row"):
+        assert_byte_identical_classification_coherence(
+            [classification_row("wild", "A.1")], []
+        )
+
+
+def test_the_coherence_invariant_refuses_to_pass_vacuously() -> None:
+    with pytest.raises(ContractError, match="examined no groups"):
+        assert_byte_identical_classification_coherence([], [])
 
 
 def test_a_declined_outcome_may_not_name_an_evidence_basis() -> None:

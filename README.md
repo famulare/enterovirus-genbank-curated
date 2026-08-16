@@ -179,13 +179,24 @@ change, no threshold change, no column semantics change. `AY563379` -> `VDPV`; `
 than in the divergence band); `CS406483` and its byte-identical twin `PU749298` -> `engineered/lab`,
 so the classification tier says what `engineered_or_construct=TRUE` already said; `OR208593`/`600`/
 `605`/`612` -> `chimera`, as accession-level overrides rather than a revival of the reverted
-generalized recombinant rule; and `AF065158` and `AB467472` are recorded confirmations of `wild`,
+generalized recombinant rule; and `AF065158` and `AB467472` were recorded confirmations of `wild`,
 against papers whose titles could have been read the other way. Eleven cells change value, two
-confirm the value the band already reaches.
+confirmed the value the band already reached.
+
+**Those last two confirmations were wrong, and 2026-08-16 overturns both** — `AF065158` -> `VDPV`,
+`AB467472` -> `Sabin-like`. The papers' titles could not, in fact, have been read the other way: one
+is *"A Sabin vaccine-derived field isolate ... including a deletion in antigenic site 1"* and the
+other is an mOPV1 shedding series on a deposit whose own `/strain` qualifier reads `Sabin 1`. What
+the band reached was an artifact of that very deletion — both records carry a 6 nt in-frame deletion
+in the VP1 BC loop, `compare_vp1` is ungapped and fitted its diagonal downstream of it, and the
+~300 nt upstream then read at the unrelated-sequence rate and averaged in to 26%. Measured in
+`final/alignments/`, they sit at 0.33% and 0.66% from Sabin 1. Confirming a band value is only worth
+recording when the band value was independently checked; here that check was the missing step, and a
+confirmation made the error harder to see rather than easier.
 
 4.0.0 shipped the accumulated 3.0.0-3.3.0 line below as one major bump: reconciliation against the
 hand-curated 2.4.1 baseline is now complete in the sense this pipeline can make that claim (every
-one of the 518 remaining `poliovirus_classification` differences is categorized, not just counted —
+one of the remaining `poliovirus_classification` differences is categorized, not just counted —
 see [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md)), and it pairs
 that metadata with reference multiple-sequence alignments built by this repository rather than
 carried from a private pipeline.
@@ -283,8 +294,8 @@ rule now measures VP1/capsid divergence against it exactly as it would a name-st
 more records resolve, 130 agreeing with the shipped classification.
 
 [`docs/classification-migration-gap.md`](docs/classification-migration-gap.md) accounts for every
-one of the 518 remaining differences from 2.4.1's `poliovirus_classification` by category — 97.9%
-of the shared carve agrees, and 469 of the 518 are a decline rather than a contradiction. The
+one of the 525 remaining differences from 2.4.1's `poliovirus_classification` by category — 97.8%
+of the shared carve agrees, and 465 of the 525 are a decline rather than a contradiction. The
 epidemiological refinement `cVDPV`/`iVDPV` is now emitted wherever the record itself states it,
 including from `isolation_source` and `note`; the 95 that were not are two published environmental
 studies whose circulation claim lives in the paper rather than in any deposit, and a further 28

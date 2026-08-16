@@ -420,6 +420,11 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # relabels, 6 engineered_or_construct TRUE. Plus 1 on 2026-08-16, DQ205099, the seventh record
     # of that last class. Neither generator produces them.
     release_5 = 3 + 5 + 6 + 1
+    # 19 more on 2026-08-16: the review of `wild` records with low synonymous capsid distance —
+    # 15 Sabin-like, 2 VDPV, 2 wild, every one a `classification` row. Neither generator produces
+    # them. The same review also retires 2 rows and supersedes 2, which move statuses rather than
+    # the row count and are pinned in `tests/test_decision_ledger.py` instead.
+    low_synonymous_review = 19
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)
@@ -433,6 +438,7 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         + polio_classification
         + origin_unknown
         + release_5
+        + low_synonymous_review
     )
     assert len(rows) == expected, (
         f"registry/decisions.tsv holds {len(rows)} decisions but the two migrations are pinned to "
@@ -442,8 +448,8 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
         f"{vocabulary_repairs} vocabulary repairs + {cvdpv_and_strain_identity} cVDPV/strain-"
         f"identity decisions + {upstream_partition} upstream-partition projections + "
         f"{polio_classification} 4.1.0 classification adjudications + "
-        f"{origin_unknown} origin_unknown projections + {release_5} release-5.0.0 rows "
-        f"= {expected}. "
+        f"{origin_unknown} origin_unknown projections + {release_5} release-5.0.0 rows + "
+        f"{low_synonymous_review} low-synonymous-capsid review rows = {expected}. "
         f"Bumping one without the others is the drift the pin exists to catch."
     )
 

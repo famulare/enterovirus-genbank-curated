@@ -10,7 +10,7 @@ investigations, and 1,506 of the ledger's active rows already cite a PMID for ex
 **A coarsened value is a lost judgement, not a conservative one**, and this file names precisely
 which ones are still lost so they can be migrated rather than rediscovered.
 
-`docs/classification-migration-gap.tsv` is the machine-readable list — **all 518 differing
+`docs/classification-migration-gap.tsv` is the machine-readable list — **all 525 differing
 records**, one row each, with the value 2.4.1 ships, the value this pipeline emits, the
 `unresolved_reason` if it declined, and a category.
 
@@ -27,27 +27,40 @@ above said every row has one. The prose totals below are regenerated with the ta
 sections further down quote the counts as they stood when each was written and say so. Both drifts happened for the same reason the date-family delta drifted
 behind a deleted gate: nothing recomputed it.
 
-Over the 24,296 records both datasets carve, the column now **agrees on 23,778 (97.9%)**.
+Over the 24,296 records both datasets carve, the column now **agrees on 23,771 (97.8%)**.
 
 An earlier version of this file covered only the rows where 2.4.1 ships a *refinement* or `wild`.
 That was the interesting subset, not the whole difference, and scoping a reconciliation to the
 interesting subset is how the rest would have gone unnoticed.
 
-## All 518, by category
+## All 525, by category
 
 | category | n | what it means |
 |---|---:|---|
-| `declined_too_little_sequence` | 421 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over, and no text or sibling to fall back to |
+| `declined_too_little_sequence` | 417 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over, and no text or sibling to fall back to |
 | `declined_no_serotype_in_name` | 48 | no serotype in the organism name, or in a sequence-identified membership band, to pick a Sabin reference |
 | `record_text_attests_beyond_the_release` | 13 | the depositor states `cVDPV` or `iVDPV` and the sequence measures Sabin-like; the attestation wins |
-| `sequence_band_disagrees_with_release` | 11 | both resolved, divergence lands in a different band |
+| `sequence_band_disagrees_with_release` | 10 | both resolved, divergence lands in a different band |
 | `record_text_refines_beyond_the_release` | 11 | the record's own text is *finer* than 2.4.1 |
-| `ledger_refines_beyond_the_release` | 9 | the ledger is *finer* than 2.4.1 |
+| `ledger_refines_beyond_the_release` | 21 | the ledger settles it and 2.4.1 does not, or settles it differently — see the caveat below |
 | `sibling_inference_disagrees_with_release` | 4 | an isolate-linked sibling settles it differently |
 | `named_wild_reference_strain` | 1 | `V01132.1`, a Leon VP1 fragment — see below |
 
-Thirty-three of these are records where this pipeline is **more** specific than the release, not
-less. A reconciliation that only counted losses would have reported them as noise.
+Forty-five of these are records where a decision or the record's own text settles the value and
+2.4.1's does not reach as far. A reconciliation that only counted losses would have reported them as
+noise.
+
+**`ledger_refines_beyond_the_release` is misnamed for 12 of its 21 rows, and the name is the
+script's rather than this file's.** The category is assigned from provenance — a ledger decision
+drove the value — which was a safe proxy for "finer" while every such decision added specificity.
+The 2026-08-16 low-synonymous-capsid review broke that: `AJ248491`-`AJ248501`, `AB111812` and
+`AJ248538` are `wild` (or `VDPV`) in 2.4.1 and `Sabin-like` here, which is a **contradiction of the
+release, not a refinement of it** — the release inherited a label that a paper title had supplied
+and the deposited sequence does not support. `AF065158` is the same shape in the other direction.
+Read this row of the table as "the ledger decided", not as "the ledger decided something finer";
+splitting the category properly is a change to
+`scripts/build_classification_migration_gap.py` and is filed as part of B56 in
+[`review-backlog.md`](review-backlog.md).
 
 `record_text_attests_beyond_the_release` is new in 5.0.0 and is the one category where text outranks
 a sequence measurement rather than refining within it. A depositor writing `cVDPV` is asserting

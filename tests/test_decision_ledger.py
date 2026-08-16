@@ -219,10 +219,18 @@ EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS = 6
 
 # Release 4.1.0's whole content: thirteen accession-level `poliovirus_classification` adjudications
 # (2026-08-01). Eleven change the value the divergence band reaches, and two — `AF065158` and
-# `AB467472` — assert the value it already reaches, recorded so the wild call on a record whose own
-# paper is about vaccine-derived virus is a decision rather than an accident. Two of the eleven
-# supersede an active `wild` row on the same record (`CS406483`, `PU749298`), which is why `active`
-# gains 13 and loses 2 while `superseded` gains 2.
+# `AB467472` — assert the value it already reaches. Two of the eleven supersede an active `wild` row
+# on the same record (`CS406483`, `PU749298`), which is why `active` gains 13 and loses 2 while
+# `superseded` gains 2.
+#
+# Those two confirmations were themselves wrong, and the 2026-08-16 review below overturns both.
+# What they confirmed was a `compare_vp1` artefact: each record carries a 6 nt in-frame deletion in
+# the VP1 BC loop, the ungapped comparison fitted its diagonal to the sequence downstream of the
+# deletion, and the ~300 nt upstream then read at the unrelated-sequence rate and averaged in to
+# 26%. Both sit at 0.33% and 0.66% from Sabin 1 in the alignment. This is why the comment that used
+# to stand here — that recording them made the wild call "a decision rather than an accident" — has
+# been removed rather than reworded: confirming a band value is only worth doing when the band value
+# was independently checked, and here the check was the thing that was missing.
 POLIO_CLASSIFICATION_SOURCE = "curator_adjudication_2026-08-01"
 EXPECTED_POLIO_CLASSIFICATION_ROWS = 13
 EXPECTED_POLIO_CLASSIFICATION_VALUES = {
@@ -233,6 +241,11 @@ EXPECTED_POLIO_CLASSIFICATION_VALUES = {
     "wild": 2,
 }
 POLIO_CLASSIFICATION_SUPERSEDES = 2
+# Of the thirteen, the two the 2026-08-16 review overturned. They are still 4.1.0 rows and still
+# have to be accounted for by `test_the_4_1_0_classification_adjudications_reach_the_shipped_column`
+# — the check is now that the shipped column follows whichever row is *active*, which is the
+# property that check was always trying to assert.
+POLIO_CLASSIFICATION_OVERTURNED = {"AF065158": "VDPV", "AB467472": "Sabin-like"}
 
 # The `origin_unknown` curation of 2026-05-28, projected on 2026-08-14: 115 accessions were reviewed
 # and 110 are asserted here, as 74 `origin_class` rows and 99 `sampling_frame` ones.
@@ -272,6 +285,46 @@ EXPECTED_RELEASE_5_ROWS = 3 + 5 + 6 + 1
 RELEASE_5_ADJUDICATION_SOURCE = "curator_adjudication_2026-08-14"
 DQ205099_ADJUDICATION_SOURCE = "curator_adjudication_2026-08-16"
 
+# The 5.0.0 review of `wild` records with low synonymous capsid distance, 2026-08-16. Eighteen new
+# rows, all `classification`, and five status changes on rows that already existed. It carries its
+# own `source_artifact` rather than joining `curator_adjudication_2026-08-16` because the basis is
+# different in kind — that one reads a record's own annotation, this one measures the deposited
+# sequence against Sabin in `final/alignments/` and against the record's own submission batch.
+#
+# Fifteen `Sabin-like`, two `VDPV`, two `wild`:
+#
+#   14  the records `R-CLASS-2`'s reference-title fallback called `wild` from a paper title, or
+#       declined for want of a measurable window — the eleven Dahourou/Crainic India VP1-2A
+#       deposits `AJ248491`-`AJ248501`, their two PV3 batch-mates `AJ248525`/`AJ248538`, and
+#       `AB111812` from the Turkish series. Each is 0-2/150 nt from its Sabin reference while its
+#       own batch-mates, same lab and same window, sit at 24-45/150.
+#    2  `AF065158` -> `VDPV` and `AB467472` -> `Sabin-like`, overturning the two 4.1.0 confirmations
+#       above. Each supersedes the active `wild` row it replaces, so `active` is unmoved by the pair
+#       and `superseded` gains 2.
+#    1  `AY320423` -> `VDPV`, filling a cell `R-CLASS-2` declines because its homogeneity guard
+#       refuses the window — a decline being filled, not a value being corrected.
+#    1  `JC013131` -> `wild`, exact MEF1 and byte-identical to `DI499174`, which already shipped
+#       `wild` while this twin shipped nothing.
+#    1  `HC025129` -> `wild`, found by the coherence invariant this review also added rather than by
+#       reading records: it is the tenth deposit of the Mahoney genome, nine of whose twins already
+#       carried an active `wild` decision, and the divergence band called it `Sabin-like` at 0.993%
+#       because the named-wild-reference guard reads `/strain` and `/isolate` and this deposit
+#       carries neither. 2.4.1 shipped `wild` here, so this restores rather than changes.
+#
+# Plus two retirements that add no row: `JC013131` and `DI499174` held `origin_class = human`
+# against `R-ORIGIN-2`'s own PAT branch and the vocabulary's own definition of `non-human`. Retired
+# rather than superseded because nothing replaces them — the rule reaches the value unaided, which
+# is the same reasoning as the 162 rows retired 2026-07-30.
+LOW_SYNONYMOUS_REVIEW_SOURCE = "low_synonymous_capsid_review_2026-08-16"
+LOW_SYNONYMOUS_REVIEW_ADDITIONS = 19
+LOW_SYNONYMOUS_REVIEW_SUPERSEDES = 2
+LOW_SYNONYMOUS_REVIEW_PAT_ORIGIN_RETIREMENTS = 2
+LOW_SYNONYMOUS_REVIEW_NET_ACTIVE = (
+    LOW_SYNONYMOUS_REVIEW_ADDITIONS
+    - LOW_SYNONYMOUS_REVIEW_SUPERSEDES
+    - LOW_SYNONYMOUS_REVIEW_PAT_ORIGIN_RETIREMENTS
+)
+
 EXPECTED_STATUS = {
     "active": (
         2895
@@ -288,9 +341,20 @@ EXPECTED_STATUS = {
         + EXPECTED_CVDPV_AND_STRAIN_IDENTITY_ROWS
         + EXPECTED_ORIGIN_UNKNOWN_ROWS
         + EXPECTED_RELEASE_5_ROWS
+        + LOW_SYNONYMOUS_REVIEW_NET_ACTIVE
     ),
-    "retired": 17 + RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS,
-    "superseded": 10 + len(VOCABULARY_REPAIR_ADDITIONS) + POLIO_CLASSIFICATION_SUPERSEDES,
+    "retired": (
+        17
+        + RULE_REDUNDANT_RETIREMENTS
+        + ADJUDICATION_RETIREMENTS
+        + LOW_SYNONYMOUS_REVIEW_PAT_ORIGIN_RETIREMENTS
+    ),
+    "superseded": (
+        10
+        + len(VOCABULARY_REPAIR_ADDITIONS)
+        + POLIO_CLASSIFICATION_SUPERSEDES
+        + LOW_SYNONYMOUS_REVIEW_SUPERSEDES
+    ),
 }
 
 # `decision_id` is a digest of exactly these, in this order — `source_artifact` deliberately absent
@@ -323,6 +387,7 @@ def test_ledger_satisfies_its_own_contract(
         + EXPECTED_POLIO_CLASSIFICATION_ROWS
         + EXPECTED_ORIGIN_UNKNOWN_ROWS
         + EXPECTED_RELEASE_5_ROWS
+        + LOW_SYNONYMOUS_REVIEW_ADDITIONS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -439,17 +504,33 @@ def test_the_4_1_0_classification_adjudications_reach_the_shipped_column(
 
     Same shape as the two allowlist checks above, and the same reason: a ledger row the release does
     not reflect is the D2 failure mode. The `decision_applications` half is what distinguishes
-    *applied* from *coincidentally agreeing* — two of these thirteen assert the value the divergence
-    band already reaches, so column agreement alone would pass for them even if the decision never
-    reached the projection at all.
+    *applied* from *coincidentally agreeing* — two of these thirteen asserted the value the
+    divergence band already reached, so column agreement alone would have passed for them even if
+    the decision never reached the projection at all.
+
+    Those same two are why this now reads the *active* row rather than assuming all thirteen still
+    are. `AF065158` and `AB467472` were superseded on 2026-08-16 once the band value they confirmed
+    turned out to be a `compare_vp1` artefact. A superseded row must stop governing the column —
+    that is the whole content of the status — so the assertion is that the shipped value follows
+    whichever row is in force, and that the withdrawn rows are recorded as withdrawn rather than
+    silently still matching.
     """
     rows = [r for r in ledger if r["source_artifact"] == POLIO_CLASSIFICATION_SOURCE]
     assert len(rows) == EXPECTED_POLIO_CLASSIFICATION_ROWS
     assert Counter(r["new_value"] for r in rows) == Counter(EXPECTED_POLIO_CLASSIFICATION_VALUES)
     assert {r["field_name"] for r in rows} == {"classification"}
-    assert {r["status"] for r in rows} == {"active"}
     assert {r["accession"]: r["new_value"] for r in rows} == POLIO_CLASSIFICATION_EXPECTED
 
+    active = [r for r in rows if r["status"] == "active"]
+    withdrawn = [r for r in rows if r["status"] != "active"]
+    assert {r["accession"] for r in withdrawn} == set(POLIO_CLASSIFICATION_OVERTURNED)
+    assert {r["status"] for r in withdrawn} == {"superseded"}
+    assert len(active) == EXPECTED_POLIO_CLASSIFICATION_ROWS - len(POLIO_CLASSIFICATION_OVERTURNED)
+
+    expected_shipped = {
+        accession: POLIO_CLASSIFICATION_OVERTURNED.get(accession, value)
+        for accession, value in POLIO_CLASSIFICATION_EXPECTED.items()
+    }
     with gzip.open(
         repository_root / CANONICAL_METADATA, "rt", encoding="utf-8", newline=""
     ) as handle:
@@ -457,9 +538,7 @@ def test_the_4_1_0_classification_adjudications_reach_the_shipped_column(
             r["accession"]: r["poliovirus_classification"]
             for r in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
         }
-    assert {
-        accession: shipped.get(accession) for accession in POLIO_CLASSIFICATION_EXPECTED
-    } == POLIO_CLASSIFICATION_EXPECTED
+    assert {accession: shipped.get(accession) for accession in expected_shipped} == expected_shipped
 
     with gzip.open(
         repository_root / "final/audit/decision_applications.tsv.gz",
@@ -472,7 +551,7 @@ def test_the_4_1_0_classification_adjudications_reach_the_shipped_column(
             for r in csv.DictReader(handle, delimiter="\t", quoting=csv.QUOTE_MINIMAL)
             if r["canonical_field"] == "poliovirus_classification"
         }
-    for row in rows:
+    for row in active:
         application = applications.get(row["decision_id"])
         assert application is not None, f"{row['decision_id']} reaches no canonical classification"
         assert application["application_status"] in {
@@ -537,7 +616,13 @@ def test_retired_rows_agree_with_the_decision_that_governs_them(
         )
 
     # All three populations pinned, so a row cannot drift from one meaning to another unnoticed.
-    assert superseded_by_a_rule == RULE_REDUNDANT_RETIREMENTS + ADJUDICATION_RETIREMENTS
+    # `JC013131`/`DI499174`'s withdrawn `origin_class = human` rows join the second meaning: no
+    # counterpart, because R-ORIGIN-2's PAT branch is what governs those cells now.
+    assert superseded_by_a_rule == (
+        RULE_REDUNDANT_RETIREMENTS
+        + ADJUDICATION_RETIREMENTS
+        + LOW_SYNONYMOUS_REVIEW_PAT_ORIGIN_RETIREMENTS
+    )
     assert superseded_by_a_decision == 17
 
 
@@ -565,10 +650,19 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     # subject, because `CS406483` already appears in two other classes and would otherwise be
     # claimed twice.
     reclassified = [r for r in superseded if "superseded 2026-08-01 by" in r["notes"]]
+    # Seventh cause, 2026-08-16: the low-synonymous-capsid review overturned the two 4.1.0
+    # confirmations whose band value was a `compare_vp1` artefact. Partitioned by note text for the
+    # same reason `reclassified` is — the value being withdrawn is `wild` in both classes, so a
+    # filter on value alone would merge them and hide that they were withdrawn for different
+    # reasons: one because a later adjudication reclassified the record, this one because the
+    # measurement the row confirmed was wrong.
+    remeasured = [r for r in superseded if "superseded 2026-08-16 by" in r["notes"]]
     remainder = [
         r
         for r in superseded
-        if r["subject_key"] not in repair_subjects and r not in reclassified
+        if r["subject_key"] not in repair_subjects
+        and r not in reclassified
+        and r not in remeasured
     ]
     d2 = [
         r
@@ -585,7 +679,19 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     ]
     assert len(d2) + len(carried) + len(jc013129) + len(reversed_value) + len(
         repaired_vocabulary
-    ) + len(reclassified) == len(superseded), "an unexplained supersession class appeared"
+    ) + len(reclassified) + len(remeasured) == len(superseded), (
+        "an unexplained supersession class appeared"
+    )
+
+    assert {r["subject_key"] for r in remeasured} == set(POLIO_CLASSIFICATION_OVERTURNED)
+    assert len(remeasured) == LOW_SYNONYMOUS_REVIEW_SUPERSEDES
+    for row in remeasured:
+        assert row["field_name"] == "classification"
+        assert row["new_value"] == "wild"
+        replacement = POLIO_CLASSIFICATION_OVERTURNED[row["subject_key"]]
+        assert f"superseded 2026-08-16 by classification={replacement}" in row["notes"], (
+            "a supersession must name the value that replaced it"
+        )
 
     assert {r["subject_key"] for r in reclassified} == {"CS406483", "PU749298"}
     for row in reclassified:
@@ -855,6 +961,10 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     # same day went to `carve_exclusions_confirmed.csv` and `manual_review_overrides.csv` instead.
     assert sources[RELEASE_5_ADJUDICATION_SOURCE] == 6
     assert sources[DQ205099_ADJUDICATION_SOURCE] == 1
+    # Same day as `DQ205099_ADJUDICATION_SOURCE` and deliberately a different name. That one reads a
+    # record's own `/note`; this one measures the deposited sequence. Sharing a `source_artifact`
+    # would have made the pin above read 19 and stopped saying anything about either.
+    assert sources[LOW_SYNONYMOUS_REVIEW_SOURCE] == LOW_SYNONYMOUS_REVIEW_ADDITIONS
     assert sources[UPSTREAM_PARTITION_SOURCE] == EXPECTED_UPSTREAM_PARTITION_ROWS
     assert (
         sources[SHORT_PATENT_MEMBERSHIP_SOURCE] == EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
@@ -865,6 +975,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         POLIO_CLASSIFICATION_SOURCE,
         RELEASE_5_ADJUDICATION_SOURCE,
         DQ205099_ADJUDICATION_SOURCE,
+        LOW_SYNONYMOUS_REVIEW_SOURCE,
         UPSTREAM_PARTITION_SOURCE,
         SHORT_PATENT_MEMBERSHIP_SOURCE,
     }
