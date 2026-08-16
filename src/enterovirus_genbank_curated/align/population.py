@@ -234,7 +234,7 @@ def load_all_records(repository_root: Path) -> dict[str, AlignedRecord]:
     ev_header, ev_rows = read_tsv_gz(repository_root / contract.SEQUENCE_EVIDENCE)
     evidence = _indexed(ev_header, ev_rows, contract.SEQUENCE_EVIDENCE)
 
-    # Loaded once. Calling this inside the comprehension re-parsed the whole 4,899-row ledger for
+    # Loaded once. Calling this inside the comprehension re-parsed the whole 4,900-row ledger for
     # every one of the 24,301 evidence rows and took the fast test tier from 70 seconds to minutes.
     carve_excluded = load_carve_excluded_accessions(repository_root / "registry/decisions.tsv")
     excluded_versions = frozenset(

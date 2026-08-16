@@ -265,8 +265,12 @@ EXPECTED_ORIGIN_UNKNOWN_ROWS = 173
 #      sequence wins (`OR208596`, `AY830709`, `HM537010`, `MG212473`, `AY297766`)
 #   6  `engineered_or_construct = TRUE` on the six R-CONSTRUCT-2's two structural tests cannot
 #      reach (`M14761`, `S61236`, `S65446`/`447`/`449`/`450`), ratified 2026-08-12
-EXPECTED_RELEASE_5_ROWS = 3 + 5 + 6
+#   1  the seventh of that same class, `DQ205099`, ruled 2026-08-16. It was missed by the batch
+#      because its engineered verdict already sat in the ledger under `classification`, so nothing
+#      surfaced it as a disagreement — see `tests/test_legacy_registry.py`.
+EXPECTED_RELEASE_5_ROWS = 3 + 5 + 6 + 1
 RELEASE_5_ADJUDICATION_SOURCE = "curator_adjudication_2026-08-14"
+DQ205099_ADJUDICATION_SOURCE = "curator_adjudication_2026-08-16"
 
 EXPECTED_STATUS = {
     "active": (
@@ -850,6 +854,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     # `curator_adjudication_` prefix permits. The carve exclusions and serotype relabels landing the
     # same day went to `carve_exclusions_confirmed.csv` and `manual_review_overrides.csv` instead.
     assert sources[RELEASE_5_ADJUDICATION_SOURCE] == 6
+    assert sources[DQ205099_ADJUDICATION_SOURCE] == 1
     assert sources[UPSTREAM_PARTITION_SOURCE] == EXPECTED_UPSTREAM_PARTITION_ROWS
     assert (
         sources[SHORT_PATENT_MEMBERSHIP_SOURCE] == EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
@@ -859,6 +864,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         "curator_adjudication_2026-07-31",
         POLIO_CLASSIFICATION_SOURCE,
         RELEASE_5_ADJUDICATION_SOURCE,
+        DQ205099_ADJUDICATION_SOURCE,
         UPSTREAM_PARTITION_SOURCE,
         SHORT_PATENT_MEMBERSHIP_SOURCE,
     }
@@ -885,7 +891,10 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
             # the point: `M14761` carries a `classification = recombinant/lab` row from the
             # 2026-07-31 adjudication *and* an `engineered_or_construct = TRUE` row from this one.
             # A subject-keyed rule demands `classification` of both.
-            if row["source_artifact"] == RELEASE_5_ADJUDICATION_SOURCE:
+            if row["source_artifact"] in {
+                RELEASE_5_ADJUDICATION_SOURCE,
+                DQ205099_ADJUDICATION_SOURCE,
+            }:
                 assert row["field_name"] == "engineered_or_construct"
             elif (
                 row["source_artifact"] == POLIO_CLASSIFICATION_SOURCE

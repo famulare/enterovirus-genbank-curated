@@ -25,7 +25,7 @@ one, and it was unwritten for the wrong reason — its determinant is a record's
 coverage geometry, and read that way it reproduces 2.4.1 on every one of the 24,296 rows both
 tables carry.
 
-Against the baseline, 36,738 cells differ across seven columns, all declared. What is left is not a
+Against the baseline, 36,737 cells differ across seven columns, all declared. What is left is not a
 backlog of unreached values: `specimen_type`'s 5,812 are the `default_stool` assumption this
 pipeline declines to inherit, `sample_origin`'s 11,670 are a `/host` the upstream stage never read,
 and `virus_type`'s 888 and `poliovirus_classification`'s 518 need a sequence stage or a paper.
@@ -809,7 +809,7 @@ Passing parity means at minimum:
 - identical vouched/provisional partitions;
 - identical FASTA identifiers and nucleotide sequences;
 - migration of all 2,912 human decisions the release shipped, and 28 deterministic rules. The ledger
-  now holds 4,899 — 4,690 `active`, 194 `retired`, 15 `superseded` — and the difference is approved
+  now holds 4,900 — 4,691 `active`, 194 `retired`, 15 `superseded` — and the difference is approved
   curation history rather than a parity failure, itemised by `source_artifact`. The largest single
   block is the 243-row locked VDPV/wild reconciliation allowlist, migrated 2026-07-30: the last input
   to `poliovirus_classification` with no counterpart here, and every row already agrees with the
@@ -839,13 +839,13 @@ had become of it. `evgc build-metadata` now writes `audit/decision_applications.
 decision per canonical field it can reach, and **a decision with no row is a build failure** rather
 than an absence.
 
-The measured tally, 6,306 application rows over the 4,899-row ledger
+The measured tally, 6,307 application rows over the 4,900-row ledger
 (`final/audit/decision_applications.tsv.gz`):
 
 | status | n | what it means |
 |---|---|---|
 | `applied_filled_unresolved` | 3,556 | the decision is the only reason the cell has a value |
-| `applied_changed` | 1,699 | in force, and the value differs from the rule's |
+| `applied_changed` | 1,700 | in force, and the value differs from the rule's |
 | `applied_unchanged` | 531 | **a rule now reaches the same value on its own** |
 | `not_in_force_retired` / `_superseded` | 194 / 15 | the curator took it back |
 | `applied_exclusion` | 176 | the record is absent from the carve *because* the ledger says so |

@@ -213,7 +213,7 @@ def test_a_moved_count_fails(
     mutated = {column: dict(classes) for column, classes in DECLARED_TRANSITIONS.items()}
     mutated["engineered_or_construct"][("TRUE", "FALSE")] += 1
     monkeypatch.setattr(parity, "DECLARED_TRANSITIONS", mutated)
-    with pytest.raises(ContractError, match="declared 503"):
+    with pytest.raises(ContractError, match="declared 502"):
         compare_to_baseline(baseline, built)
 
 

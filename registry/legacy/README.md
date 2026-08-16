@@ -144,12 +144,19 @@ would make the record *less* accurate rather than more.
 | `sample_origin` | blank | no `/host` and no keyword in `/isolation_source` |
 | `surveillance_stream` | blank | same |
 
-So the label holds and the column disagrees with it, and that disagreement is not an oversight —
-it is the exact residue the 2026-08-12 adjudication named when it gave six `VRL` records
-accession-level `engineered_or_construct` rows rather than widening the rule to read definition
-text. `DQ205099` is a seventh candidate for that treatment and has not been ruled on. Recording it
-here is the alternative to letting an annotation go on asserting a value the build stopped
-producing.
+**Ruled 2026-08-16: `engineered_or_construct = TRUE`**, by accession-level ledger row
+`D-3b82815e924d` — the seventh record of the class the 2026-08-14 adjudication settled for six
+others, on the same reasoning and by the same mechanism. R-CONSTRUCT-2 is left alone: reading `note`
+would put free text back into the rule whose text blob caused the `\bPAT\b` defect. So the table
+above now reads `engineered_or_construct = TRUE` again, on the record's own annotation rather than
+on 2.4.1's division-matching predicate.
+
+Two things this record established beyond itself, both in
+[`docs/engineered-full-population-readjudication.md`](../../docs/engineered-full-population-readjudication.md):
+the full-population review proposed FALSE here, and could only ever have done so — every instrument
+in it compares sequences, and this record's construct-ness is in its annotation, not its bases. And
+it is the only such record in the carve: eight deposits snapshot-wide carry `note=infectious clone`,
+the other seven being human parechovirus outside the genus.
 
 **Disposition (curator, 2026-07-29): annotate, do not adjudicate.** The row keeps `status=active`
 and its verbatim curator text; the falsification is recorded in `notes`. No shipped value changes.

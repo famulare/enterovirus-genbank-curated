@@ -136,12 +136,42 @@ The 7 SYN are `MN654096` and `PP068131`–`PP068136`. The 1 VRL is `DQ205099`.
 | E | **CAVA cold-adaptation deposits** | 4 | 11 and 24 nt from MEF-1 / Saukett; one unique position each | **FALSE**, flagged (§5) |
 | F | **Genuinely engineered viral constructs** | 9 | AgeI cassette site; recoded-capsid nOPV2; six capsid-swap S19 chimeras | all **TRUE** |
 | G | **Bisulfite-converted reference strings** | 3 | not viruses at all (§6.1) | **TRUE**, but see §6.1 |
-| — | **`DQ205099`**, in no family | 1 | Sabin 2 cDNA clone; the one `VRL` record in the population | **FALSE** (§4) |
+| — | **`DQ205099`**, in no family | 1 | Sabin 2 cDNA clone; the one `VRL` record in the population | ~~**FALSE** (§4)~~ → **TRUE**, 2026-08-16 (see below) |
 
 25 + 8 + 5 + 3 + 4 + 9 + 3 + 1 = 58. **46 FALSE, 12 TRUE** on the evidence alone —
 **42 FALSE / 14 TRUE / 2 open after [Appendix B](#appendix-b-curator-answers-2026-07-29--decided)**,
 which moves family E's `LY501107`/`LZ216102` to TRUE, leaves E's `LY501105`/`LZ216100` open, and
 carve-excludes family G rather than shipping it TRUE.
+
+## `DQ205099` reversed to TRUE, 2026-08-16 — and the criterion gap it exposes
+
+This review proposed **FALSE** for `DQ205099` and the ruling is now **TRUE**. Nothing measured here
+was wrong: the sequence is Sabin 2 + 3 nt, all synonymous, each difference attested in nature. That
+finding stands and is why the record is not *engineered*.
+
+The column is `engineered_or_construct`, and the two halves are not the same test. This record's own
+source qualifier reads `note=infectious clone`: it is CDC clone S2R9, the parental control of Burns
+*et al.* 2006 (PMID 16537593). An infectious cDNA clone is manufactured material whether or not its
+sequence differs from the virus it was built to reproduce — the same reasoning that put the four
+`S654xx` pseudorevertants at TRUE on 2026-08-14, where the genotype arose by selection and the
+disposition followed from the parent having been constructed.
+
+**The gap is methodological and worth naming.** This whole review is a sequence comparison — sha256,
+verbatim containment, alignment, restriction sites, nearest natural neighbour. Every instrument in
+it answers "is this sequence engineered?" and none can answer "is this material a construct?", so a
+record whose construct-ness lives in its annotation rather than in its bases was going to come out
+FALSE by construction. That is not a defect in the measurements; it is a limit on what they can
+decide, and it went unstated until this record forced it.
+
+**Scope, measured 2026-08-16 rather than assumed.** Eight records in the whole snapshot carry
+`note=infectious clone` on their source feature. Seven are `MN781627`–`MN781633`, human parechovirus
+3, excluded from the carve by the genus predicate. `DQ205099` is the only one inside it, so the
+reversal is one record and there is no further population waiting behind it. Sixteen records carry
+any clone-ish source qualifier; two of those are ≥3000 nt.
+
+R-CONSTRUCT-2 is unchanged, deliberately: reading `note` would put free text back into the rule
+whose text blob caused the `\bPAT\b` defect. This ships as an accession-level ledger row
+(`D-3b82815e924d`), the seventh of the class the 2026-08-14 adjudication settled for six others.
 
 **Two corrections to this table, 2026-07-30.** It previously gave family B as 6 and omitted
 `DQ205099` entirely, so the stated sum was `25 + 6 + 5 + 3 + 4 + 9 + 3 = 58` — which is **55**. The
@@ -500,7 +530,7 @@ natural-occurrence + restriction evidence all concordant, **M** = defensible eit
 | `DD214224` | PAT | 7432 | Sabin-like | TRUE | **FALSE** | = `AY184221` Sabin 3 | VH |
 | `DI499146` | PAT | 7440 | wild | TRUE | **FALSE** | = Mahoney | VH |
 | `DI499147` | PAT | 7441 | Sabin-like | TRUE | **FALSE** | = `V01150` Sabin 1 | VH |
-| `DQ205099` | VRL | 7439 | Sabin-like | TRUE | **FALSE** | Sabin 2 +3 nt, all synonymous, each attested in nature (Q1) | H |
+| `DQ205099` | VRL | 7439 | engineered/lab | ~~TRUE~~ FALSE→**TRUE** | **TRUE** (revised 2026-08-16) | Sabin 2 +3 nt, all synonymous, each attested in nature (Q1) — the sequence finding stands; the disposition changed on the *construct* clause, see below | H |
 | `E01570` | PAT | 4677 | Sabin | TRUE | **FALSE** | Sabin 1 +8 nt, **7/8 C↔G artifact** | H |
 | `E01571` | PAT | 4679 | Sabin | TRUE | **FALSE** | Sabin 2 +10 nt, **9/10 C↔G artifact** | H |
 | `E01572` | PAT | 4670 | Sabin | TRUE | **FALSE** | Sabin 3 +14 nt, **11/14 C↔G artifact** | H |

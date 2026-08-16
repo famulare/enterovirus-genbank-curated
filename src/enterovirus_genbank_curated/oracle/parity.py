@@ -288,8 +288,11 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
     "collection_date_precision": {
         ('unknown', 'NA'): 2800,
     },
+    # 502 until 2026-08-16, when `DQ205099` was restored to TRUE on the record's own
+    # `note=infectious clone` — the seventh of the class R-CONSTRUCT-2's two structural tests
+    # cannot reach, after the six ratified 2026-08-14.
     "engineered_or_construct": {
-        ('TRUE', 'FALSE'): 502,
+        ('TRUE', 'FALSE'): 501,
     },
 }
 

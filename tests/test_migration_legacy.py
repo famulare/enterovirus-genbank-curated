@@ -417,8 +417,9 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # 115 accessions to 173 rows.
     origin_unknown = 173
     # 14 more the same day: release 5.0.0's correctness pass — 3 carve exclusions, 5 serotype
-    # relabels, 6 engineered_or_construct TRUE. Neither generator produces them.
-    release_5 = 3 + 5 + 6
+    # relabels, 6 engineered_or_construct TRUE. Plus 1 on 2026-08-16, DQ205099, the seventh record
+    # of that last class. Neither generator produces them.
+    release_5 = 3 + 5 + 6 + 1
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)

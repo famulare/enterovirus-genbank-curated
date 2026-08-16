@@ -26,8 +26,10 @@ against the 2.4.1 fixture in `releases/2.4.1/`:
   values were in `/strain`, `/isolate` and the definition line all along.
 * **427 `virus_type` cells** from the definition line (`R-TYPE-2` widened), plus 80 specimen, 53
   stream and 82 origin cells from pattern and division branches that had never fired.
-* **186 new ledger rows** (4,713 → 4,899): 172 projecting the `origin_unknown` curation, 5 serotype
-  relabels, 3 carve exclusions and 6 `engineered_or_construct` adjudications.
+* **187 new ledger rows** (4,713 → 4,900): 172 projecting the `origin_unknown` curation, 5 serotype
+  relabels, 3 carve exclusions and 7 `engineered_or_construct` adjudications — six ratified
+  2026-08-14 and `DQ205099` on 2026-08-16, all seven records R-CONSTRUCT-2's two structural tests
+  cannot reach.
 
 Two correctness fixes move shipped values. `compare_vp1` no longer counts an ambiguity code as a
 mismatch, so divergence is measured over unambiguous sites only; and a depositor's `cVDPV`/`iVDPV`

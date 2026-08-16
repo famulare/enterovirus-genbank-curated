@@ -161,7 +161,7 @@ compared against. And a blank cell is never a claim — `audit/projection_proven
 filled, how many are blank and how many were declined.
 
 Every curation decision also gets a recorded outcome. `audit/decision_applications.tsv.gz` says what
-became of each of the 4,899 ledger rows — applied and changed something, applied and made no
+became of each of the 4,900 ledger rows — applied and changed something, applied and made no
 difference, filled a cell a rule declined, withdrawn, or reaching no canonical column — and a decision
 with *no* row is a build failure. That is the D2 lesson as an artifact: the failure it prevents is an
 assertion sitting in the ledger for two releases while the pipeline quietly recomputed the value. As

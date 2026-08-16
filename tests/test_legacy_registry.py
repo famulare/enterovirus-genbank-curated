@@ -335,10 +335,12 @@ def test_no_registry_but_one_ever_had_an_opinion_on_dq205099(repository_root: Pa
     survived, not evidence that anyone checked it. If a second *registry* ever lands on this
     subject, the annotation's framing needs revisiting and this test says so.
 
-    Scoped to registries on 2026-07-31, when the vocabulary repair added a second row. That row is
-    this project's own adjudication rewriting a value it already held, not an independent opinion
-    arriving from elsewhere, so counting it would have retired a live tripwire to accommodate a
-    change that does not threaten what the tripwire guards.
+    Scoped to registries on 2026-07-31, when the vocabulary repair added a second row, and a third
+    arrived 2026-08-16 with the `engineered_or_construct = TRUE` ruling. Both are this project's own
+    adjudications — one rewriting a value it already held, one moving a column to agree with it —
+    rather than independent opinions arriving from elsewhere. Counting either would retire a live
+    tripwire to accommodate a change that does not threaten what it guards, which is specifically
+    whether a *second source* ever formed a view on this record.
     """
     rows = [row for row in ledger_rows(repository_root) if row["subject_key"] == "DQ205099"]
     from_registries = [r for r in rows if r["source_artifact"].endswith(".csv")]
@@ -348,9 +350,12 @@ def test_no_registry_but_one_ever_had_an_opinion_on_dq205099(repository_root: Pa
         f"Re-read the DQ205099 annotation in scripts/migrate_legacy_registries.py before shipping."
     )
     others = [r for r in rows if r not in from_registries]
-    assert [(r["source_artifact"], r["field_name"], r["new_value"]) for r in others] == [
-        ("curator_adjudication_2026-07-31", "classification", "engineered/lab")
-    ], "the only non-registry row on this subject must be the vocabulary repair"
+    assert sorted(
+        (r["source_artifact"], r["field_name"], r["new_value"]) for r in others
+    ) == [
+        ("curator_adjudication_2026-07-31", "classification", "engineered/lab"),
+        ("curator_adjudication_2026-08-16", "engineered_or_construct", "TRUE"),
+    ], "the only non-registry rows on this subject are this project's own two adjudications"
 
 
 def test_the_guard_refuses_a_read_of_the_legacy_directory(repository_root: Path) -> None:

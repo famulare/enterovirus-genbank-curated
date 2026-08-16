@@ -563,6 +563,28 @@ verification were the same act and must not be.
 6. **Nothing self-certified.** The adversarial-reviewer pattern found ~59 defects across four
    charters with near-zero overlap. It is a standing gate, not an escalation.
 
+### B55. `DQ205099`'s ledger annotation asserted a value the build stopped producing — **CLOSED 2026-08-16**
+
+The `notes` on `D-76ece1bbec32` ended "canonical engineered_or_construct=TRUE stands and no shipped
+value changes". True of 2.4.1; the build shipped `FALSE`. `R-CONSTRUCT-2` is deliberately two
+structural tests — `division == SYN` and a synthetic organism name — and this record is `VRL` /
+`Poliovirus 2`, so it reported `no_structural_synthetic_signal` and never read its own
+`note=infectious clone`.
+
+Ruled 2026-08-16: **TRUE**, by accession-level row `D-3b82815e924d`, the seventh record of the class
+the 2026-08-14 adjudication settled for six others. The rule is unchanged; reading `note` would put
+free text back into the predicate whose text blob caused the `\bPAT\b` defect.
+
+Two things this closed that are larger than the record. First, the full-population re-adjudication
+proposed `FALSE` here and **could only ever have done so**: every instrument in it — sha256, verbatim
+containment, alignment, restriction sites, nearest natural neighbour — answers "is this sequence
+engineered?", and none can answer "is this material a construct?". A record whose construct-ness
+lives in its annotation was going to come out FALSE by construction. That limit is now stated in
+`docs/engineered-full-population-readjudication.md` rather than implied. Second, the scope was
+measured rather than assumed: eight deposits snapshot-wide carry `note=infectious clone`, and the
+other seven are human parechovirus outside the genus, so this is one record with no population
+behind it.
+
 ### B54. `_revcomp` did not complement ambiguity codes other than `N` — **FIXED 2026-08-16, two shipped nucleotides still stale**
 
 `align/segment._COMPLEMENT` was `str.maketrans("ACGTN", "TGCAN")`, and `derive/evidence._COMPLEMENT`

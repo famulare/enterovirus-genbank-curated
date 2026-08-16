@@ -200,8 +200,12 @@ LEGITIMATE_SAME_SEQUENCE_SPLITS: dict[tuple[str, ...], str] = {}
 # `S65446`/`447`/`449`/`450`). All six are division VRL, so `EXPECTED_PAT_TRUE` and
 # `EXPECTED_SYN_TRUE` do not move — which is the check that the six are the residue of
 # R-CONSTRUCT-2's structural narrowness and not a widening of it.
-EXPECTED_TRUE_TOTAL = 38 + 6
-EXPECTED_TRUE_AT_LEAST_3000NT = 11
+# +1 on 2026-08-16: `DQ205099`, the seventh of the same class and also division VRL, so the two
+# division pins below still do not move.
+EXPECTED_TRUE_TOTAL = 38 + 6 + 1
+# +1 on 2026-08-16: `DQ205099`, a 7.4 kb complete genome of CDC clone S2R9. It joins the
+# hand-adjudicated long population, and the re-adjudication doc's disposition table names it.
+EXPECTED_TRUE_AT_LEAST_3000NT = 12
 EXPECTED_PAT_IN_CANONICAL = 512 - 3
 EXPECTED_PAT_TRUE = 24
 EXPECTED_SYN_IN_CANONICAL = 7

@@ -179,7 +179,7 @@ release excludes and this pipeline admits, less two it leaves undecided and thre
    catalog with its provenance row compared to the release on all nine columns. **No column remains
    unwritten.**
 6. Decision application, disposition, and complete provenance. **Delivered:** 6,306 decision
-   applications from a 4,899-row ledger, 340,270 provenance rows, and 25,065 declined cells
+   applications from a 4,900-row ledger, 340,270 provenance rows, and 25,065 declined cells
    collapsed into 268 curation-queue groups. `record_disposition.tsv.gz` gained a producer on
    2026-08-14 and now carries a reason on every one of its 1,422 exclusions.
 7. Dictionaries, references, and reproducible alignments. **Delivered, except the dictionaries.**
