@@ -397,11 +397,27 @@ Two properties this separates, and conflating them is what produced the wrong re
 `codon.drop_unsequenced_codon_columns` measures whether columns hold *anything*. A clean result from
 the first says nothing about the second.
 
-The three anchored stacks are the strongest result. `PV1`/`PV2`/`PV3` come out at **zero sparse
-columns and zero single-row columns**, at widths of exactly 7,441 / 7,439 / 7,432 — their own Sabin
-genome lengths. Nothing enforces that; it falls out of the per-serotype covariance models being
-`cmbuild --hand` against each serotype's reference, and it is the check that the anchored projection
-is doing what it claims.
+### The anchored stacks live in the Sabin frame, and that costs residues
+
+`PV1`/`PV2`/`PV3` come out at **zero sparse columns and zero single-row columns**, at widths of
+exactly 7,441 / 7,439 / 7,432 — their own Sabin genome lengths. Every column is a real Sabin genome
+position, so a column number is a coordinate a reader can look up, and `#=GC RF` is the Sabin
+sequence rather than a consensus.
+
+**That exactness is a consequence of the frame, not independent evidence for it**, and this
+paragraph read it the other way round until 2026-08-15. A fixed reference frame has nowhere to put
+a base that sits outside the reference, so an insertion relative to Sabin is dropped. Zero sparse
+columns is what clipping *guarantees*; it cannot also be the check that the clipping was right.
+
+The cost, measured rather than described: on `PV1_unified`, **118 full-length rows lose 7,245
+nucleotides** between them — about 0.1% of the 6,207,875 residues the artifact places, but
+concentrated rather than spread, since a record loses exactly its insertion or nothing at all.
+
+**Curator ruling, 2026-08-15: accepted.** These references are wanted in the Sabin frame, and
+coordinate-addressability is worth the clip. The insertions are not lost from the release —
+`EV_unified` and `POLIO_unified` carry every record's full CDS, at the cost of columns that are not
+genome coordinates. The two stacks answer different questions: use the anchored one to name a
+position, the unified one when you need every base.
 
 None of this is a parity claim on the shipped bytes, and it never can be: those bytes came from code
 that no longer exists in that form, built at an unrecorded thread count with accidental
