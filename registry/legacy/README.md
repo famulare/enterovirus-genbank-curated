@@ -130,10 +130,26 @@ Burns *et al.* 2006, *J. Virol.* 80:3259 (PMID 16537593), not one of that paper'
 constructs.
 
 The legacy row's *label* is nonetheless correct. The record's own annotation says
-`note=infectious clone`, and an infectious cDNA clone is a construct. So canonical's
+`note=infectious clone`, and an infectious cDNA clone is a construct. Applying D2's remedy here
+would make the record *less* accurate rather than more.
+
+**What the release actually ships, corrected 2026-08-16.** This section used to say that canonical's
 `engineered_or_construct=TRUE`, `surveillance_stream=engineered/lab`, `sample_origin=non-human` and
-`poliovirus_classification=Sabin-like` all stand, and applying D2's remedy here would make the record
-*less* accurate rather than more.
+`poliovirus_classification=Sabin-like` all stand. Those were 2.4.1's values. 5.0.0 ships:
+
+| column | value | why |
+|---|---|---|
+| `engineered_or_construct` | `FALSE` | R-CONSTRUCT-2 is deliberately two *structural* tests — `division == SYN`, synthetic organism name — and this is `VRL` / `Poliovirus 2`, so it reports `no_structural_synthetic_signal` and never reads `note=infectious clone` |
+| `poliovirus_classification` | `engineered/lab` | the superseding ledger row `D-9dd912fd01db`, not the divergence band |
+| `sample_origin` | blank | no `/host` and no keyword in `/isolation_source` |
+| `surveillance_stream` | blank | same |
+
+So the label holds and the column disagrees with it, and that disagreement is not an oversight —
+it is the exact residue the 2026-08-12 adjudication named when it gave six `VRL` records
+accession-level `engineered_or_construct` rows rather than widening the rule to read definition
+text. `DQ205099` is a seventh candidate for that treatment and has not been ruled on. Recording it
+here is the alternative to letting an annotation go on asserting a value the build stopped
+producing.
 
 **Disposition (curator, 2026-07-29): annotate, do not adjudicate.** The row keeps `status=active`
 and its verbatim curator text; the falsification is recorded in `notes`. No shipped value changes.

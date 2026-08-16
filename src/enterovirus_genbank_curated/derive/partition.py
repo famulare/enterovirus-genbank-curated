@@ -235,6 +235,15 @@ def virus_group(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
 def curation_status(parameters: Mapping[str, Any], view: RecordView) -> RuleOutcome:
     """Release policy over the partition. `carve_excluded_status` never applies to a carved row.
 
+    The column is a statement about **curatorial attention**, and this rule is only the bookkeeping
+    that follows from where that attention has gone. `vouched` means the maintainer has reviewed
+    those records directly — against the explorer site's distributions and against the poliovirus
+    literature; `provisional` means that has not happened yet. It reduces to the partition today
+    because the review has covered poliovirus and not yet non-polio EV, which is a fact about the
+    curation calendar rather than an identity between the two columns. When a non-polio family is
+    reviewed this rule gains a branch and the columns separate; until then it is a projection of one
+    onto the other and says so.
+
     `manual_override` is `FALSE` even on the seventeen records whose partition came from a decision,
     matching the release: the curator adjudicated membership, not the vouching policy that follows
     from it.

@@ -43,9 +43,10 @@ export function renderFacts(summary: Summary): void {
     [
       "Vouched",
       `${num(release.n_vouched)} of ${num(release.n_records)}`,
-      `Confirmed canonical reference or membership-verified. The remaining
-       ${num(release.n_provisional)} are provisional — name- and annotation-derived — and every
-       non-polio record is provisional throughout.`,
+      `Records the maintainer has reviewed directly — against these figures and against the
+       poliovirus literature. The remaining ${num(release.n_provisional)} are provisional: not
+       known to be wrong, just not yet given that depth of review. The review has covered
+       poliovirus and not yet non-polio enterovirus, which is why the split falls where it does.`,
     ],
     [
       "Human curation",

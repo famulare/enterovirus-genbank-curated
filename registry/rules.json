@@ -56,7 +56,7 @@
     "rule_id": "R-STATUS-1",
     "rule_version": "2.4.1",
     "field_name": "curation_status",
-    "description": "Poliovirus shipped carve is vouched; non-polio EV is provisional; carve-excluded records are excluded (audit only).",
+    "description": "Poliovirus shipped carve is vouched; non-polio EV is provisional; carve-excluded records are excluded (audit only). The column states how much curatorial review a record has had, not what kind of virus it is. A vouched record is one the maintainer has gone over directly, against the explorer site's distributions and against the poliovirus literature; a provisional record has not yet had that review, which asserts nothing about whether its values are right. The mapping reduces to the partition because the review has covered poliovirus and not yet non-polio enterovirus, so this rule is bookkeeping over the curation calendar rather than a second name for virus_group; reviewing a non-polio family gives it a branch and separates the two columns.",
     "implementation": "derive.partition.curation_status",
     "parameters": {
       "poliovirus_status": "vouched",

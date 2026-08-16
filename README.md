@@ -69,10 +69,17 @@ docs/                 Pipeline architecture and the reproducibility boundary.
 ## Data model at a glance
 
 Every included sequence gets one row in `final/canonical/sequence_metadata.tsv.gz`, keyed by
-`version` (the GenBank `accession.version`). Poliovirus records are further split into
-`vouched` (confirmed canonical reference or membership-verified) and `provisional`
-(name/annotation-derived); non-polio enterovirus records are labeled `provisional` throughout,
-never presented as vouched gold-standard.
+`version` (the GenBank `accession.version`). `curation_status` records **how much curatorial attention a record has had**, which is not the
+same question as any other column answers. `vouched` means the maintainer has gone over these
+records directly — scanning the distributions and outliers on the explorer site, and reading them
+against the poliovirus literature — to make them as correct as he can. `provisional` means that
+depth of review has not happened yet.
+
+Today that lands exactly on the partition: all 10,087 poliovirus records are `vouched` and all
+14,218 non-polio ones are `provisional`, because the review has covered poliovirus and not yet
+covered non-polio EV. The two columns therefore carry the same *bits* right now and different
+*claims*, and they will separate the first time a non-polio family is reviewed. Read
+`curation_status` as a statement about the reviewing, not as a restatement of `virus_group`.
 
 Every curated field (classification, sample origin, surveillance stream, collection date, virus
 type, ...) has a corresponding row in `final/audit/projection_provenance.tsv.gz` naming
