@@ -31,7 +31,8 @@ population plus its `CodonSpec` already carries everything that varied between t
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections import Counter
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from enterovirus_genbank_curated.align import contract, exemplars, fasta
@@ -66,6 +67,11 @@ class CodonAlignment:
     clade_exemplars: tuple[str, ...] = ()
     exemplar_only_codons_dropped: int = 0
     unsequenced_codons_dropped: int = 0
+    # {accession: codons removed} for rows that had a flung cluster gapped, and the columns that
+    # emptied when those clusters went. Per record rather than as a total, because eighteen rows is
+    # few enough to name, and a reader who cannot see which rows lost residues cannot check it.
+    flung_codons_gapped: dict[str, int] = field(default_factory=dict)
+    flung_only_columns_dropped: int = 0
 
 
 def _aa_by_tier(
@@ -135,6 +141,176 @@ def drop_exemplar_only_columns(
         for name, row in kept.items()
     }
     return trimmed, dropped
+
+
+_COLUMN_CHUNK = 128
+
+
+def _column_residue_counts(
+    rows: list[str], wanted: set[int], width: int
+) -> dict[int, Counter[str]]:
+    """Residue counts for the requested columns only, by transposing in chunks.
+
+    A column is only reachable by indexing every row at it, and doing that one column at a time over
+    a 24,000-row alignment is tens of millions of interpreted operations. Slicing a chunk of columns
+    out of every row and handing the chunk to `zip` moves the transpose into C, and chunks with no
+    requested column are skipped entirely — so the cost tracks the handful of columns some cluster
+    actually lands in, not the width of the block.
+    """
+    counts: dict[int, Counter[str]] = {}
+    for start in range(0, width, _COLUMN_CHUNK):
+        stop = min(start + _COLUMN_CHUNK, width)
+        if not any(column in wanted for column in range(start, stop)):
+            continue
+        block = [row[start:stop] for row in rows]
+        for column, letters in zip(range(start, stop), zip(*block, strict=True), strict=True):
+            if column in wanted:
+                counts[column] = Counter(letters)
+    return counts
+
+
+def _residue_clusters(row: str, split: int) -> list[list[int]] | None:
+    """This row's placed columns grouped into clusters, or None if it has only one cluster.
+
+    Clusters are separated by a run of at least `split` gaps. Leading and trailing gaps are not
+    separators — they are where the row is not, not a hole inside it — so the search is over the
+    interior only. That interior test is a substring search and so is free, which is what keeps this
+    from having to enumerate the gap pattern of every row in the block.
+    """
+    first = len(row) - len(row.lstrip(GAP))
+    trimmed = row.rstrip(GAP)
+    if not trimmed:
+        return None
+    if GAP * split not in trimmed[first:]:
+        return None
+    clusters: list[list[int]] = []
+    current: list[int] = []
+    run = 0
+    for column in range(first, len(trimmed)):
+        if row[column] == GAP:
+            run += 1
+            continue
+        if run >= split and current:
+            clusters.append(current)
+            current = []
+        run = 0
+        current.append(column)
+    if current:
+        clusters.append(current)
+    return clusters if len(clusters) > 1 else None
+
+
+def gap_flung_clusters(
+    aa_aln: dict[str, str], orf_nt: dict[str, str], spec: contract.CodonSpec
+) -> tuple[dict[str, str], dict[str, str], dict[str, int], int]:
+    """Remove clusters of residues MAFFT parked far from their row with nothing homologous there.
+
+    Returns the amino-acid alignment, the ORFs with the removed codons taken out of them, the count
+    removed per record, and how many columns went empty as a result and were dropped.
+
+    See `CodonSpec.fling_min_identity` for the measurement: 34 clusters score 0.000-0.333 against
+    the consensus of the columns they land in and 9 score 0.667-0.955, and the nine are genuine
+    bipartite fragments whose halves each sit on real homology. Being far from the rest of the row
+    is what makes a cluster worth examining; disagreeing with what is there is what condemns it.
+
+    The row's own residue is subtracted from each column's counts before the majority is taken. In a
+    column with thousands of occupants that changes nothing, but a cluster can land somewhere nearly
+    empty, and there a row voting for itself would score 1.000 and be spared by its own error.
+
+    `orf_nt` is cut in step with the alignment because `backtranslate` rests on the row's non-gap
+    residues numbering exactly its codons. Cutting the two together is what keeps that invariant an
+    invariant rather than something this function has to be trusted not to break.
+    """
+    accessions = sorted(aa_aln)
+    rows = [aa_aln[accession] for accession in accessions]
+    width = len(rows[0])
+
+    proposed: list[tuple[str, list[int]]] = []
+    for accession, row in zip(accessions, rows, strict=True):
+        clusters = _residue_clusters(row, spec.fling_split_codons)
+        if clusters is None:
+            continue
+        placed = sum(len(cluster) for cluster in clusters)
+        body = max(range(len(clusters)), key=lambda index: len(clusters[index]))
+        for index, cluster in enumerate(clusters):
+            if index == body:
+                continue
+            if len(cluster) / placed <= spec.fling_max_share:
+                proposed.append((accession, cluster))
+    if not proposed:
+        return aa_aln, orf_nt, {}, 0
+
+    wanted = {column for _accession, cluster in proposed for column in cluster}
+    counts = _column_residue_counts(rows, wanted, width)
+
+    condemned: dict[str, set[int]] = {}
+    for accession, cluster in proposed:
+        row = aa_aln[accession]
+        agree = compared = 0
+        for column in cluster:
+            others = counts[column] - Counter(row[column])
+            others.pop(GAP, None)
+            if not others:
+                continue  # nothing there to agree or disagree with
+            compared += 1
+            agree += row[column] == others.most_common(1)[0][0]
+        # A cluster alone in every column it occupies has no homology to appeal to, and the whole
+        # reason it is being examined is that it sits hundreds of columns from its own row.
+        identity = agree / compared if compared else 0.0
+        if identity < spec.fling_min_identity:
+            condemned.setdefault(accession, set()).update(cluster)
+    if not condemned:
+        return aa_aln, orf_nt, {}, 0
+
+    gapped_aa: dict[str, str] = dict(aa_aln)
+    trimmed_nt: dict[str, str] = dict(orf_nt)
+    removed: dict[str, int] = {}
+    for accession, columns in condemned.items():
+        row = aa_aln[accession]
+        # Which of this row's own codons the condemned columns are, in ORF order.
+        doomed_codons = set()
+        codon_index = 0
+        for column, character in enumerate(row):
+            if character == GAP:
+                continue
+            if column in columns:
+                doomed_codons.add(codon_index)
+            codon_index += 1
+        gapped_aa[accession] = "".join(
+            GAP if column in columns else character for column, character in enumerate(row)
+        )
+        nt = orf_nt[accession]
+        trimmed_nt[accession] = "".join(
+            nt[index * 3 : index * 3 + 3]
+            for index in range(len(nt) // 3)
+            if index not in doomed_codons
+        )
+        removed[accession] = len(doomed_codons)
+        if not trimmed_nt[accession]:
+            raise ContractError(
+                f"{accession}: gapping flung clusters would remove its whole ORF; a cluster capped "
+                f"at fling_max_share={spec.fling_max_share} cannot be the whole row, so the "
+                f"cluster arithmetic is wrong rather than the record being unusual"
+            )
+
+    # A column that existed only to hold a cluster we just removed is a column the shipped width
+    # should not pay for — the same argument `drop_exemplar_only_columns` makes, and the same reason
+    # `drop_unsequenced_codon_columns` cannot be left to do it: to that filter an unoccupied column
+    # is not an unsequenced one, and it deliberately leaves it alone.
+    emptied = sorted(
+        column
+        for column in wanted
+        if all(gapped_aa[accession][column] == GAP for accession in accessions)
+    )
+    if emptied:
+        cut = set(emptied)
+        gapped_aa = {
+            accession: "".join(
+                character for column, character in enumerate(row) if column not in cut
+            )
+            for accession, row in gapped_aa.items()
+        }
+    return gapped_aa, trimmed_nt, removed, len(emptied)
 
 
 def backtranslate(aa_aln: dict[str, str], orf_nt: dict[str, str], width_aa: int) -> dict[str, str]:
@@ -378,9 +554,13 @@ def build_codon_block(
         )
 
     aa_aln, exemplar_only_codons = drop_exemplar_only_columns(aa_aln, frozenset(exemplar_rows))
-    width_aa = len(next(iter(aa_aln.values())))
 
     orf_nt = {acc: segmentations[acc].orf_nt for acc in expected}
+    # After the exemplars are gone, so the seed-only rows never vote on a column's consensus, and
+    # before backtranslation, because the claim being tested is about residues and homology.
+    aa_aln, orf_nt, flung, flung_columns = gap_flung_clusters(aa_aln, orf_nt, spec)
+    width_aa = len(next(iter(aa_aln.values())))
+
     aligned_nt = backtranslate(aa_aln, orf_nt, width_aa)
     aligned_nt, dropped_codons = drop_unsequenced_codon_columns(aligned_nt, width_aa)
     width_aa -= dropped_codons
@@ -396,4 +576,6 @@ def build_codon_block(
         clade_exemplars=tuple(exemplar.exemplar_id for exemplar in clade_exemplars),
         exemplar_only_codons_dropped=exemplar_only_codons,
         unsequenced_codons_dropped=dropped_codons,
+        flung_codons_gapped=dict(sorted(flung.items())),
+        flung_only_columns_dropped=flung_columns,
     )

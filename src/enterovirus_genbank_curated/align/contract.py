@@ -324,6 +324,45 @@ class CodonSpec:
     # needs it to mean, and both of its decisions land in a measured empty interval. See that
     # function's docstring for the intervals and for the ground-truth validation.
     noncoding_homology_margin: float = 0.30
+    # --- the fling: a handful of a row's residues parked far from the rest of it ----------------
+    #
+    # `mafft --addfragments` sometimes places a few of a fragment's residues hundreds of columns
+    # from where it puts the rest, with no homology at the landing site. `KM486565`'s protein reads
+    # `DNNTHSL|QGSTVKD...` and those first seven residues sit 558 columns from the rest of it, where
+    # the consensus reads `SDRVMQL` — a 7-for-7 disagreement. The row then reports every column
+    # between the two pieces as a deletion, and because ten of the affected rows are EV-B77 from one
+    # submission (`KM486565`-`573` plus `JX513592`), the deletion reads as a serotype signature.
+    # This is the largest remaining source of fake subtype indel signal after R1-R4.
+    #
+    # MAFFT routing is not the cause and must not be re-proposed as the fix. Measured twice: per row
+    # the addon tier (`--addfragments`) flings at 0.136% against the backbone tier's 0.068% — the
+    # same order of magnitude, not a mechanism.
+    #
+    # The discriminator is identity to the consensus of the columns the cluster lands in, and it
+    # separates cleanly. Measured over the three promoted artifacts under this code's own cluster
+    # definition, 43 candidate clusters score either 0.000-0.333 (34 of them) or 0.667-0.955 (9),
+    # with nothing between — an empty interval 2.7x wider than the next widest gap in the
+    # distribution, and 0.50 almost exactly at its midpoint. The nine are genuine bipartite
+    # fragments, the `PX4745xx` series and `PV642532` among them, 115-198 codons a side, whose two
+    # halves each land on real homology. So a flung cluster is not "far from the rest of the row",
+    # it is "far from it and not homologous to what is there" — the same shape of claim R1 makes,
+    # where recognition decides and geometry only proposes.
+    fling_min_identity: float = 0.50
+    # Clusters this share of the row or smaller are candidates. The cap is load-bearing rather than
+    # decorative: without it the widest empty interval collapses to about a third of its width and
+    # the two modes stop being separable. A cluster that is most of its own row is not a fling, it
+    # is the row.
+    fling_max_share: float = 0.10
+    # How long a gap run has to be before the residues either side of it are separate clusters.
+    #
+    # **This is the parameter to distrust: 200 is a floor rather than a measured optimum.** Swept on
+    # the approximate measurement this was designed from, 200 put 0.50 inside the empty interval and
+    # 400 left every candidate below 0.50 — safe either way, the latter because the genuine
+    # bipartite halves sit 222-339 columns apart and at 400 stop being counted as outliers at all.
+    # But at 100 the interval moved to (0.533, 0.710), leaving 0.50 *below* it, where a 0.50 gate
+    # would gap clusters belonging to the homologous mode. The pair (200, 0.50) is jointly safe and
+    # (100, 0.50) is not; do not lower this without re-measuring the interval.
+    fling_split_codons: int = 200
     # Typed so no configuration edit can turn it on. `--keeplength` deletes insertion residues,
     # which would break the 1:1 amino-acid-to-codon backtranslate invariant the CDS block rests on.
     # The type is the check; a runtime assertion that argv omits it could never fire.

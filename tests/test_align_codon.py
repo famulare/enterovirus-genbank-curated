@@ -383,3 +383,133 @@ def test_a_row_reduced_to_nothing_is_caught_too() -> None:
     do not become all-gap — they become nothing at all, and that must not ship either."""
     with pytest.raises(ContractError, match="no sequenced CDS"):
         codon.drop_unsequenced_codon_columns({"a": "NNN", "b": "NNN"}, 1)
+
+
+# --- the fling: a cluster parked far from its own row --------------------------------------------
+#
+# `KM486565`'s protein reads `DNNTHSL|QGSTVKD...` and MAFFT put those first seven residues 558
+# columns from the rest of it, on columns whose consensus reads `SDRVMQL`. Ten of the eighteen
+# affected rows are EV-B77 from one submission, so the stretched span reports as a serotype-wide
+# deletion. See `CodonSpec.fling_min_identity` for the measured separation these tests stand on:
+# under this code's own definition, 34 candidate clusters score 0.000-0.333 and 9 score 0.667-0.955,
+# and 0.50 sits almost exactly at the midpoint of that empty interval.
+
+GAP = "-"
+SPLIT = contract.CodonSpec().fling_split_codons
+BODY = "MKLVDE" * 12  # 72 residues, enough that a 7-residue cluster is under fling_max_share
+
+
+def flung_block(tail: str, crowd_tail: str = "ACDEFGH", crowd: int = 20) -> dict[str, str]:
+    """Every row gets the same body and a distant tail; `subject`'s tail is the one that differs."""
+    block = {f"crowd{index}": BODY + GAP * SPLIT + crowd_tail for index in range(crowd)}
+    block["subject"] = BODY + GAP * SPLIT + tail
+    return block
+
+
+def orfs_for(block: dict[str, str]) -> dict[str, str]:
+    return {name: "GCC" * (len(row) - row.count(GAP)) for name, row in block.items()}
+
+
+def test_a_cluster_that_agrees_with_nothing_is_gapped() -> None:
+    block = flung_block("WWWWWWW")
+    orfs = orfs_for(block)
+    kept, trimmed, gapped, columns = codon.gap_flung_clusters(
+        block, orfs, contract.CodonSpec()
+    )
+    assert gapped == {"subject": 7}
+    assert set(kept["subject"][-7:]) == {GAP}
+    assert kept["crowd0"][-7:] == "ACDEFGH"
+    # The ORF is cut in step, which is the invariant `backtranslate` rests on.
+    assert len(trimmed["subject"]) == len(orfs["subject"]) - 21
+    assert columns == 0
+
+
+def test_a_distant_cluster_that_agrees_is_left_alone() -> None:
+    """The negative control that matters: nine real bipartite fragments land far from their own
+    other half and score 0.667-0.955, and gapping them would delete real homologous sequence.
+    Distance proposes; identity decides."""
+    block = flung_block("ACDEFGH")
+    kept, trimmed, gapped, columns = codon.gap_flung_clusters(
+        block, orfs_for(block), contract.CodonSpec()
+    )
+    assert gapped == {}
+    assert kept == block
+    assert columns == 0
+
+
+def test_a_cluster_that_is_most_of_its_row_is_not_a_fling() -> None:
+    """Without the share cap the two modes stop being separable at all — the widest empty interval
+    collapses from (0.333, 0.667) to a third of that. A cluster that is most of its own row is the
+    row, whatever it agrees with."""
+    block = {f"crowd{index}": "MK" + GAP * SPLIT + "ACDEFGH" for index in range(20)}
+    block["subject"] = "MK" + GAP * SPLIT + "WWWWWWW"  # 7 of 9 residues, well over 10%
+    _kept, _trimmed, gapped, _columns = codon.gap_flung_clusters(
+        block, orfs_for(block), contract.CodonSpec()
+    )
+    assert gapped == {}
+
+
+def test_a_cluster_near_its_own_body_is_never_a_candidate() -> None:
+    """An ordinary insertion is not a fling however badly it agrees, because a gate that fired on
+    disagreement alone would just be deleting divergent sequence."""
+    block = {f"crowd{index}": BODY + GAP * 5 + "ACDEFGH" for index in range(20)}
+    block["subject"] = BODY + GAP * 5 + "WWWWWWW"
+    _kept, _trimmed, gapped, _columns = codon.gap_flung_clusters(
+        block, orfs_for(block), contract.CodonSpec()
+    )
+    assert gapped == {}
+
+
+def test_leading_and_trailing_gaps_do_not_split_a_row() -> None:
+    """A row's flanking gaps are where the row is not, not a hole inside it. Treating them as
+    separators would make one contiguous fragment look like a fling of itself."""
+    assert codon._residue_clusters(GAP * 500 + "MKLVDE" + GAP * 500, SPLIT) is None
+    assert codon._residue_clusters("MKLVDE", SPLIT) is None
+    assert codon._residue_clusters(GAP * 500, SPLIT) is None
+
+
+def test_a_row_split_into_two_clusters_is_found() -> None:
+    clusters = codon._residue_clusters("MK" + GAP * SPLIT + "LV", SPLIT)
+    assert clusters == [[0, 1], [SPLIT + 2, SPLIT + 3]]
+
+
+def test_a_column_left_empty_by_gapping_goes_with_it() -> None:
+    """The column existed only to hold residues this filter just removed, so the shipped width must
+    not keep paying for it — the same argument `drop_exemplar_only_columns` makes, and one
+    `drop_unsequenced_codon_columns` deliberately will not make, since to it an unoccupied column is
+    not an unsequenced one."""
+    block = {f"crowd{index}": BODY + GAP * SPLIT + "ACDEFGH" + GAP for index in range(20)}
+    block["subject"] = BODY + GAP * SPLIT + "WWWWWWW" + "W"
+    width = len(block["subject"])
+    kept, _trimmed, gapped, columns = codon.gap_flung_clusters(
+        block, orfs_for(block), contract.CodonSpec()
+    )
+    assert gapped == {"subject": 8}
+    assert columns == 1
+    assert all(len(row) == width - 1 for row in kept.values())
+
+
+def test_the_gapped_block_still_backtranslates() -> None:
+    """The whole point of cutting `orf_nt` in step. `backtranslate` refuses a row whose non-gap
+    residues do not number its codons exactly, so this passing is the invariant holding."""
+    block = flung_block("WWWWWWW")
+    kept, trimmed, _gapped, _columns = codon.gap_flung_clusters(
+        block, orfs_for(block), contract.CodonSpec()
+    )
+    width_aa = len(next(iter(kept.values())))
+    aligned = codon.backtranslate(kept, trimmed, width_aa)
+    assert all(len(row) == 3 * width_aa for row in aligned.values())
+    assert aligned["subject"].endswith("---" * 7)
+
+
+def test_a_cluster_alone_in_every_column_it_occupies_is_gapped() -> None:
+    """There is nothing there to agree with, and the reason it is being examined is that it sits
+    hundreds of columns from its own row. Scoring it 1.000 for being unopposed would let a row be
+    spared by the very error that put it there."""
+    block = {f"crowd{index}": BODY + GAP * SPLIT + GAP * 7 for index in range(20)}
+    block["subject"] = BODY + GAP * SPLIT + "WWWWWWW"
+    _kept, _trimmed, gapped, columns = codon.gap_flung_clusters(
+        block, orfs_for(block), contract.CodonSpec()
+    )
+    assert gapped == {"subject": 7}
+    assert columns == 7

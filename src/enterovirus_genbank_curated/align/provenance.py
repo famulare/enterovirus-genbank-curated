@@ -182,6 +182,14 @@ def build_provenance(
                 "codons_dropped_after_removal": codon_block.exemplar_only_codons_dropped,
                 "unsequenced_codons_dropped": codon_block.unsequenced_codons_dropped,
             }
+            # Named per record rather than totalled. This is the one repair that removes residues a
+            # deposit really has from the block they were placed in, so which rows lost what is the
+            # part a reader needs in order to disagree with it.
+            document["flung_clusters_gapped"] = {
+                "rows": codon_block.flung_codons_gapped,
+                "codons": sum(codon_block.flung_codons_gapped.values()),
+                "columns_dropped_after_gapping": codon_block.flung_only_columns_dropped,
+            }
     if segmentations is not None:
         document["segmentation"] = segmentation_audit(
             segmentations, stitched.accessions, homology_pool
