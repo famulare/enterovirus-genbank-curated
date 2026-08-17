@@ -78,6 +78,30 @@ PARAMETER_DEPARTURES = {
         "731-codon run and had 537 of 1,486 residues placed 821 columns from the rest. The count "
         "survives per record in the coverage sidecar's unsequenced_nt."
     ),
+    "boundary_crossing_amplicons_are_cut_at_the_boundary": (
+        "An inferred ORF whose 5' end reads as 5'UTR to the corpus's own 5'NCR pool, and not as "
+        "protein to its protein pool, is cut there: the head joins the 5'NCR block and the tail "
+        "stays the ORF. OR538737 is one 897 nt deposit that reads stop-free in a single frame end "
+        "to end, so all of it arrived as one candidate ORF, and its 504 nt of 5'UTR held the "
+        "first 462 columns of POLIO_unified's CDS open with no other row in any of them. Where to "
+        "cut has no free parameter; whether to cut reuses four thresholds that already meant "
+        "this, so the rule adds no CodonSpec field. Validated by splicing OR538737's own head "
+        "onto 600 annotated polyproteins, where the cut lands on the known join 600 times out of "
+        "600, against 0 of 300 intact polyproteins cut. Two records are affected."
+    ),
+    "flung_clusters_are_gapped": (
+        "A cluster of a row's residues separated from the rest of it by 200 or more gap columns, "
+        "making up a tenth of the row or less, and disagreeing with the consensus of the columns "
+        "it landed in, is gapped. KM486565's first seven residues sat 558 columns from the rest of "
+        "it where the consensus disagreed 7-for-7, and because ten of the affected rows are "
+        "EV-B77 from one submission the stretched span read as a serotype-wide deletion. Distance "
+        "only selects what to examine: 43 candidates score either 0.000-0.333 or 0.667-0.955 "
+        "against that consensus with nothing between, and the nine above are genuine bipartite "
+        "fragments whose halves each land on real homology. Which rows lost how many codons is "
+        "listed individually under flung_clusters_gapped, and each row's own count is in the "
+        "coverage sidecar's unplaced_nt, because this is the only repair that removes residues a "
+        "deposit really has."
+    ),
 }
 
 

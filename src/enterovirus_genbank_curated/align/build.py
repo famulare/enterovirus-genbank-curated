@@ -187,7 +187,8 @@ def build_one(
     )
 
     stitched = stitch.stitch(
-        population, segmentations, cds_block, five_prime, three_prime, cds_rf=cds_rf
+        population, segmentations, cds_block, five_prime, three_prime, cds_rf=cds_rf,
+        flung_codons=getattr(cds_block, "flung_codons_gapped", None),
     )
     paths = export_alignment.write_alignment(output_dir, spec, stitched)
     seconds = time.monotonic() - started

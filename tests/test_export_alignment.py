@@ -19,13 +19,15 @@ SPEC = contract.AlignmentSpec(
 
 
 def make_coverage_row(
-    accession: str, block: str, present: bool = True, unsequenced_nt: int = 0
+    accession: str, block: str, present: bool = True, unsequenced_nt: int = 0,
+    unplaced_nt: int = 0,
 ) -> CoverageRow:
     return CoverageRow(
         accession=accession, version=f"{accession}.1", tier="backbone", family="PV",
         virus_type="PV1", block=block, present=present, source_nt=10, block_nt=10,
         absence_reason=None if present else "no_cds_untranslatable",
         unsequenced_nt=unsequenced_nt,
+        unplaced_nt=unplaced_nt,
     )
 
 
@@ -147,6 +149,33 @@ def test_render_coverage_tsv_carries_the_dropped_assembly_gap() -> None:
     )
     fields = export_alignment.render_coverage_tsv(stitched).splitlines()[1].split("\t")
     assert fields[10] == "2187"
+
+
+def test_render_coverage_tsv_carries_the_gapped_flung_cluster() -> None:
+    """`unplaced_nt` is the same guard one step on, and it needs its own column because
+    `unsequenced_nt` makes the opposite claim: these nucleotides *were* sequenced and *were* placed,
+    and were removed because the placement could not be believed."""
+    coverage = (make_coverage_row("A", "cds", present=True, unplaced_nt=21),)
+    stitched = StitchedAlignment(
+        accessions=("A",), width_5ncr=0, width_cds=3, width_3ncr=0, width_nt=3,
+        aligned_nt={"A": "ACG"}, rf="ACG", ss_cons="...", coverage=coverage,
+    )
+    fields = export_alignment.render_coverage_tsv(stitched).splitlines()[1].split("\t")
+    assert fields[10] == "0"
+    assert fields[11] == "21"
+
+
+def test_the_coverage_header_names_every_field_it_writes() -> None:
+    """A column added to `CoverageRow` and forgotten in one of the two places would shift every
+    field after it and misname the rest, which no other test in this file would notice."""
+    coverage = (make_coverage_row("A", "cds", present=True),)
+    stitched = StitchedAlignment(
+        accessions=("A",), width_5ncr=0, width_cds=3, width_3ncr=0, width_nt=3,
+        aligned_nt={"A": "ACG"}, rf="ACG", ss_cons="...", coverage=coverage,
+    )
+    lines = export_alignment.render_coverage_tsv(stitched).splitlines()
+    assert lines[0].split("\t") == list(export_alignment.COVERAGE_COLUMNS)
+    assert len(lines[1].split("\t")) == len(export_alignment.COVERAGE_COLUMNS)
 
 
 # --- write_alignment -----------------------------------------------------------------------------

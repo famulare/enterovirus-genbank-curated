@@ -21,6 +21,7 @@ character.
 from __future__ import annotations
 
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -80,6 +81,16 @@ class CoverageRow:
     # like an ordinary deletion. Same principle as `absence_reason`: the alignment characters stay
     # honest and the sidecar carries the distinction.
     unsequenced_nt: int = 0
+    # CDS block only: nucleotides this record really has, and which MAFFT really placed, that
+    # `codon.gap_flung_clusters` gapped because they landed hundreds of columns from the rest of the
+    # row on nothing homologous. The same principle as `unsequenced_nt` one step further on, and it
+    # has to be a separate column because the two mean different things — "not sequenced" against
+    # "sequenced, and we could not honestly say where it goes". `source_nt` does *not* exclude
+    # these, since the ORF that entered the block still had them, so without this column a gapped
+    # row would read as a record with an ordinary deletion. That is the exact artifact this whole
+    # set of repairs exists to remove, and it would be self-defeating to introduce one while
+    # removing four.
+    unplaced_nt: int = 0
 
 
 @dataclass(frozen=True)
@@ -140,7 +151,7 @@ def _ncr_absence_reason(
 
 def _coverage_row(
     record: AlignedRecord, block: str, row: str | None, width: int, source_nt: int,
-    absence_reason: str | None, unsequenced_nt: int = 0,
+    absence_reason: str | None, unsequenced_nt: int = 0, unplaced_nt: int = 0,
 ) -> CoverageRow:
     present = row is not None
     return CoverageRow(
@@ -155,6 +166,7 @@ def _coverage_row(
         block_nt=width,
         absence_reason=None if present else absence_reason,
         unsequenced_nt=unsequenced_nt,
+        unplaced_nt=unplaced_nt,
     )
 
 
@@ -166,8 +178,15 @@ def stitch(
     three_prime: NcrBlock,
     *,
     cds_rf: str | None = None,
+    flung_codons: Mapping[str, int] | None = None,
 ) -> StitchedAlignment:
     """Assemble one row per population record.
+
+    `flung_codons` is `{accession: codons gapped}` from `codon.gap_flung_clusters`, passed
+    separately for the same reason `cds_rf` is: it belongs to one stack rather than to the
+    `CdsBlock` protocol both stacks satisfy. The anchored stack never runs that filter, so it passes
+    nothing and every `unplaced_nt` there is zero — a fact about the stack, not a default standing
+    in for one.
 
     `cds_rf` selects the whole `#=GC RF` convention, because the two stacks differ consistently
     across all three blocks rather than only over the CDS:
@@ -229,6 +248,7 @@ def stitch(
                 record, BLOCK_CDS, row_cds, width_cds, len(segmentation.orf_nt),
                 None if row_cds is not None else _cds_absence_reason(segmentation),
                 unsequenced_nt=segmentation.unsequenced_nt,
+                unplaced_nt=3 * (flung_codons or {}).get(record.accession, 0),
             )
         )
         coverage.append(

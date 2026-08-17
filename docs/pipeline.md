@@ -141,6 +141,42 @@ Every threshold these introduce sits in a measured gap rather than at a tuned va
 measurements are in `CodonSpec`'s own comments, and each repair is named in the artifact's
 `parameter_departures`.
 
+### Two more, 2026-08-17
+
+Investigating what the first four left behind found two defects the first four could not express,
+and both took the same shape as repair 1: geometry proposes, homology decides.
+
+5. **An amplicon spanning the 5'UTR/capsid boundary is cut at the boundary** (`segment._boundary_cut`).
+   `OR538737` is one 897 nt deposit that reads stop-free in a single frame end to end, so all of it
+   arrived as one candidate ORF and 504 nt of 5'UTR went into the CDS block with the 393 nt of
+   capsid, holding `POLIO_unified`'s first 462 columns open with no other row in any of them.
+   Repair 2's choice was all-coding or all-non-coding, and both are wrong about a record that is
+   genuinely half of each. The head now goes to the 5'NCR block and the tail stays the ORF. Where to
+   cut has no free parameter; whether to cut reuses four thresholds that already meant exactly this,
+   so this repair adds no field to `CodonSpec`. It fires on two records — the second, `OM885400`, was
+   the largest private-column owner in `EV_unified`.
+6. **A cluster of residues MAFFT parked far from its own row, with nothing homologous where it
+   landed, is gapped** (`codon.gap_flung_clusters`). `KM486565`'s first seven residues sat 558
+   columns from the rest of it where the consensus disagreed 7-for-7, and because ten of the affected
+   rows are EV-B77 from one submission the stretched span read as a serotype-wide deletion. Being far
+   away is only what makes a cluster worth examining: 43 candidates score either 0.000-0.333 or
+   0.667-0.955 with nothing between, and the nine above are genuine bipartite fragments whose halves
+   each land on real homology. Which rows lost which residues is named individually in provenance,
+   and each row's own count is in the coverage sidecar's new `unplaced_nt` column, because this is
+   the only repair that removes residues a deposit really has. `unplaced_nt` needs its own column
+   rather than sharing `unsequenced_nt` because it makes the opposite claim about the same kind of
+   gap: these nucleotides *were* sequenced and *were* placed, and were removed because the placement
+   could not be believed. Without it a gapped row would read as a record with an ordinary deletion —
+   the very artifact these six repairs exist to remove.
+
+One residual is deliberately left alone. `OR538735` holds 216 private nucleotides in
+`NPEV_unified` because it carries two internal frameshifts — frame +1 reads as protein exactly where
+its declared frame does not. That is a property of the deposit, not of this pipeline, and it is not
+gateable: 24 records show the pattern, their shares spread continuously with no empty interval, and
+ten of them have a *higher* shifted share than `OR538735` while placing perfectly well. Any threshold
+that caught it would sweep in the other twenty-three on a tuned number, so it is recorded as a pin in
+`tests/test_alignment_placement.py` rather than repaired.
+
 ## Public commands
 
 ```bash

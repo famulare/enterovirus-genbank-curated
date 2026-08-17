@@ -35,7 +35,7 @@ GC_SS_CONS_LABEL = "#=GC SS_cons"
 
 COVERAGE_COLUMNS = (
     "accession", "version", "tier", "family", "virus_type", "block", "present", "source_nt",
-    "block_nt", "absence_reason", "unsequenced_nt",
+    "block_nt", "absence_reason", "unsequenced_nt", "unplaced_nt",
 )
 
 STOCKHOLM_SUFFIX = ".sto.gz"
@@ -104,6 +104,7 @@ def render_coverage_tsv(stitched: StitchedAlignment) -> str:
                     str(row.block_nt),
                     row.absence_reason or "",
                     str(row.unsequenced_nt),
+                    str(row.unplaced_nt),
                 ]
             )
         )

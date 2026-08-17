@@ -180,6 +180,38 @@ def test_a_dropped_assembly_gap_is_reported_on_the_cds_coverage_row() -> None:
     assert by_block["3ncr"].unsequenced_nt == 0
 
 
+def test_a_gapped_flung_cluster_is_reported_on_the_cds_coverage_row() -> None:
+    """Counted in nucleotides, from a count `codon.gap_flung_clusters` keeps in codons, and only on
+    the CDS row — the flung-cluster filter never touches an NCR block."""
+    records = [make_record("A")]
+    population = make_population(records)
+    segmentations = {"A": make_segmentation("A", ncr5="CC", ncr3="TTT", orf_nt="ATGGCC")}
+    five = make_ncr_block("5p", {"A": "CCCC"}, 4)
+    three = make_ncr_block("3p", {"A": "TTT"}, 3)
+    codon_alignment = make_codon_alignment({"A": "ATGGCC"}, width_aa=2)
+
+    result = stitch.stitch(
+        population, segmentations, codon_alignment, five, three, flung_codons={"A": 7}
+    )
+    by_block = {row.block: row for row in result.coverage}
+    assert by_block["cds"].unplaced_nt == 21
+    assert by_block["5ncr"].unplaced_nt == 0
+    assert by_block["3ncr"].unplaced_nt == 0
+
+
+def test_a_stack_that_never_flings_reports_zero_rather_than_nothing() -> None:
+    """The anchored stack does not run the filter, so it passes no counts. That has to read as a
+    measured zero on every row, not as an absent column."""
+    records = [make_record("A")]
+    population = make_population(records)
+    segmentations = {"A": make_segmentation("A", ncr5="CC", ncr3="TTT", orf_nt="ATGGCC")}
+    result = stitch.stitch(
+        population, segmentations, make_codon_alignment({"A": "ATGGCC"}, width_aa=2),
+        make_ncr_block("5p", {"A": "CCCC"}, 4), make_ncr_block("3p", {"A": "TTT"}, 3),
+    )
+    assert all(row.unplaced_nt == 0 for row in result.coverage)
+
+
 def test_annotated_but_excluded_fragment_reports_the_classifier_reason() -> None:
     """method == "annotated" and the fragment is real, but the record isn't in five_prime's
     aligned_nt (e.g. structural.py excluded it as oversized) -- the reason must come from the
