@@ -116,6 +116,16 @@ def verify_seeds(repository_root: Path) -> int:
                 f"match_columns={entry['match_columns']}"
             )
 
+    # The clade exemplars are hashed like everything else above, but a hash only says the bytes did
+    # not move. Loading them is the content check — it re-translates each polyprotein CDS and holds
+    # it against the length `clade_exemplars.tsv` declares, which is the same shape of check the
+    # `CLEN` cross-check above performs for a covariance model. Imported locally because
+    # `align.exemplars` imports `SEED_DIR` from here.
+    from enterovirus_genbank_curated.align.exemplars import load_clade_exemplars
+
+    if not load_clade_exemplars(repository_root):
+        raise ContractError(f"{seed_dir} declares no clade exemplars")
+
     if checked == 0:
         raise ContractError(f"{HASH_MANIFEST} declared no hashes to recompute")
     return checked

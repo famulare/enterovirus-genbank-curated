@@ -110,6 +110,37 @@ promoted into `final/alignments/`. The previous state — five artifacts, two pa
 `EV_unified` at all — is what made the promotion worth doing rather than a rename. Each artifact's
 `.provenance.json` records its own parameters, row set digest and tool identity.
 
+### The indel repairs, 2026-08-16
+
+An audit of `EV_unified`'s and `NPEV_unified`'s indel structure by serotype found that **92% of the
+subtype-level indel signal in EV, by codon, was artifact** — 338 signatures over 4,882 codons, of
+which 134 over 399 codons survive once the records producing them are set aside. NPEV was 96%. Four
+repairs, all of them in the segmentation and seeding stages rather than in MAFFT's parameters:
+
+1. **The inferred reading frame is chosen by homology, not by length** (`align/segment.py`). The
+   6-frame fallback took the longest stop-free run, which is a coin flip about whether the run is
+   protein; it lost the flip for 51 `EV_unified` records and 20 `NPEV_unified` ones, including the
+   whole `OR538731`-`OR538740` PV3 cluster, whose seven rows alone held open ~155 of `EV_unified`'s
+   319 low-occupancy codon columns.
+2. **A record no frame of which reads as protein leaves the CDS block** and offers its sequence to
+   the 5'NCR block instead. 1,351 records take this route; 99.9% of the ones that map to a reference
+   at all are 5'UTR amplicons, which were previously given a spurious ORF in the CDS block *and*
+   refused by the NCR blocks. A record neither pool recognises — 116, mostly tiny patent deposits —
+   places nothing, which is what `method="none"` now means.
+3. **Four RefSeq rhinovirus polyproteins join the seed** and are removed before backtranslation
+   (`align/exemplars.py`, `registry/alignment_seeds/clade_exemplars.fa`). No RV-A or RV-B record in
+   this corpus can reach `seed_min_aa`, so 456 rows were aligned against a seed holding no member of
+   their own species. A type with no seed exemplar had residues exiled more than 200 codon columns
+   from its own block at 8.4%, against 0.14% for a type that has one.
+4. **A padded assembly gap leaves the ORF before alignment**. A run of 30 or more wholly-ambiguous
+   codons is dropped; 50 records are affected, 39,528 nt in total. The count survives per record in
+   the coverage sidecar's new `unsequenced_nt` column, which is what keeps "gap because unsequenced"
+   distinguishable from "gap because deleted".
+
+Every threshold these introduce sits in a measured gap rather than at a tuned value; the
+measurements are in `CodonSpec`'s own comments, and each repair is named in the artifact's
+`parameter_departures`.
+
 ## Public commands
 
 ```bash

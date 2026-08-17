@@ -161,7 +161,7 @@ def _wellformed(
             cov.append("\t".join([
                 accession, record.version, record.tier, record.family, record.type_sort_key,
                 block, "TRUE" if present else "FALSE", "0", str(width),
-                "" if present else "no_cds_overlap",
+                "" if present else "no_cds_overlap", "0",
             ]))
     return sto, fasta, "\n".join(cov) + "\n"
 

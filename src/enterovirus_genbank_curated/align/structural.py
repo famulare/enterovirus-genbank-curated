@@ -7,11 +7,17 @@ the CM itself is a committed input-of-record (`registry/alignment_seeds/`, verif
 `align.seeds`), not rebuilt here — the `mafft-xinsi`/`RNAalifold`/`cmbuild` seed-and-build path
 those scripts also contain is a separate, gated, not-expected-to-run prerequisite.
 
-Only records whose segmentation succeeded via the `"annotated"` method carry NCR content at all —
-`align.segment`'s inferred-ORF fallback has no NCR at all ("boundaries not trustworthy", its own
-module docstring). Those records, and any annotated record whose NCR fragment falls outside the
-declared population window (see `contract.NcrSideSpec`), get no block here; `align.stitch` pads
-them with an all-gap block of the same width, exactly as upstream's own stitch step does.
+Two of `align.segment`'s three methods carry NCR content. An `"annotated"` record carries both
+sides, cut at its own CDS bounds. A `"noncoding"` record carries its whole sequence on the 5' side
+and nothing on the 3': it has no reading frame at all, so — unlike an `"inferred"` record, which
+still has no NCR because *its* frame's boundaries are not trustworthy — there are no boundaries to
+distrust, and 1,261 of the 1,262 such records that map to a reference at all are 5'UTR amplicons.
+The 3' side is not offered them because the 3'UTR is ~70 nt against the 5'UTR's ~740, so a
+several-hundred-nucleotide non-coding enterovirus fragment is a 5'UTR product by construction.
+
+Everything else — an inferred record, or an annotated or noncoding one whose fragment falls outside
+the declared population window (see `contract.NcrSideSpec`) — gets no block here; `align.stitch`
+pads it with an all-gap block of the same width, exactly as upstream's own stitch step does.
 """
 
 from __future__ import annotations
@@ -80,14 +86,20 @@ def _ncr_population(
     side: str,
     spec: contract.NcrSideSpec,
 ) -> tuple[dict[str, str], tuple[str, ...]]:
-    """{accession: ncr sequence}, over annotated records in `accessions` whose fragment on this
-    side is non-empty and within `[pop_min_nt, pop_max_nt]`. Also returns the accessions excluded
-    for being oversized — see `NcrSideSpec`'s docstring for what that means."""
+    """{accession: ncr sequence}, over records in `accessions` that carry a fragment on this side
+    at all (see the module docstring for which methods those are), whose fragment is non-empty and
+    within `[pop_min_nt, pop_max_nt]`. Also returns the accessions excluded for being oversized —
+    see `NcrSideSpec`'s docstring for what that means.
+
+    A `noncoding` record's `ncr3` is the empty string, so the membership test below needs no side
+    special-case: `classify_fragment` returns `empty_fragment` for it on the 3' side, which is the
+    same answer, reached by the same predicate, that an annotated record with no 3' tail gets.
+    """
     population: dict[str, str] = {}
     excluded: list[str] = []
     for accession in accessions:
         segmentation = segmentations[accession]
-        if segmentation.method != "annotated":
+        if segmentation.method not in ("annotated", "noncoding"):
             continue
         sequence = segmentation.ncr5 if side == "5p" else segmentation.ncr3
         classification = classify_fragment(sequence, spec)

@@ -40,7 +40,8 @@ def make_segmentation(accession: str, aa: str, method: str = "annotated") -> Seg
     orf_nt = "ATG" * len(aa) if aa else ""
     return Segmentation(
         accession=accession, method=method, strand="+", ncr5="", ncr3="", orf_nt=orf_nt, aa=aa,
-        n_internal_stops=0, absence_reason=None if method != "none" else "no_cds_untranslatable",
+        n_internal_stops=0,
+        absence_reason=None if method != "noncoding" else "no_cds_untranslatable",
     )
 
 
@@ -58,17 +59,17 @@ def make_population(
 # --- _aa_by_tier -------------------------------------------------------------------------------
 
 
-def test_aa_by_tier_splits_backbone_and_addon_and_drops_method_none() -> None:
+def test_aa_by_tier_splits_backbone_and_addon_and_drops_noncoding() -> None:
     records = [
         make_record("BB1", "PV1", "backbone"),
         make_record("AD1", "PV1", "addon"),
-        make_record("NONE1", "PV1", "backbone"),
+        make_record("NONCODING1", "PV1", "backbone"),
     ]
     population = make_population(records)
     segmentations = {
         "BB1": make_segmentation("BB1", "M" * 15),
         "AD1": make_segmentation("AD1", "M" * 5),
-        "NONE1": make_segmentation("NONE1", "", method="none"),
+        "NONCODING1": make_segmentation("NONCODING1", "", method="noncoding"),
     }
     backbone, addon = codon._aa_by_tier(population, segmentations)
     assert backbone == {"BB1": "M" * 15}
@@ -253,7 +254,7 @@ def test_build_codon_block_seed_only_runs_end_to_end(repository_root: Path) -> N
         "SEEDB": make_segmentation("SEEDB", aa_b, _ORF_B[:-3]),
     }
     result = codon.build_codon_block(
-        population, segmentations, toolchain, scratch, guard, threads=1, timeout_s=60,
+        population, segmentations, toolchain, scratch, guard, ROOT, threads=1, timeout_s=120,
     )
     assert set(result.aligned_nt) == {"SEEDA", "SEEDB"}
     assert set(result.seed) == {"SEEDA", "SEEDB"}
@@ -294,7 +295,7 @@ def test_build_codon_block_runs_all_three_stages(repository_root: Path) -> None:
         "ADDON": make_segmentation("ADDON", aa_fragment, fragment_nt),
     }
     result = codon.build_codon_block(
-        population, segmentations, toolchain, scratch, guard, threads=1, timeout_s=60,
+        population, segmentations, toolchain, scratch, guard, ROOT, threads=1, timeout_s=120,
     )
     assert result.seed == ("SEED",)
     assert result.backbone_rest == ("REST",)
@@ -321,7 +322,7 @@ def test_build_codon_block_refuses_when_no_record_reaches_the_seed_floor(
     population = make_population(records, spec)
     segmentations = {"BB1": make_segmentation("BB1", "M" * 20, "ATG" * 20)}
     codon.build_codon_block(
-        population, segmentations, toolchain, scratch, guard, threads=1, timeout_s=60,
+        population, segmentations, toolchain, scratch, guard, ROOT, threads=1, timeout_s=120,
     )
     """
     assert_refused(run_real(repository_root, body), "no exemplar to seed a backbone from")

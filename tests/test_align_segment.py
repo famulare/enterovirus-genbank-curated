@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gzip
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -193,51 +194,157 @@ def _repeat_codon(codon: str, n: int) -> str:
     return codon * n
 
 
-def test_longest_orf_keeps_the_longest_stop_free_segment_in_any_frame() -> None:
-    # frame0 "TAA ATG GCC TAA GCC" splits into segments "MA"/"A" (len 2). frame1 "AAA TGG CCT AAG"
-    # is stop-free, len 4 ("KWPK"). frame2 "AAT GGC CTA AGC" is also stop-free, len 4 ("NGLS") but
-    # found second, so frame1's equal-length segment wins the strict `>` tie-break.
-    oriented = "TAAATGGCCTAAGCC"
-    assert sg._longest_orf(oriented) == (4, "AAATGGCCTAAG", "KWPK")
+# The homology pool is the reference for "reads as enterovirus protein", so a unit test has to be
+# able to state one. `infer_pool_min_aa` drops to 10 because these peptides are tens of residues,
+# not the 600+ a real polyprotein carries; every other parameter stays at its declared value.
+POOL_SPEC = replace(SPEC, infer_pool_min_aa=10)
+
+# One codon per amino acid, so a peptide round-trips to nucleotides deterministically.
+_BACK_TABLE = {}
+for _codon, _residue in sorted(sg._CODON_TABLE.items()):
+    _BACK_TABLE.setdefault(_residue, _codon)
 
 
-def test_inferred_orf_picks_the_longer_of_the_two_orientations() -> None:
-    """`_inferred_orf`'s only job beyond scanning each orientation with `_longest_orf` is to keep
-    whichever side is longer and apply the floor/ceiling gates. Which of 6 frame/strand
-    combinations reads stop-free longest on an organic-looking sequence is genuinely not
-    predictable by hand (measured, not assumed: an earlier version of this test guessed wrong) —
-    so derive the expected winner from `_longest_orf` itself, independently verified above,
-    instead of hardcoding a guessed strand."""
-    seq = "ATG" + "AAAGAAGATCTGTCTGTTATTCCACGTACC" * 4 + "TAA"
-    forward_best = sg._longest_orf(seq)
-    reverse_best = sg._longest_orf(sg._revcomp(seq))
-    assert forward_best is not None
-    assert reverse_best is not None
+def back_translate(peptide: str) -> str:
+    return "".join(_BACK_TABLE[residue] for residue in peptide)
 
-    result = sg._inferred_orf(seq, SPEC)
+
+def pool_of(*proteins: str, spec: contract.CodonSpec = POOL_SPEC) -> sg.HomologyPool:
+    segmentations = {
+        f"P{index}": sg.Segmentation(
+            accession=f"P{index}", method="annotated", strand="+", ncr5="", ncr3="",
+            orf_nt=back_translate(protein), aa=protein, n_internal_stops=0, absence_reason=None,
+        )
+        for index, protein in enumerate(proteins)
+    }
+    return sg.build_homology_pool(segmentations, spec)
+
+
+EMPTY = sg.EMPTY_POOL
+
+# Two peptides over disjoint residue alphabets, so neither shares a single 6-mer with the other
+# and a pool holding one of them recognises exactly one of them.
+SHORT_PEPTIDE = "MKKLLVVDDEEKKLLVVDDEEKKL"  # 24 aa, over {M,K,L,V,D,E}
+LONG_PEPTIDE = "MWWYYAACCTTGGWWYYAACCTTGGWWYYAACCTTGGWWYYAA"  # 43 aa, over {M,W,Y,A,C,T,G}
+TWO_ORF_SEQUENCE = (
+    back_translate(SHORT_PEPTIDE) + "TAA" + back_translate(LONG_PEPTIDE) + "TAA"
+)
+
+
+# --- _candidate_orfs: every run, not just the longest --------------------------------------------
+
+
+def test_candidate_orfs_enumerates_every_stop_free_run_not_only_the_longest() -> None:
+    """The old `_longest_orf` kept one run per strand and discarded the rest before anything could
+    score them, which is exactly how a wrong frame could win: the true frame's run was already
+    gone. Both runs of the forward frame have to survive enumeration for homology to have anything
+    to choose between."""
+    candidates = sg._candidate_orfs(TWO_ORF_SEQUENCE, SPEC)
+    forward_frame0 = {c.aa for c in candidates if c.strand == "+" and c.frame == 0}
+    assert SHORT_PEPTIDE in forward_frame0
+    assert LONG_PEPTIDE in forward_frame0
+
+
+def test_candidate_orfs_applies_the_length_floor_and_the_x_ceiling() -> None:
+    below_floor = "ATG" + _repeat_codon("GCC", 5) + "TAA"  # 6 aa, under infer_min_aa=20
+    assert sg._candidate_orfs(below_floor, SPEC) == []
+    # 30 residues, half of them X from ambiguity codes -> over infer_max_x_fraction=0.4.
+    x_heavy = "ATG" + _repeat_codon("GCC", 10) + _repeat_codon("NNN", 15) + "GCC" * 4 + "TAA"
+    assert all(
+        candidate.aa.count("X") / len(candidate.aa) <= SPEC.infer_max_x_fraction
+        for candidate in sg._candidate_orfs(x_heavy, SPEC)
+    )
+
+
+# --- _inferred_orf: homology decides, length only breaks its ties --------------------------------
+
+
+def test_inferred_orf_prefers_the_homologous_frame_over_the_longer_one() -> None:
+    """The whole repair, in one assertion: the same sequence, two pools, two answers. With the
+    short peptide in the pool the short run wins despite being 19 residues shorter, which the
+    longest-run rule could never do."""
+    result = sg._inferred_orf(TWO_ORF_SEQUENCE, SPEC, pool_of(SHORT_PEPTIDE))
     assert result is not None
-    orf_nt, aa, strand = result
+    assert result[1] == SHORT_PEPTIDE
 
-    winner = forward_best if forward_best[0] >= reverse_best[0] else reverse_best
-    assert strand == ("+" if forward_best[0] >= reverse_best[0] else "-")
-    assert orf_nt == winner[1]
-    assert aa == winner[2]
-    assert len(aa) >= SPEC.infer_min_aa
+    result = sg._inferred_orf(TWO_ORF_SEQUENCE, SPEC, pool_of(LONG_PEPTIDE))
+    assert result is not None
+    assert result[1] == LONG_PEPTIDE
 
 
-def test_inferred_orf_none_when_too_short() -> None:
-    seq = "ATG" + _repeat_codon("GCC", 5) + "TAA"  # 6 aa, below infer_min_aa=20
-    assert sg._inferred_orf(seq, SPEC) is None
+def test_inferred_orf_falls_back_to_length_when_nothing_is_homologous() -> None:
+    """An empty pool scores every candidate 0.0, so the length tie-break decides — the old rule,
+    now reachable only when there is genuinely no evidence. The returned homology is what
+    `segment_one` reads to call the record `noncoding`."""
+    result = sg._inferred_orf(TWO_ORF_SEQUENCE, SPEC, EMPTY)
+    assert result is not None
+    orf_nt, aa, strand, homology = result
+    assert homology == 0.0
+    assert len(aa) >= max(len(SHORT_PEPTIDE), len(LONG_PEPTIDE))
+    assert orf_nt in (TWO_ORF_SEQUENCE if strand == "+" else sg._revcomp(TWO_ORF_SEQUENCE))
 
 
-def test_inferred_orf_none_when_too_x_heavy() -> None:
-    # 30 aa total, more than 40% translate to X (ambiguity codes).
-    seq = "ATG" + _repeat_codon("GCC", 10) + _repeat_codon("NNN", 15) + "GCC" * 5 + "TAA"
-    assert sg._inferred_orf(seq, SPEC) is None
+def test_inferred_orf_none_when_no_candidate_clears_the_floor() -> None:
+    assert sg._inferred_orf("ATG" + _repeat_codon("GCC", 5) + "TAA", SPEC, EMPTY) is None
 
 
 def test_inferred_orf_none_for_a_sequence_with_no_translatable_content() -> None:
-    assert sg._inferred_orf("N" * 30, SPEC) is None
+    assert sg._inferred_orf("N" * 30, SPEC, EMPTY) is None
+
+
+# --- _drop_ambiguous_runs: a padded assembly gap is not sequence ---------------------------------
+
+
+def test_drop_ambiguous_runs_removes_a_long_run_and_reports_the_nucleotides() -> None:
+    spec = replace(SPEC, drop_ambiguous_run_aa=5)
+    head, tail = "GCC" * 6, "TTT" * 6
+    orf_nt = head + "NNN" * 8 + tail
+    aa = sg.translate(orf_nt)
+    kept_nt, kept_aa, dropped = sg._drop_ambiguous_runs(orf_nt, aa, spec)
+    assert kept_nt == head + tail
+    assert kept_aa == "A" * 6 + "F" * 6
+    assert dropped == 24
+    assert len(kept_aa) * 3 == len(kept_nt)
+
+
+def test_drop_ambiguous_runs_leaves_a_run_under_the_floor_alone() -> None:
+    spec = replace(SPEC, drop_ambiguous_run_aa=5)
+    orf_nt = "GCC" * 6 + "NNN" * 4 + "TTT" * 6
+    aa = sg.translate(orf_nt)
+    assert sg._drop_ambiguous_runs(orf_nt, aa, spec) == (orf_nt, aa, 0)
+
+
+def test_drop_ambiguous_runs_reads_nucleotides_not_the_masked_stop_codon() -> None:
+    """`_finish` masks an accepted internal stop to `X` too, and a stop codon is sequence. The
+    predicate is over the bases, so a run of stops is never mistaken for a run of padding."""
+    spec = replace(SPEC, drop_ambiguous_run_aa=3)
+    orf_nt = "GCC" * 3 + "TAA" * 4 + "TTT" * 3
+    aa = sg.translate(orf_nt).replace("*", "X")
+    assert sg._drop_ambiguous_runs(orf_nt, aa, spec) == (orf_nt, aa, 0)
+
+
+# --- _oriented_noncoding -------------------------------------------------------------------------
+
+
+def test_oriented_noncoding_reverse_complements_when_the_ncr_pool_says_so() -> None:
+    ncr5 = "ACGTTGCAAGGTCCATTGACGTACGTTACGGATCCATTAGGCA"
+    pool = sg.build_homology_pool(
+        {
+            "P": sg.Segmentation(
+                accession="P", method="annotated", strand="+", ncr5=ncr5, ncr3="",
+                orf_nt="", aa="", n_internal_stops=0, absence_reason=None,
+            )
+        },
+        POOL_SPEC,
+    )
+    oriented, strand = sg._oriented_noncoding(sg._revcomp(ncr5), pool)
+    assert (oriented, strand) == (ncr5, "-")
+    oriented, strand = sg._oriented_noncoding(ncr5, pool)
+    assert (oriented, strand) == (ncr5, "+")
+
+
+def test_oriented_noncoding_keeps_the_deposit_as_it_stands_on_a_tie() -> None:
+    assert sg._oriented_noncoding("ACGTACGTACGT", EMPTY) == ("ACGTACGTACGT", "+")
 
 
 # --- segment_one: the whole per-record decision tree ----------------------------------------------
@@ -250,51 +357,135 @@ def test_segment_one_annotated_when_the_cds_passes_the_gate() -> None:
     features = [{"feature_id": "f1", "feature_ordinal": "1"}]
     parts = {"f1": [part(1, cds_start, cds_end, "+")]}
     codon_starts = {"f1": "1"}
-    result = sg.segment_one("acc", seq, "acc.1", {"acc.1": features}, parts, codon_starts, SPEC)
+    result = sg.segment_one(
+        "acc", seq, "acc.1", {"acc.1": features}, parts, codon_starts, SPEC, EMPTY
+    )
     assert result.method == "annotated"
     assert result.aa == "M" + "A" * 20
     assert result.absence_reason is None
+    assert result.unsequenced_nt == 0
+
+
+def test_segment_one_annotated_drops_a_padded_assembly_gap_from_the_orf() -> None:
+    spec = replace(SPEC, drop_ambiguous_run_aa=5)
+    coding = "ATG" + "GCC" * 10 + "NNN" * 8 + "GCC" * 10 + "TAA"
+    seq = coding
+    features = [{"feature_id": "f1", "feature_ordinal": "1"}]
+    parts = {"f1": [part(1, 1, len(coding), "+")]}
+    codon_starts = {"f1": "1"}
+    result = sg.segment_one(
+        "acc", seq, "acc.1", {"acc.1": features}, parts, codon_starts, spec, EMPTY
+    )
+    assert result.method == "annotated"
+    assert result.aa == "M" + "A" * 20
+    assert result.unsequenced_nt == 24
+    assert len(result.aa) * 3 == len(result.orf_nt)
 
 
 def test_segment_one_falls_through_to_inferred_when_the_annotated_cds_is_too_short() -> None:
-    # short_cds_nt translates to 3 aa (M + 2*A), below accept_annotated_min_aa=20, so the
-    # annotated frame is rejected and inference takes over the whole sequence including the long
-    # tail. Which of 6 frame/strand combinations reads longest there isn't asserted here (see
-    # test_inferred_orf_picks_the_longer_of_the_two_orientations for that) — only that inference
-    # found *something* long enough to accept.
     short_cds_nt = "ATG" + "GCC" * 2 + "TAA"
-    long_orf_nt = "ATG" + "GCC" * 30 + "TAA"
-    seq = short_cds_nt + long_orf_nt
+    seq = short_cds_nt + back_translate(LONG_PEPTIDE) + "TAA"
     features = [{"feature_id": "f1", "feature_ordinal": "1"}]
     parts = {"f1": [part(1, 1, len(short_cds_nt), "+")]}
     codon_starts = {"f1": "1"}
-    result = sg.segment_one("acc", seq, "acc.1", {"acc.1": features}, parts, codon_starts, SPEC)
+    result = sg.segment_one(
+        "acc", seq, "acc.1", {"acc.1": features}, parts, codon_starts, SPEC,
+        pool_of(LONG_PEPTIDE),
+    )
     assert result.method == "inferred"
-    assert len(result.aa) >= SPEC.infer_min_aa
+    assert result.aa == LONG_PEPTIDE
     assert result.ncr5 == "" and result.ncr3 == ""
 
 
-def test_segment_one_none_when_annotated_cds_rejected_and_inference_also_fails() -> None:
-    seq = "N" * 30
+# A "5'UTR" for these tests is any nucleotide string the NCR pool recognises and the protein pool
+# does not. The real one is 740 nt of polio 5'UTR; what matters here is which pool claims it.
+UTR_LIKE = "ACGTTGCAAGGTCCATTGACGTACGTTACGGATCCATTAGGCATTCCAGGTACCATTGACCGGTTAACCGGATTCA"
+
+
+def pool_with_ncr(ncr5: str, *proteins: str) -> sg.HomologyPool:
+    segmentations = {
+        f"P{index}": sg.Segmentation(
+            accession=f"P{index}", method="annotated", strand="+", ncr5=ncr5, ncr3="",
+            orf_nt=back_translate(protein), aa=protein, n_internal_stops=0, absence_reason=None,
+        )
+        for index, protein in enumerate(proteins)
+    }
+    return sg.build_homology_pool(segmentations, POOL_SPEC)
+
+
+def test_segment_one_noncoding_when_an_orf_exists_but_no_frame_reads_as_protein() -> None:
+    """The 1,351-row case. There is a perfectly good stop-free run here; it simply is not protein
+    this corpus has ever seen, while the sequence *is* 5'UTR this corpus has seen — so the record
+    keeps its sequence for the 5'NCR block instead of being handed a CDS row it did not earn."""
+    seq = UTR_LIKE
+    result = sg.segment_one(
+        "acc", seq, "acc.1", {}, {}, {}, SPEC, pool_with_ncr(UTR_LIKE, SHORT_PEPTIDE)
+    )
+    assert result.method == "noncoding"
+    assert result.absence_reason == sg.ABSENCE_NO_CODING_HOMOLOGY
+    assert result.orf_nt == "" and result.aa == ""
+    assert result.ncr5 == seq
+
+
+def test_segment_one_none_when_neither_pool_recognises_the_record() -> None:
+    """Not being protein is not evidence of being 5'UTR. A record neither pool claims places
+    nothing at all, rather than being pushed into a covariance model that will align anything."""
+    seq = back_translate(LONG_PEPTIDE) + "TAA"
+    result = sg.segment_one(
+        "acc", seq, "acc.1", {}, {}, {}, SPEC, pool_with_ncr(UTR_LIKE, SHORT_PEPTIDE)
+    )
+    assert result.method == "none"
+    assert result.absence_reason == sg.ABSENCE_NO_CODING_OR_NCR_HOMOLOGY
+    assert result.ncr5 == "" and result.orf_nt == ""
+
+
+def test_segment_one_lets_the_ncr_pool_overrule_a_marginal_short_orf() -> None:
+    """Containment over a short run has a small denominator, so a couple of chance matches can
+    clear `infer_min_homology`. When the 5'NCR pool recognises the whole sequence by a wide margin
+    and the protein pool only just does, the record is 5'UTR."""
+    spec = replace(SPEC, infer_min_homology=0.0, noncoding_homology_margin=0.30)
+    pool = pool_with_ncr(UTR_LIKE, SHORT_PEPTIDE)
+    result = sg.segment_one("acc", UTR_LIKE, "acc.1", {}, {}, {}, spec, pool)
+    assert result.method == "noncoding"
+
+
+def test_segment_one_keeps_the_two_absence_reasons_apart() -> None:
+    """`no_coding_homology` says a frame was found and read as nothing; the older two say nothing
+    translatable was found at all. Same `noncoding` outcome, different findings, and the coverage
+    sidecar carries whichever one is true."""
     features = [{"feature_id": "f1", "feature_ordinal": "1"}]
     parts = {"f1": [part(1, 1, 9, "+")]}
     codon_starts = {"f1": "1"}
-    result = sg.segment_one("acc", seq, "acc.1", {"acc.1": features}, parts, codon_starts, SPEC)
-    assert result.method == "none"
-    assert result.absence_reason == sg.ABSENCE_ANNOTATED_REJECTED_UNTRANSLATABLE
+    pool = pool_with_ncr(UTR_LIKE, SHORT_PEPTIDE)
+
+    # 76 nt: long enough for a 20 aa stop-free run to exist in some frame.
+    found_an_orf = sg.segment_one(
+        "acc", UTR_LIKE, "acc.1", {"acc.1": features}, parts, codon_starts, SPEC, pool
+    )
+    assert found_an_orf.method == "noncoding"
+    assert found_an_orf.absence_reason == sg.ABSENCE_NO_CODING_HOMOLOGY
+
+    # 45 nt: 15 codons, so no frame can clear infer_min_aa=20 and there is no candidate at all.
+    short = UTR_LIKE[:45]
+    no_orf_at_all = sg.segment_one(
+        "acc", short, "acc.1", {"acc.1": features}, parts, codon_starts, SPEC, pool
+    )
+    assert no_orf_at_all.method == "noncoding"
+    assert no_orf_at_all.absence_reason == sg.ABSENCE_ANNOTATED_REJECTED_UNTRANSLATABLE
+    assert no_orf_at_all.ncr5 == short
 
 
 def test_segment_one_inferred_when_there_is_no_cds_feature_at_all() -> None:
-    seq = "ATG" + "GCC" * 30 + "TAA"
-    result = sg.segment_one("acc", seq, "acc.1", {}, {}, {}, SPEC)
+    seq = back_translate(LONG_PEPTIDE) + "TAA"
+    result = sg.segment_one("acc", seq, "acc.1", {}, {}, {}, SPEC, pool_of(LONG_PEPTIDE))
     assert result.method == "inferred"
+    assert result.aa == LONG_PEPTIDE
 
 
-def test_segment_one_none_when_there_is_no_cds_and_inference_fails() -> None:
-    seq = "N" * 10
-    result = sg.segment_one("acc", seq, "acc.1", {}, {}, {}, SPEC)
+def test_segment_one_none_when_there_is_no_cds_and_neither_pool_recognises_it() -> None:
+    result = sg.segment_one("acc", "N" * 10, "acc.1", {}, {}, {}, SPEC, EMPTY)
     assert result.method == "none"
-    assert result.absence_reason == sg.ABSENCE_NO_CDS_UNTRANSLATABLE
+    assert result.absence_reason == sg.ABSENCE_NO_CODING_OR_NCR_HOMOLOGY
 
 
 # --- segment_all: the real table-loading path, against tiny synthetic fixtures --------------------
@@ -330,7 +521,7 @@ def fixture_root(tmp_path: Path) -> Path:
         ["feature_id", "part_ordinal", "start_1based", "end_1based_inclusive", "strand",
          "start_position_class", "end_position_class", "remote_accession"],
         [
-            ["ACC1.1:F2", "1", "6", "71", "+", "ExactPosition", "ExactPosition", ""],
+            ["ACC1.1:F2", "1", "6", "%d", "+", "ExactPosition", "ExactPosition", ""],
         ],
     )
     _write_tsv_gz(
@@ -343,24 +534,45 @@ def fixture_root(tmp_path: Path) -> Path:
     return tmp_path
 
 
+def make_record(accession: str, sequence: str) -> AlignedRecord:
+    return AlignedRecord(
+        accession=accession, version=f"{accession}.1", virus_group="poliovirus", virus_type="PV1",
+        family="PV", tier="backbone", sequence=sequence, length_nt=len(sequence),
+    )
+
+
 def test_segment_all_wires_the_real_table_loader(fixture_root: Path) -> None:
-    seq1 = "AAAAA" + "ATG" + "GCC" * 20 + "TAA" + "TTTT"  # matches parts 6..35 above
-    seq2 = "ATG" + "GCC" * 30 + "TAA"  # no CDS feature at all -> inference path
-    records = {
-        "ACC1": AlignedRecord(
-            accession="ACC1", version="ACC1.1", virus_group="poliovirus", virus_type="PV1",
-            family="PV", tier="backbone", sequence=seq1, length_nt=len(seq1),
-        ),
-        "ACC2": AlignedRecord(
-            accession="ACC2", version="ACC2.1", virus_group="poliovirus", virus_type="PV1",
-            family="PV", tier="backbone", sequence=seq2, length_nt=len(seq2),
-        ),
-    }
-    results = sg.segment_all(fixture_root, records)
+    """`ACC1`'s annotated protein is what builds the pool, and `ACC2` — the same protein with no
+    CDS feature of its own — is what the pool then recognises. That is the two-pass structure in
+    miniature: the annotated path never consults homology, and the inference path is judged only
+    against what the annotated path produced."""
+    protein = LONG_PEPTIDE * 15  # 645 aa, over the real infer_pool_min_aa of 600
+    coding = back_translate(protein) + "TAA"
+    seq1 = "AAAAA" + coding + "TTTT"
+    seq2 = coding
+    _write_tsv_gz(
+        fixture_root / contract.SOURCE_FEATURE_PARTS,
+        ["feature_id", "part_ordinal", "start_1based", "end_1based_inclusive", "strand",
+         "start_position_class", "end_position_class", "remote_accession"],
+        [["ACC1.1:F2", "1", "6", str(5 + len(coding)), "+", "ExactPosition", "ExactPosition", ""]],
+    )
+    records = {"ACC1": make_record("ACC1", seq1), "ACC2": make_record("ACC2", seq2)}
+
+    results, pool = sg.segment_all(fixture_root, records)
+
     assert results["ACC1"].method == "annotated"
-    assert results["ACC1"].aa == "M" + "A" * 20
+    assert results["ACC1"].aa == protein
     assert results["ACC2"].method == "inferred"
-    assert len(results["ACC2"].aa) >= SPEC.infer_min_aa
+    assert results["ACC2"].aa == protein
+    assert pool.n_proteins == 1
+
+
+def test_segment_all_refuses_when_nothing_annotated_can_seed_the_pool(fixture_root: Path) -> None:
+    """Refusing beats falling back. With no annotated protein there is no reference for "reads as
+    enterovirus", and the old longest-run rule is exactly the guess this repair removed."""
+    records = {"ACC2": make_record("ACC2", back_translate(LONG_PEPTIDE) + "TAA")}
+    with pytest.raises(ContractError, match="infer_pool_min_aa"):
+        sg.segment_all(fixture_root, records)
 
 
 # --- the two copies of the same biology --------------------------------------------------------
@@ -393,3 +605,18 @@ def test_the_complement_is_its_own_inverse() -> None:
     probe = "ACGTNRYWSKMBDHV"
     assert sg._revcomp(sg._revcomp(probe)) == probe
     assert sg._revcomp("ACGTNRYWSKMBDHV") == "BDHVKMSWRYNACGT"
+
+
+def test_segment_one_refuses_a_cds_annotated_across_nothing_but_padding() -> None:
+    """An annotated CDS whose every codon is padding empties when the run is dropped. It must not
+    reach MAFFT as a zero-length record; a record with no sequenced CDS has no CDS row."""
+    spec = replace(SPEC, drop_ambiguous_run_aa=5)
+    coding = "NNN" * 25
+    features = [{"feature_id": "f1", "feature_ordinal": "1"}]
+    parts = {"f1": [part(1, 1, len(coding), "+")]}
+    codon_starts = {"f1": "1"}
+    result = sg.segment_one(
+        "acc", coding, "acc.1", {"acc.1": features}, parts, codon_starts, spec, EMPTY
+    )
+    assert result.method == "none"
+    assert result.orf_nt == "" and result.aa == ""

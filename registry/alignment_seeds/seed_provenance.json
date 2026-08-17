@@ -91,11 +91,68 @@
       "seed_sto": "pv3_ncr_5p_seed.sto"
     }
   },
+  "clade_exemplars": {
+    "artifacts": {
+      "NC_001490.1": {
+        "ambiguous_nt": 0,
+        "anchors_family": "RV-B",
+        "cds_end_1based_inclusive": 7168,
+        "cds_start_1based": 629,
+        "definition": "Rhinovirus B14, complete sequence",
+        "genome_nt": 7212,
+        "orf_aa": 2179,
+        "orf_nt": 6537,
+        "organism": "rhinovirus B14"
+      },
+      "NC_001617.1": {
+        "ambiguous_nt": 0,
+        "anchors_family": "RV-A",
+        "cds_end_1based_inclusive": 7113,
+        "cds_start_1based": 619,
+        "definition": "Human rhinovirus 89, complete genome",
+        "genome_nt": 7152,
+        "orf_aa": 2164,
+        "orf_nt": 6492,
+        "organism": "Rhinovirus A"
+      },
+      "NC_038311.1": {
+        "ambiguous_nt": 3,
+        "anchors_family": "RV-A",
+        "cds_end_1based_inclusive": 7100,
+        "cds_start_1based": 627,
+        "definition": "Human rhinovirus 1 strain ATCC VR-1559, complete genome",
+        "genome_nt": 7137,
+        "orf_aa": 2157,
+        "orf_nt": 6471,
+        "organism": "rhinovirus A1"
+      },
+      "NC_038312.1": {
+        "ambiguous_nt": 0,
+        "anchors_family": "RV-B",
+        "cds_end_1based_inclusive": 7163,
+        "cds_start_1based": 627,
+        "definition": "Human rhinovirus 3, complete genome",
+        "genome_nt": 7208,
+        "orf_aa": 2178,
+        "orf_nt": 6534,
+        "organism": "rhinovirus B3"
+      }
+    },
+    "description": "Four RefSeq rhinovirus polyprotein CDSs, committed as seed-only exemplars for the codon-aware CDS block. They are NOT carve records and never appear as rows in a shipped alignment: they enter the seed amino-acid alignment, hold the clade's column frame open through both --add passes, and are removed before backtranslation, after which any column they alone occupied is dropped.",
+    "fasta_holds": "the polyprotein CDS nucleotides, whole codons, trailing stop codon removed",
+    "files": {
+      "fasta": "clade_exemplars.fa",
+      "table": "clade_exemplars.tsv"
+    },
+    "retrieved": "2026-08-16, NCBI efetch db=nuccore rettype=gbwithparts",
+    "selection_rule": "Two per species, matching CodonSpec.seed_per_type=2, and RefSeq only so the choice is not a judgement call about which deposit is representative.",
+    "why": "align.codon.choose_seed takes exemplars from the carve itself at seed_min_aa=2000 aa. No Rhinovirus A or Rhinovirus B record in this corpus can ever qualify: the longest RV-A ORF is 142 aa and the longest RV-B ORF is 151 aa, because every RV-A/RV-B deposit here is a short VP4/VP2 or VP1 typing amplicon. So 344 RV-A and 112 RV-B rows were aligned against a seed holding no member of their own species. Measured on release 5.0.0's shipped EV_unified: types with no seed exemplar of their own have residues placed more than 200 codon columns from their main block at 8.4%, against 0.14% for types that have one -- a 60x difference. RV-A101 was 85% affected, RV-A49 61%. The visible cost was a set of large fake serotype-specific deletions (a 210-codon one at codon 1941 in RV-A101, RV-A49, RV-A63 and RV-A15, and eleven more), all of them the shadow of a handful of trailing residues flung into 3C."
+  },
   "description": "Covariance-model core for the NCR structural block: the mafft-xinsi seed alignment (genus-wide) or the hand-annotated Sabin-anchored seed (per-serotype), and the cmbuild output built from each, for the 5' and 3' non-coding regions of POLIO_unified, NPEV_unified (genus-wide, anchor-free), and PV1/PV2/PV3_unified (per-serotype, Sabin-anchored via cmbuild --hand). Committed as inputs-of-record so a routine alignment build needs only mafft + Infernal (cmalign); rebuilding a CM from scratch additionally needs mafft-xinsi (genus-wide) or RNAalifold (either stack), plus the mxscarnamod helper bioconda's mafft package omits (see scripts/setup_mxscarna.sh) -- a path that exists but is not expected to run even on a fresh clone.",
+  "population_note": "`population` means something different per stack: for the four genus-wide (anchor-free) artifacts it is the pop_min/pop_max-windowed cmalign population upstream's own build script filtered to; for the six per-serotype (Sabin-anchored) artifacts it is upstream's own 'any-overlap' production population (every record whose GenBank-derived span touches the NCR region at all), a materially different selection rule. Both are historical counts from upstream's own build, recorded for provenance only -- this repository's own population selection for each stack is declared independently in align.contract / align.anchored and is not required to reproduce either number.",
   "reused_by": {
     "EV_unified": "reuses npev_ncr_5p.cm and npev_ncr_3p.cm as-is (cmalign only, no new CM built) -- matches the shipped EV_unified.provenance.json's cm_reused field, and confirmed by grand_ev_unified's own upstream working tree carrying no .cm files of its own."
   },
-  "population_note": "`population` means something different per stack: for the four genus-wide (anchor-free) artifacts it is the pop_min/pop_max-windowed cmalign population upstream's own build script filtered to; for the six per-serotype (Sabin-anchored) artifacts it is upstream's own 'any-overlap' production population (every record whose GenBank-derived span touches the NCR region at all), a materially different selection rule. Both are historical counts from upstream's own build, recorded for provenance only -- this repository's own population selection for each stack is declared independently in align.contract / align.anchored and is not required to reproduce either number.",
   "schema": 1,
   "scrubbed": "Each .cm's COM and DATE header lines (both the outer header and the internal HMM-filter copy) named an absolute local build path and a non-reproducible build timestamp. Both are replaced with fixed placeholder text; cmbuild_hand below records which convention actually built the file, since that information is otherwise only in the scrubbed COM line.",
   "source_commits": {

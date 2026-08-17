@@ -1,0 +1,5 @@
+exemplar_id	anchors_family	organism	definition	genome_nt	cds_start_1based	cds_end_1based_inclusive	orf_nt	orf_aa	ambiguous_nt
+NC_001617.1	RV-A	Rhinovirus A	Human rhinovirus 89, complete genome	7152	619	7113	6492	2164	0
+NC_038311.1	RV-A	rhinovirus A1	Human rhinovirus 1 strain ATCC VR-1559, complete genome	7137	627	7100	6471	2157	3
+NC_001490.1	RV-B	rhinovirus B14	Rhinovirus B14, complete sequence	7212	629	7168	6537	2179	0
+NC_038312.1	RV-B	rhinovirus B3	Human rhinovirus 3, complete genome	7208	627	7163	6534	2178	0

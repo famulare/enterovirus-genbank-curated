@@ -149,6 +149,7 @@ def build_one(
     context: BuildContext,
     records: dict[str, population_module.AlignedRecord],
     segmentations: dict[str, segment.Segmentation],
+    homology_pool: segment.HomologyPool,
     anchor_inputs: anchored.AnchorInputs,
     threads: int = DEFAULT_THREADS,
     timeout_s: int = DEFAULT_TIMEOUT_S,
@@ -168,14 +169,17 @@ def build_one(
         cds_rf: str | None = anchored_block.reference_row
         over_length_cap = anchored_block.over_length_cap
         anchored_rows: tuple = anchored_block.rows
+        codon_block: codon.CodonAlignment | None = None
     else:
         cds_block = codon.build_codon_block(
             population, segmentations, context.toolchain, context.scratch, context.guard,
+            repository_root,
             threads=threads, timeout_s=timeout_s, step_offset=step_base + _STEP_CODON,
         )
         cds_rf = None
         over_length_cap = ()
         anchored_rows = ()
+        codon_block = cds_block
 
     five_prime, three_prime = structural.build_ncr_blocks(
         population, segmentations, context.toolchain, context.scratch, context.guard,
@@ -192,6 +196,7 @@ def build_one(
         tool_identity=provenance_module.tool_identity(context.toolchain),
         threads=threads, over_length_cap=over_length_cap,
         anchored_rows=anchored_rows,
+        segmentations=segmentations, homology_pool=homology_pool, codon_block=codon_block,
     )
     paths["provenance"] = provenance_module.write_provenance(output_dir, name, document)
     return BuildResult(name=name, stitched=stitched, paths=paths, seconds=seconds)
@@ -224,7 +229,9 @@ def build_all(
     emit("load", "")
     records = population_module.load_all_records(repository_root)
     emit("segment", "")
-    segmentations = segment.segment_all(repository_root, records, contract.CodonSpec())
+    segmentations, homology_pool = segment.segment_all(
+        repository_root, records, contract.CodonSpec()
+    )
     # Read every `final/` table the anchored stack needs now, before the guard is armed — it shares
     # `sandbox`'s path rules and refuses reads of the shipped release once installed.
     anchor_inputs = anchored.load_anchor_inputs(repository_root)
@@ -236,7 +243,7 @@ def build_all(
         result = build_one(
             repository_root, name, output_dir,
             context=context, records=records, segmentations=segmentations,
-            anchor_inputs=anchor_inputs,
+            homology_pool=homology_pool, anchor_inputs=anchor_inputs,
             threads=threads, timeout_s=timeout_s, step_base=ordinal * _STEP_BAND,
         )
         results.append(result)

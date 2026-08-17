@@ -7,11 +7,12 @@ are built directly with fake `ToolResult`s the test never inspects.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
 
-from enterovirus_genbank_curated.align import contract, stitch
+from enterovirus_genbank_curated.align import contract, stitch, structural
 from enterovirus_genbank_curated.align.codon import CodonAlignment
 from enterovirus_genbank_curated.align.population import AlignedRecord, AlignmentPopulation
 from enterovirus_genbank_curated.align.runner import ToolResult
@@ -135,12 +136,17 @@ def test_inferred_method_pads_ncr_and_records_the_inferred_reason() -> None:
     assert by_block["cds"].present is True
 
 
-def test_none_method_pads_every_block_and_reuses_segmentations_own_reason() -> None:
+def test_noncoding_method_states_the_cds_reason_and_classifies_each_ncr_side() -> None:
+    """A `noncoding` record is not the old `none`: the CDS block still reports segmentation's own
+    reason, but the two NCR sides now go through `classify_fragment` like any other record, because
+    the record really is offering a fragment on the 5' side. Here it is offering one and the block
+    did not take it, so the 5' reason is the classifier's, not segmentation's."""
     records = [make_record("A")]
     population = make_population(records)
     segmentations = {
         "A": make_segmentation(
-            "A", method="none", orf_nt="", absence_reason="no_cds_untranslatable"
+            "A", method="noncoding", ncr5="C" * 500, orf_nt="",
+            absence_reason="no_coding_homology",
         )
     }
     five = make_ncr_block("5p", {}, 4)
@@ -152,9 +158,26 @@ def test_none_method_pads_every_block_and_reuses_segmentations_own_reason() -> N
     assert result.aligned_nt["A"] == "-" * (4 + 6 + 3)
     by_block = {row.block: row for row in result.coverage}
     assert all(not row.present for row in result.coverage)
-    assert by_block["cds"].absence_reason == "no_cds_untranslatable"
-    assert by_block["5ncr"].absence_reason == "no_cds_untranslatable"
-    assert by_block["3ncr"].absence_reason == "no_cds_untranslatable"
+    assert by_block["cds"].absence_reason == "no_coding_homology"
+    assert by_block["5ncr"].absence_reason == structural.FRAGMENT_EXCLUDED_OVERSIZED
+    assert by_block["3ncr"].absence_reason == structural.FRAGMENT_EMPTY
+
+
+def test_a_dropped_assembly_gap_is_reported_on_the_cds_coverage_row() -> None:
+    """The one column that keeps "gap because unsequenced" from reading as "gap because deleted"."""
+    records = [make_record("A")]
+    population = make_population(records)
+    segmentation = make_segmentation("A", ncr5="CC", ncr3="TTT", orf_nt="ATGGCC")
+    segmentations = {"A": replace(segmentation, unsequenced_nt=90)}
+    five = make_ncr_block("5p", {"A": "CCCC"}, 4)
+    three = make_ncr_block("3p", {"A": "TTT"}, 3)
+    codon_alignment = make_codon_alignment({"A": "ATGGCC"}, width_aa=2)
+
+    result = stitch.stitch(population, segmentations, codon_alignment, five, three)
+    by_block = {row.block: row for row in result.coverage}
+    assert by_block["cds"].unsequenced_nt == 90
+    assert by_block["5ncr"].unsequenced_nt == 0
+    assert by_block["3ncr"].unsequenced_nt == 0
 
 
 def test_annotated_but_excluded_fragment_reports_the_classifier_reason() -> None:

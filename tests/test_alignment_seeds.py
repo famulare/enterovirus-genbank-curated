@@ -150,7 +150,8 @@ def test_per_serotype_cms_are_built_hand_the_genus_wide_are_not(seed_provenance:
 
 
 def test_verify_seeds_passes_against_the_real_directory(repository_root: Path) -> None:
-    assert verify_seeds(repository_root) == 30  # 10 .cm + 10 .sto + 10 _aln.fa
+    # 10 .cm + 10 .sto + 10 _aln.fa, plus the clade exemplar FASTA and its table.
+    assert verify_seeds(repository_root) == 32
 
 
 def test_verify_seeds_fails_when_the_directory_is_absent(tmp_path: Path) -> None:

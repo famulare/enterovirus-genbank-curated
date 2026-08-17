@@ -82,7 +82,7 @@ codon_spec = contract.CodonSpec(seed_min_aa=5, seed_per_type=2)
 spec = contract.AlignmentSpec(
     name="INTEGRATION_unified", stack="unified",
     population=contract.PopulationSpec(virus_groups=(contract.POLIOVIRUS,)),
-    expected_rows=3, description="pipeline integration test fixture", codon=codon_spec, ncr=ncr,
+    expected_rows=4, description="pipeline integration test fixture", codon=codon_spec, ncr=ncr,
 )
 
 records = [
@@ -97,6 +97,13 @@ records = [
     AlignedRecord(
         accession="NOPLACE", version="NOPLACE.1", virus_group="poliovirus", virus_type="PV1",
         family="PV", tier="addon", sequence="N" * 10, length_nt=10,
+    ),
+    # A `noncoding` record with a real 5'UTR fragment: no CDS row, and a 5'NCR row it could not
+    # have had before 2026-08-16, when the inference path handed a record like this a spurious ORF
+    # and the NCR blocks refused it for having been inferred.
+    AlignedRecord(
+        accession="UTRONLY", version="UTRONLY.1", virus_group="poliovirus", virus_type="PV1",
+        family="PV", tier="addon", sequence=NCR5_A, length_nt=len(NCR5_A),
     ),
 ]
 population = AlignmentPopulation(spec=spec, records=tuple(records))
@@ -113,13 +120,18 @@ segmentations = {{
         orf_nt=ORF_B[:-3], aa=aa_b, n_internal_stops=0, absence_reason=None,
     ),
     "NOPLACE": Segmentation(
-        accession="NOPLACE", method="none", strand="", ncr5="", ncr3="", orf_nt="", aa="",
-        n_internal_stops=0, absence_reason="no_cds_untranslatable",
+        accession="NOPLACE", method="noncoding", strand="+", ncr5="N" * 10, ncr3="",
+        orf_nt="", aa="", n_internal_stops=0, absence_reason="no_cds_untranslatable",
+    ),
+    "UTRONLY": Segmentation(
+        accession="UTRONLY", method="noncoding", strand="+", ncr5=NCR5_A, ncr3="",
+        orf_nt="", aa="", n_internal_stops=0, absence_reason="no_coding_homology",
     ),
 }}
 
 codon_alignment = codon.build_codon_block(
-    population, segmentations, toolchain, scratch, guard, threads=1, timeout_s=60, step_offset=0,
+    population, segmentations, toolchain, scratch, guard, ROOT,
+    threads=1, timeout_s=180, step_offset=0,
 )
 five, three = structural.build_ncr_blocks(
     population, segmentations, toolchain, scratch, guard, ROOT, threads=1, timeout_s=60,
@@ -127,15 +139,30 @@ five, three = structural.build_ncr_blocks(
 )
 stitched = stitch.stitch(population, segmentations, codon_alignment, five, three)
 
-assert stitched.accessions == ("A", "B", "NOPLACE")
-assert set(stitched.aligned_nt) == {{"A", "B", "NOPLACE"}}
+assert stitched.accessions == ("A", "B", "NOPLACE", "UTRONLY")
+assert set(stitched.aligned_nt) == {{"A", "B", "NOPLACE", "UTRONLY"}}
 for row in stitched.aligned_nt.values():
     assert len(row) == stitched.width_nt
 assert stitched.aligned_nt["NOPLACE"] == "-" * stitched.width_nt
 
+# NOPLACE offers a 10 nt fragment against a 50 nt floor, so every block is absent -- but each side
+# now says which predicate refused it rather than repeating segmentation's reason three times.
 noplace_rows = {{r.block: r for r in stitched.coverage if r.accession == "NOPLACE"}}
 assert all(not r.present for r in noplace_rows.values())
-assert all(r.absence_reason == "no_cds_untranslatable" for r in noplace_rows.values())
+assert noplace_rows["cds"].absence_reason == "no_cds_untranslatable"
+assert noplace_rows["5ncr"].absence_reason == "below_pop_min"
+assert noplace_rows["3ncr"].absence_reason == "empty_fragment"
+
+utr_rows = {{r.block: r for r in stitched.coverage if r.accession == "UTRONLY"}}
+assert utr_rows["5ncr"].present is True
+assert utr_rows["cds"].present is False
+assert utr_rows["cds"].absence_reason == "no_coding_homology"
+assert utr_rows["3ncr"].present is False
+head = stitched.aligned_nt["UTRONLY"][:stitched.width_5ncr]
+assert set(head) != {{"-"}}
+assert stitched.aligned_nt["UTRONLY"][stitched.width_5ncr:] == "-" * (
+    stitched.width_cds + stitched.width_3ncr
+)
 
 a_rows = {{r.block: r for r in stitched.coverage if r.accession == "A"}}
 assert all(r.present for r in a_rows.values())
@@ -153,16 +180,16 @@ with gzip.open(paths["stockholm"], "rt") as handle:
 sto_path = scratch.root / "roundtrip.sto"
 sto_path.write_text(text)
 parsed = AlignIO.read(sto_path, "stockholm")
-assert {{record.id for record in parsed}} == {{"A", "B", "NOPLACE"}}
+assert {{record.id for record in parsed}} == {{"A", "B", "NOPLACE", "UTRONLY"}}
 assert len(parsed[0].seq) == stitched.width_nt
 
 with gzip.open(paths["fasta"], "rt") as handle:
     fasta_text = handle.read()
-assert fasta_text.count(">") == 3
+assert fasta_text.count(">") == 4
 
 with gzip.open(paths["coverage"], "rt") as handle:
     coverage_text = handle.read()
-assert coverage_text.count("\\n") == 1 + 3 * 3  # header + 3 records * 3 blocks
+assert coverage_text.count("\\n") == 1 + 4 * 3  # header + 4 records * 3 blocks
 
 se.assert_no_violations(guard)
 print("ALL PASS")
@@ -176,7 +203,7 @@ def run_real(repository_root: Path) -> subprocess.CompletedProcess[str]:
     )
     return subprocess.run(
         [sys.executable, "-c", textwrap.dedent(script)],
-        capture_output=True, text=True, cwd=repository_root, timeout=120,
+        capture_output=True, text=True, cwd=repository_root, timeout=300,
     )
 
 

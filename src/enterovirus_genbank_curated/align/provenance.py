@@ -51,6 +51,33 @@ PARAMETER_DEPARTURES = {
         "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, "
         "which shreds short addon fragments. This is the larger scientific change of the two."
     ),
+    "inferred_frame_by_homology": (
+        "The 6-frame fallback picks the candidate ORF with the highest 6-mer containment against "
+        "the corpus's own annotated proteins, where upstream picked the longest stop-free run "
+        "regardless of whether it read as protein. On release 5.0.0's shipped bytes that rule "
+        "chose a wrong frame for 51 EV_unified rows and 20 NPEV_unified rows, including the whole "
+        "OR538731-OR538740 PV3 cluster."
+    ),
+    "noncoding_records_leave_the_cds_block": (
+        "A record no frame of which reads as protein is `noncoding`: it contributes no CDS row and "
+        "its whole sequence is offered to the 5'NCR block instead. Upstream gave each of them a "
+        "spurious >=20 aa ORF in the CDS block AND excluded them from the NCR blocks. 1,281 "
+        "EV_unified rows and 855 NPEV_unified rows are affected, and 99.9% of the ones that map to "
+        "a reference at all are 5'UTR amplicons."
+    ),
+    "clade_exemplars_in_the_seed": (
+        "Four RefSeq rhinovirus polyproteins join the seed alignment and are removed before "
+        "backtranslation. No RV-A or RV-B record in this corpus can reach seed_min_aa, so 456 rows "
+        "were aligned with no member of their own species in the seed; measured on 5.0.0, a type "
+        "with no seed exemplar has residues exiled more than 200 codon columns from its own block "
+        "at 8.4% against 0.14% for a type that has one."
+    ),
+    "padded_assembly_gaps_leave_the_orf": (
+        "A run of 30 or more wholly-ambiguous codons is dropped from the ORF before alignment. "
+        "MAFFT places an X-run as residues and drags real sequence with it: PX242098 carries a "
+        "731-codon run and had 537 of 1,486 residues placed 821 columns from the rest. The count "
+        "survives per record in the coverage sidecar's unsequenced_nt."
+    ),
 }
 
 
@@ -66,6 +93,9 @@ def build_provenance(
     threads: int,
     over_length_cap: tuple[str, ...] = (),
     anchored_rows: tuple = (),
+    segmentations: dict | None = None,
+    homology_pool=None,
+    codon_block=None,
 ) -> dict:
     spec = population.spec
     by_accession = {record.accession: record for record in population.records}
@@ -146,7 +176,48 @@ def build_provenance(
         document["cds_codons"] = stitched.width_cds // 3
         document["cds_width_is_whole_codons"] = stitched.width_cds % 3 == 0
         document["blocks_present_cds"] = present[BLOCK_CDS]
+        if codon_block is not None:
+            document["clade_exemplars"] = {
+                "exemplars": list(codon_block.clade_exemplars),
+                "codons_dropped_after_removal": codon_block.exemplar_only_codons_dropped,
+                "unsequenced_codons_dropped": codon_block.unsequenced_codons_dropped,
+            }
+    if segmentations is not None:
+        document["segmentation"] = segmentation_audit(
+            segmentations, stitched.accessions, homology_pool
+        )
     return document
+
+
+def segmentation_audit(
+    segmentations: dict, accessions: tuple[str, ...], homology_pool=None
+) -> dict:
+    """How this artifact's rows were segmented, counted over the rows actually written.
+
+    Recorded because the segmentation decisions are now the largest single influence on what the
+    CDS block contains, and none of them is visible in the alignment itself. `noncoding` in
+    particular is a claim about a record — "no frame of this reads as enterovirus protein" — and a
+    claim a reader cannot count is a claim they cannot check.
+    """
+    rows = [segmentations[accession] for accession in accessions]
+    audit = {
+        "methods": dict(sorted(Counter(row.method for row in rows).items())),
+        "strands": dict(sorted(Counter(row.strand for row in rows).items())),
+        "noncoding_offered_to_5ncr": sum(
+            1 for row in rows if row.method == "noncoding" and row.ncr5
+        ),
+        "rows_with_unsequenced_run_dropped": sum(1 for row in rows if row.unsequenced_nt),
+        "unsequenced_nt_dropped": sum(row.unsequenced_nt for row in rows),
+    }
+    if homology_pool is not None:
+        audit["homology_pool"] = {
+            "proteins": homology_pool.n_proteins,
+            "protein_kmers": len(homology_pool.protein),
+            "protein_kmer_size": homology_pool.protein_kmer,
+            "ncr5_kmers": len(homology_pool.ncr5),
+            "ncr5_kmer_size": homology_pool.ncr5_kmer,
+        }
+    return audit
 
 
 def anchored_audit(rows: tuple) -> dict:

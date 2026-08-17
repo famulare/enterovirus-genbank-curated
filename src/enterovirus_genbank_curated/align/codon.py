@@ -22,13 +22,19 @@ population plus its `CodonSpec` already carries everything that varied between t
 - Seed grouping uses `type_sort_key` (the same blank-type sentinel `align.population` already
   established for row ordering), not the raw `virus_type` string, so a blank-typed record that
   somehow qualified for seeding would group with its sentinel rather than under an empty string.
+- **The seed additionally carries clade exemplars from outside the carve.** `choose_seed` can only
+  reach records this corpus holds, and this corpus holds no Rhinovirus A or B polyprotein at all —
+  the longest RV-A ORF here is 142 aa against a `seed_min_aa` of 2,000. See `align.exemplars` for
+  what that cost the shipped file and why adding four RefSeq polyproteins to the seed, and removing
+  them again before backtranslation, is the smallest thing that fixes it.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
-from enterovirus_genbank_curated.align import contract, fasta
+from enterovirus_genbank_curated.align import contract, exemplars, fasta
 from enterovirus_genbank_curated.align.population import AlignmentPopulation
 from enterovirus_genbank_curated.align.runner import ToolResult, run_tool
 from enterovirus_genbank_curated.align.scratch import Scratch
@@ -57,19 +63,23 @@ class CodonAlignment:
     backbone_rest: tuple[str, ...]
     addon: tuple[str, ...]
     execs: tuple[ToolResult, ...]
+    clade_exemplars: tuple[str, ...] = ()
+    exemplar_only_codons_dropped: int = 0
+    unsequenced_codons_dropped: int = 0
 
 
 def _aa_by_tier(
     population: AlignmentPopulation, segmentations: dict[str, Segmentation]
 ) -> tuple[dict[str, str], dict[str, str]]:
     """{accession: aa}, split by tier, over records with placeable AA content. A record whose
-    segmentation `method` is `"none"` has nothing to align and is not this module's concern —
-    `align.stitch` pads it as an all-gap row later."""
+    segmentation `method` is `"noncoding"` or `"none"` has no protein to align and is not this
+    module's concern — `align.stitch` pads it as an all-gap CDS span, and for `noncoding`
+    `align.structural` offers its sequence to the 5'NCR block instead."""
     backbone: dict[str, str] = {}
     addon: dict[str, str] = {}
     for record in population.records:
         segmentation = segmentations[record.accession]
-        if segmentation.method == "none":
+        if segmentation.method in ("noncoding", "none"):
             continue
         target = backbone if record.tier == "backbone" else addon
         target[record.accession] = segmentation.aa
@@ -93,6 +103,38 @@ def choose_seed(
         ranked = sorted(accessions, key=lambda acc: (-len(backbone_aa[acc]), acc))
         seed.extend(ranked[: spec.seed_per_type])
     return tuple(sorted(seed))
+
+
+def drop_exemplar_only_columns(
+    aa_aln: dict[str, str], exemplar_rows: frozenset[str]
+) -> tuple[dict[str, str], int]:
+    """Remove the exemplar rows, then every column no surviving row occupies. Returns both.
+
+    Deliberately *not* folded into `drop_unsequenced_codon_columns`, which leaves an unoccupied
+    column alone on the stated grounds that dropping it would change that function's meaning from
+    "unsequenced" to "unused". Both meanings are wanted; they are two functions. This one runs on
+    the amino-acid alignment, before backtranslation, where one column is one codon and the
+    whole-codon width invariant cannot be broken by construction.
+    """
+    kept = {name: row for name, row in aa_aln.items() if name not in exemplar_rows}
+    if not kept:
+        raise ContractError(
+            "every row in the codon amino-acid alignment is a clade exemplar; the population "
+            "contributed nothing"
+        )
+    widths = {len(row) for row in kept.values()}
+    if len(widths) != 1:
+        raise ContractError(f"codon AA alignment is not rectangular: widths={sorted(widths)}")
+    width = widths.pop()
+    occupied = [any(row[column] != GAP for row in kept.values()) for column in range(width)]
+    dropped = width - sum(occupied)
+    if not dropped:
+        return kept, 0
+    trimmed = {
+        name: "".join(row[column] for column in range(width) if occupied[column])
+        for name, row in kept.items()
+    }
+    return trimmed, dropped
 
 
 def backtranslate(aa_aln: dict[str, str], orf_nt: dict[str, str], width_aa: int) -> dict[str, str]:
@@ -208,6 +250,7 @@ def build_codon_block(
     toolchain: Toolchain,
     scratch: Scratch,
     guard: ToolGuard,
+    repository_root: Path,
     *,
     threads: int,
     timeout_s: int,
@@ -228,10 +271,18 @@ def build_codon_block(
     backbone_rest = tuple(sorted(acc for acc in backbone_aa if acc not in seed_set))
     addon = tuple(sorted(addon_aa))
 
+    clade_exemplars = exemplars.load_clade_exemplars(repository_root)
+    exemplars.assert_disjoint_from(
+        clade_exemplars, frozenset(record.accession for record in population.records)
+    )
+    exemplar_rows = {exemplar.row_name: exemplar.aa for exemplar in clade_exemplars}
+
     execs: list[ToolResult] = []
     name = population.spec.name
 
-    fasta.write_fasta({acc: backbone_aa[acc] for acc in seed}, scratch.root / SEED_FASTA)
+    fasta.write_fasta(
+        {**{acc: backbone_aa[acc] for acc in seed}, **exemplar_rows}, scratch.root / SEED_FASTA
+    )
     seed_result = run_tool(
         toolchain,
         "mafft-linsi",
@@ -307,13 +358,13 @@ def build_codon_block(
     aa_aln = fasta.read_fasta(onto_path)
 
     expected = seed_set | set(backbone_rest) | set(addon)
-    missing = expected - set(aa_aln)
+    missing = (expected | set(exemplar_rows)) - set(aa_aln)
     if missing:
         raise ContractError(
             f"{name}: {len(missing)} record(s) absent from the codon AA alignment: "
             f"{sorted(missing)[:10]}"
         )
-    extra = set(aa_aln) - expected
+    extra = set(aa_aln) - expected - set(exemplar_rows)
     if extra:
         raise ContractError(
             f"{name}: {len(extra)} unexpected record(s) in the codon AA alignment: "
@@ -325,7 +376,9 @@ def build_codon_block(
         raise ContractError(
             f"{name}: codon AA alignment is not rectangular: widths={sorted(widths)}"
         )
-    width_aa = widths.pop()
+
+    aa_aln, exemplar_only_codons = drop_exemplar_only_columns(aa_aln, frozenset(exemplar_rows))
+    width_aa = len(next(iter(aa_aln.values())))
 
     orf_nt = {acc: segmentations[acc].orf_nt for acc in expected}
     aligned_nt = backtranslate(aa_aln, orf_nt, width_aa)
@@ -340,4 +393,7 @@ def build_codon_block(
         backbone_rest=backbone_rest,
         addon=addon,
         execs=tuple(execs),
+        clade_exemplars=tuple(exemplar.exemplar_id for exemplar in clade_exemplars),
+        exemplar_only_codons_dropped=exemplar_only_codons,
+        unsequenced_codons_dropped=dropped_codons,
     )

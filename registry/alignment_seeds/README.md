@@ -77,6 +77,36 @@ alignments verify-seeds` re-hashes them and cross-checks each `.cm`'s match-colu
 `seed_provenance.json`, so a swapped or truncated model fails on every push with no native
 toolchain required.
 
+## Clade exemplars for the CDS block (added 2026-08-16)
+
+`clade_exemplars.fa` and `clade_exemplars.tsv` are a second, unrelated kind of input-of-record: four
+RefSeq rhinovirus polyprotein CDSs that join the **codon** block's seed alignment and are removed
+again before backtranslation. They are not covariance models, they are not carve records, and they
+never become a row in a shipped alignment.
+
+| file | anchors | organism | ORF |
+|---|---|---|---:|
+| `NC_001617.1` | RV-A | Rhinovirus A (human rhinovirus 89) | 2,164 aa |
+| `NC_038311.1` | RV-A | rhinovirus A1 (ATCC VR-1559) | 2,157 aa |
+| `NC_001490.1` | RV-B | rhinovirus B14 | 2,179 aa |
+| `NC_038312.1` | RV-B | rhinovirus B3 | 2,178 aa |
+
+`align.codon.choose_seed` takes seed exemplars from the carve at `seed_min_aa = 2000`, and no RV-A or
+RV-B record in this corpus can ever reach it — the longest RV-A ORF here is 142 aa, the longest RV-B
+151 aa, because every RV-A/RV-B deposit in a poliovirus-derived carve is a short typing amplicon. So
+344 RV-A rows and 112 RV-B rows were being aligned against a seed holding no member of their own
+species. Measured on release 5.0.0's shipped `EV_unified`, a row whose type has no seed exemplar had
+residues placed more than 200 codon columns from its own main block at **8.4%** against **0.14%** for
+a row whose type does, and the visible cost was a set of large fake serotype-specific deletions —
+210 codons at codon 1941 in RV-A101, RV-A49, RV-A63 and RV-A15, and eleven more.
+
+Two per species, matching `CodonSpec.seed_per_type = 2`, and RefSeq only so the choice is not a
+judgement about which deposit is representative. The FASTA holds nucleotides, not amino acids:
+`align.exemplars` translates them with the same `align.segment.translate` the carve's own records go
+through, and checks the result against the lengths `clade_exemplars.tsv` declares — so the protein
+is a derivation anyone can re-run rather than an assertion. `evgc alignment-verify-seeds` performs
+that check alongside the hash re-computation.
+
 ## What is *not* here, deliberately
 
 Not brought over: upstream's `*_segmentation.csv` and `*_block.ss`/`*_block.fasta` (genus-wide

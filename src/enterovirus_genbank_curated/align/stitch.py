@@ -71,6 +71,13 @@ class CoverageRow:
     source_nt: int
     block_nt: int
     absence_reason: str | None
+    # CDS block only, and zero everywhere else: nucleotides `align.segment._drop_ambiguous_runs`
+    # removed from this record's ORF because they were a padded assembly gap. This is what keeps a
+    # gap that means "not sequenced here" readable as such — `source_nt` already excludes them, so
+    # without this column the deposit's own length would be the only trace and the row would look
+    # like an ordinary deletion. Same principle as `absence_reason`: the alignment characters stay
+    # honest and the sidecar carries the distinction.
+    unsequenced_nt: int = 0
 
 
 @dataclass(frozen=True)
@@ -98,7 +105,7 @@ def _majority_rf(rows: list[str], width: int) -> str:
 
 
 def _cds_absence_reason(segmentation: Segmentation) -> str:
-    if segmentation.method == "none":
+    if segmentation.method in ("noncoding", "none"):
         assert segmentation.absence_reason is not None
         return segmentation.absence_reason
     return REASON_NO_CDS_OVERLAP
@@ -107,6 +114,9 @@ def _cds_absence_reason(segmentation: Segmentation) -> str:
 def _ncr_absence_reason(
     segmentation: Segmentation, side: str, side_spec: contract.NcrSideSpec
 ) -> str:
+    # `none` means neither pool recognised the record, so it offers no fragment to classify and the
+    # segmentation's own reason is the whole story on every block. `noncoding` is the opposite case
+    # — it *is* offering a 5' fragment — and falls through to the classifier below.
     if segmentation.method == "none":
         assert segmentation.absence_reason is not None
         return segmentation.absence_reason
@@ -124,7 +134,7 @@ def _ncr_absence_reason(
 
 def _coverage_row(
     record: AlignedRecord, block: str, row: str | None, width: int, source_nt: int,
-    absence_reason: str | None,
+    absence_reason: str | None, unsequenced_nt: int = 0,
 ) -> CoverageRow:
     present = row is not None
     return CoverageRow(
@@ -138,6 +148,7 @@ def _coverage_row(
         source_nt=source_nt,
         block_nt=width,
         absence_reason=None if present else absence_reason,
+        unsequenced_nt=unsequenced_nt,
     )
 
 
@@ -211,6 +222,7 @@ def stitch(
             _coverage_row(
                 record, BLOCK_CDS, row_cds, width_cds, len(segmentation.orf_nt),
                 None if row_cds is not None else _cds_absence_reason(segmentation),
+                unsequenced_nt=segmentation.unsequenced_nt,
             )
         )
         coverage.append(

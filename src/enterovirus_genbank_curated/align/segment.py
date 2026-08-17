@@ -26,6 +26,44 @@ Everything else is a direct port: the trailing-partial-codon truncation, the ann
 acceptance gate, and the 6-frame inference fallback are all upstream's exact logic, renamed to this
 module's naming.
 
+## The inference path chooses by homology, not by length
+
+Upstream's `inferred_orf` — carried here verbatim until 2026-08-16 — took the **longest stop-free
+run** across six frames. Nothing in that rule consults whether the run reads as protein, and on
+release 5.0.0's shipped bytes it chose a wrong frame for 51 records in `EV_unified` and 20 in
+`NPEV_unified`. The failure is not subtle: a 1,105 nt PV3 VP1 fragment (`OR538734`) happened to
+carry a 368-codon stop-free run in frame +1, which beat the true frame's longest run because the
+true frame contains two stop codons. Frame +1 shares 1.9% of its 6-mers with this corpus's own
+annotated proteins; frame +3 shares 74.9%.
+
+So `_candidate_orfs` now enumerates *every* stop-free run in all six frames and `_inferred_orf`
+scores each against a pool built from the annotated path's own output, taking the best. Ties break
+on length and then on `(strand, frame, offset)`, so the choice is a function of the sequence and the
+corpus, never of iteration order.
+
+## A record with no coding content is `noncoding`, and keeps its sequence
+
+The same score answers a second question the old rule could not even ask: whether the record codes
+for anything at all. 1,281 `EV_unified` rows scored below `infer_min_homology` in every frame, and
+1,261 of the 1,262 that map to a reference at all are pure 5'UTR amplicons — the standard pan-
+enterovirus RT-PCR product, ~170-570 on the reference. Under the old rule each of them was handed a
+spurious >=20 aa ORF, placed in the CDS block as protein, *and* excluded from the 5'NCR block, on
+the grounds that an inferred frame's boundaries are not trustworthy.
+
+That reasoning is right about an inferred frame and wrong about this case: a record with no frame at
+all has no boundaries to distrust. Such a record now takes `method="noncoding"`, contributes no CDS
+row, and offers its whole sequence to the 5' side, where `structural.classify_fragment` and the
+covariance model decide whether it belongs. It is offered to the 5' side only — 1,261 of 1,262 are
+5'UTR, the one exception maps to the 3' end, and the 3'UTR is ~70 nt against the 5'UTR's ~740, so a
+several-hundred-nucleotide non-coding enterovirus amplicon is a 5'UTR product by construction.
+
+`method="none"` survives, and now means something it never quite did: *neither* pool recognises the
+record. Being unrecognisable as protein is not by itself evidence of being 5'UTR, and treating it
+that way would push a 51 nt fragment that is neither — there are 116, mostly tiny patent deposits —
+straight into a 738-column covariance model that will force-align anything it is handed. That is
+the same error as the one this section repairs, committed in the other block. So a record reaches
+the 5' side only if it reads as 5'UTR, and places nothing at all otherwise.
+
 ## Ragged (fuzzy) bounds are not special-cased
 
 63% of this corpus's CDS features have a `BeforePosition`/`AfterPosition` bound (GenBank's
@@ -59,6 +97,14 @@ ABSENCE_NO_CDS_UNTRANSLATABLE = "no_cds_untranslatable"
 # A record with a CDS feature, but one that failed the annotated-acceptance gate, whose 6-frame
 # inference also failed.
 ABSENCE_ANNOTATED_REJECTED_UNTRANSLATABLE = "annotated_rejected_untranslatable"
+# An ORF was found, and no frame of it reads as enterovirus protein. Distinct from the two above:
+# those say "nothing translatable was found", this says "something was found and it is not coding".
+# The 5'UTR amplicons land here.
+ABSENCE_NO_CODING_HOMOLOGY = "no_coding_homology"
+# Neither pool recognises this record: no frame reads as protein *and* the sequence does not read as
+# 5'UTR either. It places nothing, which is the honest outcome and the one `method="none"` exists
+# for. 116 records, mostly 15-51 nt patent deposits.
+ABSENCE_NO_CODING_OR_NCR_HOMOLOGY = "no_coding_or_ncr_homology"
 
 _DEFAULT_CODON_SPEC = contract.CodonSpec()
 
@@ -92,11 +138,16 @@ def translate(nt: str) -> str:
 
 @dataclass(frozen=True)
 class Segmentation:
-    """One record's segmentation result. `ncr5`/`ncr3` are only ever populated on the annotated
-    path — an inferred frame's boundaries are not trustworthy, so it carries no NCR at all."""
+    """One record's segmentation result.
+
+    `ncr5`/`ncr3` are populated on the annotated path, where the CDS bounds say where the NCRs are.
+    An *inferred* frame's boundaries are not trustworthy, so it still carries no NCR at all. A
+    `noncoding` record is the third case and the reason this docstring changed: it has no frame, so
+    there are no boundaries to distrust, and its whole sequence goes into `ncr5`.
+    """
 
     accession: str
-    method: Literal["annotated", "inferred", "none"]
+    method: Literal["annotated", "inferred", "noncoding", "none"]
     strand: Literal["+", "-", ""]
     ncr5: str
     ncr3: str
@@ -104,6 +155,90 @@ class Segmentation:
     aa: str
     n_internal_stops: int
     absence_reason: str | None
+    # How many nucleotides `_drop_internal_ambiguous_runs` removed from `orf_nt`. Non-zero only for
+    # a deposit padded across an assembly gap. It is carried to the coverage sidecar rather than
+    # left implicit, because without it a padded gap and a real deletion look identical in the
+    # shipped row.
+    unsequenced_nt: int = 0
+
+
+# --- the homology pool the inference path is judged against --------------------------------------
+
+
+def _kmers(text: str, size: int) -> set[str]:
+    return {text[i : i + size] for i in range(len(text) - size + 1)}
+
+
+@dataclass(frozen=True)
+class HomologyPool:
+    """What "reads as enterovirus" means, derived from the corpus rather than declared.
+
+    `protein` is the 6-mer set of every annotated-path polyprotein at or above
+    `CodonSpec.infer_pool_min_aa`; `ncr5` is the 12-mer set of every annotated-path 5'NCR fragment.
+    Both come from records whose GenBank CDS annotation was accepted, so the pool is built entirely
+    from the part of the corpus that never needed inference — the population being judged does not
+    get to vote on itself.
+
+    Passed explicitly rather than defaulted. An empty pool would classify every inferred record as
+    `noncoding` and empty the CDS block, which `align.codon` fails on loudly; making the caller
+    supply it means that failure is reachable only by supplying nothing, never by forgetting.
+    """
+
+    protein: frozenset[str]
+    ncr5: frozenset[str]
+    protein_kmer: int
+    ncr5_kmer: int
+    n_proteins: int
+
+    def protein_homology(self, aa: str) -> float:
+        """Fraction of this peptide's 6-mers the pool has seen. Stop and ambiguity characters break
+        the k-mer rather than being spelled through: an `X` matches nothing, and letting it sit
+        inside a k-mer would only dilute both sides of the ratio."""
+        if not self.protein:
+            return 0.0
+        kmers = set()
+        for run in aa.replace("*", "X").split("X"):
+            kmers |= _kmers(run, self.protein_kmer)
+        if not kmers:
+            return 0.0
+        return len(kmers & self.protein) / len(kmers)
+
+    def ncr5_homology(self, nt: str) -> float:
+        if not self.ncr5:
+            return 0.0
+        kmers = _kmers(nt.upper(), self.ncr5_kmer)
+        if not kmers:
+            return 0.0
+        return len(kmers & self.ncr5) / len(kmers)
+
+
+EMPTY_POOL = HomologyPool(
+    protein=frozenset(), ncr5=frozenset(), protein_kmer=0, ncr5_kmer=0, n_proteins=0
+)
+
+
+def build_homology_pool(
+    segmentations: dict[str, Segmentation], spec: contract.CodonSpec
+) -> HomologyPool:
+    protein: set[str] = set()
+    ncr5: set[str] = set()
+    n_proteins = 0
+    for segmentation in segmentations.values():
+        if segmentation.method != "annotated":
+            continue
+        if len(segmentation.aa) >= spec.infer_pool_min_aa:
+            for run in segmentation.aa.replace("*", "X").split("X"):
+                protein |= _kmers(run, spec.infer_kmer_size)
+            n_proteins += 1
+        if segmentation.ncr5:
+            ncr5 |= _kmers(segmentation.ncr5.upper(), spec.noncoding_orient_kmer)
+    return HomologyPool(
+        protein=frozenset(protein),
+        ncr5=frozenset(ncr5),
+        protein_kmer=spec.infer_kmer_size,
+        ncr5_kmer=spec.noncoding_orient_kmer,
+        n_proteins=n_proteins,
+    )
 
 
 # --- the trailing-partial-codon rule, ported verbatim from upstream's `_finish` ------------------
@@ -211,48 +346,119 @@ def _primary_cds(cds_features: list[dict], span_by_feature: dict[str, tuple[int,
     return max(cds_features, key=span_width)
 
 
-# --- the 6-frame inference fallback, ported verbatim from upstream's `inferred_orf` --------------
+# --- the 6-frame inference fallback ---------------------------------------------------------------
 
 
-def _longest_orf(oriented: str) -> tuple[int, str, str] | None:
-    """Longest stop-free ORF across the 3 forward frames of `oriented`.
+@dataclass(frozen=True)
+class _Candidate:
+    strand: str
+    frame: int
+    offset: int
+    orf_nt: str
+    aa: str
 
-    Splits each frame's translation at stop codons and keeps the longest segment, so a
-    end-to-end translation of a frame that happens to contain no stop by chance does not win
-    on raw length over the true polyprotein segment.
+    @property
+    def order_key(self) -> tuple[str, int, int]:
+        """The deterministic tie-break, applied only after homology and length have both tied."""
+        return (self.strand, self.frame, self.offset)
+
+
+def _candidate_orfs(sequence: str, spec: contract.CodonSpec) -> list[_Candidate]:
+    """Every stop-free run in all six frames that clears `infer_min_aa` and the X-fraction gate.
+
+    Upstream's `_longest_orf` kept only the longest run per strand and threw the rest away before
+    anything could look at them, which is why a wrong frame could win: the true frame's runs were
+    already gone. Enumerating them all costs one pass over six translations and is what lets the
+    caller choose on evidence.
     """
-    best: tuple[int, str, str] | None = None
-    for frame in range(3):
-        aa_full = translate(oriented[frame:])
-        position = 0
-        for segment in aa_full.split("*"):
-            if segment:
-                nt0 = frame + position * 3
-                nt1 = frame + (position + len(segment)) * 3
-                candidate = (len(segment), oriented[nt0:nt1], segment)
-                if best is None or candidate[0] > best[0]:
-                    best = candidate
-            position += len(segment) + 1
-    return best
-
-
-def _inferred_orf(sequence: str, spec: contract.CodonSpec) -> tuple[str, str, str] | None:
-    """6-frame longest-ORF inference. Returns (orf_nt, aa, strand) with no NCR — the boundaries
-    are not trustworthy. `None` if nothing translatable, or too X-heavy to be usable."""
-    best: tuple[int, str, str, str] | None = None
+    candidates: list[_Candidate] = []
     for oriented, strand in ((sequence, "+"), (_revcomp(sequence), "-")):
-        found = _longest_orf(oriented)
-        if found is None:
+        for frame in range(3):
+            aa_full = translate(oriented[frame:])
+            position = 0
+            for run in aa_full.split("*"):
+                if len(run) >= spec.infer_min_aa and (
+                    run.count("X") / len(run) <= spec.infer_max_x_fraction
+                ):
+                    nt0 = frame + position * 3
+                    nt1 = frame + (position + len(run)) * 3
+                    candidates.append(
+                        _Candidate(
+                            strand=strand, frame=frame, offset=nt0,
+                            orf_nt=oriented[nt0:nt1], aa=run,
+                        )
+                    )
+                position += len(run) + 1
+    return candidates
+
+
+def _inferred_orf(
+    sequence: str, spec: contract.CodonSpec, pool: HomologyPool
+) -> tuple[str, str, str, float] | None:
+    """The best-scoring candidate ORF as `(orf_nt, aa, strand, homology)`, or `None` if there is no
+    candidate at all. No NCR either way — an inferred frame's boundaries are not trustworthy.
+
+    A returned homology below `spec.infer_min_homology` is not an error here; `segment_one` reads it
+    and routes the record to `noncoding`. Keeping the score rather than the verdict means the
+    threshold is applied in exactly one place.
+    """
+    candidates = _candidate_orfs(sequence, spec)
+    if not candidates:
+        return None
+    scored = [(pool.protein_homology(c.aa), len(c.aa), c.order_key, c) for c in candidates]
+    homology, _length, _key, best = max(scored, key=lambda s: s[:3])
+    return best.orf_nt, best.aa, best.strand, homology
+
+
+def _drop_ambiguous_runs(
+    orf_nt: str, aa: str, spec: contract.CodonSpec
+) -> tuple[str, str, int]:
+    """Remove runs of `drop_ambiguous_run_aa` or more wholly-unsequenced codons from the ORF.
+
+    "Wholly unsequenced" is read off the nucleotides, not off the `X` in the translation, and that
+    distinction is load-bearing: `_finish` masks a real internal stop codon to `X` too, and a stop
+    codon is sequence. A codon goes only if not one of its three bases is a plain A/C/G/T, which is
+    the same predicate `align.codon.drop_unsequenced_codon_columns` applies one stage later — this
+    one just gets there before MAFFT has to place it.
+
+    `aa` and `orf_nt` are cut together, so the caller's `len(aa) * 3 == len(orf_nt)` invariant — the
+    one `codon.backtranslate` rests on — holds across the cut.
+    """
+    if not orf_nt:
+        return orf_nt, aa, 0
+    unsequenced = [
+        all(base not in "ACGT" for base in orf_nt[i * 3 : i * 3 + 3]) for i in range(len(aa))
+    ]
+    doomed: set[int] = set()
+    start = 0
+    while start < len(unsequenced):
+        if not unsequenced[start]:
+            start += 1
             continue
-        length, orf_nt, aa = found
-        if best is None or length > best[0]:
-            best = (length, orf_nt, aa, strand)
-    if best is None:
-        return None
-    _length, orf_nt, aa, strand = best
-    if len(aa) < spec.infer_min_aa or aa.count("X") / len(aa) > spec.infer_max_x_fraction:
-        return None
-    return orf_nt, aa, strand
+        end = start
+        while end < len(unsequenced) and unsequenced[end]:
+            end += 1
+        if end - start >= spec.drop_ambiguous_run_aa:
+            doomed.update(range(start, end))
+        start = end
+    if not doomed:
+        return orf_nt, aa, 0
+    kept_nt = "".join(orf_nt[i * 3 : i * 3 + 3] for i in range(len(aa)) if i not in doomed)
+    kept_aa = "".join(aa[i] for i in range(len(aa)) if i not in doomed)
+    return kept_nt, kept_aa, 3 * len(doomed)
+
+
+def _oriented_noncoding(sequence: str, pool: HomologyPool) -> tuple[str, str]:
+    """`(sequence in the orientation the 5'NCR pool prefers, strand)`.
+
+    A tie keeps the deposit as it stands: `>` rather than `>=` means a sequence the pool cannot
+    distinguish is not silently reverse-complemented on the strength of nothing.
+    """
+    forward = pool.ncr5_homology(sequence)
+    reverse_sequence = _revcomp(sequence)
+    if pool.ncr5_homology(reverse_sequence) > forward:
+        return reverse_sequence, "-"
+    return sequence, "+"
 
 
 # --- feature-table loading -----------------------------------------------------------------------
@@ -305,6 +511,7 @@ def segment_one(
     parts_by_feature: dict[str, list[dict]],
     codon_starts: dict[str, str],
     spec: contract.CodonSpec,
+    pool: HomologyPool,
 ) -> Segmentation:
     cds_features = cds_by_record.get(version, [])
     seg: tuple[str, str, str, str, int, str] | None = None
@@ -330,41 +537,80 @@ def segment_one(
 
     if seg is not None:
         ncr5, ncr3, orf_nt, aa, n_internal_stops, strand_used = seg
-        return Segmentation(
-            accession=accession,
-            method="annotated",
-            strand=strand_used,
-            ncr5=ncr5,
-            ncr3=ncr3,
-            orf_nt=orf_nt,
-            aa=aa,
-            n_internal_stops=n_internal_stops,
-            absence_reason=None,
+        orf_nt, aa, unsequenced_nt = _drop_ambiguous_runs(orf_nt, aa, spec)
+        # A CDS annotated across nothing but padding empties here. No such deposit exists today —
+        # the worst carries 749 X of 1,797 aa — but an empty `aa` would reach MAFFT as a
+        # zero-length FASTA record, and "we would have noticed" is not a guarantee. A record with no
+        # sequenced CDS at all has no business in the CDS block, which is what the fall-through
+        # below already says for every other way of having no ORF.
+        if aa:
+            return Segmentation(
+                accession=accession,
+                method="annotated",
+                strand=strand_used,
+                ncr5=ncr5,
+                ncr3=ncr3,
+                orf_nt=orf_nt,
+                aa=aa,
+                n_internal_stops=n_internal_stops,
+                absence_reason=None,
+                unsequenced_nt=unsequenced_nt,
+            )
+
+    inferred = _inferred_orf(sequence, spec, pool)
+    oriented, strand_used = _oriented_noncoding(sequence, pool)
+    ncr5_homology = pool.ncr5_homology(oriented)
+
+    if inferred is not None:
+        orf_nt, aa, orf_strand, coding_homology = inferred
+        # Two conditions, and the second is not redundant. Containment over a *run* has the
+        # run's own k-mer count as its denominator, so a 20-residue run needs only two or three
+        # chance matches to clear the floor — see `CodonSpec.noncoding_homology_margin` for the six
+        # 5'UTR amplicons that did exactly that, and for why the 5'NCR pool has to win by a margin
+        # rather than merely win.
+        reads_as_protein = coding_homology >= spec.infer_min_homology and (
+            ncr5_homology - coding_homology <= spec.noncoding_homology_margin
+        )
+        if reads_as_protein:
+            orf_nt, aa, unsequenced_nt = _drop_ambiguous_runs(orf_nt, aa, spec)
+            if aa:  # see the annotated path above for why this is not assumed away
+                return Segmentation(
+                    accession=accession,
+                    method="inferred",
+                    strand=orf_strand,
+                    ncr5="",
+                    ncr3="",
+                    orf_nt=orf_nt,
+                    aa=aa,
+                    n_internal_stops=0,
+                    absence_reason=None,
+                    unsequenced_nt=unsequenced_nt,
+                )
+        reason = ABSENCE_NO_CODING_HOMOLOGY
+    else:
+        reason = (
+            ABSENCE_ANNOTATED_REJECTED_UNTRANSLATABLE
+            if cds_features
+            else ABSENCE_NO_CDS_UNTRANSLATABLE
         )
 
-    inferred = _inferred_orf(sequence, spec)
-    if inferred is not None:
-        orf_nt, aa, strand_used = inferred
+    if ncr5_homology < spec.noncoding_min_ncr_homology:
         return Segmentation(
             accession=accession,
-            method="inferred",
-            strand=strand_used,
+            method="none",
+            strand="",
             ncr5="",
             ncr3="",
-            orf_nt=orf_nt,
-            aa=aa,
+            orf_nt="",
+            aa="",
             n_internal_stops=0,
-            absence_reason=None,
+            absence_reason=ABSENCE_NO_CODING_OR_NCR_HOMOLOGY,
         )
-
-    reason = (
-        ABSENCE_ANNOTATED_REJECTED_UNTRANSLATABLE if cds_features else ABSENCE_NO_CDS_UNTRANSLATABLE
-    )
     return Segmentation(
         accession=accession,
-        method="none",
-        strand="",
-        ncr5="",
+        method="noncoding",
+        strand=strand_used,
+        ncr5=oriented,
         ncr3="",
         orf_nt="",
         aa="",
@@ -377,18 +623,39 @@ def segment_all(
     repository_root: Path,
     records: dict[str, AlignedRecord],
     spec: contract.CodonSpec = _DEFAULT_CODON_SPEC,
-) -> dict[str, Segmentation]:
-    """One `Segmentation` per record in `records`, keyed the same way (base accession)."""
+) -> tuple[dict[str, Segmentation], HomologyPool]:
+    """One `Segmentation` per record in `records`, keyed the same way (base accession), plus the
+    pool the inference path was judged against.
+
+    Two passes, and the ordering is the whole point. The first runs with an empty pool, which
+    changes nothing on the annotated path — that path never consults homology — and reduces every
+    other record to a placeholder nobody reads. The pool is then built from the annotated results
+    alone, so the population being judged never votes on itself, and the second pass decides frames
+    and coding-versus-not against it. Anything less than two passes would be circular: the reference
+    for "reads as enterovirus protein" is the corpus's own accepted annotations.
+    """
     cds_by_record, parts_by_feature, codon_starts = _load_cds_index(repository_root)
-    return {
-        accession: segment_one(
-            accession,
-            record.sequence,
-            record.version,
-            cds_by_record,
-            parts_by_feature,
-            codon_starts,
-            spec,
+
+    def run(pool: HomologyPool) -> dict[str, Segmentation]:
+        return {
+            accession: segment_one(
+                accession,
+                record.sequence,
+                record.version,
+                cds_by_record,
+                parts_by_feature,
+                codon_starts,
+                spec,
+                pool,
+            )
+            for accession, record in records.items()
+        }
+
+    pool = build_homology_pool(run(EMPTY_POOL), spec)
+    if not pool.protein:
+        raise ContractError(
+            "no annotated-path record reaches "
+            f"infer_pool_min_aa={spec.infer_pool_min_aa} aa, so there is nothing to judge an "
+            "inferred reading frame against; refusing to fall back to longest-ORF"
         )
-        for accession, record in records.items()
-    }
+    return run(pool), pool

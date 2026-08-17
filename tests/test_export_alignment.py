@@ -18,11 +18,14 @@ SPEC = contract.AlignmentSpec(
 )
 
 
-def make_coverage_row(accession: str, block: str, present: bool = True) -> CoverageRow:
+def make_coverage_row(
+    accession: str, block: str, present: bool = True, unsequenced_nt: int = 0
+) -> CoverageRow:
     return CoverageRow(
         accession=accession, version=f"{accession}.1", tier="backbone", family="PV",
         virus_type="PV1", block=block, present=present, source_nt=10, block_nt=10,
         absence_reason=None if present else "no_cds_untranslatable",
+        unsequenced_nt=unsequenced_nt,
     )
 
 
@@ -132,6 +135,18 @@ def test_render_coverage_tsv_absent_row_carries_its_reason() -> None:
     fields = row.split("\t")
     assert fields[6] == "FALSE"
     assert fields[9] == "no_cds_untranslatable"
+    assert fields[10] == "0"
+
+
+def test_render_coverage_tsv_carries_the_dropped_assembly_gap() -> None:
+    """The column that keeps a padded assembly gap from reading as a deletion in the shipped row."""
+    coverage = (make_coverage_row("A", "cds", present=True, unsequenced_nt=2187),)
+    stitched = StitchedAlignment(
+        accessions=("A",), width_5ncr=0, width_cds=3, width_3ncr=0, width_nt=3,
+        aligned_nt={"A": "ACG"}, rf="ACG", ss_cons="...", coverage=coverage,
+    )
+    fields = export_alignment.render_coverage_tsv(stitched).splitlines()[1].split("\t")
+    assert fields[10] == "2187"
 
 
 # --- write_alignment -----------------------------------------------------------------------------

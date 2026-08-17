@@ -197,6 +197,10 @@ class CodonSpec:
     records `--lop` sitting at MAFFT's default -2.00 "through every build", shredding short addon
     fragments; -24.0 was chosen off the interior of a measured plateau but **never reached a shipped
     artifact**. It changes fragment placement for roughly 9,768 addon rows.
+
+    The `infer_*` and `drop_ambiguous_run_aa` fields are segmentation parameters rather than
+    MAFFT ones, and they live here because `align.segment` already receives this spec and nothing
+    else. They are grouped under `codon` in provenance for the same reason.
     """
 
     pass1_gap_open: float = 4.5
@@ -229,6 +233,70 @@ class CodonSpec:
     accept_annotated_min_aa: int = 20
     infer_min_aa: int = 20
     infer_max_x_fraction: float = 0.4
+    # --- the inference path's homology gate -----------------------------------------------------
+    #
+    # Upstream picked the inferred ORF by *length of the longest stop-free run*, with no reference
+    # to whether it read as protein. That is a coin flip dressed as a rule, and on release 5.0.0's
+    # shipped bytes it lost the flip 51 times in `EV_unified` and 20 times in `NPEV_unified`. The
+    # whole `OR538731`-`OR538740` PV3 cluster is in that set: `OR538734`'s shipped frame (+1) scores
+    # 0.019 against the corpus's own annotated proteins where frame +3 scores 0.749, and the seven
+    # rows between them hold open about 155 of `EV_unified`'s 319 low-occupancy codon columns.
+    #
+    # The replacement scores every candidate ORF by 6-mer containment against the proteins the
+    # annotated path already produced, and takes the best. Containment, not identity: a fragment
+    # shares few 6-mers in absolute terms and the denominator has to be the fragment.
+    infer_kmer_size: int = 6
+    # Which annotated proteins seed that pool. 600 aa keeps it to near-complete polyproteins —
+    # 5,356 of them, 134,393 distinct 6-mers — rather than letting short partial ORFs, which are
+    # the very population being judged, vote on their own frame.
+    infer_pool_min_aa: int = 600
+    # Below this, no frame reads as protein and the record is `noncoding`: it has no CDS row, and
+    # its whole sequence is offered to the 5'NCR block instead. Measured over all 2,136 inference-
+    # path records in `EV_unified`, best-frame containment is sharply bimodal, and the two modes are
+    # separated by a real gap rather than a chosen cut:
+    #
+    #     containment   records   what they are
+    #     < 0.05          1,281   5'UTR amplicons (1,261 of 1,262 mapped, 99.9%)
+    #     0.05 - 0.111       44   5'UTR amplicons, every one checked individually
+    #     -- no record at all lands between 0.111 and 0.186 --
+    #     0.186 - 0.30        5   real coding fragments
+    #     > 0.30            806   real coding fragments
+    #
+    # 0.15 sits in the empty interval. It is not tuned to a target count; move it anywhere inside
+    # (0.111, 0.186) and not one record changes class.
+    infer_min_homology: float = 0.15
+    # A run of wholly-ambiguous codons this long or longer is dropped from the ORF before
+    # it is aligned. A padded assembly gap is not sequence, and MAFFT cannot know that: with
+    # `--anysymbol` an X-run is a residue run to be placed, and placing it drags real residues with
+    # it. Measured on 5.0.0: `PX242098` carries a 731-codon X-run inside an otherwise ordinary CVA24
+    # polyprotein, and 537 of its 1,486 placed residues sit 821 codon columns away from the rest.
+    # Nine deposits carry a run of 500 or more, 13 carry 200 or more, 55 carry 20 or more. 30 is
+    # below every damaging run measured and above every incidental one.
+    #
+    # The dropped codons are `NNN` — no information is discarded, only the aligner's obligation to
+    # place it — and the count survives in the coverage sidecar's `unsequenced_nt`, which is what
+    # keeps "gap because unsequenced" distinguishable from "gap because deleted".
+    drop_ambiguous_run_aa: int = 30
+    # A `noncoding` record has no ORF to take a strand from, so orientation is decided the same way
+    # the frame is: 12-mer containment of the sequence and its reverse complement against the 5'NCR
+    # fragments the annotated path already produced. 33 of the 1,488 are reverse-complemented, which
+    # is few enough to be tempting to ignore and exactly why it is not.
+    noncoding_orient_kmer: int = 12
+    # The 5'NCR pool is evidence in both directions, and this is the second direction: a record only
+    # reaches the 5'NCR block if it reads as 5'UTR. Without this floor a 51 nt fragment that is
+    # neither protein nor 5'UTR clears `pop_min_nt=50` and `cmalign` force-aligns it into a
+    # 738-column model, which is the same category of error in the other block. Measured over the
+    # 1,488 noncoding records the score is even more bimodal than the protein one — 1,372 at 0.40 or
+    # above (1,365 of them at 0.70+), 114 below 0.20, and 2 in between.
+    noncoding_min_ncr_homology: float = 0.40
+    # ...and this is the tie-break between the two pools, which a per-run containment score needs
+    # because a *short* run has few k-mers and so a couple of chance matches move it a long way. Six
+    # 5'UTR amplicons cleared `infer_min_homology` on 20-33 aa runs scoring 0.158-0.250 while their
+    # whole sequence scored 0.895-1.000 against the 5'NCR pool. Requiring the 5'NCR pool to win by a
+    # margin, rather than merely to win, is what keeps `OR538737` on the coding side: 0.439 coding
+    # against 0.554 5'NCR, a real 299 aa ORF on a fragment that genuinely spans the 5'UTR/capsid
+    # boundary. The six sit at margins of 0.645-0.842 and OR538737 at 0.115; 0.30 is in the gap.
+    noncoding_homology_margin: float = 0.30
     # Typed so no configuration edit can turn it on. `--keeplength` deletes insertion residues,
     # which would break the 1:1 amino-acid-to-codon backtranslate invariant the CDS block rests on.
     # The type is the check; a runtime assertion that argv omits it could never fire.
