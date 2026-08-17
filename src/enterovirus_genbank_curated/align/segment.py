@@ -406,7 +406,15 @@ def _inferred_orf(
     if not candidates:
         return None
     scored = [(pool.protein_homology(c.aa), len(c.aa), c.order_key, c) for c in candidates]
-    homology, _length, _key, best = max(scored, key=lambda s: s[:3])
+    # Recognition is the gate; length is the ranking. Ranking on recognition alone compares
+    # fractions across denominators that differ by two orders of magnitude, which is how a
+    # 22-residue run at 17/17 beat a 2,212-residue polyprotein at 2,203/2,207 — see
+    # `CodonSpec.infer_confident_homology` for the 36 records that cost.
+    confident = [s for s in scored if s[0] >= spec.infer_confident_homology]
+    if confident:
+        homology, _length, _key, best = max(confident, key=lambda s: (s[1], s[0], s[2]))
+    else:
+        homology, _length, _key, best = max(scored, key=lambda s: s[:3])
     return best.orf_nt, best.aa, best.strand, homology
 
 

@@ -265,6 +265,23 @@ class CodonSpec:
     # 0.15 sits in the empty interval. It is not tuned to a target count; move it anywhere inside
     # (0.111, 0.186) and not one record changes class.
     infer_min_homology: float = 0.15
+    # Containment is a *fraction*, and ranking candidates by it alone compares fractions across
+    # wildly different denominators. `MT957199` is the case that exposed it: a 22-residue run whose
+    # 17 6-mers are all in the pool scores 1.000, and the record's true 2,212-residue polyprotein
+    # scores 0.998, so the polyprotein lost and 2,190 residues went unplaced. 36 records were
+    # affected, 11,113 residues in total, several of them near-complete polyproteins.
+    #
+    # Both of those runs plainly read as protein; the question between them is not which is better
+    # recognised but which explains more sequence. So recognition is a gate and length is the
+    # ranking: take the longest run that reads as real enterovirus protein, and fall back to the
+    # best-recognised run only when none does.
+    #
+    # The floor is low because real protein can be genuinely divergent here. Measured: the lowest
+    # homology of a *correct* frame in this corpus is `OR538760`'s 230-residue CVA24 fragment at
+    # 0.338, and the highest homology of an incorrect frame is `OR538733`'s 371-residue run at
+    # 0.269. 0.30 sits between them. That interval is narrower than the ones the other thresholds
+    # sit in, so this is the parameter to re-measure first if the carve grows.
+    infer_confident_homology: float = 0.30
     # A run of wholly-ambiguous codons this long or longer is dropped from the ORF before
     # it is aligned. A padded assembly gap is not sequence, and MAFFT cannot know that: with
     # `--anysymbol` an X-run is a residue run to be placed, and placing it drags real residues with

@@ -620,3 +620,41 @@ def test_segment_one_refuses_a_cds_annotated_across_nothing_but_padding() -> Non
     )
     assert result.method == "none"
     assert result.orf_nt == "" and result.aa == ""
+
+
+def test_inferred_orf_does_not_let_a_short_perfect_run_beat_a_long_polyprotein() -> None:
+    """The `MT957199` defect. A 22-residue run whose every 6-mer is in the pool scores 1.000; the
+    record's real 2,212-residue polyprotein scores 0.998. Ranking on recognition alone hands the
+    row to the 22-mer and leaves 2,190 residues unplaced. Recognition gates, length ranks."""
+    # A tail the pool has never seen, so the long run's containment is high but not perfect --
+    # which is exactly the real case: 2,203 of 2,207 6-mers recognised.
+    long_protein = LONG_PEPTIDE * 4 + "KKKKKK"           # 178 aa, the real ORF
+    short_perfect = SHORT_PEPTIDE[:20]                   # 20 aa, every k-mer in the pool
+    sequence = (
+        back_translate(short_perfect) + "TAA" + back_translate(long_protein) + "TAA"
+    )
+    pool = pool_of(short_perfect, LONG_PEPTIDE * 4)
+
+    short_h = pool.protein_homology(short_perfect)
+    long_h = pool.protein_homology(long_protein)
+    assert short_h > long_h >= SPEC.infer_confident_homology, (
+        "the premise: the short run is better recognised, and both read as protein"
+    )
+
+    result = sg._inferred_orf(sequence, SPEC, pool)
+    assert result is not None
+    assert result[1] == long_protein, "the longer protein-reading run has to win"
+
+
+def test_inferred_orf_still_refuses_a_long_run_that_does_not_read_as_protein() -> None:
+    """The other half of the gate: length only ranks among candidates that clear
+    `infer_confident_homology`. A long unrecognised run must not win on length alone."""
+    junk = LONG_PEPTIDE * 4
+    real = SHORT_PEPTIDE
+    sequence = back_translate(junk) + "TAA" + back_translate(real) + "TAA"
+    pool = pool_of(real)
+    assert pool.protein_homology(junk) < SPEC.infer_confident_homology
+
+    result = sg._inferred_orf(sequence, SPEC, pool)
+    assert result is not None
+    assert result[1] == real
