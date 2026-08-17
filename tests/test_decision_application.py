@@ -70,6 +70,11 @@ from enterovirus_genbank_curated.curate.apply import (
 # R-CONSTRUCT-2 declined on both until 2026-07-31, so their new FALSE rows fill a cell that was
 # unresolved — the queue-and-ledger loop closing on the two records that were the queue's point.
 EXPECTED_TALLY = {
+    # 2026-08-17, from the twenty decisions e506147 and 4b2fb32 added and the four whose status
+    # they changed (two to `superseded`, two to `retired`). The two that retired and the two that
+    # superseded leave `applied_unchanged`, which is why that falls while the two `not_in_force`
+    # counts rise by two apiece; the new decisions land as 13 `applied_changed` and 4
+    # `applied_filled_unresolved`.
     # +115 on 2026-07-31: the 95-record cVDPV epidemiological override and 20 strain-identity/
     # provenance decisions, every one filling a cell the rule had been declining.
     # +28 the same day: the reference_or_lab_text (24) and group_A_text_owned (4) decisions closing
@@ -162,7 +167,7 @@ EXPECTED_TALLY = {
     # records become `subject_outside_carve` (6 -> 12) and their own new rows land as
     # `applied_exclusion` (173 -> 176). The five serotype relabels and six engineered TRUEs are
     # `applied_changed`, since the rules reach a different answer on every one.
-    "applied_filled_unresolved": 3559 - 3,
+    "applied_filled_unresolved": 3559 - 3 + 4,
     # -4 more on 2026-08-15: four `iVDPV` decisions the attestation branch now reaches unaided,
     # because the record's own `/isolation_source` names an immunodeficient host and the rule reads
     # it. `iVDPV` in this tally goes 40 -> 44. They stay active under the 2026-08-14 ruling — the
@@ -170,21 +175,21 @@ EXPECTED_TALLY = {
     # +1 on 2026-08-16: `DQ205099`'s `engineered_or_construct = TRUE`, the seventh record of the
     # class R-CONSTRUCT-2's two structural tests cannot reach. It changes the cell, so it lands
     # here rather than in `applied_unchanged`.
-    "applied_changed": 1699 - 4 + 8 - 4 + 1,
+    "applied_changed": 1699 - 4 + 8 - 4 + 1 + 13,
     # +4 on 2026-08-14 from the named-wild-reference guard: four `classification` decisions
     # asserting `wild` on a Mahoney, Brunhilde, Lansing or Saukett deposit are now reached by the
     # rule unaided. They stay active under the 2026-08-14 ruling — R-CLASS-2 is the rule still
     # moving, and these four became redundant through a branch added this week.
-    "applied_unchanged": 534 - 11 + 4 + 4,
+    "applied_unchanged": 534 - 11 + 4 + 4 - 2,
     "applied_exclusion": 173 + 3,
-    "not_in_force_retired": 183 + 11,
+    "not_in_force_retired": 183 + 11 + 2,
     "no_canonical_field": 123,
     "subject_outside_carve": 6 + 6,
     # +3 on 2026-07-31: the vocabulary repairs superseded the three active decisions whose value was
     # outside the controlled vocabulary (`CHAT`, a bare `engineered`, `iVPDV`).
     # +2 on 2026-08-01: `CS406483` and `PU749298`'s `wild` rows, superseded by the `engineered/lab`
     # the 4.1.0 adjudication asserts.
-    "not_in_force_superseded": 10 + 3 + 2,
+    "not_in_force_superseded": 10 + 3 + 2 + 2,
 }
 
 

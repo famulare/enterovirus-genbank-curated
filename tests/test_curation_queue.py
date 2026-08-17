@@ -117,8 +117,12 @@ from enterovirus_genbank_curated.derive.partition import (
 # and 62 `sampling_frame` on the Rico-Hesse/Kew wild PV1 panel, 11 `origin_class` and 36
 # `sampling_frame` on laboratory and patent deposits. The other 2 of the 173 rows land on `S61236`,
 # whose cells were determined rather than declined, so they were never queued.
+# 25,061, 2026-08-17: net -4 from the twenty decisions e506147 and 4b2fb32 added and the four
+# whose status they changed. Filling a declined cell removes its work item; retiring or
+# superseding a decision hands one back.
 EXPECTED_QUEUE_WORK_ITEMS = (
     28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334 - 427 - 80 - 17 - 101 - 171 - 1 - 3
+    - 4
 )
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record
