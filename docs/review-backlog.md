@@ -563,7 +563,7 @@ verification were the same act and must not be.
 6. **Nothing self-certified.** The adversarial-reviewer pattern found ~59 defects across four
    charters with near-zero overlap. It is a standing gate, not an escalation.
 
-### B56. `wild` was reachable without a sequence measurement, and unreachable *with* one — **CURATION CLOSED 2026-08-16, R4 CLOSED, R1-R3 open**
+### B56. `wild` was reachable without a sequence measurement, and unreachable *with* one — **CLOSED 2026-08-16**
 
 Found by screening every `wild` record against the synonymous capsid distance the explorer already
 plots (`site/data/panels/PV*.json`, `divergence.P1.synonymous / .assessable`). 40 records sit below
@@ -578,12 +578,16 @@ measurement have a **minimum** of 0.417, so nothing in that tier is near the bou
 | `text_classification_no_sequence_signal` | 13 | 12 overturned |
 
 Twenty records changed value; see `low_synonymous_capsid_review_2026-08-16` in the ledger — the
-twentieth, `HC025129`, was found by R4's own check rather than by this screen, see below. The
-curation is closed. What stays open is why the pipeline reached those values, which is three
-separate mechanisms and not one.
+twentieth, `HC025129`, was found by R4's own check rather than by this screen, see below.
+
+R1-R3 below were curator-ruled 2026-08-16 to stay as measured rather than changed: each is a
+`compare_vp1` measurement question with a real research design behind it (what threshold, on what
+window, calibrated how), not a curation gap this ledger closes by adjudicating a record. The
+ledger correction above stands regardless of how any of the three are eventually decided — none of
+it depended on changing the rule.
 
 **R1. `compare_vp1` cannot measure any VP1 window between 50 and ~180 comparable nt — the guard is
-unsatisfiable, not failed.** Below `VP1_HOMOGENEITY_FLOOR_NT` (300) `compare_vp1` requires
+unsatisfiable, not failed — RULED 2026-08-16: leave as is.** Below `VP1_HOMOGENEITY_FLOOR_NT` (300) `compare_vp1` requires
 `_capsid_homogeneous`, which returns `False` below `MIN_HOMOGENEITY_CHUNKS` (2) qualifying chunks;
 chunks are `CAPSID_HOMOGENEITY_CHUNK_NT` (150) wide and need `MIN_HOMOGENEITY_CHUNK_NT` (30)
 comparable each, so two of them need ≥180 nt. `MIN_VP1_NT = 50` therefore buys nothing below 180.
@@ -597,8 +601,15 @@ systematically more conserved, so making the guard satisfiable would move genuin
 undecided band. The one-sided inference (0/90 from Sabin cannot be wild) is safe; the two-sided band
 is not. Any fix has to say which of the two it is asserting.
 
+Curator ruling, 2026-08-16: leave the guard as is rather than recalibrate a short-window band. A
+new threshold fitted to make short windows resolvable is exactly the parameter-fitted-to-the-answer
+pattern the generalized recombinant rule was reverted for once already (see the 3.3.0 discussion
+above and `docs/classification-migration-gap.md`). This is a question about what divergence *means*
+over a short conserved window, not a curation gap — recalibrating it is a measurement design
+question, not a ledger correction, and stays open as research rather than as an action item here.
+
 **R2. `compare_vp1` skips the homogeneity guard entirely at `compared >= 300`, so a real in-frame
-indel inflates divergence silently.** `AF065158` and `AB467472` each carry a 6 nt deletion in the
+indel inflates divergence silently — RULED 2026-08-16: leave as is.** `AF065158` and `AB467472` each carry a 6 nt deletion in the
 VP1 BC loop; the ungapped diagonal fits the 606 nt downstream, the 300 nt upstream reads at the
 unrelated-sequence rate, and the six-chunk profiles `77 80 1 0 0 0` and `77 80 1 0 1 1` average to
 26%. `evidence.py`'s own docstring reasons that a real indel must be a multiple of three and
@@ -619,14 +630,27 @@ discontinuity without any value changing — the same shape as the 3.2.0 additio
 column in a shipped artifact and has not been done. The scan that produced these figures is
 reproducible from `derive/evidence.compare_vp1` by retaining `chunk_divergences`.
 
-**R3. `_group_b_text_fallback` can assert `wild` from a cited paper's *title*.** 516 records take
+Curator ruling, 2026-08-16: leave as is, for the same reason as R1. Whether and how to surface a
+breakpoint-spanning divergence figure is a question about what the measurement should represent,
+not about whether any shipped label is wrong — the two records that were wrong are already fixed
+above. Adding a chunk-deviation column remains available if wanted later; it is additive and would
+not need to be bundled with this ruling.
+
+**R3. `_group_b_text_fallback` can assert `wild` from a cited paper's *title* — RULED 2026-08-16:
+leave as is.** 516 records take
 `wild` this way (plus 176 `VDPV`, 16 `Sabin-like`). `R-CLASS-2` matched "wild-type" in *"Genetic
 recombination in wild-type poliovirus"* and stamped it on all 49 records of that submission, 11 of
 which are 0-2/150 nt from Sabin. Of the 516, 315 have no capsid coverage at all so nothing can check
 them; 201 can be checked and 13 were contradicted. This is a policy question rather than a bug —
 `wild` is the most consequential value in the column and this is the only tier where it rests on a
-study's subject rather than on the deposit. Open: should the fallback emit `wild` at all, or decline
-and queue?
+study's subject rather than on the deposit.
+
+Curator ruling, 2026-08-16: keep the fallback as is. Checked against the 201 records where a
+sequence measurement exists to check it against, it agrees 93.5% of the time (188/201); the 13
+contradictions found by this review are corrected above, by ledger row rather than by narrowing the
+rule. Declining and queuing all 516 would lose 315 records with no sequence signal at all any other
+mechanism could resolve, to guard against a failure rate this review has now measured and fixed
+where it was found.
 
 **R4. Byte-identical records could carry contradictory `poliovirus_classification` — CLOSED
 2026-08-16.** `JC013131` shipped blank while `DI499174`, same `sequence_sha256` and same patent
