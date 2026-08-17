@@ -206,6 +206,13 @@ def segmentation_audit(
         "noncoding_offered_to_5ncr": sum(
             1 for row in rows if row.method == "noncoding" and row.ncr5
         ),
+        # An inferred record's `ncr5` is empty unless `segment._boundary_cut` measured a 5'UTR head
+        # on the front of its ORF, so its length *is* the count — see `Segmentation`'s docstring for
+        # why that does not need a field of its own.
+        "inferred_utr_head_cut": sum(1 for row in rows if row.method == "inferred" and row.ncr5),
+        "inferred_utr_head_nt": sum(
+            len(row.ncr5) for row in rows if row.method == "inferred"
+        ),
         "rows_with_unsequenced_run_dropped": sum(1 for row in rows if row.unsequenced_nt),
         "unsequenced_nt_dropped": sum(row.unsequenced_nt for row in rows),
     }

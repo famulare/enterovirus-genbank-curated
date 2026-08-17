@@ -313,6 +313,16 @@ class CodonSpec:
     # margin, rather than merely to win, is what keeps `OR538737` on the coding side: 0.439 coding
     # against 0.554 5'NCR, a real 299 aa ORF on a fragment that genuinely spans the 5'UTR/capsid
     # boundary. The six sit at margins of 0.645-0.842 and OR538737 at 0.115; 0.30 is in the gap.
+    #
+    # Keeping `OR538737` on the coding side is right about the record and was wrong about the span.
+    # 393 of its 897 nt are capsid and 504 are 5'UTR, and all 897 went to the CDS block, where they
+    # held `POLIO_unified`'s first 462 columns open with no other row in any of them.
+    # `segment._boundary_cut` cuts the span at the boundary instead and sends the head to the 5'NCR
+    # block, which is R2's own claim applied to part of a record rather than all of it. That rule
+    # deliberately adds no field here: it gates on `infer_min_aa`, `infer_min_homology`,
+    # `infer_confident_homology` and `noncoding_min_ncr_homology`, each already meaning what the cut
+    # needs it to mean, and both of its decisions land in a measured empty interval. See that
+    # function's docstring for the intervals and for the ground-truth validation.
     noncoding_homology_margin: float = 0.30
     # Typed so no configuration edit can turn it on. `--keeplength` deletes insertion residues,
     # which would break the 1:1 amino-acid-to-codon backtranslate invariant the CDS block rests on.

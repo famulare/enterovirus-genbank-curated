@@ -51,8 +51,10 @@ BLOCK_5NCR = "5ncr"
 BLOCK_CDS = "cds"
 BLOCK_3NCR = "3ncr"
 
-# A record whose segmentation succeeded via inference has no NCR at all by design — not a
+# A record whose segmentation succeeded via inference has no NCR on this side by design — not a
 # failure, and not one of align.segment's own ABSENCE_* reasons (those are for method == "none").
+# "On this side" rather than "at all" since `segment._boundary_cut`: an inferred record's 3' side is
+# always empty, and its 5' side is empty unless a 5'UTR head was measured on the front of its ORF.
 REASON_INFERRED_NO_NCR = "inferred_no_ncr"
 # The record has coding sequence, but none of it lands inside the reference CDS span — an anchored
 # stack outcome (a 5'UTR-only fragment, typically), not a segmentation failure.
@@ -120,9 +122,13 @@ def _ncr_absence_reason(
     if segmentation.method == "none":
         assert segmentation.absence_reason is not None
         return segmentation.absence_reason
-    if segmentation.method == "inferred":
-        return REASON_INFERRED_NO_NCR
     fragment = segmentation.ncr5 if side == "5p" else segmentation.ncr3
+    # An inferred record that offers a fragment — a measured 5'UTR head — is not the "no NCR by
+    # design" case and has to answer for its absence the same way every other fragment does: it is
+    # below the population minimum, or oversized. Only an inferred record offering nothing keeps the
+    # by-design reason.
+    if segmentation.method == "inferred" and not fragment:
+        return REASON_INFERRED_NO_NCR
     classification = structural.classify_fragment(fragment, side_spec)
     if classification == structural.FRAGMENT_INCLUDED:
         raise ContractError(

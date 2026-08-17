@@ -7,17 +7,24 @@ the CM itself is a committed input-of-record (`registry/alignment_seeds/`, verif
 `align.seeds`), not rebuilt here — the `mafft-xinsi`/`RNAalifold`/`cmbuild` seed-and-build path
 those scripts also contain is a separate, gated, not-expected-to-run prerequisite.
 
-Two of `align.segment`'s three methods carry NCR content. An `"annotated"` record carries both
-sides, cut at its own CDS bounds. A `"noncoding"` record carries its whole sequence on the 5' side
-and nothing on the 3': it has no reading frame at all, so — unlike an `"inferred"` record, which
-still has no NCR because *its* frame's boundaries are not trustworthy — there are no boundaries to
-distrust, and 1,261 of the 1,262 such records that map to a reference at all are 5'UTR amplicons.
-The 3' side is not offered them because the 3'UTR is ~70 nt against the 5'UTR's ~740, so a
-several-hundred-nucleotide non-coding enterovirus fragment is a 5'UTR product by construction.
+Which of `align.segment`'s four methods carry NCR content is that module's business, not this one's,
+and this module deliberately does not ask: membership here is decided by whether a record offers a
+non-empty fragment on this side, which is the predicate the docstrings were describing all along. An
+`"annotated"` record carries both sides, cut at its own CDS bounds. A `"noncoding"` record carries
+its whole sequence on the 5' side and nothing on the 3': it has no reading frame at all, so there
+are no boundaries to distrust, and 1,261 of the 1,262 such records that map to a reference at all
+are 5'UTR amplicons. An `"inferred"` record usually carries nothing, because *its* frame's
+boundaries are not trustworthy — but it carries a 5' fragment when `segment._boundary_cut` measured
+a 5'UTR head on the front of its ORF, which is a boundary read off the corpus rather than guessed.
+A `"none"` record carries nothing at all.
 
-Everything else — an inferred record, or an annotated or noncoding one whose fragment falls outside
-the declared population window (see `contract.NcrSideSpec`) — gets no block here; `align.stitch`
-pads it with an all-gap block of the same width, exactly as upstream's own stitch step does.
+The 3' side is not offered to a noncoding or inferred record because the 3'UTR is ~70 nt against the
+5'UTR's ~740, so a several-hundred-nucleotide non-coding enterovirus fragment is a 5'UTR product by
+construction.
+
+Everything else — a record with no fragment on this side, or one whose fragment falls outside the
+declared population window (see `contract.NcrSideSpec`) — gets no block here; `align.stitch` pads it
+with an all-gap block of the same width, exactly as upstream's own stitch step does.
 """
 
 from __future__ import annotations
@@ -86,21 +93,21 @@ def _ncr_population(
     side: str,
     spec: contract.NcrSideSpec,
 ) -> tuple[dict[str, str], tuple[str, ...]]:
-    """{accession: ncr sequence}, over records in `accessions` that carry a fragment on this side
-    at all (see the module docstring for which methods those are), whose fragment is non-empty and
-    within `[pop_min_nt, pop_max_nt]`. Also returns the accessions excluded for being oversized —
-    see `NcrSideSpec`'s docstring for what that means.
+    """{accession: ncr sequence}, over records in `accessions` whose fragment on this side is
+    non-empty and within `[pop_min_nt, pop_max_nt]`. Also returns the accessions excluded for being
+    oversized — see `NcrSideSpec`'s docstring for what that means.
 
-    A `noncoding` record's `ncr3` is the empty string, so the membership test below needs no side
-    special-case: `classify_fragment` returns `empty_fragment` for it on the 3' side, which is the
-    same answer, reached by the same predicate, that an annotated record with no 3' tail gets.
+    `classify_fragment` is the only membership test, and there is no method filter in front of it.
+    There was one, listing the methods that carry NCR content, and it was redundant on the day it
+    was written — a method that carries nothing on a side carries the empty string there, which
+    `classify_fragment` already answers `empty_fragment` for. Redundant and, once `segment` learned
+    to cut a 5'UTR head off an inferred ORF, wrong: the filter would have dropped that head
+    silently, and the record would have looked like an ordinary inferred one with no 5' block.
     """
     population: dict[str, str] = {}
     excluded: list[str] = []
     for accession in accessions:
         segmentation = segmentations[accession]
-        if segmentation.method not in ("annotated", "noncoding"):
-            continue
         sequence = segmentation.ncr5 if side == "5p" else segmentation.ncr3
         classification = classify_fragment(sequence, spec)
         if classification == FRAGMENT_INCLUDED:

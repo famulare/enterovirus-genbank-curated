@@ -141,9 +141,16 @@ class Segmentation:
     """One record's segmentation result.
 
     `ncr5`/`ncr3` are populated on the annotated path, where the CDS bounds say where the NCRs are.
-    An *inferred* frame's boundaries are not trustworthy, so it still carries no NCR at all. A
-    `noncoding` record is the third case and the reason this docstring changed: it has no frame, so
-    there are no boundaries to distrust, and its whole sequence goes into `ncr5`.
+    A `noncoding` record has no frame, so there are no boundaries to distrust, and its whole
+    sequence goes into `ncr5`.
+
+    An *inferred* frame's boundaries are not trustworthy in general, so it carries no `ncr3` and
+    usually no `ncr5` either. The exception is the one boundary that is not a guess but a
+    measurement: when `_boundary_cut` finds a 5' stretch of the ORF that the 5'NCR pool recognises
+    and the protein pool does not, that stretch is 5'UTR on the evidence of the corpus, and it goes
+    to `ncr5` while the rest stays the ORF. So for an inferred record `ncr5` is either empty or
+    exactly the cut head — which is what lets the count be read back off the segmentation without a
+    field to carry it.
     """
 
     accession: str
@@ -418,6 +425,102 @@ def _inferred_orf(
     return best.orf_nt, best.aa, best.strand, homology
 
 
+def _recognised_residues(aa: str, pool: HomologyPool) -> list[bool]:
+    """Per residue: does it sit inside at least one k-mer the protein pool has seen?
+
+    A resolution `pool.protein_homology` does not have. That score answers "how much of this run
+    reads as protein" over the whole run; this answers "which part of it does", which is what
+    locating a boundary inside a run requires.
+    """
+    size = pool.protein_kmer
+    covered = [False] * len(aa)
+    for start in range(len(aa) - size + 1):
+        window = aa[start : start + size]
+        # Same convention as `protein_homology`: an `X` or a masked stop breaks the k-mer rather
+        # than being spelled through, so it can neither match nor be credited as covered.
+        if "X" in window or "*" in window:
+            continue
+        if window in pool.protein:
+            covered[start : start + size] = [True] * size
+    return covered
+
+
+def _ncr5_covered_codons(orf_nt: str, n_codons: int, pool: HomologyPool) -> list[bool]:
+    """Per codon: does any of its three nucleotides sit inside a 12-mer the 5'NCR pool has seen?"""
+    size = pool.ncr5_kmer
+    sequence = orf_nt.upper()
+    covered = [False] * len(sequence)
+    for start in range(len(sequence) - size + 1):
+        if sequence[start : start + size] in pool.ncr5:
+            covered[start : start + size] = [True] * size
+    return [any(covered[i * 3 : i * 3 + 3]) for i in range(n_codons)]
+
+
+def _boundary_cut(aa: str, orf_nt: str, spec: contract.CodonSpec, pool: HomologyPool) -> int:
+    """How many codons of 5'UTR to cut off this ORF's 5' end, or 0 to leave it whole.
+
+    A deposit can be one amplicon spanning the 5'UTR/capsid boundary, and if the 5'UTR happens to
+    read stop-free in the polyprotein's own frame then the whole thing is one candidate ORF and
+    `_inferred_orf` accepts it: the translation carries no stop, and enough of its back half reads
+    as protein to clear the gate. `OR538737` is that deposit — GenBank annotates its 897 nt with no
+    CDS at all, only a `misc_feature` reading "similar to polyprotein" — and the 504 nt of 5'UTR it
+    dragged into the CDS block held the first 462 columns of `POLIO_unified`'s CDS open by itself,
+    every one of them a column no other row occupies.
+
+    So the same evidence R2 uses to move a whole record out of the CDS block is applied to a
+    sub-span: the head is 5'UTR if the 5'NCR pool recognises it and the protein pool does not.
+
+    *Where* to cut has no free parameter. Score each candidate cut by how many codons the
+    two-segment reading explains — 5'NCR-covered before it, protein-covered at and after it — and
+    take the best. *Whether* to cut is gated, and every threshold is one that already exists and
+    already means this:
+
+    - `infer_min_aa`, on both sides. A head shorter than the floor for being an ORF at all is not
+      evidence of anything, and this gate carries most of the weight: 125 of the 780 inference-path
+      records pass all three homology gates on a head of 5-13 codons, because some submitters place
+      their CDS start a few codons downstream of the true AUG and so the polyprotein's own first
+      codons are *in* the 5'NCR pool. Measured, no record has a cut between 14 and 39 codons, so 20
+      sits in an empty interval and cutting those 125 is not a judgement call being made narrowly.
+    - `noncoding_min_ncr_homology`, on the head: it has to read as 5'UTR. Over the 14 records with
+      a cut of 20 codons or more the score is 0.968 (`OR538737`) and 0.688 (`OM885400`), then
+      0.055 and below for the other twelve — an empty interval of (0.055, 0.688) around 0.40.
+    - `infer_min_homology`, on the head, negated: it must *not* read as protein.
+    - `infer_confident_homology`, on the tail: what is left has to be real coding sequence. This is
+      also what makes emptying the ORF unreachable — a cut at the full length leaves no tail, an
+      empty tail scores 0.0, and 0.0 clears no floor.
+
+    Validated against a boundary whose position is known rather than against itself. Splicing
+    `OR538737`'s own 504 nt head onto 600 different annotated polyproteins, the cut lands on the
+    true join — 168 — in 600 of 600, and the gate fires on all 600. Neither control fires: 0 of 300
+    intact annotated polyproteins are cut, and 0 of 100 bare 5'UTRs keep a coding tail. Read off
+    3,748 annotated records, a 5'UTR is stop-free for a median of 6 codons upstream of its real AUG
+    and never more than 95, which is why this fires twice in 24,305 deposits and not two hundred
+    times.
+    """
+    if not pool.protein or not pool.ncr5:
+        return 0
+    protein = _recognised_residues(aa, pool)
+    utr = _ncr5_covered_codons(orf_nt, len(aa), pool)
+    # `>=` keeps the largest of a tie: the 3'-most boundary the evidence supports, which is the one
+    # that never leaves recognised 5'UTR inside the ORF.
+    best_cut, best_score = 0, sum(protein)
+    utr_before, protein_after = 0, sum(protein)
+    for cut in range(1, len(aa) + 1):
+        utr_before += utr[cut - 1]
+        protein_after -= protein[cut - 1]
+        if utr_before + protein_after >= best_score:
+            best_cut, best_score = cut, utr_before + protein_after
+    if best_cut < spec.infer_min_aa or len(aa) - best_cut < spec.infer_min_aa:
+        return 0
+    if pool.ncr5_homology(orf_nt[: best_cut * 3]) < spec.noncoding_min_ncr_homology:
+        return 0
+    if pool.protein_homology(aa[:best_cut]) >= spec.infer_min_homology:
+        return 0
+    if pool.protein_homology(aa[best_cut:]) < spec.infer_confident_homology:
+        return 0
+    return best_cut
+
+
 def _drop_ambiguous_runs(
     orf_nt: str, aa: str, spec: contract.CodonSpec
 ) -> tuple[str, str, int]:
@@ -580,13 +683,18 @@ def segment_one(
             ncr5_homology - coding_homology <= spec.noncoding_homology_margin
         )
         if reads_as_protein:
+            # `orf_nt` is already in `orf_strand`'s orientation, so a cut head is too, and reaches
+            # the 5'NCR block the way round `cmalign` needs without a second orientation decision.
+            head = _boundary_cut(aa, orf_nt, spec, pool)
+            inferred_ncr5 = orf_nt[: head * 3]
+            orf_nt, aa = orf_nt[head * 3 :], aa[head:]
             orf_nt, aa, unsequenced_nt = _drop_ambiguous_runs(orf_nt, aa, spec)
             if aa:  # see the annotated path above for why this is not assumed away
                 return Segmentation(
                     accession=accession,
                     method="inferred",
                     strand=orf_strand,
-                    ncr5="",
+                    ncr5=inferred_ncr5,
                     ncr3="",
                     orf_nt=orf_nt,
                     aa=aa,

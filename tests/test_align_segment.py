@@ -488,6 +488,111 @@ def test_segment_one_none_when_there_is_no_cds_and_neither_pool_recognises_it() 
     assert result.absence_reason == sg.ABSENCE_NO_CODING_OR_NCR_HOMOLOGY
 
 
+# --- _boundary_cut: one amplicon spanning the 5'UTR/capsid boundary ------------------------------
+#
+# The `OR538737` shape. Its 897 nt read stop-free in one frame from end to end, so the whole
+# deposit arrived as a single candidate ORF and the back half was real enough protein to be
+# accepted -- dragging 504 nt of 5'UTR into the CDS block, where it held POLIO_unified's first 462
+# columns open with no other row in any of them.
+#
+# A "5'UTR head" below is any nucleotide run the NCR pool recognises, whose translation the protein
+# pool does not, and which carries no stop codon -- that last part being the whole rarity of the
+# real case. Its residues are drawn from an alphabet disjoint from LONG_PEPTIDE's, so the two pools
+# cannot both claim it.
+UTR_HEAD_PEPTIDE = "PQRSNHFI" * 4  # 32 residues, over {P,Q,R,S,N,H,F,I}
+UTR_HEAD_NT = back_translate(UTR_HEAD_PEPTIDE)  # 96 nt, stop-free by construction
+
+
+def boundary_crossing_pool() -> sg.HomologyPool:
+    """A pool that knows the head as 5'UTR and the tail as protein, and neither as the other."""
+    return pool_with_ncr(UTR_HEAD_NT, LONG_PEPTIDE)
+
+
+def test_boundary_cut_finds_the_join_between_a_utr_head_and_a_coding_tail() -> None:
+    aa = UTR_HEAD_PEPTIDE + LONG_PEPTIDE
+    orf_nt = UTR_HEAD_NT + back_translate(LONG_PEPTIDE)
+    assert sg._boundary_cut(aa, orf_nt, SPEC, boundary_crossing_pool()) == len(UTR_HEAD_PEPTIDE)
+
+
+def test_segment_one_sends_a_cut_utr_head_to_the_5ncr_block_and_keeps_the_tail_coding() -> None:
+    """Both halves survive, each in the block that can align it. The head is not discarded and the
+    tail is not left carrying it — which is the difference between this and routing the whole record
+    one way or the other, the only two outcomes available before."""
+    sequence = UTR_HEAD_NT + back_translate(LONG_PEPTIDE)
+    result = sg.segment_one(
+        "acc", sequence, "acc.1", {}, {}, {}, SPEC, boundary_crossing_pool()
+    )
+    assert result.method == "inferred"
+    assert result.ncr5 == UTR_HEAD_NT
+    assert result.aa == LONG_PEPTIDE
+    assert result.orf_nt == back_translate(LONG_PEPTIDE)
+    # Nothing invented and nothing lost: the two blocks partition the ORF that was accepted.
+    assert result.ncr5 + result.orf_nt == sequence
+
+
+def test_boundary_cut_leaves_an_intact_polyprotein_alone() -> None:
+    """The negative control, and the one that matters most: 0 of 300 real annotated polyproteins
+    are cut, so a synthetic one must not be either."""
+    orf_nt = back_translate(LONG_PEPTIDE)
+    assert sg._boundary_cut(LONG_PEPTIDE, orf_nt, SPEC, boundary_crossing_pool()) == 0
+
+
+def test_boundary_cut_refuses_a_head_too_short_to_be_evidence() -> None:
+    """This gate carries most of the weight. 125 of 780 inference-path records clear all three
+    homology gates on a head of 5-13 codons, because some submitters annotate their CDS a few
+    codons downstream of the true AUG and so a polyprotein's own first codons are *in* the 5'NCR
+    pool. Measured, no record has a cut between 14 and 39 codons."""
+    short_head_peptide = UTR_HEAD_PEPTIDE[:10]
+    short_head_nt = back_translate(short_head_peptide)
+    pool = pool_with_ncr(short_head_nt, LONG_PEPTIDE)
+    aa = short_head_peptide + LONG_PEPTIDE
+    orf_nt = short_head_nt + back_translate(LONG_PEPTIDE)
+    assert sg._boundary_cut(aa, orf_nt, SPEC, pool) == 0
+    # ...and with the floor lowered, the same head is cut, so it is the floor refusing it and not
+    # some other gate happening to fail.
+    assert sg._boundary_cut(aa, orf_nt, replace(SPEC, infer_min_aa=5), pool) == 10
+
+
+def test_boundary_cut_refuses_a_head_neither_pool_recognises() -> None:
+    """`OR538735`'s shape, and the reason this rule does not fix it. Its ORF opens with 30 residues
+    the protein pool does not recognise, and the 5'NCR pool does not recognise them either — 0.000.
+    Not reading as protein is not evidence of being 5'UTR, exactly as for a whole record."""
+    pool = pool_with_ncr(UTR_LIKE, LONG_PEPTIDE)  # knows a 5'UTR, but not this head's
+    aa = UTR_HEAD_PEPTIDE + LONG_PEPTIDE
+    orf_nt = UTR_HEAD_NT + back_translate(LONG_PEPTIDE)
+    assert sg._boundary_cut(aa, orf_nt, SPEC, pool) == 0
+
+
+def test_boundary_cut_cannot_empty_the_orf() -> None:
+    """A record that is 5'UTR from end to end is R2's case, not this one, and the two gates on the
+    tail are what keep them apart. Here the changepoint runs to the full length, so the tail is
+    empty: it clears neither `infer_min_aa` nor `infer_confident_homology`, and either alone is
+    enough. Reaching R2 means the whole record goes to the 5'NCR block with `method` recording that
+    it was never coding — not an ORF row with nothing in it."""
+    aa = UTR_HEAD_PEPTIDE * 2
+    orf_nt = UTR_HEAD_NT * 2
+    assert sg._boundary_cut(aa, orf_nt, SPEC, pool_with_ncr(orf_nt, LONG_PEPTIDE)) == 0
+
+
+def test_boundary_cut_is_a_no_op_against_an_empty_pool() -> None:
+    """Pass 1 of `segment_all` runs with `EMPTY_POOL`, and no reading of it may cut anything."""
+    aa = UTR_HEAD_PEPTIDE + LONG_PEPTIDE
+    assert sg._boundary_cut(aa, back_translate(aa), SPEC, EMPTY) == 0
+
+
+def test_a_cut_head_on_the_minus_strand_comes_back_in_the_orf_s_orientation() -> None:
+    """The head is sliced off `orf_nt`, which is already oriented, so the 5'NCR block receives it
+    the way round `cmalign` needs without a second orientation decision being made anywhere."""
+    forward = UTR_HEAD_NT + back_translate(LONG_PEPTIDE)
+    result = sg.segment_one(
+        "acc", sg._revcomp(forward), "acc.1", {}, {}, {}, SPEC, boundary_crossing_pool()
+    )
+    assert result.method == "inferred"
+    assert result.strand == "-"
+    assert result.ncr5 == UTR_HEAD_NT
+    assert result.aa == LONG_PEPTIDE
+
+
 # --- segment_all: the real table-loading path, against tiny synthetic fixtures --------------------
 
 

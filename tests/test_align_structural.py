@@ -72,15 +72,25 @@ def test_ncr_population_keeps_annotated_records_within_the_window() -> None:
     assert excluded == ()
 
 
-def test_ncr_population_drops_inferred_and_none_methods() -> None:
+def test_membership_reads_the_fragment_and_never_the_method() -> None:
+    """There is no method filter, and there must not be one.
+
+    `segment` decides which methods carry a fragment on which side by setting the fragment; this
+    module's job is only to ask whether there is one. A filter here that also knew the answer would
+    be a second copy of that decision, and the copy would have gone stale the moment `segment`
+    learned to cut a 5'UTR head off an inferred ORF — the head would have been dropped silently.
+    """
     segmentations = {
-        "inferred": make_segmentation("inferred", ncr3="A" * 50, method="inferred"),
-        "none": make_segmentation("none", ncr3="A" * 50, method="none"),
+        "inferred_with_head": make_segmentation(
+            "inferred_with_head", ncr5="A" * 60, method="inferred"
+        ),
+        "inferred_plain": make_segmentation("inferred_plain", ncr5="", method="inferred"),
+        "none": make_segmentation("none", ncr5="", method="none"),
     }
     pop, _ = structural._ncr_population(
-        segmentations, frozenset(segmentations), "3p", SIDE_SPEC
+        segmentations, frozenset(segmentations), "5p", contract.NcrSideSpec(50, 1000, "unused")
     )
-    assert pop == {}
+    assert pop == {"inferred_with_head": "A" * 60}
 
 
 def test_ncr_population_drops_empty_fragments() -> None:
@@ -326,8 +336,10 @@ def test_build_ncr_block_refuses_an_empty_population_window(repository_root: Pat
         three_prime=contract.NcrSideSpec(20, 150, "registry/alignment_seeds/polio_ncr_3p.cm"),
     )
     population = make_population([make_record("A")], ncr)
-    # method="inferred" -- carries no NCR content at all -- so the 3p population is empty.
-    segmentations = {"A": make_segmentation("A", ncr3=_NCR3_A, method="inferred")}
+    # An inferred record carries nothing on the 3' side, so the 3p population is empty. Stated as
+    # an empty fragment rather than as a method, because the method is not what is being tested and
+    # `_ncr_population` does not read it.
+    segmentations = {"A": make_segmentation("A", ncr3="", method="inferred")}
     structural.build_ncr_block(
         population, "3p", segmentations, ncr.three_prime, toolchain, scratch, guard, ROOT,
         threads=1, timeout_s=60, index=0,
