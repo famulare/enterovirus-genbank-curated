@@ -1,14 +1,16 @@
 {
   "absence_reasons": {
     "3ncr:below_pop_min": 2,
-    "3ncr:empty_fragment": 1120,
-    "3ncr:inferred_no_ncr": 155,
-    "3ncr:no_cds_untranslatable": 33,
+    "3ncr:empty_fragment": 1220,
+    "3ncr:inferred_no_ncr": 54,
+    "3ncr:no_coding_or_ncr_homology": 34,
+    "5ncr:below_pop_min": 6,
     "5ncr:empty_fragment": 1083,
-    "5ncr:inferred_no_ncr": 155,
-    "5ncr:no_cds_untranslatable": 33,
-    "cds:no_cds_overlap": 86,
-    "cds:no_cds_untranslatable": 8
+    "5ncr:inferred_no_ncr": 54,
+    "5ncr:no_coding_or_ncr_homology": 34,
+    "cds:no_cds_untranslatable": 6,
+    "cds:no_coding_homology": 86,
+    "cds:no_coding_or_ncr_homology": 2
   },
   "anchor": {
     "aa_guard_increase_pp": 30.0,
@@ -40,9 +42,9 @@
     }
   },
   "artifact_sha256": {
-    "coverage": "89416c83baeb1a61f3c7287647b8bb88fee649ae98bb69ec1941861a2eb76709",
-    "fasta": "301b8624442809c3c12c0940cfcbc458ed58d914b2a64bba73248205da6bdf9a",
-    "stockholm": "72a5d01f60dc0c8e195a852c15e5d5437db4b64fd6d7a248ab122d79e0ad8c6c"
+    "coverage": "94ad30ea7aa033ac990c6fc105692252ccc20e05240d54ab98cb64bcba9355b5",
+    "fasta": "1c71c5b62d37eb38ecb7b1da1351b20f767ec89db9db2612b459a53cce3f7534",
+    "stockholm": "24b1730cfcf47c178e5b1c2e5cfd13284c290d0282d48d62aca354a1d37da56e"
   },
   "block_widths": {
     "3ncr": 69,
@@ -51,7 +53,7 @@
   },
   "blocks_present": {
     "3ncr": 287,
-    "5ncr": 326,
+    "5ncr": 420,
     "cds": 1503
   },
   "covariance_models": {
@@ -77,13 +79,40 @@
   "name": "PV3_unified",
   "over_length_cap": [],
   "parameter_departures": {
+    "clade_exemplars_in_the_seed": "Four RefSeq rhinovirus polyproteins join the seed alignment and are removed before backtranslation. No RV-A or RV-B record in this corpus can reach seed_min_aa, so 456 rows were aligned with no member of their own species in the seed; measured on 5.0.0, a type with no seed exemplar has residues exiled more than 200 codon columns from its own block at 8.4% against 0.14% for a type that has one.",
     "gap_extend": "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat at the default 0.123 through every build, which is what let a single unalignable fragment open a wide insertion block: opening the gap is paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at --ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best.",
+    "inferred_frame_by_homology": "The 6-frame fallback picks the candidate ORF with the highest 6-mer containment against the corpus's own annotated proteins, where upstream picked the longest stop-free run regardless of whether it read as protein. On release 5.0.0's shipped bytes that rule chose a wrong frame for 51 EV_unified rows and 20 NPEV_unified rows, including the whole OR538731-OR538740 PV3 cluster.",
+    "noncoding_records_leave_the_cds_block": "A record no frame of which reads as protein is `noncoding`: it contributes no CDS row and its whole sequence is offered to the 5'NCR block instead. Upstream gave each of them a spurious >=20 aa ORF in the CDS block AND excluded them from the NCR blocks. 1,281 EV_unified rows and 855 NPEV_unified rows are affected, and 99.9% of the ones that map to a reference at all are 5'UTR amplicons.",
+    "padded_assembly_gaps_leave_the_orf": "A run of 30 or more wholly-ambiguous codons is dropped from the ORF before alignment. MAFFT places an X-run as residues and drags real sequence with it: PX242098 carries a 731-codon run and had 537 of 1,486 residues placed 821 columns from the rest. The count survives per record in the coverage sidecar's unsequenced_nt.",
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
   "population_sha256": "9461cb866765cc4fa1df030402f04bb8825a4ad540f436e740d93f719faa64e3",
   "rows": 1597,
   "schema": 1,
+  "segmentation": {
+    "homology_pool": {
+      "ncr5_kmer_size": 12,
+      "ncr5_kmers": 130682,
+      "protein_kmer_size": 6,
+      "protein_kmers": 127816,
+      "proteins": 5356
+    },
+    "methods": {
+      "annotated": 1409,
+      "inferred": 54,
+      "noncoding": 100,
+      "none": 34
+    },
+    "noncoding_offered_to_5ncr": 100,
+    "rows_with_unsequenced_run_dropped": 0,
+    "strands": {
+      "": 34,
+      "+": 1559,
+      "-": 4
+    },
+    "unsequenced_nt_dropped": 0
+  },
   "stack": "anchored",
   "threads": 8,
   "tiers": {

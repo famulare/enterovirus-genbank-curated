@@ -48,56 +48,58 @@ from enterovirus_genbank_curated.oracle.release import (
     verify_release_manifest_hashes,
 )
 
-# sha256 of each carried file, measured from the shipped 2.4.1 release.
+# sha256 of each carried file. The source layer and `sequence_evidence.tsv.gz` are the shipped
+# 2.4.1 bytes; the twenty-four alignment artifacts are this repository's own `alignment-build`
+# output, so their pins move whenever a rebuild is promoted -- see `oracle/release.py`.
 CARRIED_SHA256 = {
     "final/alignments/EV_unified.coverage.tsv.gz":
-        "0e3642507217702fa666dd3b776056b0d14aacc53fd0293f16349dc37b2db50f",
+        "74f0d2f444e1b404db359bd85b6fd3fce1a5c796ab647e3406769c29ce5d78c5",
     "final/alignments/EV_unified.provenance.json":
-        "8b9dfe3c906243742e9ab8f6303c7b0bc46c5c1776e0087b2d7803542c5e2c6f",
+        "12ce78ed97e1aaa80cb363f764b4aad7ebe3b6d946529948f18dfb2a4f7f2833",
     "final/alignments/EV_unified.sto.gz":
-        "b6fe148243b604b1ef2304e29c93c7155789bb7a1620a667356529732de30caf",
+        "6018246dee9133185ce8a6670b3a2ae504e9d24cb20d5849b3bcd007277ed30e",
     "final/alignments/EV_unified_aln.fasta.gz":
-        "e27d990c1239bcf71454ee06a1d02996460557a3c765f47d5a3c9da9085612ae",
+        "e48fd4e0e68dc2607b9458ef324e2469e120d2273a1c7696d70fc99d58894898",
     "final/alignments/NPEV_unified.coverage.tsv.gz":
-        "a72e9c1a699d7e25f3d7da4035e486d6de450e3ccbbae2c8e29afa243b3d6946",
+        "32333f81d9ada7daf4cd9328b77458b8bcf9399e4197f0d920de18f45332a7e1",
     "final/alignments/NPEV_unified.provenance.json":
-        "5544f426e0c9b1d2071e0bf14d9bdebaa8763be506352cb0e1072854655d5d2c",
+        "8add30de19410320d4e912fdad77b8356904fe0a3db5bacf6db87a54c103a766",
     "final/alignments/NPEV_unified.sto.gz":
-        "65da80e648e872552fb057b12c9351fdac9f80d453eb5c97afde9d2bf96dd8b9",
+        "b2a60e3b0d4dd7013cb58a70b97926e122a33ed8062cb0ff31d97dad24d429a5",
     "final/alignments/NPEV_unified_aln.fasta.gz":
-        "2a69e8cd276e16b8469861c97641db067515e3c4cf9932776b06fea44e1dc555",
+        "9d675fc87a96389dfcdc2d8b3a530d905555b8e6e2e21b00e9f273da5fdd1dc4",
     "final/alignments/POLIO_unified.coverage.tsv.gz":
-        "93e2cdab7165314ae204aaf49055a218524a5ec47b12e55d593921b0f983fd37",
+        "7cda9fbef0e8282958c3ac380a692ea9cfe6d43cc666d6554e9df3c639d272db",
     "final/alignments/POLIO_unified.provenance.json":
-        "08f3347f649c3bcf241346f30ab65d5a1149a599a3ed520e66cfb695251321b8",
+        "a8f4fb91a1205d0400677e770ef48bb2bc4f3ac4021e164ab208a248cbbf8b08",
     "final/alignments/POLIO_unified.sto.gz":
-        "2454af47f86ea0ef1d9ce35c9d3d86f5fe2830d1f4cdef0e80bed8604198e273",
+        "a1d34626fd14838e43bfad193f282d2c7ce6ba4677180a48643faaa4e74fb8cb",
     "final/alignments/POLIO_unified_aln.fasta.gz":
-        "04e9057f5e1b2f812f9c1475080c786f3ce2a9ea82f7731f75d7edda159a0854",
+        "1245e2269c1276f699763c5b9a3c7a0ef8f7b676c51ef303b2acb74ebb97d43b",
     "final/alignments/PV1_unified.coverage.tsv.gz":
-        "b35865e210da5b58746072b88972bbf329cfac2debf738c993ae612d63d89b33",
+        "9dfa962cddf3b9ded8a7228aa6c6f49bdcf097a7553333c430893e2cf4dd4ebd",
     "final/alignments/PV1_unified.provenance.json":
-        "1c31d652b04add09a988a5c46d2969275a10a8f2cab1de6230d40e5a15ed877b",
+        "ecb307f27a788eb9238f286d5f21a692a0c40c5defc712c60ed20cd10203bdee",
     "final/alignments/PV1_unified.sto.gz":
-        "0ca5fbf2624eb39cc1f973b06852164831e8ffb246dde43045ef1dc6aa2e6bf5",
+        "99c436dceaa87ca01eba17ea1dc1935852de1a285df0766f213642a8aa16fc69",
     "final/alignments/PV1_unified_aln.fasta.gz":
-        "5c9a1bd5db1ac77fd3298bf21145d2c0ccc83489d552faa7da8e229ec9ed0826",
+        "539bfe0866d07dac5d9cf809ce4f46276a563aefaeb4be01e1b8e39649ba50ef",
     "final/alignments/PV2_unified.coverage.tsv.gz":
-        "da5981b4ee68653c0cfe36fb07847ea2b8cda59f81b96f2a91e38c7a2fd8c880",
+        "91f9eb647cd2fcb35ecb5146159a5ca023410d3f551f492ebba5b70338d34548",
     "final/alignments/PV2_unified.provenance.json":
-        "9bf45a7489865ce90c4d8615bd3491ccbc05b39a48cb314c10a53501794be671",
+        "f7a798805b710ef31f08da184c7753e668d51b7a01d6467e8c26719006c6ff5e",
     "final/alignments/PV2_unified.sto.gz":
-        "933d7ec87eb46056c6da3b9a8648c196077985d0333c11d854ab960ab5b9b8d8",
+        "e8ad0b31f6836c56bf838bd5e05c15b8f6465e274022bb2302e07f0661d5c542",
     "final/alignments/PV2_unified_aln.fasta.gz":
-        "88bc4d70fe20e018f4791b06605076aaa340fe388bef11fb4b4e81d8db47e235",
+        "d447ed57226d9a462100afab33c7bee4aa6d8eb180e4c744ca7a75439db02034",
     "final/alignments/PV3_unified.coverage.tsv.gz":
-        "89416c83baeb1a61f3c7287647b8bb88fee649ae98bb69ec1941861a2eb76709",
+        "94ad30ea7aa033ac990c6fc105692252ccc20e05240d54ab98cb64bcba9355b5",
     "final/alignments/PV3_unified.provenance.json":
-        "9209f24471355fa651257ae6fa10b98c8702fe1114fdc0fff754343ee045f6ed",
+        "b5c0724f2f2994521025405335f6fc71c8830ced9d59cf25798b6d3709a4653a",
     "final/alignments/PV3_unified.sto.gz":
-        "72a5d01f60dc0c8e195a852c15e5d5437db4b64fd6d7a248ab122d79e0ad8c6c",
+        "24b1730cfcf47c178e5b1c2e5cfd13284c290d0282d48d62aca354a1d37da56e",
     "final/alignments/PV3_unified_aln.fasta.gz":
-        "301b8624442809c3c12c0940cfcbc458ed58d914b2a64bba73248205da6bdf9a",
+        "1c71c5b62d37eb38ecb7b1da1351b20f767ec89db9db2612b459a53cce3f7534",
     "final/audit/sequence_evidence.tsv.gz":
         "5c5e55a9d38ab9fbb64b5cc204846af941257f7b803c8644f646375c9789c349",
     "final/source/genbank_source.duckdb":

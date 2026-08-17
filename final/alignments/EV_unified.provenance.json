@@ -1,44 +1,61 @@
 {
   "absence_reasons": {
-    "3ncr:annotated_rejected_untranslatable": 32,
     "3ncr:below_pop_min": 73,
-    "3ncr:empty_fragment": 18504,
+    "3ncr:empty_fragment": 19882,
     "3ncr:excluded_oversized": 7,
-    "3ncr:inferred_no_ncr": 2136,
-    "3ncr:no_cds_untranslatable": 106,
-    "5ncr:annotated_rejected_untranslatable": 32,
-    "5ncr:below_pop_min": 20,
+    "3ncr:inferred_no_ncr": 780,
+    "3ncr:no_coding_or_ncr_homology": 116,
+    "5ncr:below_pop_min": 70,
     "5ncr:empty_fragment": 17768,
-    "5ncr:inferred_no_ncr": 2136,
-    "5ncr:no_cds_untranslatable": 106,
-    "cds:annotated_rejected_untranslatable": 32,
-    "cds:no_cds_untranslatable": 106
+    "5ncr:inferred_no_ncr": 780,
+    "5ncr:no_coding_or_ncr_homology": 116,
+    "cds:no_cds_untranslatable": 58,
+    "cds:no_coding_homology": 1320,
+    "cds:no_coding_or_ncr_homology": 116
   },
   "artifact_sha256": {
-    "coverage": "0e3642507217702fa666dd3b776056b0d14aacc53fd0293f16349dc37b2db50f",
-    "fasta": "e27d990c1239bcf71454ee06a1d02996460557a3c765f47d5a3c9da9085612ae",
-    "stockholm": "b6fe148243b604b1ef2304e29c93c7155789bb7a1620a667356529732de30caf"
+    "coverage": "74f0d2f444e1b404db359bd85b6fd3fce1a5c796ab647e3406769c29ce5d78c5",
+    "fasta": "e48fd4e0e68dc2607b9458ef324e2469e120d2273a1c7696d70fc99d58894898",
+    "stockholm": "6018246dee9133185ce8a6670b3a2ae504e9d24cb20d5849b3bcd007277ed30e"
   },
   "block_widths": {
     "3ncr": 87,
     "5ncr": 738,
-    "cds": 7992
+    "cds": 7470
   },
   "blocks_present": {
     "3ncr": 3447,
-    "5ncr": 4243,
-    "cds": 24167
+    "5ncr": 5571,
+    "cds": 22811
   },
-  "blocks_present_cds": 24167,
-  "cds_codons": 2664,
+  "blocks_present_cds": 22811,
+  "cds_codons": 2490,
   "cds_width_is_whole_codons": true,
+  "clade_exemplars": {
+    "codons_dropped_after_removal": 3,
+    "exemplars": [
+      "NC_001490.1",
+      "NC_001617.1",
+      "NC_038311.1",
+      "NC_038312.1"
+    ],
+    "unsequenced_codons_dropped": 0
+  },
   "codon": {
     "accept_annotated_max_internal_stops": 1,
     "accept_annotated_min_aa": 20,
+    "drop_ambiguous_run_aa": 30,
     "gap_extend": 0.5,
+    "infer_confident_homology": 0.3,
+    "infer_kmer_size": 6,
     "infer_max_x_fraction": 0.4,
     "infer_min_aa": 20,
+    "infer_min_homology": 0.15,
+    "infer_pool_min_aa": 600,
     "keeplength": false,
+    "noncoding_homology_margin": 0.3,
+    "noncoding_min_ncr_homology": 0.4,
+    "noncoding_orient_kmer": 12,
     "pass1_gap_open": 4.5,
     "pass2_gap_open": 6.0,
     "pass2_local_gap_open": -24.0,
@@ -77,13 +94,40 @@
   },
   "name": "EV_unified",
   "parameter_departures": {
+    "clade_exemplars_in_the_seed": "Four RefSeq rhinovirus polyproteins join the seed alignment and are removed before backtranslation. No RV-A or RV-B record in this corpus can reach seed_min_aa, so 456 rows were aligned with no member of their own species in the seed; measured on 5.0.0, a type with no seed exemplar has residues exiled more than 200 codon columns from its own block at 8.4% against 0.14% for a type that has one.",
     "gap_extend": "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat at the default 0.123 through every build, which is what let a single unalignable fragment open a wide insertion block: opening the gap is paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at --ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best.",
+    "inferred_frame_by_homology": "The 6-frame fallback picks the candidate ORF with the highest 6-mer containment against the corpus's own annotated proteins, where upstream picked the longest stop-free run regardless of whether it read as protein. On release 5.0.0's shipped bytes that rule chose a wrong frame for 51 EV_unified rows and 20 NPEV_unified rows, including the whole OR538731-OR538740 PV3 cluster.",
+    "noncoding_records_leave_the_cds_block": "A record no frame of which reads as protein is `noncoding`: it contributes no CDS row and its whole sequence is offered to the 5'NCR block instead. Upstream gave each of them a spurious >=20 aa ORF in the CDS block AND excluded them from the NCR blocks. 1,281 EV_unified rows and 855 NPEV_unified rows are affected, and 99.9% of the ones that map to a reference at all are 5'UTR amplicons.",
+    "padded_assembly_gaps_leave_the_orf": "A run of 30 or more wholly-ambiguous codons is dropped from the ORF before alignment. MAFFT places an X-run as residues and drags real sequence with it: PX242098 carries a 731-codon run and had 537 of 1,486 residues placed 821 columns from the rest. The count survives per record in the coverage sidecar's unsequenced_nt.",
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
   "population_sha256": "fb4f26371f90f8e3e52d18e31469711058c01275cbd2f72174902699a3df6040",
   "rows": 24305,
   "schema": 1,
+  "segmentation": {
+    "homology_pool": {
+      "ncr5_kmer_size": 12,
+      "ncr5_kmers": 130682,
+      "protein_kmer_size": 6,
+      "protein_kmers": 127816,
+      "proteins": 5356
+    },
+    "methods": {
+      "annotated": 22031,
+      "inferred": 780,
+      "noncoding": 1378,
+      "none": 116
+    },
+    "noncoding_offered_to_5ncr": 1378,
+    "rows_with_unsequenced_run_dropped": 50,
+    "strands": {
+      "": 116,
+      "+": 24160,
+      "-": 29
+    },
+    "unsequenced_nt_dropped": 39528
+  },
   "stack": "unified",
   "threads": 8,
   "tiers": {
@@ -316,5 +360,5 @@
     "RV-C9": 8,
     "unknown": 1423
   },
-  "width_nt": 8817
+  "width_nt": 8295
 }
