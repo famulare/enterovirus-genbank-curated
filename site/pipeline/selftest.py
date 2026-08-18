@@ -804,10 +804,9 @@ def alignment_payloads_reproduce_the_panels() -> None:
                 container["reference_cells"], 0, len(container["header"]["references"]) * width
             ).reshape(-1, width)
 
-            wanted = {record: i for i, record in enumerate(panel_file["divergence"][region]["record"])}
-            by_record = {int(record): row for row, record in enumerate(container["record"])}
-
             expected = panel_file["divergence"][region]
+            wanted = {record: i for i, record in enumerate(expected["record"])}
+            by_record = {int(record): row for row, record in enumerate(container["record"])}
             mismatches = []
             for record, slot in wanted.items():
                 row = by_record[record]

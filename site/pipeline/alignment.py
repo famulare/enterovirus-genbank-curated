@@ -192,9 +192,11 @@ def write_gzipped(path, payload: dict) -> None:
         + list(payload["blobs"].values())
     )
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("wb") as raw:
-        with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as handle:
-            handle.write(body)
+    with (
+        path.open("wb") as raw,
+        gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as handle,
+    ):
+        handle.write(body)
 
 
 def read_container(path) -> dict:
