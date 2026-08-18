@@ -179,3 +179,28 @@ export function renderBuildLine(summary: Summary, buildIdentity: string): void {
     `Data release ${summary.release.version}, code ${summary.release.code_sha256.slice(0, 12)} · ` +
     `site data ${buildIdentity}`;
 }
+
+
+/** The Sabin frame cannot carry an insertion, and the method disclosure has to say so.
+ *
+ *  `sabin_region_columns` returns the RF line's alphabetic columns, which are that
+ *  serotype's own genome coordinates, so the reference has material at every one of them
+ *  and `insertions = span & query_material & ~ref_material` is empty by construction.
+ *  Reported, never repaired: this is what the Sabin frame means, not a defect in it. */
+export function renderSabinFrameIndels(summary: Summary): void {
+  const measured = summary.sabin_frame_indels;
+  const target = document.getElementById("sabin-frame-indels");
+  if (!target) return;
+  if (measured.insertions_possible) {
+    const gapped = measured.frames.filter((entry) => entry.gap_columns > 0);
+    target.innerHTML =
+      `${gapped.map((entry) => `${esc(entry.selection)} (${num(entry.gap_columns)})`).join(", ")}
+       carry reference gap columns, so an insertion can be charged there.`;
+    return;
+  }
+  target.innerHTML =
+    `measured on this release, all three serotype references —
+     ${measured.frames.map((entry) => esc(entry.reference)).join(", ")} — carry material at
+     every one of their own ${measured.frames.length === 3 ? "coding" : ""} columns, so the
+     count is zero in all three`;
+}

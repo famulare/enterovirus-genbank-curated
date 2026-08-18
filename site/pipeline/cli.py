@@ -117,7 +117,12 @@ def command_build(_args) -> int:
             "disclosure could not be measured. Check contract.SELECTIONS."
         )
     artifacts.append(
-        write_json("summary.json", summary.build(all_records, by_accession, inflation))
+        write_json(
+            "summary.json",
+            summary.build(
+                all_records, by_accession, inflation, summary.sabin_frame_indels(cache)
+            ),
+        )
     )
 
     written = manifest.write(manifest.artifact_hashes(artifacts))

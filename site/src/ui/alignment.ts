@@ -526,6 +526,15 @@ function renderNote(state: AlignmentState): void {
        divergence scatter.`,
     );
   }
+  // Keyboard traversal changes shape with the population, so the figure says which axis
+  // the arrows are on rather than leaving a reader to discover it.
+  parts.push(
+    rowsAreSteppable(state)
+      ? `Left and right arrows walk the track above, column by column; up and down walk these
+         ${num(state.visible.length)} rows.`
+      : `Left and right arrows walk the track above, column by column. Brush to
+         ${num(STEPPABLE_ROWS)} rows or fewer and up and down will walk the stack too.`,
+  );
 
   byId(`${ID}-note`).innerHTML = parts.filter(Boolean).join(" ");
 }
@@ -697,4 +706,24 @@ export function columnStep(state: AlignmentState, current: number, delta: number
   const hi = Math.ceil(state.x!.max) - 1;
   if (current < lo || current > hi) return delta > 0 ? lo : hi;
   return Math.max(lo, Math.min(hi, current + delta));
+}
+
+/** Above this many visible rows, stepping them one at a time is not traversal.
+ *
+ *  On `all`/P1 unbrushed that would be 24,305 presses to cross the panel, and the rows
+ *  under them are sampled anyway — most presses would land on a record the figure is not
+ *  drawing. Below it every visible record has a line of its own, so the stack becomes a
+ *  real list and the arrows can walk it. */
+export const STEPPABLE_ROWS = 400;
+
+export function rowsAreSteppable(state: AlignmentState): boolean {
+  return state.visible.length > 0 && state.visible.length <= STEPPABLE_ROWS;
+}
+
+/** Step down the stack, once the brush has made it a list. Returns a raster row. */
+export function rowStep(state: AlignmentState, current: number, delta: number): number {
+  if (!rowsAreSteppable(state)) return -1;
+  const at = state.visible.indexOf(current);
+  if (at < 0) return state.visible[delta > 0 ? 0 : state.visible.length - 1]!;
+  return state.visible[Math.max(0, Math.min(state.visible.length - 1, at + delta))]!;
 }

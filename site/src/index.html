@@ -251,7 +251,7 @@
             <svg class="scientific-chart plot-axes" id="alignment-axes" aria-hidden="true"></svg>
             <canvas class="plot-marks raster-canvas" id="alignment-canvas" tabindex="0"
                     aria-describedby="alignment-readout"
-                    aria-label="Alignment raster. Arrow keys walk the per-column track above the panel, reading how many sequences are readable at each column. Drag a box to zoom to a range of columns and rows; once rows are few enough each has its own line."></canvas>
+                    aria-label="Alignment raster. Left and right arrows walk the per-column track above the panel, reading how many sequences are readable at each column. Drag a box to zoom to a range of columns and rows; once the stack is 400 rows or fewer, up and down walk the rows and Enter pins one."></canvas>
             <svg class="scientific-chart plot-overlay" id="alignment-overlay" aria-hidden="true"></svg>
           </div>
           <figcaption id="alignment-note" aria-live="off"></figcaption>
@@ -334,7 +334,13 @@
           difference, and an ambiguity code lowers the denominator instead of inventing a
           mismatch. Insertions and deletions inside the covered span count as one non-synonymous
           difference per codon they touch, and those codons join the denominator — which is what
-          keeps both axes inside zero and one. A record whose indels shift the reading frame is
+          keeps both axes inside zero and one. For poliovirus only deletions can ever be counted:
+          a serotype's alignment is read in that serotype's own Sabin coordinates, so the
+          reference has material at every column and an insertion relative to it has nowhere to
+          sit — <span id="sabin-frame-indels"></span>. Poliovirus indel counts are therefore
+          deletions, and a frameshift flag can only ever be raised by a deletion run. Non-polio
+          records are read in the genus-wide frame, which keeps insertion columns and charges
+          both. A record whose indels shift the reading frame is
           marked rather than translated.</p>
       </div>
     </details>

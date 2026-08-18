@@ -260,6 +260,49 @@ def data_quality(records: list[dict]) -> list[dict]:
     return findings
 
 
+def sabin_frame_indels(alignments: dict) -> dict:
+    """Whether an insertion relative to Sabin can be charged at all.
+
+    `frame.sabin_region_columns` returns the RF line's alphabetic columns, which ARE that
+    serotype's own genome coordinates — so the Sabin row has material at every one of
+    them by construction. `divergence.measure` computes
+    `insertions = span & query_material & ~ref_material`, and with no reference gap
+    column for the second term to find, that mask is empty for every poliovirus record.
+
+    The consequence is not a bug; it is what the Sabin frame means. But the page's method
+    disclosure says insertions and deletions are both charged, which overstates what this
+    frame can do, so the figure is measured here rather than asserted. Counted live for
+    the same reason `consensus_inflation` is: a hand-written version of this sentence
+    would go stale the first time the alignment moved.
+    """
+    frames = []
+    for selection in contract.SELECTIONS:
+        if selection["frame"] != "sabin":
+            continue
+        alignment = alignments[selection["alignment"]]
+        columns = frame.sabin_region_columns(
+            alignment, selection["id"], frame.read_region_coordinates()
+        )
+        reference = alignment.row(selection["reference"])
+        gaps = sum(
+            int((~frame.has_material(reference[columns[region]])).sum())
+            for region in contract.CODING_REGIONS
+        )
+        frames.append(
+            {
+                "selection": selection["id"],
+                "reference": selection["reference"],
+                "gap_columns": gaps,
+            }
+        )
+    return {
+        "frames": frames,
+        # True when no serotype's reference gaps anywhere in its own coding regions,
+        # which is what makes the claim unconditional rather than "mostly".
+        "insertions_possible": any(entry["gap_columns"] for entry in frames),
+    }
+
+
 def consensus_inflation(divergence: dict) -> dict:
     """Size the consensus-coverage artifact described in reference.py's `_consensus`.
 
@@ -296,7 +339,9 @@ def consensus_inflation(divergence: dict) -> dict:
     }
 
 
-def build(records: list[dict], by_accession: dict, inflation: dict) -> dict:
+def build(
+    records: list[dict], by_accession: dict, inflation: dict, sabin_indels: dict
+) -> dict:
     selections, notes = build_selections(records, by_accession)
     release = json.loads(contract.BUILD_MANIFEST.read_text())
     raw = json.loads(contract.RAW_MANIFEST.read_text())
@@ -337,6 +382,7 @@ def build(records: list[dict], by_accession: dict, inflation: dict) -> dict:
         "regions": _region_catalog(),
         "traits": _trait_catalog(records),
         "data_quality": data_quality(records),
+        "sabin_frame_indels": sabin_indels,
         "consensus_inflation": inflation,
         "integrity_notes": notes,
         "thresholds": {

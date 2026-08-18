@@ -45,6 +45,7 @@ import {
 import {
   renderBuildLine,
   renderConsensusInflation,
+  renderSabinFrameIndels,
   renderDataQuality,
   renderFacts,
   renderIntegrityNotes,
@@ -87,6 +88,8 @@ let alignmentHeld: number | null = null;
 /** The chapter costs nothing until the reader reaches it. */
 let alignmentMounted = false;
 let alignmentPending = false;
+/** Set once a reader on a narrow viewport has accepted the download. */
+let alignmentAccepted = false;
 
 /** Per-chapter runtime state. `zoom` lives here, not in the shared view, because a
  *  brushed range means something only on the figure it was drawn on. */
@@ -753,6 +756,26 @@ function wireAlignment(): void {
       case "PageDown":
         cursor = alignmentChapter.columnStep(state, cursor, -50);
         break;
+      case "ArrowDown":
+      case "ArrowUp": {
+        // The secondary axis. Only once the brush has made the stack a list — above that
+        // the rows are sampled, so most presses would select a record not on screen.
+        if (!alignmentChapter.rowsAreSteppable(state)) return;
+        const next = alignmentChapter.rowStep(state, state.inspected, event.key === "ArrowDown" ? 1 : -1);
+        if (next < 0) return;
+        event.preventDefault();
+        state.inspected = next;
+        alignmentChapter.renderHighlight(state);
+        alignmentChapter.renderRowReadout(state, next);
+        return;
+      }
+      case "Enter":
+        if (state.inspected >= 0) {
+          event.preventDefault();
+          setHeldFromAlignment(state.inspected);
+          alignmentChapter.renderRowReadout(state, state.inspected);
+        }
+        return;
       case "Escape":
         if (state.zoom) {
           state.zoom = null;
@@ -823,9 +846,37 @@ function setHeldFromAlignment(rasterRow: number): void {
  *  handed-over set is asking for this figure by name, and so is the button that made
  *  the link. Routing every entry point through here is what keeps the laziness from
  *  turning into a figure that silently never loads. */
+/** Below this width, the payload is offered rather than fetched.
+ *
+ *  `all`/polyprotein is 2.9 MB over the wire and ~25 MB of typed array once inflated,
+ *  which is a real cost on a phone and a real risk against a per-tab memory ceiling. A
+ *  reader who wants it can still have it; what they should not get is a figure that
+ *  spends their data plan because they scrolled past it. */
+const AUTOLOAD_MIN_WIDTH = 700;
+
 function requestAlignment(): void {
   alignmentMounted = true;
   void rebuildAlignment();
+}
+
+/** Offer the figure instead of loading it, on a viewport where the cost is worth a
+ *  choice. Skipped when the reader has already asked for it by other means — a
+ *  handed-over set, or a second visit after they accepted once. */
+function offerAlignment(): void {
+  if (alignmentAccepted || window.innerWidth >= AUTOLOAD_MIN_WIDTH || view.restrict) {
+    requestAlignment();
+    return;
+  }
+  byId(`${alignmentChapter.ID}-note`).innerHTML =
+    `This figure loads the alignment itself, which is a few megabytes on a narrow
+     connection. <button type="button" class="text-button" data-load-alignment>Load
+     it</button>`;
+  byId(`${alignmentChapter.ID}-note`)
+    .querySelector<HTMLButtonElement>("[data-load-alignment]")
+    ?.addEventListener("click", () => {
+      alignmentAccepted = true;
+      requestAlignment();
+    });
 }
 
 /** Mount the chapter the first time it comes into view.
@@ -839,7 +890,7 @@ function requestAlignment(): void {
  *  A missing figure with no explanation is a worse failure than an eager fetch. */
 function observeAlignment(): void {
   if (typeof IntersectionObserver === "undefined") {
-    requestAlignment();
+    offerAlignment();
     return;
   }
   const target = byId(alignmentChapter.ID);
@@ -847,7 +898,7 @@ function observeAlignment(): void {
     (entries) => {
       if (!entries.some((entry) => entry.isIntersecting)) return;
       observer.disconnect();
-      requestAlignment();
+      offerAlignment();
     },
     { rootMargin: "600px" },
   );
@@ -873,6 +924,7 @@ async function main(): Promise<void> {
   renderPopulationTable(summary);
   renderDataQuality(summary);
   renderConsensusInflation(summary);
+  renderSabinFrameIndels(summary);
   renderIntegrityNotes(summary);
   renderBuildLine(summary, manifest.build_identity);
 

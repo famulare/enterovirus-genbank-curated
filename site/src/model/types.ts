@@ -88,6 +88,13 @@ export interface ConsensusInflation {
   indel_share: number;
 }
 
+/** Whether an insertion relative to Sabin can be charged at all — measured, because a
+ *  hand-written version of this would go stale the first time the alignment moved. */
+export interface SabinFrameIndels {
+  frames: { selection: string; reference: string; gap_columns: number }[];
+  insertions_possible: boolean;
+}
+
 export interface Summary {
   schema: number;
   release: Release;
@@ -97,6 +104,7 @@ export interface Summary {
   traits: Trait[];
   data_quality: Finding[];
   consensus_inflation: ConsensusInflation;
+  sabin_frame_indels: SabinFrameIndels;
   integrity_notes: string[];
   thresholds: {
     min_region_nt: number;
