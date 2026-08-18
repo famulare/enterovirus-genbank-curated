@@ -11,6 +11,7 @@ import {
   decode,
   defaultView,
   encode,
+  parseRect,
   population,
   regionsFor,
   roundTrip,
@@ -44,21 +45,53 @@ test("the default view opens on a square-root axis at full extent", () => {
   assert.equal(view.zoom, null);
 });
 
-test("a brushed range round-trips through the URL", () => {
-  const zoom = { x0: 0.0012, x1: 0.4, y0: 0, y1: 0.255 };
-  const back = decode(`#${encode({ ...defaultView(summary), zoom }, summary)}`, summary).view.zoom;
-  assert.ok(back, "zoom survives the round trip");
+test("a set handed to the alignment view round-trips through the URL", () => {
+  const restrict = { from: "distance", rect: { x0: 0.0012, x1: 0.4, y0: 0, y1: 0.255 } };
+  const back = decode(`#${encode({ ...defaultView(summary), restrict }, summary)}`, summary).view
+    .restrict;
+  assert.ok(back, "the handed-off set survives the round trip");
+  assert.equal(back.from, "distance", "and remembers which chapter drew it");
   for (const key of ["x0", "x1", "y0", "y1"] as const) {
-    assert.ok(Math.abs(back[key] - zoom[key]) < 1e-6, `${key} preserved`);
+    assert.ok(Math.abs(back.rect[key] - restrict.rect[key]) < 1e-6, `${key} preserved`);
   }
 });
 
-test("a malformed or inverted range is rejected, not clamped", () => {
-  for (const bad of ["1,2,3", "0,1,0,1,2", "a,b,c,d", "0.5,0.1,0,1", "0,1,1,1", "-1,1,0,1"]) {
-    const decoded = decode(`#zoom=${bad}`, summary);
-    assert.equal(decoded.view.zoom, null, `${bad} rejected`);
-    assert.deepEqual(decoded.rejected, [`zoom=${bad}`], `${bad} reported`);
+test("a rectangle from a signed axis survives, which the retired zoom parser refused", () => {
+  // Scaling coordinates are signed: 41% of PV1's P1 axis-1 values are negative, and 54%
+  // in the 5'NCR. `parseZoom` rejected any negative component because the only range it
+  // ever saw was a divergence axis, where a count cannot be below zero. A hand-off from
+  // either scaling chapter — the case this control exists for — would have been dropped.
+  for (const parts of [
+    [-0.19, 0.28, -0.12, 0.09],
+    [-0.5, -0.1, -0.4, -0.2],
+  ]) {
+    assert.ok(parseRect(parts), `${parts.join(",")} accepted`);
   }
+  const decoded = decode("#restrict=distance,-0.19,0.28,-0.12,0.09", summary);
+  assert.deepEqual(decoded.rejected, [], "and reaches the view unreported");
+  assert.equal(decoded.view.restrict?.from, "distance");
+});
+
+test("a malformed, inverted or unattributed rectangle is rejected, not clamped", () => {
+  for (const bad of [
+    "distance,1,2,3",
+    "distance,0,1,0,1,2",
+    "distance,a,b,c,d",
+    "distance,0.5,0.1,0,1",
+    "distance,0,1,1,1",
+    "0,1,0,1",
+    "nonsense,0,1,0,1",
+    "alignment,0,1,0,1",
+  ]) {
+    const decoded = decode(`#restrict=${bad}`, summary);
+    assert.equal(decoded.view.restrict, null, `${bad} rejected`);
+    assert.deepEqual(decoded.rejected, [`restrict=${bad}`], `${bad} reported`);
+  }
+});
+
+test("an unknown row ordering is rejected", () => {
+  assert.deepEqual(decode("#order=sideways", summary).rejected, ["order=sideways"]);
+  assert.equal(decode("#order=coverage", summary).view.order, "coverage");
 });
 
 test("an unknown axis scale is rejected", () => {
@@ -148,7 +181,12 @@ test("encode and decode round-trip every reachable view", () => {
             engineered: false,
             pinned: "AY184219",
             scale: "linear" as const,
-            zoom: { x0: 0.01, x1: 0.4, y0: 0, y1: 0.25 },
+            order: "start" as const,
+            zoom: null,
+            restrict: {
+              from: "divergence",
+              rect: { x0: 0.01, x1: 0.4, y0: 0, y1: 0.25 },
+            },
           };
           assert.ok(sameView(roundTrip(view, summary), view), `${selection.id}/${region.id}/${trait.id}`);
         }
@@ -169,13 +207,14 @@ test("every parameter the encoder emits is accepted by the decoder", () => {
     engineered: false,
     pinned: "AY184219",
     scale: "linear" as const,
-    zoom: { x0: 0.002, x1: 0.5, y0: 0.001, y1: 0.3 },
+    order: "coverage" as const,
+    restrict: { from: "phylogeny-nt", rect: { x0: 0.002, x1: 0.5, y0: 0.001, y1: 0.3 } },
   };
   const encoded = encode(view, summary);
   const emitted = encoded.split("&").map((pair) => pair.slice(0, pair.indexOf("=")));
   assert.deepEqual(
     emitted.sort(),
-    ["color", "engineered", "record", "region", "scale", "sel", "status", "zoom"],
+    ["color", "engineered", "order", "record", "region", "restrict", "scale", "sel", "status"],
     "every field is represented",
   );
   assert.deepEqual(decode(`#${encoded}`, summary).rejected, [], "and none is rejected");

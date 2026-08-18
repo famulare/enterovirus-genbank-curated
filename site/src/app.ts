@@ -26,6 +26,14 @@ import {
   PROTEIN_TREE,
 } from "./model/specs.js";
 import * as chapter from "./ui/chapter.js";
+import * as alignmentChapter from "./ui/alignment.js";
+import {
+  assertProfileSchema,
+  loadAlignment,
+  type AlignmentBlock,
+  type ProfileFile,
+} from "./model/alignment.js";
+import type { Vocabulary } from "./ui/raster.js";
 import {
   onControlEdit,
   readControls,
@@ -50,7 +58,7 @@ import {
   type DerivedField,
   type PinnedPanel,
 } from "./ui/detail.js";
-import { byId } from "./ui/dom.js";
+import { byId, num } from "./ui/dom.js";
 
 interface Manifest {
   build_identity: string;
@@ -64,6 +72,21 @@ let records: Records;
 let view: View;
 let rejected: string[] = [];
 let writingHash = false;
+
+/** Chapter 06's own state. It is not in `SPECS` because it is not a `ChapterSpec`: a
+ *  raster row is an extent, not a point, so it brings its own hit test and its own
+ *  strip. Everything shared — filters, colour, pin, the URL — still reaches it. */
+let alignmentState: alignmentChapter.AlignmentState | null = null;
+let alignmentVocabulary: Vocabulary = "coverage";
+/** One region's cells at a time, keyed `selection/region`. Holding all six regions of
+ *  `all` would be 55 MB for five the reader is not looking at, so the previous one is
+ *  dropped on switch. */
+let alignmentCells: { key: string; block: AlignmentBlock } | null = null;
+let alignmentProfiles: { key: string; profile: ProfileFile } | null = null;
+let alignmentHeld: number | null = null;
+/** The chapter costs nothing until the reader reaches it. */
+let alignmentMounted = false;
+let alignmentPending = false;
 
 /** Per-chapter runtime state. `zoom` lives here, not in the shared view, because a
  *  brushed range means something only on the figure it was drawn on. */
@@ -168,6 +191,19 @@ function paintPinned(): void {
     });
   }
 
+  if (alignmentState) {
+    const rasterRow = alignmentState.block.rowForRecord(row);
+    if (rasterRow >= 0) {
+      panels.push({
+        figure: "Alignment",
+        region:
+          summary.regions.find((r) => r.id === alignmentState!.region)?.label ??
+          alignmentState.region,
+        rows: alignmentChapter.measured(alignmentState, rasterRow),
+      });
+    }
+  }
+
   const derived: DerivedField[] = [];
   const anyState = slot(SPECS[0]!.id).state;
   if (anyState) {
@@ -200,6 +236,174 @@ function wireRenderedControls(id: string): void {
       slot(id).zoom = null;
       redraw(id);
     });
+  byId(`${id}-note`)
+    .querySelector<HTMLButtonElement>("[data-send-to-alignment]")
+    ?.addEventListener("click", () => {
+      const zoom = slot(id).zoom;
+      if (!zoom) return;
+      // The rectangle travels, not the record list — 400 indices would not fit a
+      // readable link, and the chapter that drew the box can resolve it again. Only the
+      // alignment chapter reads it, so no other population moves under the reader.
+      view.restrict = { from: id, rect: zoom };
+      writeHash();
+      byId(alignmentChapter.ID).scrollIntoView({ behavior: "smooth", block: "start" });
+      requestAlignment();
+    });
+}
+
+/** The alignment chapter's own rebuild.
+ *
+ *  Separate from `rebuild` because its source is not a `ChapterSpec.sets` — that
+ *  interface decodes every region of a selection at once, which is right when one panel
+ *  file holds them all and wrong when a single region is 25 MB.
+ */
+async function rebuildAlignment(): Promise<void> {
+  if (!alignmentMounted || alignmentPending) return;
+  const regions = alignmentChapter.regionsFor(summary);
+  const region = alignmentChapter.resolveRegion(regions, view.region);
+  const key = `${view.selection}/${region}`;
+  const container = byId(`${alignmentChapter.ID}-strip`).closest(".figure");
+
+  alignmentPending = true;
+  container?.setAttribute("aria-busy", "true");
+  try {
+    if (alignmentProfiles?.key !== view.selection) {
+      const response = await fetch(`data/alignments/${view.selection}/profile.json`, {
+        cache: "no-cache",
+      });
+      if (!response.ok) throw new Error(`profile: HTTP ${response.status}`);
+      alignmentProfiles = {
+        key: view.selection,
+        profile: assertProfileSchema((await response.json()) as ProfileFile),
+      };
+    }
+    if (alignmentCells?.key !== key) {
+      // Drop the old region before fetching the new one, so the two are never resident
+      // together.
+      alignmentCells = null;
+      alignmentCells = {
+        key,
+        block: await loadAlignment(`data/alignments/${view.selection}/${region}.bin.gz`),
+      };
+    }
+
+    const resolved = resolveRestrict(region);
+    alignmentState = alignmentChapter.buildState(
+      summary,
+      records,
+      view,
+      region,
+      alignmentCells.block,
+      alignmentProfiles.profile,
+      {
+        vocabulary: alignmentVocabulary,
+        external: externalOrder(),
+        restrictTo: resolved && "records" in resolved ? resolved.records : null,
+        restrictDroppedFrom: resolved && "dropped" in resolved ? resolved.dropped : null,
+        previousHeld: alignmentHeld,
+      },
+    );
+    alignmentChapter.render(alignmentState);
+    wireAlignmentControls();
+  } catch (error) {
+    byId(`${alignmentChapter.ID}-note`).textContent =
+      `Could not load the alignment: ${error instanceof Error ? error.message : String(error)}`;
+  } finally {
+    alignmentPending = false;
+    container?.removeAttribute("aria-busy");
+  }
+}
+
+/** Sort keys for the two orderings this chapter cannot compute alone.
+ *
+ *  A place in the tree's ladder and a non-synonymous rate are other figures'
+ *  measurements. Reading them off those chapters' loaded state keeps one definition of
+ *  each rather than a second implementation here that could disagree. */
+function externalOrder(): Map<number, number> | null {
+  if (view.order === "ladder") {
+    const state = slot(NUCLEOTIDE_TREE.id).state;
+    if (!state) return null;
+    const keys = new Map<number, number>();
+    for (const mark of chapter.currentSet(state).marks) keys.set(mark.record, mark.y);
+    return keys.size ? keys : null;
+  }
+  if (view.order === "divergence") {
+    const state = slot(DIVERGENCE.id).state;
+    if (!state) return null;
+    const keys = new Map<number, number>();
+    for (const mark of chapter.currentSet(state).marks) keys.set(mark.record, -mark.y);
+    return keys.size ? keys : null;
+  }
+  return null;
+}
+
+/** The set another chapter's brush handed over, resolved against that chapter's own
+ *  marks. The rectangle travels in the URL rather than the record list, so this is where
+ *  it becomes a set again — and the count the figure reports is the one resolved here,
+ *  not the one baked into the link, because `encode` rounds the edges. */
+function resolveRestrict(region: string): { records: Set<number> } | { dropped: string } | null {
+  const restrict = view.restrict;
+  if (!restrict) return null;
+  const state = slot(restrict.from).state;
+  if (!state) return null;
+
+  // A rectangle means something only on the axes it was drawn on, and a chapter's axes
+  // are per region. The two chapters do not always land on the same one — the
+  // polyprotein exists in divergence and here but not in the distance chapters, so
+  // `resolveRegion` drops those to P1. Carrying the set across anyway would answer a
+  // question about P1 with a picture of the polyprotein, which is worse than refusing.
+  if (state.region !== region) {
+    return { dropped: state.region };
+  }
+
+  const set = chapter.currentSet(state);
+  const { x0, x1, y0, y1 } = restrict.rect;
+  const inside = new Set<number>();
+  for (const mark of set.marks) {
+    if (mark.x >= x0 && mark.x <= x1 && mark.y >= y0 && mark.y <= y1) inside.add(mark.record);
+  }
+  return inside.size ? { records: inside } : null;
+}
+
+/** Re-speak the readout for whatever row is under the cursor or pinned. */
+function refreshAlignmentReadout(): void {
+  if (!alignmentState) return;
+  const row = alignmentState.inspected >= 0 ? alignmentState.inspected : (alignmentState.held ?? -1);
+  alignmentChapter.renderRowReadout(alignmentState, row);
+}
+
+function wireAlignmentControls(): void {
+  const note = byId(`${alignmentChapter.ID}-note`);
+  note.querySelector<HTMLButtonElement>("[data-reset-zoom]")?.addEventListener("click", () => {
+    view.zoom = null;
+    if (alignmentState) {
+      alignmentState.zoom = null;
+      alignmentChapter.render(alignmentState);
+      wireAlignmentControls();
+      refreshAlignmentReadout();
+    }
+  });
+  note.querySelector<HTMLButtonElement>("[data-clear-restrict]")?.addEventListener("click", () => {
+    view.restrict = null;
+    writeHash();
+    void rebuildAlignment();
+  });
+  for (const button of byId(`${alignmentChapter.ID}-legend`).querySelectorAll<HTMLButtonElement>(
+    "[data-vocab]",
+  )) {
+    button.addEventListener("click", () => {
+      alignmentVocabulary = button.dataset.vocab as Vocabulary;
+      if (alignmentState) {
+        alignmentState.vocabulary = alignmentVocabulary;
+        alignmentChapter.render(alignmentState);
+        wireAlignmentControls();
+        // The readout has to be re-spoken, not just the picture: `pointermove` returns
+        // early when the row under the cursor has not changed, so without this the
+        // reader is left holding a codon readout for a row described in coverage terms.
+        refreshAlignmentReadout();
+      }
+    });
+  }
 }
 
 function commit(next: View, { reload }: { reload: boolean }): void {
@@ -211,6 +415,9 @@ function commit(next: View, { reload }: { reload: boolean }): void {
     if (reload || !slot(spec.id).state) void rebuild(spec);
     else redraw(spec.id);
   }
+  // Always a rebuild, never a redraw: a region change means different cells, and the
+  // ordering, the filters and the handed-over set are all resolved during the build.
+  void rebuildAlignment();
 }
 
 function handleEdit(): void {
@@ -280,6 +487,12 @@ function setHeld(id: string, mark: Mark | null): void {
         : (otherEntry.state.visibleMarks.find((m) => m.record === entry.heldRecord) ?? null);
     chapter.renderHighlight(otherEntry.state);
     paintInspection(other);
+  }
+  alignmentHeld = entry.heldRecord;
+  if (alignmentState) {
+    const rasterRow = alignmentHeld === null ? -1 : alignmentState.block.rowForRecord(alignmentHeld);
+    alignmentState.held = rasterRow >= 0 && alignmentState.visible.includes(rasterRow) ? rasterRow : null;
+    alignmentChapter.renderHighlight(alignmentState);
   }
   view.pinned = mark ? records.accession(mark.record) : null;
   writeHash();
@@ -422,6 +635,225 @@ function wireChapter(spec: (typeof SPECS)[number]): void {
   });
 }
 
+/** The raster's own pointer and keyboard handling.
+ *
+ *  Deliberately not `wireChapter`. That function's gestures resolve to a mark through
+ *  `scatter.nearest`, which picks by two-dimensional distance; here a row is identified
+ *  by vertical position alone, and the horizontal axis is a column index rather than a
+ *  second coordinate of the same point.
+ */
+function wireAlignment(): void {
+  const canvas = byId<HTMLCanvasElement>(`${alignmentChapter.ID}-canvas`);
+  const DRAG_THRESHOLD = 5;
+  let start: [number, number] | null = null;
+  let moved = false;
+  /** Keyboard traversal walks the column track, so this is a column index, not a row. */
+  let cursor = -1;
+
+  canvas.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0 || !alignmentState) return;
+    start = alignmentChapter.positionAt(event.clientX, event.clientY);
+    moved = false;
+    canvas.setPointerCapture(event.pointerId);
+  });
+
+  canvas.addEventListener("pointermove", (event) => {
+    const state = alignmentState;
+    if (!state) return;
+    if (start) {
+      const at = alignmentChapter.positionAt(event.clientX, event.clientY);
+      if (Math.abs(at[0] - start[0]) > DRAG_THRESHOLD || Math.abs(at[1] - start[1]) > DRAG_THRESHOLD) {
+        moved = true;
+      }
+      if (moved) {
+        state.brush = { x0: start[0], y0: start[1], x1: at[0], y1: at[1] };
+        alignmentChapter.renderHighlight(state);
+      }
+      return;
+    }
+    const row = alignmentChapter.rowAt(state, event.clientX, event.clientY);
+    if (row === state.inspected) return;
+    state.inspected = row;
+    alignmentChapter.renderHighlight(state);
+    alignmentChapter.renderRowReadout(state, row);
+  });
+
+  canvas.addEventListener("pointerup", (event) => {
+    const state = alignmentState;
+    if (!state || !start) return;
+    const at = alignmentChapter.positionAt(event.clientX, event.clientY);
+    const from = start;
+    const dragged = moved;
+    start = null;
+    moved = false;
+    state.brush = null;
+
+    if (dragged) {
+      const zoom = alignmentChapter.boxToZoom(state, {
+        x0: from[0],
+        y0: from[1],
+        x1: at[0],
+        y1: at[1],
+      });
+      if (zoom) {
+        state.zoom = zoom;
+        alignmentChapter.render(state);
+        wireAlignmentControls();
+      } else {
+        alignmentChapter.renderHighlight(state);
+      }
+      return;
+    }
+    const row = alignmentChapter.rowAt(state, event.clientX, event.clientY);
+    if (row >= 0) {
+      setHeldFromAlignment(row);
+      alignmentChapter.renderRowReadout(state, row);
+    }
+  });
+
+  canvas.addEventListener("pointerleave", () => {
+    const state = alignmentState;
+    if (start || !state) return;
+    state.inspected = -1;
+    alignmentChapter.renderHighlight(state);
+    alignmentChapter.renderRowReadout(state, state.held ?? -1);
+  });
+
+  canvas.addEventListener("pointercancel", () => {
+    start = null;
+    moved = false;
+    if (alignmentState) {
+      alignmentState.brush = null;
+      alignmentChapter.renderHighlight(alignmentState);
+    }
+  });
+
+  canvas.addEventListener("dblclick", () => {
+    if (alignmentState?.zoom) {
+      alignmentState.zoom = null;
+      alignmentChapter.render(alignmentState);
+      wireAlignmentControls();
+    }
+  });
+
+  canvas.addEventListener("keydown", (event) => {
+    const state = alignmentState;
+    if (!state || !state.track) return;
+    let handled = true;
+    switch (event.key) {
+      case "ArrowRight":
+        cursor = alignmentChapter.columnStep(state, cursor, 1);
+        break;
+      case "ArrowLeft":
+        cursor = alignmentChapter.columnStep(state, cursor, -1);
+        break;
+      case "PageUp":
+        cursor = alignmentChapter.columnStep(state, cursor, 50);
+        break;
+      case "PageDown":
+        cursor = alignmentChapter.columnStep(state, cursor, -50);
+        break;
+      case "Escape":
+        if (state.zoom) {
+          state.zoom = null;
+          alignmentChapter.render(state);
+          wireAlignmentControls();
+        }
+        cursor = -1;
+        state.inspected = -1;
+        alignmentChapter.renderHighlight(state);
+        return;
+      default:
+        handled = false;
+    }
+    if (!handled) return;
+    event.preventDefault();
+    // The readout speaks the track, because the track is what the keyboard is walking:
+    // one column, and how much of the visible population can be read there.
+    const covered = state.track.covered[cursor] ?? 0;
+    const differing = state.track.differing[cursor] ?? 0;
+    const target = byId(`${alignmentChapter.ID}-readout`);
+    target.classList.add("is-active");
+    target.innerHTML =
+      `<span class="readout-key">column ${num(cursor + 1)}</span>` +
+      `<span><b>${num(covered)}</b> of ${num(state.visible.length)} visible sequences readable here</span>` +
+      (state.block.header.coding
+        ? `<span><b>${num(differing)}</b> differ from their reference</span>`
+        : "");
+  });
+
+  byId(`${alignmentChapter.ID}-strip`).addEventListener("click", (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".thumb");
+    if (!button?.dataset.region) return;
+    // A region change here is a refetch, not a redraw: the cells are per region.
+    view.zoom = null;
+    commit({ ...view, region: button.dataset.region, zoom: null }, { reload: false });
+  });
+}
+
+/** Pinning from the raster, pushed out to every other chapter so the record highlights
+ *  everywhere — the same contract `setHeld` gives the five scatter chapters. */
+function setHeldFromAlignment(rasterRow: number): void {
+  const state = alignmentState;
+  if (!state) return;
+  const record = state.block.record[rasterRow]!;
+  const same = state.held === rasterRow;
+  state.held = same ? null : rasterRow;
+  alignmentHeld = same ? null : record;
+
+  for (const [id, entry] of chapters) {
+    if (!entry.state) continue;
+    entry.heldRecord = alignmentHeld;
+    entry.state.held =
+      alignmentHeld === null
+        ? null
+        : (entry.state.visibleMarks.find((m) => m.record === alignmentHeld) ?? null);
+    chapter.renderHighlight(entry.state);
+    paintInspection(id);
+  }
+  view.pinned = alignmentHeld === null ? null : records.accession(record);
+  writeHash();
+  alignmentChapter.renderHighlight(state);
+  paintPinned();
+}
+
+/** Load the chapter now, whoever asked.
+ *
+ *  Scrolling to it is the common path, but not the only one: a shared link carrying a
+ *  handed-over set is asking for this figure by name, and so is the button that made
+ *  the link. Routing every entry point through here is what keeps the laziness from
+ *  turning into a figure that silently never loads. */
+function requestAlignment(): void {
+  alignmentMounted = true;
+  void rebuildAlignment();
+}
+
+/** Mount the chapter the first time it comes into view.
+ *
+ *  A region of `all` is up to 25 MB resident and 2.9 MB over the wire. Loading that at
+ *  mount would make every reader pay for a figure most will scroll past, and would put
+ *  it inside the `Promise.all` that gates first paint.
+ *
+ *  Where the observer cannot answer — no `IntersectionObserver`, or a viewport it can
+ *  never report an intersection against — the figure loads rather than staying blank.
+ *  A missing figure with no explanation is a worse failure than an eager fetch. */
+function observeAlignment(): void {
+  if (typeof IntersectionObserver === "undefined") {
+    requestAlignment();
+    return;
+  }
+  const target = byId(alignmentChapter.ID);
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      requestAlignment();
+    },
+    { rootMargin: "600px" },
+  );
+  observer.observe(target);
+}
+
 async function main(): Promise<void> {
   const [loadedSummary, manifest, recordTable] = await Promise.all([
     loadJson<Summary>("data/summary.json"),
@@ -447,6 +879,8 @@ async function main(): Promise<void> {
   renderControls(summary, view);
   onControlEdit(handleEdit);
   for (const spec of SPECS) wireChapter(spec);
+  wireAlignment();
+  observeAlignment();
   refreshChrome();
   await Promise.all(SPECS.map((spec) => rebuild(spec)));
 
@@ -458,6 +892,11 @@ async function main(): Promise<void> {
     );
     if (target) setHeld(DIVERGENCE.id, target);
   }
+
+  // A link carrying a handed-over set is asking for chapter 06 by name, so it does not
+  // wait to be scrolled to. Resolved after the rebuild above, because the rectangle can
+  // only become a set once the chapter that drew it has its marks.
+  if (view.restrict) requestAlignment();
 
   byId("reset-view").addEventListener("click", () => {
     for (const entry of chapters.values()) {

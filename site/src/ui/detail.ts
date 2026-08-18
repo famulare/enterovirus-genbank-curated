@@ -33,19 +33,28 @@ export function renderReadout(
   }
   target.classList.add("is-active");
 
-  const type = records.text("virus_type", mark.record) || "untyped";
-  const classification = records.text("poliovirus_classification", mark.record);
-  const country = records.text("country", mark.record);
-  const date = records.text("collection_date", mark.record);
-
   const lines = [
-    `<span class="readout-key">${esc(records.accession(mark.record))}</span>`,
-    `<span>${esc(type)}${classification ? ` · ${esc(classification)}` : ""}</span>`,
-    `<span>${esc([country, date].filter(Boolean).join(" · ") || "no place or date recorded")}</span>`,
+    ...identityLines(records, mark.record),
     ...spec.readout(records, set, mark).map((line) => `<span>${line}</span>`),
   ];
   if (!held) lines.push('<span class="readout-hint">Click to pin</span>');
   target.innerHTML = lines.join("");
+}
+
+/** Who a record is, in the three lines every figure's readout opens with.
+ *
+ *  Exported so the alignment chapter can start its readout the same way without
+ *  borrowing `renderReadout`, whose contract is a `ChapterSpec` it does not have. */
+export function identityLines(records: Records, record: number): string[] {
+  const type = records.text("virus_type", record) || "untyped";
+  const classification = records.text("poliovirus_classification", record);
+  const country = records.text("country", record);
+  const date = records.text("collection_date", record);
+  return [
+    `<span class="readout-key">${esc(records.accession(record))}</span>`,
+    `<span>${esc(type)}${classification ? ` · ${esc(classification)}` : ""}</span>`,
+    `<span>${esc([country, date].filter(Boolean).join(" · ") || "no place or date recorded")}</span>`,
+  ];
 }
 
 /** What one figure measured about the pinned record. */

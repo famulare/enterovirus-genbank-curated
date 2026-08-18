@@ -30,6 +30,7 @@ def _region_catalog() -> list[dict]:
             "in_nucleotide_tree": region in contract.NUCLEOTIDE_TREE_REGIONS,
             "in_protein_distance": region in contract.PROTEIN_DISTANCE_REGIONS,
             "in_protein_tree": region in contract.PROTEIN_TREE_REGIONS,
+            "in_alignment": region in contract.ALIGNMENT_REGIONS,
             "min_nt": contract.min_nt(region),
         }
         for region in (

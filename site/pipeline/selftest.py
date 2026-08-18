@@ -768,6 +768,101 @@ def figures_nest() -> None:
     )
 
 
+def alignment_payloads_reproduce_the_panels() -> None:
+    """Figure 1's counts must be row-sums of figure 6's raster, recomputed from the
+    shipped container alone.
+
+    This is the claim the sixth figure rests on: a point in the divergence scatter is
+    the sum of its own raster row, so a reader who zooms into one record is looking at
+    the arithmetic behind its dot rather than at a second, parallel measurement. It is
+    checked against what shipped rather than against the in-memory payload, because the
+    browser is the only other reader of these bytes and a serialization fault would
+    otherwise surface as a wrong figure instead of a failed build.
+
+    Four traps live here, all of them mirrored in the TypeScript decoder:
+      - the span comes from the JOINT comparable mask, not the query's own coverage;
+      - a codon touched by both an insertion and a deletion is charged once;
+      - the panel keeps only rows clearing min_nt WITH a resolved reference, so the
+        join is on record index and never on position;
+      - an unresolved reference (row_index < 0) contributes nothing at all.
+    """
+    print("\nalignment payloads against the divergence panels")
+    import json
+
+    import alignment as alignment_artifacts
+
+    checked = 0
+    for selection_id, regions in (("PV1", contract.DIVERGENCE_REGIONS), ("all", ("P1",))):
+        panel_file = json.loads((contract.DATA_OUT / f"panels/{selection_id}.json").read_text())
+        for region in regions:
+            container = alignment_artifacts.read_container(
+                contract.DATA_OUT / f"alignments/{selection_id}/{region}.bin.gz"
+            )
+            width = container["header"]["width"]
+            offsets = alignment_artifacts.row_offsets(container["first"], container["last"])
+            references = alignment_artifacts.unpack_row(
+                container["reference_cells"], 0, len(container["header"]["references"]) * width
+            ).reshape(-1, width)
+
+            wanted = {record: i for i, record in enumerate(panel_file["divergence"][region]["record"])}
+            by_record = {int(record): row for row, record in enumerate(container["record"])}
+
+            expected = panel_file["divergence"][region]
+            mismatches = []
+            for record, slot in wanted.items():
+                row = by_record[record]
+                reference_slot = int(container["reference"][row])
+                if reference_slot < 0:
+                    mismatches.append(f"record {record} has no reference but is in the panel")
+                    continue
+
+                query = np.zeros(width, dtype=np.uint8)
+                first, last = int(container["first"][row]), int(container["last"][row])
+                if last >= first:
+                    query[first : last + 1] = alignment_artifacts.unpack_row(
+                        container["cells"], int(offsets[row]), last - first + 1
+                    )
+                ref = references[reference_slot]
+
+                comparable_nt = frame.is_base(query) & frame.is_base(ref)
+                covered = np.flatnonzero(comparable_nt)
+                span = np.zeros(width, dtype=bool)
+                if len(covered):
+                    span[covered[0] : covered[-1] + 1] = True
+
+                q_codons = frame.as_codons(query[None, :])
+                r_codons = frame.as_codons(ref[None, :])
+                comparable = frame.as_codons(comparable_nt[None, :]).all(axis=2)
+                differs = (q_codons != r_codons).any(axis=2) & comparable
+                same_aa = frame.translate(q_codons) == frame.translate(r_codons)
+
+                indel_nt = (span & frame.has_material(ref) & ~frame.has_material(query)) | (
+                    span & frame.has_material(query) & ~frame.has_material(ref)
+                )
+                indel_codons = int(frame.as_codons(indel_nt[None, :]).any(axis=2).sum())
+
+                synonymous = int((differs & same_aa).sum())
+                nonsynonymous = int((differs & ~same_aa).sum()) + indel_codons
+                assessable = int(comparable.sum()) + indel_codons
+
+                for label, got, want in (
+                    ("synonymous", synonymous, expected["synonymous"][slot]),
+                    ("nonsynonymous", nonsynonymous, expected["nonsynonymous"][slot]),
+                    ("assessable", assessable, expected["assessable"][slot]),
+                ):
+                    if got != want:
+                        mismatches.append(f"record {record} {region} {label}: {got} != {want}")
+                checked += 1
+
+            check_equal(
+                len(mismatches),
+                0,
+                f"{selection_id} {region}: {len(wanted):,} records reproduce their panel counts"
+                + (f" — {'; '.join(mismatches[:3])}" if mismatches else ""),
+            )
+    print(f"  {checked:,} records recomputed from shipped containers")
+
+
 def run() -> int:
     synthetic_cases()
     distance_and_embedding_cases()
@@ -779,6 +874,8 @@ def run() -> int:
         axes_are_bounded()
         embedding_confidence_is_informative()
         square_root_never_worsens_the_geometry()
+    if (contract.DATA_OUT / "alignments").is_dir():
+        alignment_payloads_reproduce_the_panels()
     if (contract.DATA_OUT / "trees").is_dir():
         trees_are_populated()
         figures_nest()

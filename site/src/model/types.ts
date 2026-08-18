@@ -53,6 +53,7 @@ export interface Region {
   in_nucleotide_tree: boolean;
   in_protein_distance: boolean;
   in_protein_tree: boolean;
+  in_alignment: boolean;
   min_nt: number;
 }
 

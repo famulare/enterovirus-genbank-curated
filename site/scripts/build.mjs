@@ -30,6 +30,8 @@ const REQUIRED_DATA = [
   "records.json",
   "panels/PV1.json",
   "trees/PV1.json",
+  "alignments/PV1/profile.json",
+  "alignments/PV1/P1.bin.gz",
 ];
 
 async function main() {

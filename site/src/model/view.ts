@@ -15,6 +15,21 @@ import type { Summary } from "./types.js";
 export type StatusFilter = "all" | "vouched" | "provisional";
 export type AxisScale = "linear" | "sqrt";
 
+/** How the alignment raster stacks its rows. Not an axis transform — the vertical
+ *  axis there is an ordering, so this chooses which ordering. */
+export type RowOrder = "trait" | "coverage" | "start" | "ladder" | "divergence";
+
+/** A set of records handed to the alignment view by another chapter's brush.
+ *
+ *  The rectangle travels, not the record list: 412 record indices would not fit a
+ *  readable hash, and the chapter that drew the box can resolve it again from its own
+ *  marks. `from` is the chapter that owns those axes — a rectangle means nothing
+ *  without it. */
+export interface Restrict {
+  from: string;
+  rect: Zoom;
+}
+
 /** A brushed axis range, in data units. Null means the full data extent. */
 export interface Zoom {
   x0: number;
@@ -36,15 +51,42 @@ export interface View {
    *  the interesting structure sits, without hiding the exact zeros a log axis
    *  cannot show. */
   scale: AxisScale;
-  /** Brushed range, or null for the full extent. */
+  /** Brushed range, or null for the full extent. Per-chapter transport only: a
+   *  rectangle means something on the axes it was drawn on and nowhere else, so this
+   *  is carried beside the shared view rather than inside the URL. */
   zoom: Zoom | null;
+  /** Row ordering for the alignment view. */
+  order: RowOrder;
+  /** Records another chapter's brush handed to the alignment view, or null. */
+  restrict: Restrict | null;
 }
 
 const STATUSES: StatusFilter[] = ["all", "vouched", "provisional"];
 const SCALES: AxisScale[] = ["linear", "sqrt"];
+const ORDERS: RowOrder[] = ["trait", "coverage", "start", "ladder", "divergence"];
+/** Chapters whose brush may drive the alignment view. The alignment chapter is absent
+ *  on purpose: its own brush is a zoom, not a hand-off, and letting it restrict itself
+ *  would make the control recursive. */
+export const RESTRICT_SOURCES = [
+  "divergence",
+  "distance",
+  "phylogeny-nt",
+  "distance-aa",
+  "phylogeny-aa",
+];
 /** Every parameter name the encoder can emit. The decoder validates against this,
  *  so a name can only be spelled one way. */
-const KEYS = ["sel", "region", "color", "status", "engineered", "record", "scale", "zoom"];
+const KEYS = [
+  "sel",
+  "region",
+  "color",
+  "status",
+  "engineered",
+  "record",
+  "scale",
+  "order",
+  "restrict",
+];
 
 export interface Decoded {
   view: View;
@@ -63,6 +105,8 @@ export function defaultView(summary: Summary): View {
     pinned: null,
     scale: "sqrt",
     zoom: null,
+    order: "trait",
+    restrict: null,
   };
 }
 
@@ -121,9 +165,13 @@ export function encode(view: View, summary: Summary): string {
   if (view.engineered !== base.engineered) add("engineered", view.engineered ? "1" : "0");
   if (view.pinned) add("record", view.pinned);
   if (view.scale !== base.scale) add("scale", view.scale);
-  if (view.zoom) {
-    const { x0, x1, y0, y1 } = view.zoom;
-    add("zoom", [x0, x1, y0, y1].map((v) => v.toPrecision(6)).join(","));
+  if (view.order !== base.order) add("order", view.order);
+  if (view.restrict) {
+    const { x0, x1, y0, y1 } = view.restrict.rect;
+    add(
+      "restrict",
+      [view.restrict.from, ...[x0, x1, y0, y1].map((v) => v.toPrecision(6))].join(","),
+    );
   }
   return parts.join("&");
 }
@@ -197,11 +245,17 @@ export function decode(hash: string, summary: Summary): Decoded {
     else rejected.push(`scale=${scale}`);
   }
 
-  const zoom = seen.get("zoom");
-  if (zoom !== undefined) {
-    const parsed = parseZoom(zoom);
-    if (parsed) view.zoom = parsed;
-    else rejected.push(`zoom=${zoom}`);
+  const order = seen.get("order");
+  if (order !== undefined) {
+    if ((ORDERS as string[]).includes(order)) view.order = order as RowOrder;
+    else rejected.push(`order=${order}`);
+  }
+
+  const restrict = seen.get("restrict");
+  if (restrict !== undefined) {
+    const parsed = parseRestrict(restrict);
+    if (parsed) view.restrict = parsed;
+    else rejected.push(`restrict=${restrict}`);
   }
 
   // One list, shared with the encoder's parameter names. Keeping a second literal
@@ -218,14 +272,34 @@ export function roundTrip(view: View, summary: Summary): View {
   return decode(encode(view, summary), summary).view;
 }
 
-/** Four finite, ordered, non-negative numbers, or null. Rejects rather than clamps:
- *  a half-understood range would silently show the wrong subset of the data. */
-function parseZoom(raw: string): Zoom | null {
-  const parts = raw.split(",").map(Number);
-  if (parts.length !== 4 || parts.some((v) => !Number.isFinite(v) || v < 0)) return null;
+/** Four finite, ordered numbers, or null. Rejects rather than clamps: a half-understood
+ *  range would silently show the wrong subset of the data.
+ *
+ *  Negative coordinates are accepted, which the retired `zoom` parser refused. That
+ *  parser only ever saw divergence axes, where a count cannot be negative. A rectangle
+ *  from either scaling chapter routinely is: 41% of PV1's P1 scaling x is negative, and
+ *  54% in the 5'NCR, because embedding coordinates are signed. Refusing them would
+ *  reject a link from the very figure this control exists to serve. */
+export function parseRect(parts: number[]): Zoom | null {
+  if (parts.length !== 4 || parts.some((v) => !Number.isFinite(v))) return null;
   const [x0, x1, y0, y1] = parts as [number, number, number, number];
   if (!(x1 > x0) || !(y1 > y0)) return null;
   return { x0, x1, y0, y1 };
+}
+
+/** `<chapter>,x0,x1,y0,y1`. The chapter must be one that can own a rectangle. */
+function parseRestrict(raw: string): Restrict | null {
+  const parts = raw.split(",");
+  if (parts.length !== 5) return null;
+  const from = parts[0]!;
+  if (!RESTRICT_SOURCES.includes(from)) return null;
+  const rect = parseRect(parts.slice(1).map(Number));
+  return rect ? { from, rect } : null;
+}
+
+function sameRestrict(a: Restrict | null, b: Restrict | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.from === b.from && sameZoom(a.rect, b.rect);
 }
 
 function sameZoom(a: Zoom | null, b: Zoom | null): boolean {
@@ -242,6 +316,8 @@ export function sameView(a: View, b: View): boolean {
     a.engineered === b.engineered &&
     a.pinned === b.pinned &&
     a.scale === b.scale &&
+    a.order === b.order &&
+    sameRestrict(a.restrict, b.restrict) &&
     sameZoom(a.zoom, b.zoom)
   );
 }

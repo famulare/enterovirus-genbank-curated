@@ -26,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+import alignment as alignment_artifacts  # noqa: E402
 import contract  # noqa: E402
 import frame  # noqa: E402
 import manifest  # noqa: E402
@@ -87,6 +88,21 @@ def command_build(_args) -> int:
             region: len(panel["record"]) for region, panel in payload["divergence"].items()
         }
         print(f"  {selection['id']:5s} {counts}")
+
+        profile = alignment_artifacts.column_profiles(alignment, population, columns)
+        profile["selection"] = selection["id"]
+        artifacts.append(
+            write_json(f"alignments/{selection['id']}/profile.json", profile, compact=True)
+        )
+        for region in contract.ALIGNMENT_REGIONS:
+            name = f"alignments/{selection['id']}/{region}.bin.gz"
+            alignment_artifacts.write_gzipped(
+                contract.DATA_OUT / name,
+                alignment_artifacts.build_region(
+                    alignment, population, columns[region], selection, region
+                ),
+            )
+            artifacts.append(name)
 
         forest = trees.build_selection(selection, alignment, columns, population)
         artifacts.append(write_json(f"trees/{selection['id']}.json", forest, compact=True))

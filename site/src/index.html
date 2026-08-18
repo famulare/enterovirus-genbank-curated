@@ -20,6 +20,7 @@
     <a href="#phylogeny-nt">Phylogeny</a>
     <a href="#distance-aa">Protein distance</a>
     <a href="#phylogeny-aa">Protein tree</a>
+    <a href="#alignment">Alignment</a>
     <a href="#release">Release</a>
   </nav>
   <details class="section-nav">
@@ -30,6 +31,7 @@
       <a href="#phylogeny-nt">Phylogeny</a>
       <a href="#distance-aa">Protein distance</a>
       <a href="#phylogeny-aa">Protein tree</a>
+      <a href="#alignment">Alignment</a>
       <a href="#release">Release</a>
     </nav>
   </details>
@@ -43,7 +45,7 @@
     <h1 class="visually-hidden">Enterovirus GenBank Curated — data explorer</h1>
     <p class="lede">Curated GenBank enterovirus sequence data with all fields normalized and
       missing epidemiological data pulled in from the many related papers. Descriptive data
-      visualizations, with one selection and one color driving all five views. Raw GenBank source
+      visualizations, with one selection and one color driving all six views. Raw GenBank source
       complete as of <span id="raw-date">…</span>.</p>
     <p class="maintainer">Maintained by <a href="https://github.com/famulare">Mike Famulare</a> at
       the <a href="https://www.idmod.org/">Institute for Disease Modeling</a>, part of the
@@ -230,9 +232,44 @@
       statement about the protein, and read 03 for ancestry.</p>
   </section>
 
+  <section id="alignment" class="chapter" aria-labelledby="alignment-heading">
+    <div class="chapter-heading">
+      <h2 class="chapter-number" id="alignment-heading">06 / The alignment underneath</h2>
+      <p class="lede">The five figures above reduce each sequence to a point. This one puts the
+        sequences back: one row per record, over the same alignment columns those figures
+        measured. Every caveat they carry — coverage floors, thin placements, sequences a tree
+        could not join, a consensus that is a union of its type's coverage — is a statement about
+        which columns a record actually covers, and this is where that is visible.</p>
+    </div>
+    <div class="wide-breakout figure">
+      <div class="thumb-strip" id="alignment-strip" role="group"
+           aria-label="Genome region — choose which one the raster shows"></div>
+      <div class="figure-main">
+        <figure class="plot" role="img" aria-labelledby="alignment-note">
+          <svg class="scientific-chart plot-track" id="alignment-track" aria-hidden="true"></svg>
+          <div class="plot-stack">
+            <svg class="scientific-chart plot-axes" id="alignment-axes" aria-hidden="true"></svg>
+            <canvas class="plot-marks raster-canvas" id="alignment-canvas" tabindex="0"
+                    aria-describedby="alignment-readout"
+                    aria-label="Alignment raster. Arrow keys walk the per-column track above the panel, reading how many sequences are readable at each column. Drag a box to zoom to a range of columns and rows; once rows are few enough each has its own line."></canvas>
+            <svg class="scientific-chart plot-overlay" id="alignment-overlay" aria-hidden="true"></svg>
+          </div>
+          <figcaption id="alignment-note" aria-live="off"></figcaption>
+        </figure>
+        <div class="legend" id="alignment-legend"></div>
+      </div>
+      <div class="readout" id="alignment-readout" role="status"></div>
+    </div>
+    <p class="warning">Where records outnumber the panel's pixel rows, each row of pixels draws
+      <em>one</em> record rather than blending the rest — so the picture is a sample and the figure
+      says how many it passed over. The track above the panel is not sampled: it counts every
+      visible record at every column, and it is where the full population is represented. Brush a
+      range to give every record its own line.</p>
+  </section>
+
   <section id="release" class="chapter closing" aria-labelledby="release-heading">
     <div class="chapter-heading">
-      <h2 class="chapter-number" id="release-heading">06 / The release, and what is wrong with
+      <h2 class="chapter-number" id="release-heading">07 / The release, and what is wrong with
         it</h2>
       <p class="lede">Every number on this page is recomputed from the shipped release at build
         time, so it cannot drift from the data. That includes the problems: this page reports

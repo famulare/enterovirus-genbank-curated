@@ -165,6 +165,12 @@ NUCLEOTIDE_TREE_REGIONS = DISTANCE_REGIONS
 PROTEIN_DISTANCE_REGIONS = (REGION_P1, REGION_P2, REGION_P3)
 PROTEIN_TREE_REGIONS = PROTEIN_DISTANCE_REGIONS
 
+# Figure set 6 draws the alignment itself, so it covers every region any other figure
+# reads — including the polyprotein, which is figure 1's largest panel and the one
+# `summary.consensus_inflation` is measured off. Leaving it out would make the claim
+# that a figure-1 point is a row-sum of its raster row false for a quarter of figure 1.
+ALIGNMENT_REGIONS = CODING_REGIONS + NONCODING_REGIONS
+
 # --- Thresholds ------------------------------------------------------------
 
 # Coverage below this many nucleotides of comparable material excludes a record

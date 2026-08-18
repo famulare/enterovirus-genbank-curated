@@ -3,13 +3,13 @@
 The static exploration surface published at
 <https://famulare.github.io/enterovirus-genbank-curated/>.
 
-Five figure sets over one shared selection state: synonymous versus non-synonymous
+Six figure sets over one shared selection state: synonymous versus non-synonymous
 divergence, multidimensional scaling of nucleotide distance, nucleotide phylogeny,
-multidimensional scaling of protein distance, and protein phylogeny. Its purpose is to
-make the structure in the release legible at a glance and to make misclassification
-noticeable.
+multidimensional scaling of protein distance, protein phylogeny, and the alignment those
+five are computed from. Its purpose is to make the structure in the release legible at a
+glance and to make misclassification noticeable.
 
-All five are the same instrument, from the same component in `src/ui/chapter.ts`: a
+The first five are the same instrument, from the same component in `src/ui/chapter.ts`: a
 strip of live region thumbnails above one focus panel, with drag-to-brush zoom,
 per-panel auto-scaling, seven colored categories plus Other with glyph co-encoding,
 hover and full keyboard traversal, and click-to-pin showing every canonical field.
@@ -27,11 +27,94 @@ hash, so any view is a shareable link.
   regions. Read against set 2: structure that survives translation is structure in the
   protein, and structure that disappears was synonymous all along.
 - **Set 5, protein phylogeny** — set 3 in residue space, over the same three regions.
+- **Set 6, the alignment** — one row per sequence over the alignment columns the other
+  five measured. Not the shared component; see below.
 
 Residue space is not a second metric. `distances.py` is parameterized over an `Alphabet`,
 so the nucleotide and protein figures run one procedure over one definition, and
 `distances.in_alphabet` is the single place a nucleotide floor becomes a codon floor —
 rounded **up**, so a record in a protein figure is always in the nucleotide figures too.
+
+### Set 6 is a second component, and why that was the honest answer
+
+The first five chapters are instances of `ChapterSpec`. The sixth is not, and the attempt
+to make it one is worth recording because the reasoning looks right until it meets the
+code. A tree already has an ordinal vertical axis and a quantity on the horizontal, which
+is exactly the raster's shape — so a raster row looked like a `Mark` with a wider glyph.
+
+It is not. `scatter.nearest` picks by two-dimensional distance inside 14 px and `within()`
+gates both drawing and the flagged-mark overlay on a mark's point position. A raster row is
+a horizontal extent. On `all`/P1, at roughly 29 records per pixel row, a hover would have
+returned an arbitrary member of a 400-row band; and a record covering exactly the brushed
+columns, but whose span midpoint sat outside them, would have failed `within()` and
+disappeared from the mark layer while its own raster row stayed painted. The two layers
+would have disagreed about who was on screen.
+
+So `ui/alignment.ts` brings its own hit test, its own thumbnail strip and its own row
+ordering. Everything that could still be shared is: the filters, the colour scale, the
+axis machinery, `scatter.axesMarkup`, the brush gesture, the pinned-record inspector, the
+readout's identity lines, and the DOM skeleton.
+
+### What a pixel in set 6 means
+
+A region is up to 7,512 columns wide and a selection up to 24,305 rows deep — 182 million
+cells into about 550,000 pixels. The two binning axes are not the same operation and do
+not get the same rule.
+
+**Along columns, inside one record**, a pixel covers a handful of that record's own
+positions, so painting the highest-priority state present is a true statement about one
+sequence. **Across rows it is not.** Twenty-nine records sharing a pixel row have nothing
+in common, and blending them invents a sequence that does not exist. An earlier draft
+proposed exactly that — highest-priority state at an opacity equal to its share, floored so
+rare states stayed visible — and it fails at the density this data actually has: with ~145
+cells per pixel almost every pixel contains something non-identical, so the panel washes to
+one colour, and the floor flattens one-in-145 and fifty-in-145 to the same ink.
+
+Rows are therefore **sampled**: each pixel row draws exactly one record, deterministically
+chosen, so a pixel row always names a real sequence a reader can hover, pin and look up.
+How many records the sampling passed over is on the figure. The honest aggregate over
+every visible row is the column track above the plot, which never samples — that division,
+sampled picture and complete track, is the whole of this figure's claim about its own
+fidelity. Brushing narrows the stack until every record has a row of its own, and the note
+says when that has happened.
+
+### Set 6 ships bases, and a test pays for it
+
+The payload is the normalized alignment codes, not the divergence classification
+`pipeline/divergence.py` already computes and discards. That buys one payload behind both
+cell vocabularies and a deep zoom that can show actual bases. What it risks is that
+`model/alignment.ts` drifts from the Python.
+
+That is closed by a test rather than by a redundant payload. `test/alignment.test.ts`
+recomputes figure 1's counts through the TypeScript decoder and asserts they equal
+`panels/*.json` exactly, over both coordinate frames — PV1 for the Sabin frame with a single
+reference, `all` for the projected frame with per-type consensus references, unresolved
+rows and real insertion columns. Checking two independent implementations against each
+other is a stronger guarantee than a Python selftest of a Python-derived artifact, and it
+costs no bytes. `pipeline/selftest.py` additionally reads the shipped container back and
+reproduces the same counts in numpy, which is what catches a serialization fault rather
+than an arithmetic one.
+
+### The container, and what base64 cost
+
+One file per selection and region, at `data/alignments/{selection}/{region}.bin.gz`: a
+length-prefixed JSON header, then raw little-endian sections, gzipped whole and inflated in
+the browser with `DecompressionStream`. Sections are ordered so every 4-byte array lands on
+a 4-byte boundary — header padded to a multiple of four, `int32` arrays next, byte-wide
+cell blocks last — so the browser wraps each array with a zero-copy `Int32Array` view
+instead of parsing a few hundred thousand JSON integers.
+
+Each row ships `[first, last]` and nibble-packed codes for that stretch alone. A record
+covers one contiguous span and nothing outside it, so a dense matrix spends 44–92% of its
+bytes on gap. Row offsets are deliberately not shipped: a row occupies `ceil(span / 2)`
+bytes and the browser accumulates the same arithmetic, so an offset table would be a second
+copy of a derivable fact and a second thing that can disagree with the cells it indexes.
+
+Base64-in-JSON was measured and rejected. gzip compresses base64 text far worse than the
+bytes behind it: the `all` selection came out at 8.62 MB against 5.47 MB for the same data
+as raw sections. Uncompressed it would have been 134 MB on disk for `all` alone, which
+`build.mjs` then copies into `dist/` a second time. Shipped, the six regions of every
+selection add 11.15 MB to `site/data/`.
 
 ### The axis is set by the placements the figure trusts
 
@@ -178,15 +261,19 @@ pipeline/          Python. Reads final/, writes site/data/.
   scaling.py         One region's embedding, assembled (set 2)
   records.py         The shared record table every figure reads
   panels.py          Per-selection artifacts the browser loads
+  alignment.py       The raster container and the coverage profiles (set 6)
   summary.py         The counts, catalogs and caveats the page opens with
   manifest.py        Input hashing and the staleness gate
   selftest.py        Correctness checks; `cli.py selftest`
   cli.py             `build`, `check`, `selftest`
-data/              Committed derived artifacts + manifest.json
+data/              Derived artifacts + manifest.json. Generated, not committed.
 src/               TypeScript. model/ is DOM-free and unit-tested; ui/ renders.
-  ui/chapter.ts      ONE figure component; both chapters are instances of it
-  model/specs.ts     What each chapter adds beyond that component
+  ui/chapter.ts      ONE figure component; chapters 01-05 are instances of it
+  model/specs.ts     What each of those chapters adds beyond that component
   model/mark.ts      The boundary between them: what a scatter draws
+  ui/alignment.ts    Chapter 06. Its own component; see above for why
+  ui/raster.ts       What a pixel of the alignment is allowed to claim
+  model/alignment.ts The container format and the two cell vocabularies
 test/              node --test over model/
 scripts/           esbuild build, and a dev server
 tokens.css         Vendored from the scientific-page-style kit
@@ -210,7 +297,7 @@ either alone.
 ## Deviations from the scientific-page-style kit
 
 The kit is at `~/git/famulare/my_environments/web/scientific-page-style/` and is
-installed as a skill at `.claude/skills/scientific-web-style`. Three deliberate
+installed as a skill at `.claude/skills/scientific-web-style`. Four deliberate
 departures, each recorded here because the kit's coherence depends on deviations
 being visible:
 
@@ -220,12 +307,24 @@ being visible:
    SVG, so the typography and rule vocabulary are unchanged.
 2. **Readable URL-hash parameters** instead of base64url canonical JSON. The kit's
    recipe guards against float-formatting drift in a scenario object; this state is
-   six short enumerated values with no floats, and a reader of a data explorer will
-   want to hand-edit a link. Validation is still strict — an unrecognized value
-   degrades to the default and is reported in the status line, never accepted.
+   mostly short enumerated values, and a reader of a data explorer will want to hand-edit
+   a link. Validation is still strict — an unrecognized value degrades to the default and
+   is reported in the status line, never accepted.
+
+   One parameter does carry floats: `restrict`, the rectangle one chapter's brush hands
+   to chapter 06. It is written at `toPrecision(6)` and re-resolved against that
+   chapter's own marks on arrival, so drift in the last digit moves the count by a record
+   or two rather than corrupting the state — which is why the figure reports the count it
+   actually resolved instead of one baked into the link. This replaced a `zoom`
+   parameter that had been encoded, decoded and round-trip tested but never read: `app.ts`
+   wrote the hash with `zoom: null` and `chapterView()` overrode it on every path.
 3. **A smaller `--fs-display`** and tighter hero padding. On an essay the display
    size can own the first screen; here the reader must reach the control bar and
    the top of a figure without scrolling. The body-size floor is untouched.
+4. **An ImageData raster** in chapter 06, where the other five draw marks. 182 million
+   cells is three orders of magnitude past what any mark layer carries, so the figure is
+   a picture rather than a scatter. Its axes, track, legend and labels are still SVG, and
+   the rule about what a pixel is allowed to claim is above.
 
 ## What the divergence metric is not
 

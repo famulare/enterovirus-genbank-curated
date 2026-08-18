@@ -8,7 +8,7 @@
  *  view and a user-edited view the same object.
  */
 
-import type { AxisScale, StatusFilter, View } from "../model/view.js";
+import type { AxisScale, RowOrder, StatusFilter, View } from "../model/view.js";
 import { defaultTraitNote, pickSelection, population } from "../model/view.js";
 import type { Summary } from "../model/types.js";
 import { byId, esc, num, option } from "./dom.js";
@@ -79,6 +79,18 @@ export function renderControls(summary: Summary, view: View): void {
       </select>
       <small id="scale-note"></small>
     </label>
+
+    <label>
+      Order rows
+      <select id="c-order" ${CONTROL_ATTR}>
+        ${option("trait", "By color", view.order === "trait")}
+        ${option("coverage", "By coverage", view.order === "coverage")}
+        ${option("start", "By first column covered", view.order === "start")}
+        ${option("ladder", "By the nucleotide tree", view.order === "ladder")}
+        ${option("divergence", "By non-synonymous rate", view.order === "divergence")}
+      </select>
+      <small>Stacks the alignment view only.</small>
+    </label>
   `;
 
   byId("control-filters").className = "control-filters";
@@ -99,6 +111,7 @@ export function syncControls(view: View): void {
   byId<HTMLSelectElement>("c-status").value = view.status;
   byId<HTMLInputElement>("c-engineered").checked = view.engineered;
   byId<HTMLSelectElement>("c-scale").value = view.scale;
+  byId<HTMLSelectElement>("c-order").value = view.order;
 }
 
 /** Read the whole view out of the DOM. */
@@ -112,8 +125,11 @@ export function readControls(previous: View): View {
     engineered: byId<HTMLInputElement>("c-engineered").checked,
     pinned: previous.pinned,
     scale: byId<HTMLSelectElement>("c-scale").value as AxisScale,
-    // Brushing is a figure interaction, not a control; it survives a control edit.
+    order: byId<HTMLSelectElement>("c-order").value as RowOrder,
+    // Brushing is a figure interaction, not a control; both it and a set handed to the
+    // alignment view survive a control edit.
     zoom: previous.zoom,
+    restrict: previous.restrict,
   };
 }
 

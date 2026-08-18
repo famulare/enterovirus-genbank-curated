@@ -486,7 +486,9 @@ function renderNote(state: ChapterState, set: MarkSet, marks: Mark[]): void {
   const parts = [
     state.view.zoom
       ? `<strong>${num(inRange)}</strong> of ${num(marks.length)} sequences inside the brushed
-         range. <button type="button" class="text-button" data-reset-zoom>Show all</button>`
+         range. <button type="button" class="text-button" data-reset-zoom>Show all</button>
+         <button type="button" class="text-button" data-send-to-alignment>Show these
+         ${num(inRange)} in the alignment view</button>`
       : "",
     lead,
     // Silence here would be the dishonest option: the range is set by the confident
