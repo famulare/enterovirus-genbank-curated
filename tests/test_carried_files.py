@@ -53,53 +53,53 @@ from enterovirus_genbank_curated.oracle.release import (
 # output, so their pins move whenever a rebuild is promoted -- see `oracle/release.py`.
 CARRIED_SHA256 = {
     "final/alignments/EV_unified.coverage.tsv.gz":
-        "74f0d2f444e1b404db359bd85b6fd3fce1a5c796ab647e3406769c29ce5d78c5",
+        "453cd965ed28651f60a3eed7ecf2b70cd49342972e931b6c291d47a8309a34d8",
     "final/alignments/EV_unified.provenance.json":
-        "12ce78ed97e1aaa80cb363f764b4aad7ebe3b6d946529948f18dfb2a4f7f2833",
+        "17655eafae2ea9d34281f81562ccf39bda3657c9fe6707c74a1a366cbe32e55e",
     "final/alignments/EV_unified.sto.gz":
-        "6018246dee9133185ce8a6670b3a2ae504e9d24cb20d5849b3bcd007277ed30e",
+        "d3f8272a9fd67c486e47bb257ec35c7146ed32349f96ad0e3aa8fa203740f1f8",
     "final/alignments/EV_unified_aln.fasta.gz":
-        "e48fd4e0e68dc2607b9458ef324e2469e120d2273a1c7696d70fc99d58894898",
+        "dc76eea2a25931b8f8fff74b46b1c107c926a217791d5f20d7092f9a0fb5aebd",
     "final/alignments/NPEV_unified.coverage.tsv.gz":
-        "32333f81d9ada7daf4cd9328b77458b8bcf9399e4197f0d920de18f45332a7e1",
+        "3c34e327dcc6467c8384f33cea1c95cf44a8f704e04565af98ea0a16479e58f4",
     "final/alignments/NPEV_unified.provenance.json":
-        "8add30de19410320d4e912fdad77b8356904fe0a3db5bacf6db87a54c103a766",
+        "f9a0047626326ea13fd0326ef4d8740a62f11471f04f0db473d36127eb79cb27",
     "final/alignments/NPEV_unified.sto.gz":
-        "b2a60e3b0d4dd7013cb58a70b97926e122a33ed8062cb0ff31d97dad24d429a5",
+        "99335620c5050afe3a2c0b925e4c34c02e578c917ce72a3be058842b3937b1ac",
     "final/alignments/NPEV_unified_aln.fasta.gz":
-        "9d675fc87a96389dfcdc2d8b3a530d905555b8e6e2e21b00e9f273da5fdd1dc4",
+        "01fd138b7ba7eb6b012642db7aa7f300f5e3b6bb1602d3f29341b4eb34905abe",
     "final/alignments/POLIO_unified.coverage.tsv.gz":
-        "7cda9fbef0e8282958c3ac380a692ea9cfe6d43cc666d6554e9df3c639d272db",
+        "ef81428ca221b89980a321912bd35ab3f79361852829ee4e3e35846cdcf60094",
     "final/alignments/POLIO_unified.provenance.json":
-        "a8f4fb91a1205d0400677e770ef48bb2bc4f3ac4021e164ab208a248cbbf8b08",
+        "0340b4456dba6364c5b06d39927bb17445dd2248edd16d144fda8000fed03bbf",
     "final/alignments/POLIO_unified.sto.gz":
-        "a1d34626fd14838e43bfad193f282d2c7ce6ba4677180a48643faaa4e74fb8cb",
+        "ce81c8bd5dd368fa141c02dd9c71acaabf73786598dd8cd609f67a4a85978a4e",
     "final/alignments/POLIO_unified_aln.fasta.gz":
-        "1245e2269c1276f699763c5b9a3c7a0ef8f7b676c51ef303b2acb74ebb97d43b",
+        "ec7c8515fed16ce133a0764c1ec30f73ad3759e5bd6a9a879dcd03bee4698721",
     "final/alignments/PV1_unified.coverage.tsv.gz":
-        "9dfa962cddf3b9ded8a7228aa6c6f49bdcf097a7553333c430893e2cf4dd4ebd",
+        "3cf89ab8c87dbb2fa0825211d255fd007253c7355387ce827a37dd4b846acf2d",
     "final/alignments/PV1_unified.provenance.json":
-        "ecb307f27a788eb9238f286d5f21a692a0c40c5defc712c60ed20cd10203bdee",
+        "520d2c5aec767967cdc66a4b65e466561f998d8f3cad52fe6d0ba7a285c1ff65",
     "final/alignments/PV1_unified.sto.gz":
         "99c436dceaa87ca01eba17ea1dc1935852de1a285df0766f213642a8aa16fc69",
     "final/alignments/PV1_unified_aln.fasta.gz":
         "539bfe0866d07dac5d9cf809ce4f46276a563aefaeb4be01e1b8e39649ba50ef",
     "final/alignments/PV2_unified.coverage.tsv.gz":
-        "91f9eb647cd2fcb35ecb5146159a5ca023410d3f551f492ebba5b70338d34548",
+        "7db9b71511c1adfecabde1723fd80ebb32554b0d2cc0ec604de2114c362df05e",
     "final/alignments/PV2_unified.provenance.json":
-        "f7a798805b710ef31f08da184c7753e668d51b7a01d6467e8c26719006c6ff5e",
+        "13d9c27b6b01ac10db634663ccc501b3ad093e25663a79453e003056e5cfb3bf",
     "final/alignments/PV2_unified.sto.gz":
         "e8ad0b31f6836c56bf838bd5e05c15b8f6465e274022bb2302e07f0661d5c542",
     "final/alignments/PV2_unified_aln.fasta.gz":
         "d447ed57226d9a462100afab33c7bee4aa6d8eb180e4c744ca7a75439db02034",
     "final/alignments/PV3_unified.coverage.tsv.gz":
-        "94ad30ea7aa033ac990c6fc105692252ccc20e05240d54ab98cb64bcba9355b5",
+        "486443786d3104e82e68b04e82df76dd870882999e848ab414bb311af23789e9",
     "final/alignments/PV3_unified.provenance.json":
-        "b5c0724f2f2994521025405335f6fc71c8830ced9d59cf25798b6d3709a4653a",
+        "1e5cefbe39cddf4b603009e83f4cf525017ae56e0451b3a8ea8261cc1968ccdf",
     "final/alignments/PV3_unified.sto.gz":
-        "24b1730cfcf47c178e5b1c2e5cfd13284c290d0282d48d62aca354a1d37da56e",
+        "0f62202927e3d5b1ac5456ece4a045d90ff571db4c11cd88c04bb4835bd4b811",
     "final/alignments/PV3_unified_aln.fasta.gz":
-        "1c71c5b62d37eb38ecb7b1da1351b20f767ec89db9db2612b459a53cce3f7534",
+        "d64f4da49ab7d8481a939d9824dbbdfd2ff0a11f16cbaf5cde344c0074cbdc30",
     "final/audit/sequence_evidence.tsv.gz":
         "5c5e55a9d38ab9fbb64b5cc204846af941257f7b803c8644f646375c9789c349",
     "final/source/genbank_source.duckdb":

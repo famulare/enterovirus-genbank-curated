@@ -338,8 +338,20 @@ test("P1 remains by far the best-populated coding region in every selection", ()
 test("P1 coverage per selection is pinned, so a population change cannot pass unnoticed", () => {
   // PV1 is the lowest and that is the name-derived-typing effect stated above, not a build defect:
   // the serotype files admit fragments 2.4.1's evidence gate excluded.
+  //
+  // NPEV 12968 -> 12085 and all 22198 -> 20836 on 2026-08-18, the first site build since the
+  // alignment indel repairs were promoted. Those records are 5'UTR amplicons: they carry no capsid
+  // sequence at all, and they were counted as covering VP1 only because the old segmentation handed
+  // every one of them a spurious ORF in the CDS block. The drops are bounded by, and explained by,
+  // the records that now have no CDS row at all: NPEV loses 883 against 922 such records (887
+  // `noncoding` plus 35 `none`), and `all` loses 1,362 against 1,494. So this is the pin becoming
+  // true rather than coverage being lost.
+  //
+  // PV1, PV2 and PV3 are the control and did not move, which is what says the drop is the 5'UTR
+  // population leaving and not a population change: those three files are dominated by records whose
+  // CDS is annotated, so almost nothing in them was relying on an inferred ORF to reach P1.
   const expected: Record<string, number> = {
-    PV1: 3619, PV2: 3435, PV3: 1367, NPEV: 12968, all: 22198,
+    PV1: 3619, PV2: 3435, PV3: 1367, NPEV: 12085, all: 20836,
   };
   for (const [selection, n] of Object.entries(expected)) {
     assert.equal(

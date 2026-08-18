@@ -6,7 +6,7 @@
     "3ncr:no_coding_or_ncr_homology": 34,
     "5ncr:below_pop_min": 6,
     "5ncr:empty_fragment": 1083,
-    "5ncr:inferred_no_ncr": 54,
+    "5ncr:inferred_no_ncr": 53,
     "5ncr:no_coding_or_ncr_homology": 34,
     "cds:no_cds_untranslatable": 6,
     "cds:no_coding_homology": 86,
@@ -42,9 +42,9 @@
     }
   },
   "artifact_sha256": {
-    "coverage": "94ad30ea7aa033ac990c6fc105692252ccc20e05240d54ab98cb64bcba9355b5",
-    "fasta": "1c71c5b62d37eb38ecb7b1da1351b20f767ec89db9db2612b459a53cce3f7534",
-    "stockholm": "24b1730cfcf47c178e5b1c2e5cfd13284c290d0282d48d62aca354a1d37da56e"
+    "coverage": "486443786d3104e82e68b04e82df76dd870882999e848ab414bb311af23789e9",
+    "fasta": "d64f4da49ab7d8481a939d9824dbbdfd2ff0a11f16cbaf5cde344c0074cbdc30",
+    "stockholm": "0f62202927e3d5b1ac5456ece4a045d90ff571db4c11cd88c04bb4835bd4b811"
   },
   "block_widths": {
     "3ncr": 69,
@@ -53,7 +53,7 @@
   },
   "blocks_present": {
     "3ncr": 287,
-    "5ncr": 420,
+    "5ncr": 421,
     "cds": 1503
   },
   "covariance_models": {
@@ -79,7 +79,9 @@
   "name": "PV3_unified",
   "over_length_cap": [],
   "parameter_departures": {
+    "boundary_crossing_amplicons_are_cut_at_the_boundary": "An inferred ORF whose 5' end reads as 5'UTR to the corpus's own 5'NCR pool, and not as protein to its protein pool, is cut there: the head joins the 5'NCR block and the tail stays the ORF. OR538737 is one 897 nt deposit that reads stop-free in a single frame end to end, so all of it arrived as one candidate ORF, and its 504 nt of 5'UTR held the first 462 columns of POLIO_unified's CDS open with no other row in any of them. Where to cut has no free parameter; whether to cut reuses four thresholds that already meant this, so the rule adds no CodonSpec field. Validated by splicing OR538737's own head onto 600 annotated polyproteins, where the cut lands on the known join 600 times out of 600, against 0 of 300 intact polyproteins cut. Two records are affected.",
     "clade_exemplars_in_the_seed": "Four RefSeq rhinovirus polyproteins join the seed alignment and are removed before backtranslation. No RV-A or RV-B record in this corpus can reach seed_min_aa, so 456 rows were aligned with no member of their own species in the seed; measured on 5.0.0, a type with no seed exemplar has residues exiled more than 200 codon columns from its own block at 8.4% against 0.14% for a type that has one.",
+    "flung_clusters_are_gapped": "A cluster of a row's residues separated from the rest of it by 200 or more gap columns, making up a tenth of the row or less, and disagreeing with the consensus of the columns it landed in, is gapped. KM486565's first seven residues sat 558 columns from the rest of it where the consensus disagreed 7-for-7, and because ten of the affected rows are EV-B77 from one submission the stretched span read as a serotype-wide deletion. Distance only selects what to examine: 43 candidates score either 0.000-0.333 or 0.667-0.955 against that consensus with nothing between, and the nine above are genuine bipartite fragments whose halves each land on real homology. Which rows lost how many codons is listed individually under flung_clusters_gapped, and each row's own count is in the coverage sidecar's unplaced_nt, because this is the only repair that removes residues a deposit really has.",
     "gap_extend": "0.5 on both --add passes. Upstream never set MAFFT's --ep at all, so gap *extension* sat at the default 0.123 through every build, which is what let a single unalignable fragment open a wide insertion block: opening the gap is paid for once and widening it is nearly free. Measured on POLIO_unified's real pass-1 input, CDS width goes 2465 -> 2300 aa at --ep 0.5 with --op unchanged. Raising --op instead makes it *wider* (2883 aa at 6.0), so the penalty pair is not monotonic in width and --op 4.5 is kept because it measures best.",
     "inferred_frame_by_homology": "The 6-frame fallback picks the candidate ORF with the highest 6-mer containment against the corpus's own annotated proteins, where upstream picked the longest stop-free run regardless of whether it read as protein. On release 5.0.0's shipped bytes that rule chose a wrong frame for 51 EV_unified rows and 20 NPEV_unified rows, including the whole OR538731-OR538740 PV3 cluster.",
     "noncoding_records_leave_the_cds_block": "A record no frame of which reads as protein is `noncoding`: it contributes no CDS row and its whole sequence is offered to the 5'NCR block instead. Upstream gave each of them a spurious >=20 aa ORF in the CDS block AND excluded them from the NCR blocks. 1,281 EV_unified rows and 855 NPEV_unified rows are affected, and 99.9% of the ones that map to a reference at all are 5'UTR amplicons.",
@@ -98,6 +100,8 @@
       "protein_kmers": 127816,
       "proteins": 5356
     },
+    "inferred_utr_head_cut": 1,
+    "inferred_utr_head_nt": 504,
     "methods": {
       "annotated": 1409,
       "inferred": 54,

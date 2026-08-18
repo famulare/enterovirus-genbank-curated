@@ -11,18 +11,28 @@ that the metric would *notice*, which the corpus alone cannot show while every a
 from __future__ import annotations
 
 import gzip
+import json
 from pathlib import Path
 
 import pytest
 
 from enterovirus_genbank_curated.align import placement
 
-# CDS block offsets for the three unified artifacts, from their own build provenance.
-CDS_BLOCKS = {
-    "NPEV_unified": (738, 7503),
-    "EV_unified": (738, 7992),
-    "POLIO_unified": (746, 6816),
-}
+# CDS block offsets for the three unified artifacts, read from their own build provenance rather
+# than copied out of it. They were copied until 2026-08-17, and every one of the three went stale
+# the first time a rebuild changed a block width — so the gate below was slicing past the end of the
+# CDS into the 3'NCR and measuring privateness over the wrong columns. A coordinate this file cannot
+# derive is a coordinate this file will eventually get wrong.
+CDS_BLOCK_NAMES = ("NPEV_unified", "EV_unified", "POLIO_unified")
+
+
+def cds_block_bounds(repository_root: Path, name: str) -> tuple[int, int]:
+    """`(offset of the CDS block, its width)` for one artifact, from its provenance."""
+    provenance = json.loads(
+        (repository_root / "final/alignments" / f"{name}.provenance.json").read_text()
+    )
+    widths = provenance["block_widths"]
+    return widths["5ncr"], widths["cds"]
 # Measured on release 5.0.0's own artifacts. All three sit far under the 5% ceiling, and well under
 # the 3.5% the upstream screen reported after the same fix landed there.
 CORPUS_BADLY_PLACED_CEILING = 0.05
@@ -111,7 +121,7 @@ def read_cds_block(path: Path, lo: int, width: int) -> dict[str, str]:
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("name", sorted(CDS_BLOCKS))
+@pytest.mark.parametrize("name", sorted(CDS_BLOCK_NAMES))
 def test_the_built_artifacts_place_their_addon_rows_well(
     repository_root: Path, name: str
 ) -> None:
@@ -129,7 +139,7 @@ def test_the_built_artifacts_place_their_addon_rows_well(
     built = repository_root / "final/alignments" / f"{name}_aln.fasta.gz"
     if not built.is_file():
         pytest.skip(f"{name} not promoted yet")
-    lo, width = CDS_BLOCKS[name]
+    lo, width = cds_block_bounds(repository_root, name)
     records = population.load_all_records(repository_root)
     tier = {key.split(".")[0]: value.tier for key, value in records.items()}
     summary, failures = placement.check_addon_placement(
@@ -142,10 +152,30 @@ def test_the_built_artifacts_place_their_addon_rows_well(
 
 # --- the private-column ceiling ------------------------------------------------------------------
 #
-# Largest owner per artifact after the ambiguity filter, measured on 5.0.0. These are pinned as a
-# *table* rather than one worst-case number so a single artifact regressing cannot hide behind the
-# others being fine.
-LARGEST_PRIVATE_OWNER = {"EV_unified": 96, "NPEV_unified": 66, "POLIO_unified": 27}
+# Largest owner per artifact after the ambiguity filter. Pinned as a *table* rather than one
+# worst-case number so a single artifact regressing cannot hide behind the others being fine.
+#
+# Re-measured 2026-08-18 on the artifacts the six indel repairs produced. The three numbers this
+# replaces were measured on 5.0.0 and were never true of the promoted build: the gate had been
+# reading them through hardcoded CDS block offsets that went stale the first time a rebuild changed
+# a block width, so it was slicing the 3'NCR and measuring privateness over the wrong columns. See
+# `cds_block_bounds` above. Measured honestly, the promoted build was at EV 72, NPEV 216 and POLIO
+# 462, not 96/66/27.
+#
+# `POLIO_unified` 462 -> 15 is `OR538737` leaving: one amplicon that is half 5'UTR held the first
+# 462 columns of that CDS open by itself until `segment._boundary_cut` sent its 5' half to the
+# 5'NCR block. `EV_unified` 72 -> 39 is `OM885400`, the same repair's second and only other record.
+#
+# `NPEV_unified` stays at 216, and that is deliberate. `OR538735` carries two internal frameshifts —
+# frame +1 reads as protein at 0.68-0.84 exactly where its declared frame reads 0.00-0.08 — so it is
+# a bad deposit rather than a bad placement, and neither repair touches it: it is not a
+# boundary-crossing amplicon, and its private block is contiguous with its own body rather than
+# flung away from it. Nor is it gateable. 24 records show the same frameshift pattern, their shares
+# spread continuously from 0.015 to 0.50 with no empty interval anywhere in it, and ten of them have
+# a *higher* shifted share than `OR538735` while placing perfectly well. Any threshold that caught
+# this one would sweep in the other twenty-three on a tuned number, which is the thing every other
+# threshold in this pipeline was chosen to avoid. So it is recorded here and left alone.
+LARGEST_PRIVATE_OWNER = {"EV_unified": 39, "NPEV_unified": 216, "POLIO_unified": 15}
 
 
 def test_one_record_hogging_columns_is_refused() -> None:
@@ -173,14 +203,33 @@ def test_a_column_two_records_share_is_not_private() -> None:
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize("name", sorted(CDS_BLOCKS))
+@pytest.mark.parametrize("name", sorted(CDS_BLOCK_NAMES))
 def test_no_record_holds_a_shipped_block_open_by_itself(
     repository_root: Path, name: str
 ) -> None:
     built = repository_root / "final/alignments" / f"{name}_aln.fasta.gz"
     if not built.is_file():
         pytest.skip(f"{name} not promoted yet")
-    lo, width = CDS_BLOCKS[name]
+    lo, width = cds_block_bounds(repository_root, name)
     owners, failures = placement.check_private_columns(read_cds_block(built, lo, width), name)
     assert not failures, failures
     assert max(owners.values()) == LARGEST_PRIVATE_OWNER[name]
+
+
+def test_the_declared_exemption_suppresses_the_failure_and_not_the_measurement() -> None:
+    """`OR538735` is over the ceiling and stays over it. Exempting it must not make it invisible:
+    the pinned table is what keeps it justified, and that table reads `owners`."""
+    block = {f"r{i}": "ACGT" * 4 + "-" * 400 for i in range(20)}
+    block["OR538735"] = "-" * 16 + "A" * 400
+    owners, failures = placement.check_private_columns(block, "probe")
+    assert owners["OR538735"] == 400
+    assert not failures
+
+
+def test_the_exemption_is_by_name_and_covers_nobody_else() -> None:
+    """A ceiling that could be silenced by any record would not be a ceiling."""
+    block = {f"r{i}": "ACGT" * 4 + "-" * 400 for i in range(20)}
+    block["SOMEONE_ELSE"] = "-" * 16 + "A" * 400
+    _owners, failures = placement.check_private_columns(block, "probe")
+    assert failures and "holding a block open" in failures[0]
+    assert "OR538735" not in placement.PRIVATE_COLUMN_EXEMPTIONS.get("SOMEONE_ELSE", "")
