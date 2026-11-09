@@ -60,8 +60,8 @@ jobs:
       # cell-compared against the shipped table. ~50s, so it belongs on every push.
       #
       # The alignment stage does NOT belong here: it runs the native aligners over 24,305 records
-      # and takes hours. It has its own workflow, `alignments.yml`, on workflow_dispatch plus a
-      # weekly drift schedule plus a path filter. This job keeps only the cheap, toolchain-free
+      # and takes hours. It has its own workflow, `alignments.yml`, on workflow_dispatch plus a path
+      # filter over the files that can change an artifact. This job keeps only the cheap, toolchain-free
       # half — the alignment CLI tests above, which now include `alignment-verify` and
       # `alignment-shape` against whatever is built in the tree, and the assertion that the
       # push-time verbs spawn no child process. If you are about to add a step here that invokes

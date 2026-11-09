@@ -5,9 +5,17 @@ name: Alignments
 # so every push stays fast. If you are about to add a mafft step to `ci.yml`, this is the workflow it
 # belongs in.
 #
-# Not a build trigger. `schedule` exists to detect drift — a dependency bump or a lockfile change
-# that alters an artifact — and `workflow_dispatch` to rebuild on request. Neither commits anything:
-# a human commits a regeneration, exactly as `site/data/` already works.
+# Not a build trigger. `workflow_dispatch` rebuilds on request, and the path filter below fires when
+# something that could change an artifact changes. Neither commits anything: a human commits a
+# regeneration, exactly as `site/data/` already works.
+#
+# A weekly `schedule` sat here from 2026-07-31 to 2026-11-09, justified as drift detection. It could
+# not detect anything. Every input to this build is a committed file: `raw/` has changed twice in the
+# repository's life, `sandbox.py` refuses the network outright, and the lock is pinned with
+# `locked: true`. A dependency bump or a lockfile change *is* a commit, and the path filter below
+# already names every file one could touch. Fourteen Sundays produced fourteen red runs and no
+# information — and taught the mailbox to ignore this workflow, which is how the one genuinely
+# different failure sat unread for a week.
 
 on:
   workflow_dispatch:
@@ -16,9 +24,6 @@ on:
         description: "One artifact name, or empty for all six"
         required: false
         default: ""
-  schedule:
-    # Weekly, Sunday 04:00 UTC. Drift detection does not need to be prompt.
-    - cron: "0 4 * * 0"
   pull_request:
     paths:
       - "src/enterovirus_genbank_curated/align/**"
@@ -59,7 +64,10 @@ jobs:
   build:
     needs: toolchain
     runs-on: ubuntu-latest
-    # Well under the 6h hosted ceiling, and generous against the measured local times.
+    # The hosted ceiling is 360. EV is the long pole at 232 minutes locally on eight threads, and a
+    # hosted runner has four cores, so the margin here is real but not large. No hosted run has ever
+    # finished EV, so that is a projection, not a measurement: if a dispatch run times out, raise
+    # this against what it reports rather than assuming the build regressed.
     timeout-minutes: 330
     strategy:
       # Every artifact reports, so one failure does not hide the other five.
@@ -80,14 +88,23 @@ jobs:
           locked: true
           cache: true
 
-      # One artifact per job, one thread per tool. The matrix parallelises across runners, which do
-      # not share memory; within a runner the build is strictly sequential by construction.
+      # One artifact per job. The matrix parallelises across runners, which do not share memory, and
+      # within a runner the build is strictly sequential by construction. That is the property the
+      # 50 GB freeze taught, and it is a property of *artifact* sequencing, not of the thread count.
+      #
+      # So the thread count is left at the declared `DEFAULT_THREADS`. This step passed `--threads 1`
+      # from 2026-07-31 to 2026-11-09, written thirty-one minutes before `align/build.py` measured
+      # the question and recorded the opposite under "Threads are not the memory problem, and one
+      # thread is a trap": 58 MB at one thread against 582 MB at eight, both negligible, and pinning
+      # one only serialises the stage that parallelises. It cost POLIO 9-12x — 25.6 minutes locally
+      # against 3h41-5h04 here — and put EV and NPEV beyond any timeout this workflow could carry.
+      # It is also a declared parameter recorded in provenance, so the override built at a thread
+      # count the release does not carry.
       - name: Build ${{ matrix.artifact }}
         run: |
           pixi run -e align evgc alignment-build \
             --output-dir derived/alignments \
-            --artifact ${{ matrix.artifact }} \
-            --threads 1
+            --artifact ${{ matrix.artifact }}
 
       # The gate needs no aligner, but running it here means a build that produces a malformed
       # artifact fails in the job that produced it rather than somewhere downstream.
