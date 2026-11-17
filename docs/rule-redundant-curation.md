@@ -15,9 +15,10 @@ basis, and the curator's own reason.
 
 ## Why this is a question and not a chore
 
-There is precedent: 162 rows were retired on 2026-07-30 under exactly this reasoning, and
-`tests/test_decision_ledger.py`'s `RULE_REDUNDANT_RETIREMENTS` already carves out "retired because a
-rule now derives the value" as a distinct meaning of `retired`. So the mechanism exists.
+There is precedent: 162 rows were retired on 2026-07-30 under exactly this reasoning, and 11 more
+on 2026-08-14. `tests/test_decision_ledger.py`'s `RULE_REDUNDANT_RETIREMENTS` already carves out
+"retired because a rule now derives the value" as a distinct meaning of `retired`. So the mechanism
+exists.
 
 What that precedent cost is the thing to weigh. An `applied_unchanged` decision is a human having
 confirmed the value independently — 530 of the 531 carry `confirmed_by = Mike`. Retire it and a
@@ -87,7 +88,7 @@ today.
 
 If the ruling goes the other way for any group, the mechanics are the C4 ones: derived
 `decision_id`s, `status = retired`, a reason naming the rule that now derives the value, and
-`RULE_REDUNDANT_RETIREMENTS` updated from 162.
+`RULE_REDUNDANT_RETIREMENTS` updated from 173 (`162 + 11`).
 
 ## Reproducing this
 

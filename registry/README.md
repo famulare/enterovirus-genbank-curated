@@ -7,7 +7,9 @@ views and must never be edited by hand.
 
 ## What the row count does and does not mean
 
-The ledger has **3,164 rows**. Read that number carefully:
+At the 2.4.1 resync the ledger had **3,164 rows**; this section describes it at that point. It has
+since grown to **4,919** (4,706 `active`, 196 `retired`, 17 `superseded`) as the rewrite added
+decisions; see [`docs/reproducibility.md`](../docs/reproducibility.md). Read the 3,164 carefully:
 
 - It migrates from **2,282 input rows** across ten hand-maintained registries, because one curator
   row can assert several fields (`manual_review_overrides.csv` alone, as of the 2.4.1 resync: 2,008
@@ -131,7 +133,8 @@ The supersession is a no-op on shipped output; the added assertion is not. This 
 scientific-output change the migration carries, and it is an approved curation change rather than a
 migration error. Nothing in Phase A rebuilds `final/canonical/`, so the flip lands when Phase B
 applies decisions — until then the ledger and the shipped canonical table disagree on this field by
-design, and [`docs/pipeline.md`](../docs/pipeline.md) records it as a known pending delta.
+design, and [`docs/pipeline.md`](../docs/pipeline.md) records it as a known pending delta (resolved
+in 3.0.0).
 
 ### Superseded 2026-07-29 — read this before relying on anything above
 

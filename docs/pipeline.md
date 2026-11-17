@@ -12,10 +12,10 @@ raw/sequence.gb.zip + registry/ + versioned rules
     -> canonical, audit, dictionaries, alignments, and manifests
 ```
 
-This document is an architectural contract, not a claim that the pipeline is complete. The shipped
-release remains the immutable parity oracle while the rewrite is developed — currently 2.4.1 (see
-`src/enterovirus_genbank_curated/contracts.py`'s `BASELINE_RELEASE`); 2.1.5 and 2.3.0 are retired,
-immutable prior baselines, no longer verified against the tree.
+This document is an architectural contract, not a claim that the pipeline is complete. The parity
+oracle is release 2.4.1 (see `src/enterovirus_genbank_curated/contracts.py`'s
+`BASELINE_RELEASE`), which no longer ships: it is preserved under `releases/2.4.1/`. 2.1.5 and 2.3.0
+are retired, immutable prior baselines, no longer verified against the tree.
 
 The pipeline has since produced releases of its own, and since 2026-08-01 they are written straight
 into `final/` rather than a staging tree; the current one is 5.0.0. 2.4.1's canonical table is kept
@@ -35,7 +35,7 @@ per-class transition table. It is an output measured against that oracle, not a 
    curation ledger.
 4. Duplicate, conflicting, missing, or ambiguous inputs fail closed.
 5. Every canonical value must have machine-readable projection provenance.
-6. A superseded release is retired, not rewritten. 2.4.1's parity contract and its nineteen
+6. A superseded release is retired, not rewritten. 2.4.1's parity contract and its eighteen
    alignment files are preserved under `releases/2.4.1/`, where `alignment-shape` still measures the
    declared delta against them. The `release/<version>/` staging tree is gone: it existed so a build
    could be reviewed without touching an immutable `final/`, and with `final/` as the destination it
@@ -245,20 +245,20 @@ release excludes and this pipeline admits, less two it leaves undecided and thre
    data, regenerating the shipped rule table byte-for-byte. `locality` is projected through the rule
    catalog with its provenance row compared to the release on all nine columns. **No column remains
    unwritten.**
-6. Decision application, disposition, and complete provenance. **Delivered:** 6,306 decision
-   applications from a 4,900-row ledger, 340,270 provenance rows, and 25,065 declined cells
+6. Decision application, disposition, and complete provenance. **Delivered:** 6,326 decision
+   applications from a 4,919-row ledger, 340,270 provenance rows, and 25,061 declined cells
    collapsed into 268 curation-queue groups. `record_disposition.tsv.gz` gained a producer on
    2026-08-14 and now carries a reason on every one of its 1,422 exclusions.
-7. Dictionaries, references, and reproducible alignments. **Delivered, except the dictionaries.**
+7. Dictionaries, references, and reproducible alignments. **Delivered.**
    The alignment layer is built natively by this repository (`evgc alignment-build`) from
    `final/canonical/`, `final/source/` and the committed covariance-model core, using only `mafft`
    and `cmalign` — segmentation, the codon-aware CDS block, the Sabin-anchored CDS projection, the
    structural NCR block, stitching and the export writer all exist. `evgc alignment-verify` gates
    the result against metadata-derived populations and `evgc alignment-shape` states the declared
    delta against 2.4.1, both without an aligner. All six populations are built at one parameter set
-   from the 4.0.0 table and promoted into `final/alignments/`; 2.4.1's nineteen files moved to
-   `releases/2.4.1/alignments/`, where they remain the delta baseline. `final/dictionaries/` is the
-   one tree still carried with no producer here.
+   from the canonical table and promoted into `final/alignments/`; 2.4.1's eighteen files moved to
+   `releases/2.4.1/alignments/`, where they remain the delta baseline. `final/dictionaries/` has had
+   a producer since 2026-08-14 (`export/dictionaries.py`).
 8. Full fresh-clone parity and deterministic rebuild gate.
 9. A new pipeline-native release. **Delivered as 4.0.0:** `final/` is the pipeline's own output,
    and 2.1.5/2.3.0/2.4.1 remain historical and immutable in git and under `releases/`.
@@ -308,75 +308,25 @@ this section is a summary of it, not a stronger claim.
 Its scientific conclusions survive as registry rows migrated in stage 2. Porting it would mean
 rebuilding a stage that produced nothing anyone consumed.
 
-## Known pending delta: `engineered_or_construct`
+## Resolved delta: `engineered_or_construct`
 
-Phase A does not rebuild `final/canonical/`, so the ledger and the shipped canonical table disagree.
-This is recorded rather than left to be discovered as a parity failure.
+This section tracked a disagreement between the ledger and the shipped table while the rewrite was in
+progress. It is closed:
 
-**The delta is much larger than the D2 trio, and the earlier statement of it here was wrong in three
-ways.** Corrected 2026-07-29 after a full-population re-adjudication
-([`engineered-readjudication.md`](engineered-readjudication.md),
-[`engineered-full-population-readjudication.md`](engineered-full-population-readjudication.md)):
+- Since 3.0.0 (`30eaaf0`, 2026-07-31) the column is derived by `R-CONSTRUCT-2` instead of the
+  inherited `\bPAT\b` text match, which had shipped all 506 patent-division records TRUE. That landed
+  the re-adjudication's flips: about 500 records TRUE -> FALSE.
+- `FV537075`-`FV537077` are bisulfite-converted reference strings, not genomes, and are
+  carve-excluded from 5.0.0 (`e398c61`).
+- `DQ205099` is ruled TRUE by an accession-level ledger row (`4b2fb32`). `LY501105`/`LZ216100`,
+  which the re-adjudication left open, hold active FALSE rows.
+- 45 records ship TRUE, pinned as `EXPECTED_TRUE_TOTAL` in
+  [`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py).
 
-1. **Not three records — 43, with 2 more unresolved.** Of the 58 canonical records shipping
-   `engineered_or_construct=TRUE` at ≥3000 nt, **42** are re-deposits or replicates of an existing
-   reference and should be FALSE, plus `A09260` below that length — **43 flips**. Two more
-   (`LY501105`/`LZ216100`) are the same patent family as a record the curator ruled TRUE and are
-   **open, not implemented in either direction**. 25 of the 42 are *byte-identical* to a natural
-   reference that already ships FALSE. Four are not poliovirus (Coxsackievirus A11, in
-   oncolytic-virus patents) and three are not viruses at all. The predicate is a text match on
-   `\bPAT\b` inside a concatenated blob, so all 506 patent-division records ship TRUE regardless of
-   sequence.
-
-   **The 58 is not the whole problem.** Only 58 of the **543** records shipping TRUE were
-   adjudicated per-record; the ≥3000 nt floor is a tractability choice, and the rule rewrite will
-   flip ~478 unadjudicated records mechanically. `CS406433` (2,745 nt, same patent family as the D2
-   trio, verbatim Sabin 2 substring) sits just under the floor and is backlog item B1.
-2. **Not one field.** Taking the reference's label also moves `poliovirus_classification`,
-   `sample_origin` and `surveillance_stream` on 16 of the 25 byte-identical records. Separately,
-   `classification` already disagrees on six records nobody documented (`AJ416942`, `DQ205099`,
-   `FJ517648`, `KR259356`, `KR259357`, `KX162685`) — that field feeds reconciliation, so a mismatch
-   there is not automatically an error, but it was never true that the disagreement was one field.
-3. **"Applying decisions in Phase B flips them" does not hold as written.** The D2 assertion exists
-   *only* in `registry/decisions.tsv`. `engineered_or_construct` is **blank** for all three records
-   in the private `manual_review_overrides.csv`, which is what the pipeline actually reads, so the
-   value is recomputed as TRUE on every rebuild and the ledger row has no effect on it. A ledger
-   assertion with no counterpart in the source of truth is not a pending delta — it is a permanent
-   one. **Curation has to land where it is applied, not only where it is recorded.** This is the
-   single most important lesson of the D2 episode and the reason the re-adjudication's flips are
-   being routed through the private overrides rather than added here as more ledger-only rows.
-
-`DQ205099` **is** now part of the delta, reversing the earlier disposition: the annotate-rather-than-
-adjudicate call rested on "an infectious clone is a construct", which is exactly the reasoning the
-simplified definition removes. Its three differences from Sabin 2 are each independently attested in
-natural field isolates.
-
-Eleven records stay TRUE and are genuinely engineered: the `CS406483`/`PU749298` pair (a unique
-AgeI cloning site created by two synonymous changes at the VP2/VP3 junction), `MN654096` (nOPV2-CD,
-recoded capsid), the six S19 capsid-swap chimeras `PP068131`–`PP068136`, and `LY501107`/`LZ216102`
-(directed cold-adaptation selection). `FV537075`–`FV537077` are a fourth, separate case: they are not
-poliovirus genomes at all — bisulfite-converted Mahoney reference strings, one a straight conversion
-and two the reverse complement — and the disposition is to carve-exclude them from `final/` entirely
-with a recorded reason, not to ship them as TRUE. Current counts are pinned in
-[`tests/test_engineered_invariants.py`](../tests/test_engineered_invariants.py) so that none of these
-numbers can move silently again, which is how the delta grew unnoticed in the first place.
-
-Of those eleven, seven are reachable structurally by `division == "SYN"`. Of the remaining four,
-**three already carry active curation rows** — `LY501107` and `LZ216102` hold TRUE (migrated from
-`manual_review_overrides.csv`), and `CS406483` holds **FALSE**, which the re-adjudication says is
-wrong and which therefore needs *correcting* rather than adding. Only `PU749298` has no row at all.
-
-An earlier version of this paragraph called `LY501107`/`LZ216102` a trap the rewrite would fall
-into. They were already held. That mistake is the D2 lesson pointed the other way: reasoning about
-what curation ought to say is not a substitute for reading what the applied artifact already says.
-
-**A concurrent private curation pass has partly overtaken point 2.** The private repository's
-commit `f848530` moved `poliovirus_classification` / `sample_origin` / `surveillance_stream` on six
-records in this population, changing **no** `engineered_or_construct` value. Four of the six moved to
-exactly what the re-adjudication planned, so that much of the label-inheritance work is already done.
-Two (`PE314016`/`PH149759`) moved the *opposite* way, to `engineered/lab`; the curator adjudicated in
-favour of the re-adjudication's FALSE call, since both are `sequence_sha256`-identical to `AF111984`,
-a named wild PV1 field isolate. Those two now need correcting private-side.
+The reasoning and per-record evidence are in [`engineered-readjudication.md`](engineered-readjudication.md)
+and [`engineered-full-population-readjudication.md`](engineered-full-population-readjudication.md).
+The lasting lesson is that curation has to land where it is applied, not only where it is recorded,
+which is why every decision now reports its outcome in `final/audit/decision_applications.tsv.gz`.
 
 ## Review stop conditions
 

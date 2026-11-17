@@ -105,7 +105,7 @@ evgc parity-source    # reparse 25,727 records; compare 24 artifacts to the rele
 This reparses the authenticated archive and checks every normalized relation and Parquet file
 against the hashes `final/audit/release_file_manifest.tsv` declares. All match byte-for-byte.
 `evgc build-source --output DIR` writes a build somewhere of your choosing; it refuses to write
-into `final/` or `raw/`, which are immutable.
+into `raw/`, the frozen input.
 
 **Canonical metadata regenerates in part, and the part is precisely stated:**
 
@@ -154,7 +154,7 @@ Three properties matter as much as the coverage. A rule that cannot decide from 
 keyword, 1,789 whose organism name and definition line both state no type, 475 whose classification
 no sequence or ledger row settles, and **zero** whose membership is unsettled — and every declined
 cell becomes one row in a curation queue, grouped by the input the rule could not decide from, so
-that 25,065 declined cells reduce to 268 curator questions. The build cannot read `final/` at all:
+that 25,061 declined cells reduce to 268 curator questions. The build cannot read `final/` at all:
 the undeclared-input guard refuses it, so a rule cannot quietly reproduce the answer it is being
 compared against. And a blank cell is never a claim — `audit/projection_provenance.tsv.gz` carries
 `unresolved_reason` per cell, and `audit/build_manifest.json` states per column how many cells are
@@ -329,9 +329,10 @@ comparand. They are not byte-identical to those files and cannot be — that cod
 that form, and was run at an unrecorded thread count. What replaces byte parity is a declared delta.
 See [`docs/reproducibility.md`](docs/reproducibility.md) for the measured gaps and the build times.
 
-The rewrite is staged and parity-gated. Existing `final/` files remain immutable comparison targets,
-never pipeline inputs. The reproducibility claim changes only after a fresh clone regenerates the
-release from declared public inputs and passes the complete parity contract. See
+`final/` is the build's own destination and never a pipeline input: a build cannot read a file
+under `final/` that it did not write in the same run. The reproducibility claim changes only after
+a fresh clone regenerates the release from declared public inputs and passes the complete parity
+contract — stage 8 of [`docs/pipeline.md`](docs/pipeline.md), not yet delivered. See
 [`docs/reproducibility.md`](docs/reproducibility.md).
 
 ## Development contract checks
@@ -355,9 +356,10 @@ contract that nothing can contradict is not a contract, so CI runs the full form
 The human-readable curation ledger is `registry/decisions.tsv`. Its contract and review rules are
 documented in [`registry/README.md`](registry/README.md).
 
-Note that two version numbers coexist and are deliberately independent: the **data release** is
-2.4.1 (see `CITATION.cff` and `final/audit/build_manifest.json`), while the Python package version
-tracks the pipeline rewrite and stays at 0.0.0 until it can build a release end to end.
+Note that three version numbers coexist and are independent: the **data release** is 5.0.0
+(`CITATION.cff`, and `release_version` in `final/audit/build_manifest.json`), the canonical
+**schema** is 2.4.1 (`schema_version` in the same manifest), and the Python package version is
+0.0.0.
 
 ## Licensing and citation
 

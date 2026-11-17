@@ -222,7 +222,7 @@ irreducibly ambiguous and belong in a curation queue rather than in a rule.
 Declining honestly is only half the design. `evgc build-metadata` now also writes
 `curation/curation_queue.tsv`, and it is what stops `unresolved_reason` being a note nobody acts on.
 
-**25,065 declined cells collapse into 268 groups**, because records decline for the *same* reason:
+**25,061 declined cells collapse into 268 groups**, because records decline for the *same* reason:
 every record whose `/isolation_source` is `conjunctival swab` is one decision, not 462. The queue is
 keyed on the input the rule examined and could not decide from, so resolving one group resolves every
 record in it. `queue_id` is derived from that content rather than allocated sequentially, so
@@ -809,13 +809,14 @@ Passing parity means at minimum:
 - identical vouched/provisional partitions;
 - identical FASTA identifiers and nucleotide sequences;
 - migration of all 2,912 human decisions the release shipped, and 28 deterministic rules. The ledger
-  now holds 4,900 — 4,691 `active`, 194 `retired`, 15 `superseded` — and the difference is approved
+  now holds 4,919 — 4,706 `active`, 196 `retired`, 17 `superseded` — and the difference is approved
   curation history rather than a parity failure, itemised by `source_artifact`. The largest single
   block is the 243-row locked VDPV/wild reconciliation allowlist, migrated 2026-07-30: the last input
   to `poliovirus_classification` with no counterpart here, and every row already agrees with the
-  shipped column, which a test asserts. The `superseded` rows are carried-forward assertions (the
-  `engineered_or_construct=FALSE` D2 rows, plus curator revisions to `AB180070-73` and `JC013129`)
-  that a from-scratch regeneration would otherwise have dropped silently. See
+  shipped column, which a test asserts. The `superseded` rows are assertions a later decision
+  replaced, kept as history rather than deleted: among them the D2 rows, curator revisions to
+  `AB180070-73` and `JC013129`, and the `AF065158`/`AB467472` `wild` labels overturned on
+  2026-08-16. See
   [`registry/README.md`](../registry/README.md);
 - equivalent normalized source and canonical scientific values;
 - complete, referentially closed provenance;
