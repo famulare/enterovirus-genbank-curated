@@ -167,7 +167,11 @@ EXPECTED_TALLY = {
     # records become `subject_outside_carve` (6 -> 12) and their own new rows land as
     # `applied_exclusion` (173 -> 176). The five serotype relabels and six engineered TRUEs are
     # `applied_changed`, since the rules reach a different answer on every one.
-    "applied_filled_unresolved": 3559 - 3 + 4,
+    # +10 on 2026-11-17, release 5.1.0: the defective-interfering `classification` decisions. They
+    # land here and not in `applied_changed` because `R-CLASS-2` declines these cells with or
+    # without the ledger — 60 nt carries no VP1 window to measure — so the decision is the only
+    # reason the cell has a value, which is exactly what this bucket means.
+    "applied_filled_unresolved": 3559 - 3 + 4 + 10,
     # -4 more on 2026-08-15: four `iVDPV` decisions the attestation branch now reaches unaided,
     # because the record's own `/isolation_source` names an immunodeficient host and the rule reads
     # it. `iVDPV` in this tally goes 40 -> 44. They stay active under the 2026-08-14 ruling — the

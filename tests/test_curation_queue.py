@@ -120,9 +120,14 @@ from enterovirus_genbank_curated.derive.partition import (
 # 25,061, 2026-08-17: net -4 from the twenty decisions e506147 and 4b2fb32 added and the four
 # whose status they changed. Filling a declined cell removes its work item; retiring or
 # superseding a decision hands one back.
+# 25,051, 2026-11-17: the ten defective-interfering `classification` decisions of release 5.1.0,
+# pure subtraction. `R-CLASS-2` had declined these cells for want of a VP1 window to measure, and a
+# resolved `poliovirus_classification` creates no new decline elsewhere — no other rule declines
+# *because* the classification was undecided. `EXPECTED_QUEUE_GROUPS` does not move: all ten shared
+# one group with an eleventh record, which still holds it open.
 EXPECTED_QUEUE_WORK_ITEMS = (
     28244 - 3 - 28 - 60 - 708 - 191 - 211 + 31 + 125 - 1334 - 427 - 80 - 17 - 101 - 171 - 1 - 3
-    - 4
+    - 4 - 10
 )
 # 28,496 when R-CLASS-2 landed: 3,425 `poliovirus_classification` declines join, 1,832 of them
 # records whose virus group is undecided and so already in the queue under `virus_group`. A record

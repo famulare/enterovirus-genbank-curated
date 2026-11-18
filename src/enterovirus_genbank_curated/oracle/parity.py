@@ -637,7 +637,13 @@ UNRESOLVED_TYPE_ROWS = 1789
 # than fill a decline, so they do not move this number. Filling a decline by ledger row is the
 # intended escape hatch for a rule that correctly refuses to guess; it is not a substitute for
 # B56's R1, which is that the refusal is unsatisfiable rather than merely conservative.
-UNRESOLVED_CLASSIFICATION_ROWS = 471
+#
+# Down 10 on 2026-11-17, release 5.1.0: the Kuge/Saito/Nomoto defective-interfering series. These
+# were declining for the same reason as the three above — 60 nt carries no VP1 window `compare_vp1`
+# can reach — and each now carries an accession-level decision landing the half of the 2026-07-30
+# ruling that only ever reached `engineered_or_construct`. The refusal was correct; what was missing
+# was the curation to answer it.
+UNRESOLVED_CLASSIFICATION_ROWS = 461
 
 
 # Canonical field -> the declared decline count above. Every field a rule can decline appears here,
