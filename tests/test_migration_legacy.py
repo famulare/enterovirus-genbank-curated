@@ -425,13 +425,14 @@ def test_the_pinned_baseline_matches_the_committed_ledger(
     # them. The same review also retires 2 rows and supersedes 2, which move statuses rather than
     # the row count and are pinned in `tests/test_decision_ledger.py` instead.
     low_synonymous_review = 19
-    # 10 more on 2026-11-17, release 5.1.0: the half of the 2026-07-30 defective-interfering ruling
-    # that never landed. `engineered_or_construct = FALSE` shipped at the time; the positive tag
-    # saying what the record *is* did not, and `defective-interfering particle` sat unused in the
-    # controlled vocabulary. Ten of the fourteen records in the series take it as `classification`
-    # rows; the other four are blocked by a later curator decision or by a membership row, and
+    # 12 more on 2026-11-17: the half of the 2026-07-30 defective-interfering ruling that never
+    # landed. `engineered_or_construct = FALSE` shipped at the time; the positive tag saying what
+    # the record *is* did not, and `defective-interfering particle` sat unused in the controlled
+    # vocabulary. Ten of the fourteen records in the series take it as `classification` rows in
+    # 5.1.0, and `M29182`/`M29183` take it in 5.2.0, superseding the `Sabin` rows they held. The
+    # remaining two are held outside the poliovirus partition and wait on an alignment rebuild;
     # `tests/test_decision_ledger.py` names each. Neither generator produces them.
-    defective_interfering = 10
+    defective_interfering = 12
     expected = (
         mig.EXPECTED_BASELINE_DECISIONS
         + len(mig.D2_ACCESSIONS)

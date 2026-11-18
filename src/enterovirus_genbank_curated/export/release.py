@@ -172,7 +172,7 @@ from enterovirus_genbank_curated.derive.metadata import PENDING_COLUMNS, TRANSPO
 from enterovirus_genbank_curated.export.source import deterministic_text_writer, write_tsv
 from enterovirus_genbank_curated.registry.rules import RULES_CATALOG_PATH
 
-RELEASE_VERSION = "5.1.0"
+RELEASE_VERSION = "5.2.0"
 SCHEMA_VERSION = "2.4.1"
 BASELINE_RELEASE = "2.4.1"
 

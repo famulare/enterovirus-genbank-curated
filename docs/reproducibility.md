@@ -2,7 +2,7 @@
 
 ## Current state
 
-**`final/` is what this pipeline builds.** As of 2026-11-17 it holds release 5.1.0: canonical, audit,
+**`final/` is what this pipeline builds.** As of 2026-11-17 it holds release 5.2.0: canonical, audit,
 curation and dictionary trees written by `evgc build-metadata` from `raw/` and `registry/` alone,
 and alignments written by `evgc alignment-build` from those. It is a build destination, not a parity
 target, and `build.reject_immutable_output` guards only `raw/` — the frozen input of record, where a

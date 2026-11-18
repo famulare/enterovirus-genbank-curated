@@ -53,7 +53,7 @@ site/                 Source for the browser data explorer linked above, plus th
                       precomputed artifacts it serves and the gate that keeps them
                       in step with final/.
 src/                  Pipeline foundation and executable contract validation.
-final/                Release 5.1.0 — what this pipeline produces, rebuilt from raw/ and
+final/                Release 5.2.0 — what this pipeline produces, rebuilt from raw/ and
                       registry/ alone. A build destination, not a comparison target: a
                       guarded build may write it and may not read a file it did not write.
 releases/2.4.1/       The superseded release, retired rather than rewritten: its parity
@@ -168,6 +168,40 @@ assertion sitting in the ledger for two releases while the pipeline quietly reco
 of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
 canonical column now reaches a rule that projects it.
 
+### Release 5.2.0
+
+`final/` **is** release 5.2.0 — the dataset this pipeline produces end to end from public inputs.
+
+5.2.0 is a curation-only correction on top of 5.1.0, and unlike 5.1.0 it is not additive: it moves
+two cells a consumer already read. `M29182` and `M29183` go from `Sabin` to `defective-interfering
+particle`. The row set, the column set and every other cell are unchanged, so a minor bump.
+
+Both are Kitamura/Semler Sabin 1 defective-interfering fragments
+([PMID:3007445](https://pubmed.ncbi.nlm.nih.gov/3007445/)), and 5.1.0 left them alone because each
+held an *active* `classification = Sabin` row from the 2026-07-31 sweep. Read closely, that row's
+reason argues the record is a lab-passaged deletion variant rather than a field isolate — it rules
+out `wild` and `VDPV` and never chooses between the lineage tier and the particle type. Measured
+2026-11-17, both deposits are verbatim substrings of Sabin 1 `AY184219` with zero differences — 111
+nt at offset 2,630 and 179 nt at offset 3,684 — and match neither Sabin 2 nor Sabin 3. So `Sabin`
+restates what any consumer can measure from the sequence, while the particle type is in the
+deposit's text and nowhere else. The curator ruling of 2026-11-17 takes the fact the column alone
+can carry.
+
+The two `Sabin` rows are **superseded, not retired**, each with a note naming what replaced it and
+saying the earlier reason did not decide the question rather than that it was wrong.
+`oracle/parity.py` gains `('Sabin', 'defective-interfering particle'): 2`, the one declared
+transition in that table where this release is not correcting the baseline but carrying a fact the
+baseline had no column for. The convention behind the choice — particle type beats lineage tier, because the lineage
+is recoverable from the sequence and the particle type is not — is recorded at the ledger branch in
+[`derive/classification.py`](src/enterovirus_genbank_curated/derive/classification.py). It is a
+curation convention expressed as ledger rows per accession; nothing in the code enforces it.
+
+**`M30213` and `M30219` are still held.** An active `membership_confirmation_not_polio` row keeps
+them outside the poliovirus partition, and since 3.2.0 a curated `classification` *entails*
+membership — so tagging them flips the partition, which moves them between alignment populations and
+needs `POLIO_unified`, `NPEV_unified` and `EV_unified` rebuilt. Splitting that off keeps a
+two-cell change from waiting on a five-hour build; it lands in its own release.
+
 ### Release 5.1.0
 
 `final/` **is** release 5.1.0 — the dataset this pipeline produces end to end from public inputs.
@@ -185,16 +219,16 @@ by nothing. Ten records now carry it, each as an accession-level decision citing
 blanks being filled rather than values being corrected. The `poliovirus_classification` decline
 count falls 471 -> 461 and one curation-queue group shrinks from eleven records to one.
 
-**Four of the fourteen records in that series are deliberately untouched**, and each names a
-different reason the ruling could not simply be replayed. `M29182`/`M29183` hold an *active*
+**Four of the fourteen records in that series were deliberately untouched**, and each named a
+different reason the ruling could not simply be replayed. `M29182`/`M29183` held an *active*
 `classification = Sabin` row from the 2026-07-31 sweep — one day after the ruling, citing the same
 paper and reasoning explicitly about the defective-interfering nature — and a later curator decision
-made on the same facts is not something a rebuild of an earlier one may quietly overturn.
-`M30213`/`M30219` are held outside the poliovirus partition by an active
-`membership_confirmation_not_polio` row, because their deposits read `organism=Enterovirus C` while
-their twelve batch-mates read `Human poliovirus sp.`; since 3.2.0 a curated `classification`
-*entails* poliovirus membership, so a tag there would contradict a membership decision rather than
-fill a blank. Both are curator questions, recorded in
+made on the same facts is not something a rebuild of an earlier one may quietly overturn. That went
+back to the curator and is settled in 5.2.0 above. `M30213`/`M30219` are held outside the poliovirus
+partition by an active `membership_confirmation_not_polio` row, because their deposits read
+`organism=Enterovirus C` while their twelve batch-mates read `Human poliovirus sp.`; since 3.2.0 a
+curated `classification` *entails* poliovirus membership, so a tag there would contradict a
+membership decision rather than fill a blank. Both are recorded in
 [`tests/test_decision_ledger.py`](tests/test_decision_ledger.py) next to the count they explain.
 
 ### Release 5.0.0
@@ -383,7 +417,7 @@ contract that nothing can contradict is not a contract, so CI runs the full form
 The human-readable curation ledger is `registry/decisions.tsv`. Its contract and review rules are
 documented in [`registry/README.md`](registry/README.md).
 
-Note that three version numbers coexist and are independent: the **data release** is 5.1.0
+Note that three version numbers coexist and are independent: the **data release** is 5.2.0
 (`CITATION.cff`, and `release_version` in `final/audit/build_manifest.json`), the canonical
 **schema** is 2.4.1 (`schema_version` in the same manifest), and the Python package version is
 0.0.0.

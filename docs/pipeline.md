@@ -18,7 +18,7 @@ oracle is release 2.4.1 (see `src/enterovirus_genbank_curated/contracts.py`'s
 are retired, immutable prior baselines, no longer verified against the tree.
 
 The pipeline has since produced releases of its own, and since 2026-08-01 they are written straight
-into `final/` rather than a staging tree; the current one is 5.1.0. 2.4.1's canonical table is kept
+into `final/` rather than a staging tree; the current one is 5.2.0. 2.4.1's canonical table is kept
 as a fixture under `releases/2.4.1/` so `evgc parity-canonical` can hold the delta to a declared
 per-class transition table. It is an output measured against that oracle, not a replacement for it.
 

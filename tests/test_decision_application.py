@@ -193,7 +193,18 @@ EXPECTED_TALLY = {
     # outside the controlled vocabulary (`CHAT`, a bare `engineered`, `iVPDV`).
     # +2 on 2026-08-01: `CS406483` and `PU749298`'s `wild` rows, superseded by the `engineered/lab`
     # the 4.1.0 adjudication asserts.
-    "not_in_force_superseded": 10 + 3 + 2 + 2,
+    # +2 on 2026-11-17, release 5.2.0: `M29182` and `M29183`'s `Sabin` rows, superseded by the
+    # `defective-interfering particle` the 2026-11-17 ruling asserts. `applied_changed` does not
+    # move, which is the whole shape of this change: the two `Sabin` rows leave it and their two
+    # replacements land in it. The total rises by 2 and nothing else in this table does.
+    #
+    # Both replacements are `applied_changed` rather than `applied_filled_unresolved`, unlike the
+    # ten 5.1.0 rows, and the counterfactual says why: withhold the ledger and `R-CLASS-2` reaches
+    # `Sabin-like` on both. These fragments are 111 and 179 nt of Sabin 1, long enough to measure a
+    # divergence of zero, where the 5.1.0 series is 60 nt and carries no VP1 window at all. That is
+    # this table independently stating the premise of the ruling: the lineage is recoverable from
+    # the sequence, so the column is better spent on the particle type, which is not.
+    "not_in_force_superseded": 10 + 3 + 2 + 2 + 2,
 }
 
 

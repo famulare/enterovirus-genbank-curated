@@ -282,6 +282,18 @@ def poliovirus_classification(parameters: Mapping[str, Any], view: RecordView) -
             source_value=view.record.get(ORGANISM_FIELD, ""),
         )
 
+    # Which value, when a record satisfies two of them? The vocabulary mixes two kinds of
+    # statement: a lineage tier (`Sabin`, `wild`, `cVDPV` — where the virus came from) and a
+    # particle type (`defective-interfering particle` — what the deposit is). A defective-
+    # interfering genome recovered from a Sabin 1 passage is both, and the column holds one value.
+    #
+    # The curator's rule, settled 2026-11-17 over the Kuge/Saito/Nomoto and Kitamura/Semler series:
+    # the particle type wins, because the lineage is recoverable from the sequence and the particle
+    # type is not. Those fragments are byte-identical to their range of Sabin 1 and lie wholly
+    # inside a retained segment, carrying no deletion junction — so `Sabin` would restate what any
+    # consumer can measure while discarding the one fact only the deposit's text supplies. The
+    # ordering is a curation convention, not a rule: it is expressed as ledger rows per accession,
+    # and nothing here enforces it.
     for field in LEDGER_FIELDS:
         asserted = view.decisions.get(field, "")
         if not asserted:

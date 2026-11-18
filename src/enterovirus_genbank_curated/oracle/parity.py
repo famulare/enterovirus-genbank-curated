@@ -232,6 +232,14 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('Sabin-like', 'cVDPV'): 4,
         ('chimera', ''): 4,
         ('Sabin', 'Sabin-like'): 3,
+        # New on 2026-11-17, release 5.2.0: `M29182` and `M29183`, the Kitamura/Semler
+        # defective-interfering fragments. 2.4.1 and every release since shipped `Sabin`, which
+        # is true and measurable — both deposits are verbatim substrings of Sabin 1 `AY184219`
+        # with zero differences. The curator ruling of 2026-11-17 prefers the particle type
+        # anyway, because the lineage is recoverable from the sequence and the particle type is
+        # only in the deposit's text. This is the one class in this table where the release is
+        # not correcting the baseline but carrying a fact the baseline had no column for.
+        ('Sabin', 'defective-interfering particle'): 2,
         ('Sabin-like', 'wild'): 1,
         # Down from 12 with the ambiguity fix: an `N` or an `R` scored as a substitution was
         # pushing these over PV2's 0.6% ceiling. `OK634152` carried exactly one `R`.
