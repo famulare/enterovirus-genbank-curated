@@ -18,7 +18,7 @@ oracle is release 2.4.1 (see `src/enterovirus_genbank_curated/contracts.py`'s
 are retired, immutable prior baselines, no longer verified against the tree.
 
 The pipeline has since produced releases of its own, and since 2026-08-01 they are written straight
-into `final/` rather than a staging tree; the current one is 5.0.0. 2.4.1's canonical table is kept
+into `final/` rather than a staging tree; the current one is 5.1.0. 2.4.1's canonical table is kept
 as a fixture under `releases/2.4.1/` so `evgc parity-canonical` can hold the delta to a declared
 per-class transition table. It is an output measured against that oracle, not a replacement for it.
 
@@ -245,8 +245,8 @@ release excludes and this pipeline admits, less two it leaves undecided and thre
    data, regenerating the shipped rule table byte-for-byte. `locality` is projected through the rule
    catalog with its provenance row compared to the release on all nine columns. **No column remains
    unwritten.**
-6. Decision application, disposition, and complete provenance. **Delivered:** 6,326 decision
-   applications from a 4,919-row ledger, 340,270 provenance rows, and 25,061 declined cells
+6. Decision application, disposition, and complete provenance. **Delivered:** 6,336 decision
+   applications from a 4,929-row ledger, 340,270 provenance rows, and 25,051 declined cells
    collapsed into 268 curation-queue groups. `record_disposition.tsv.gz` gained a producer on
    2026-08-14 and now carries a reason on every one of its 1,422 exclusions.
 7. Dictionaries, references, and reproducible alignments. **Delivered.**

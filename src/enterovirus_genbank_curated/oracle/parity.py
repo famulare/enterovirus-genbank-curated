@@ -221,7 +221,10 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('Sabin-like', 'iVDPV'): 14,
         ('VDPV', ''): 11,
         ('Sabin', ''): 10,
-        ('defective-interfering particle', ''): 10,
+        # `('defective-interfering particle', ''): 10` stood here until 2026-11-17. 2.4.1 shipped
+        # the tag on the Kuge/Saito/Nomoto series and 5.0.0 blanked it, because the 2026-07-30
+        # curator ruling reached `engineered_or_construct` and never `poliovirus_classification`.
+        # 5.1.0 restores it from the ledger, so the transition is gone rather than declared.
         ('VDPV', 'iVDPV'): 6,
         ('Sabin-like', 'VDPV'): 6,
         ('cVDPV', 'cVDPV-n'): 5,

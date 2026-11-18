@@ -325,6 +325,26 @@ LOW_SYNONYMOUS_REVIEW_NET_ACTIVE = (
     - LOW_SYNONYMOUS_REVIEW_PAT_ORIGIN_RETIREMENTS
 )
 
+# The curator ruling of 2026-07-30 on the Kuge/Saito/Nomoto defective-interfering series
+# (PMID:3031313) had two halves: `engineered_or_construct = FALSE`, because a DI genome arises from
+# polymerase error during high-MOI passage rather than being assembled, and a positive tag saying
+# what the record *is*. Only the first half ever landed. The vocabulary has carried
+# `defective-interfering particle` since the ruling and nothing in the release used it.
+#
+# Ten of the fourteen DI records take the tag here. The other four are deliberately untouched, and
+# each is a different reason the ruling could not simply be applied:
+#   2  `M29182`/`M29183` hold an *active* `classification = Sabin` row from the 2026-07-31 sweep —
+#      one day after the ruling, citing the series paper and reasoning explicitly about the DI
+#      nature. A later curator decision that saw the same facts is not something a rebuild of an
+#      earlier one may quietly overturn, so the conflict goes back to the curator.
+#   2  `M30213`/`M30219` are held outside the poliovirus partition by an active
+#      `membership_confirmation_not_polio` row, because their deposits read `organism=Enterovirus C`
+#      while their twelve batch-mates read `Human poliovirus sp.`. Since 3.2.0 a curated
+#      `classification` *entails* poliovirus membership, so a tag here would contradict a membership
+#      decision rather than fill a blank.
+DEFECTIVE_INTERFERING_SOURCE = "defective_interfering_curation_2026-11-17"
+DEFECTIVE_INTERFERING_ADDITIONS = 10
+
 EXPECTED_STATUS = {
     "active": (
         2895
@@ -342,6 +362,7 @@ EXPECTED_STATUS = {
         + EXPECTED_ORIGIN_UNKNOWN_ROWS
         + EXPECTED_RELEASE_5_ROWS
         + LOW_SYNONYMOUS_REVIEW_NET_ACTIVE
+        + DEFECTIVE_INTERFERING_ADDITIONS
     ),
     "retired": (
         17
@@ -388,6 +409,7 @@ def test_ledger_satisfies_its_own_contract(
         + EXPECTED_ORIGIN_UNKNOWN_ROWS
         + EXPECTED_RELEASE_5_ROWS
         + LOW_SYNONYMOUS_REVIEW_ADDITIONS
+        + DEFECTIVE_INTERFERING_ADDITIONS
     )
     assert summary.active_rows == EXPECTED_STATUS["active"]
 
@@ -965,6 +987,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
     # record's own `/note`; this one measures the deposited sequence. Sharing a `source_artifact`
     # would have made the pin above read 19 and stopped saying anything about either.
     assert sources[LOW_SYNONYMOUS_REVIEW_SOURCE] == LOW_SYNONYMOUS_REVIEW_ADDITIONS
+    assert sources[DEFECTIVE_INTERFERING_SOURCE] == DEFECTIVE_INTERFERING_ADDITIONS
     assert sources[UPSTREAM_PARTITION_SOURCE] == EXPECTED_UPSTREAM_PARTITION_ROWS
     assert (
         sources[SHORT_PATENT_MEMBERSHIP_SOURCE] == EXPECTED_SHORT_PATENT_MEMBERSHIP_ROWS
@@ -976,6 +999,7 @@ def test_every_row_names_where_it_actually_came_from(ledger: list[dict[str, str]
         RELEASE_5_ADJUDICATION_SOURCE,
         DQ205099_ADJUDICATION_SOURCE,
         LOW_SYNONYMOUS_REVIEW_SOURCE,
+        DEFECTIVE_INTERFERING_SOURCE,
         UPSTREAM_PARTITION_SOURCE,
         SHORT_PATENT_MEMBERSHIP_SOURCE,
     }

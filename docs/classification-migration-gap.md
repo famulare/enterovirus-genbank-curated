@@ -10,7 +10,7 @@ investigations, and 1,506 of the ledger's active rows already cite a PMID for ex
 **A coarsened value is a lost judgement, not a conservative one**, and this file names precisely
 which ones are still lost so they can be migrated rather than rediscovered.
 
-`docs/classification-migration-gap.tsv` is the machine-readable list — **all 525 differing
+`docs/classification-migration-gap.tsv` is the machine-readable list — **all 515 differing
 records**, one row each, with the value 2.4.1 ships, the value this pipeline emits, the
 `unresolved_reason` if it declined, and a category.
 
@@ -27,18 +27,18 @@ above said every row has one. The prose totals below are regenerated with the ta
 sections further down quote the counts as they stood when each was written and say so. Both drifts happened for the same reason the date-family delta drifted
 behind a deleted gate: nothing recomputed it.
 
-Over the 24,296 records both datasets carve, the column now **agrees on 23,771 (97.8%)**.
+Over the 24,296 records both datasets carve, the column now **agrees on 23,781 (97.9%)**.
 
 An earlier version of this file covered only the rows where 2.4.1 ships a *refinement* or `wild`.
 That was the interesting subset, not the whole difference, and scoping a reconciliation to the
 interesting subset is how the rest would have gone unnoticed.
 
-## All 525, by category
+## All 515, by category
 
 | category | n | what it means |
 |---|---:|---|
 | `declined_too_little_sequence` | 417 | too little usable sequence, by VP1 or the capsid fallback, to measure divergence over, and no text or sibling to fall back to |
-| `declined_no_serotype_in_name` | 48 | no serotype in the organism name, or in a sequence-identified membership band, to pick a Sabin reference |
+| `declined_no_serotype_in_name` | 38 | no serotype in the organism name, or in a sequence-identified membership band, to pick a Sabin reference |
 | `record_text_attests_beyond_the_release` | 13 | the depositor states `cVDPV` or `iVDPV` and the sequence measures Sabin-like; the attestation wins |
 | `sequence_band_disagrees_with_release` | 10 | both resolved, divergence lands in a different band |
 | `record_text_refines_beyond_the_release` | 11 | the record's own text is *finer* than 2.4.1 |

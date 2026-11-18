@@ -2,7 +2,7 @@
 
 ## Current state
 
-**`final/` is what this pipeline builds.** As of 2026-08-14 it holds release 5.0.0: canonical, audit,
+**`final/` is what this pipeline builds.** As of 2026-11-17 it holds release 5.1.0: canonical, audit,
 curation and dictionary trees written by `evgc build-metadata` from `raw/` and `registry/` alone,
 and alignments written by `evgc alignment-build` from those. It is a build destination, not a parity
 target, and `build.reject_immutable_output` guards only `raw/` — the frozen input of record, where a
@@ -222,7 +222,7 @@ irreducibly ambiguous and belong in a curation queue rather than in a rule.
 Declining honestly is only half the design. `evgc build-metadata` now also writes
 `curation/curation_queue.tsv`, and it is what stops `unresolved_reason` being a note nobody acts on.
 
-**25,061 declined cells collapse into 268 groups**, because records decline for the *same* reason:
+**25,051 declined cells collapse into 268 groups**, because records decline for the *same* reason:
 every record whose `/isolation_source` is `conjunctival swab` is one decision, not 462. The queue is
 keyed on the input the rule examined and could not decide from, so resolving one group resolves every
 record in it. `queue_id` is derived from that content rather than allocated sequentially, so
@@ -809,7 +809,7 @@ Passing parity means at minimum:
 - identical vouched/provisional partitions;
 - identical FASTA identifiers and nucleotide sequences;
 - migration of all 2,912 human decisions the release shipped, and 28 deterministic rules. The ledger
-  now holds 4,919 — 4,706 `active`, 196 `retired`, 17 `superseded` — and the difference is approved
+  now holds 4,929 — 4,716 `active`, 196 `retired`, 17 `superseded` — and the difference is approved
   curation history rather than a parity failure, itemised by `source_artifact`. The largest single
   block is the 243-row locked VDPV/wild reconciliation allowlist, migrated 2026-07-30: the last input
   to `poliovirus_classification` with no counterpart here, and every row already agrees with the
@@ -840,15 +840,15 @@ had become of it. `evgc build-metadata` now writes `audit/decision_applications.
 decision per canonical field it can reach, and **a decision with no row is a build failure** rather
 than an absence.
 
-The measured tally, 6,307 application rows over the 4,900-row ledger
+The measured tally, 6,336 application rows over the 4,929-row ledger
 (`final/audit/decision_applications.tsv.gz`):
 
 | status | n | what it means |
 |---|---|---|
-| `applied_filled_unresolved` | 3,556 | the decision is the only reason the cell has a value |
-| `applied_changed` | 1,700 | in force, and the value differs from the rule's |
-| `applied_unchanged` | 531 | **a rule now reaches the same value on its own** |
-| `not_in_force_retired` / `_superseded` | 194 / 15 | the curator took it back |
+| `applied_filled_unresolved` | 3,570 | the decision is the only reason the cell has a value |
+| `applied_changed` | 1,713 | in force, and the value differs from the rule's |
+| `applied_unchanged` | 529 | **a rule now reaches the same value on its own** |
+| `not_in_force_retired` / `_superseded` | 196 / 17 | the curator took it back |
 | `applied_exclusion` | 176 | the record is absent from the carve *because* the ledger says so |
 | `no_canonical_field` | 123 | reference-selection curation the canonical schema has no column for |
 | `subject_outside_carve` | 12 | no canonical value exists to change |

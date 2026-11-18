@@ -17,14 +17,14 @@ projection_provenance	winning_rule_id	Rule id (FK -> rules.rule_id) governing th
 projection_provenance	evidence_basis	Basis for the value (e.g. name_derived, sequence_derived_confident, canonical_projection).	string	string	FALSE		340270
 projection_provenance	manual_override	TRUE if any normalized human decision asserts a field aliasing to this canonical column for this accession (P2; DECISION_FIELD_TO_CANONICAL).	string	string	FALSE		340270
 projection_provenance	unresolved_reason	Why the rule declined this cell, when it did. Blank on a resolved cell. This is the column that makes a blank canonical value readable: the table cannot tell a value a rule chose to leave empty from one it could not decide, and this says which.	string	string	TRUE		340270
-decision_applications	decision_id	Content-stable id of the curation decision this row reports on (FK -> registry ledger).	string	string	FALSE	primary key (one row per decision per canonical field)	6326
-decision_applications	accession	Unversioned GenBank accession the decision concerns.	string	string	TRUE	join key (blank for accession-less decisions)	6326
-decision_applications	registry_field	The ledger's own field name, as written by the curator.	string	string	FALSE		6326
-decision_applications	canonical_field	Canonical column the ledger field maps to, or blank when it maps to none.	string	string	TRUE		6326
-decision_applications	asserted_value	Value the decision asserts.	string	string	FALSE		6326
-decision_applications	value_without_decision	What the rules alone reach for this cell, measured by projecting the corpus with the whole ledger withheld. Blank means the rules decline.	string	string	TRUE		6326
-decision_applications	final_value	Value actually shipped in the canonical column.	string	string	TRUE		6326
-decision_applications	application_status	What became of the decision: applied_changed, applied_filled_unresolved, applied_unchanged (the rules now reach the same value unaided), applied_exclusion, not_in_force_retired, not_in_force_superseded, no_canonical_field, subject_outside_carve.	string	string	FALSE	FK -> controlled_vocabularies application_status	6326
+decision_applications	decision_id	Content-stable id of the curation decision this row reports on (FK -> registry ledger).	string	string	FALSE	primary key (one row per decision per canonical field)	6336
+decision_applications	accession	Unversioned GenBank accession the decision concerns.	string	string	TRUE	join key (blank for accession-less decisions)	6336
+decision_applications	registry_field	The ledger's own field name, as written by the curator.	string	string	FALSE		6336
+decision_applications	canonical_field	Canonical column the ledger field maps to, or blank when it maps to none.	string	string	TRUE		6336
+decision_applications	asserted_value	Value the decision asserts.	string	string	FALSE		6336
+decision_applications	value_without_decision	What the rules alone reach for this cell, measured by projecting the corpus with the whole ledger withheld. Blank means the rules decline.	string	string	TRUE		6336
+decision_applications	final_value	Value actually shipped in the canonical column.	string	string	TRUE		6336
+decision_applications	application_status	What became of the decision: applied_changed, applied_filled_unresolved, applied_unchanged (the rules now reach the same value unaided), applied_exclusion, not_in_force_retired, not_in_force_superseded, no_canonical_field, subject_outside_carve.	string	string	FALSE	FK -> controlled_vocabularies application_status	6336
 classification_divergence	accession	Unversioned GenBank accession the row concerns.	string	string	FALSE	join key	8344
 classification_divergence	version	accession.version the row concerns.	string	string	FALSE	primary key (one row per measured record)	8344
 classification_divergence	reference_serotype	Sabin serotype the divergence was measured against (1/2/3).	string	string	FALSE		8344
