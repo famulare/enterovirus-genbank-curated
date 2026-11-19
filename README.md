@@ -200,10 +200,13 @@ The partition flip changes alignment membership, so `POLIO_unified`, `NPEV_unifi
 holds its 24,305. Neither record carries a serotype, so `PV1`/`PV2`/`PV3` are byte-identical.
 
 The rebuilt EV is narrower, 8,127 nt against 8,337, and 25 of its fragment rows (96-845 nt) moved by
-more than 60 nt. Scored against same-type peers, eight are now better placed and eleven worse, and
-six did not clearly change. MAFFT's `--addfragments` places fragments over the whole set at once, so
-this follows from a one-row change to the addon set rather than from anything about the two records.
-No gate measures it. [`docs/reproducibility.md`](docs/reproducibility.md) lists the rows and what is
+more than 60 nt. The direction follows the region. Six non-capsid fragments that the committed EV had
+placed in VP1, VP3, 2A, 2B or scattered over several regions now sit in 2C-3D, where they belong. Eleven partial VP1 sequences stay
+in VP1, and ten of them moved 104 codons upstream of where they were; scored against same-type peers
+the new register is the wrong one. Partial VP1 sequences are the rows exposed. Six more did not
+clearly change. MAFFT's `--addfragments` places fragments over the whole set at once, so this
+follows from a one-row change to the addon set rather than from anything about the two records. No
+gate measures it. [`docs/reproducibility.md`](docs/reproducibility.md) lists the rows and what is
 not known.
 
 ### Release 5.2.0

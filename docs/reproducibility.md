@@ -394,16 +394,28 @@ records carry. The only differences in EV's inputs are the two records' `virus_t
 so a one-row change to the set can move other fragments, and it did. Columns held by a single row fell
 from 276 to 195, and `OR129570` and `OR129612`, which held 39 and 24 private columns, hold none.
 25 rows moved by more than 60 nt in Sabin 1 coordinates. All 25 are fragments of 96 to 845 nt, and
-the rebuild is better for some and worse for others.
+the rebuild is better for some and worse for others. The direction follows the region.
 
-Scored by identity to the majority base of same-type rows in the columns each record occupies:
+Scored by identity to the majority base of same-type rows in the columns each record occupies, with
+each record's span read off the `AY184219` row and regions from `reference_region_coordinates.tsv`:
 
-- **Better, 8:** `JN393203`, `JN393197`, `AY962577`, `AY942641`, `DQ370161`, `EU409818`, `DI499173`,
-  `JC013130`. The first six went from 21–37% identity, which is chance, to 54–95%.
-- **Worse, 11:** `KF413049`, `HQ662313`, `HQ662314`, `KF413052`, `KF413004`, `KF413005`,
-  `KF413019`, `KF413042`, `KF412911`, `MN888086`, `JN203545`. They went from 60–98% to 25–48%, and
-  all but `JN203545` moved the same 312 nt (104 codons) upstream.
-- **No clear change, 6:** `AB268144`, `JQ886656`, `JQ886657`, `X87594`, `DI499174`, `JC013131`.
+- **Better, 8.** Six are non-capsid fragments the committed EV placed in the wrong region: in VP1
+  or VP3 (`AY962577`, `AY942641`), in 2A and 2B (`EU409818`, `DQ370161`), or scattered over several
+  regions (`JN393197`, `JN393203`). They now sit in 2C to 3D (`AY962577` 5,100-5,324; `AY942641`, `EU409818`, `DQ370161` in 3B/3C/3D;
+  `JN393197`, `JN393203` 5,835-6,467), and their identity went from 21-37%, which is chance, to
+  54-95%. The other two, `DI499173` and `JC013130` (96 nt), are in VP1 in both builds and moved 90 nt.
+- **Worse, 11.** All are partial VP1 sequences of 246-552 nt (`KF413019` runs into 2A): `JN203545`,
+  `MN888086`, `KF413019`, `KF413042`, `KF413004`, `KF413049`, `KF412911`, `KF413005`, `HQ662313`,
+  `HQ662314`, `KF413052`. They are in VP1 in the committed EV too, at 60-98% identity, and now
+  score 25-48%. Ten of the eleven moved the same 312 nt (104 codons) upstream within VP1;
+  `JN203545` moved 120-150 nt downstream.
+- **No clear change, 6.** Five are in VP1 in both builds (`DI499174`, `JC013131`, `AB268144`,
+  `JQ886656`, `JQ886657`). `X87594` has 845 residues spread across the whole genome in both.
+
+The rebuild moved placement quality from the non-capsid fragments to the capsid ones. A shift of
+exactly 104 codons across ten records of different types is a misregistration, not scatter. Partial
+VP1 sequences are the rows exposed, and VP1 is the region typing is read from. Why it happens in VP1
+has not been established.
 
 `PV1_unified` is unchanged and is an independent witness for the four PV1 records. It places
 `AY962577`, `JN393197` and `JN393203` where the rebuilt EV does, and `MN888086` where the committed
