@@ -45,6 +45,10 @@ The 5.0.0 column is 4.0.0 less the three `FV5370xx` carve exclusions — all pol
 holding — plus five serotype relabels (`OR208596→PV1`, `AY830709→PV2`, `HM537010→PV3`,
 `MG212473→PV2`, `AY297766→PV3`), which is why `PV2_unified` gains a row while the rest lose or hold.
 
+5.3.0 moves two rows from `NPEV_unified` (14,218 → 14,216) to `POLIO_unified` (10,087 → 10,089):
+`M30213` and `M30219`, which the curator ruling of 2026-11-17 put in the poliovirus partition. The
+other four counts hold. Neither record carries a serotype, so no `PV{n}` file moves.
+
 The serotype files are the consequential row. **366 poliovirus records now carry a blank
 `virus_type`, against 25 before**, so they are members of `POLIO_unified` and `EV_unified` and of no
 `PV{n}` file. That is the same curator decision recorded below applied to a larger population, not
@@ -501,7 +505,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="POLIO_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(POLIOVIRUS,)),
-        expected_rows=10_087,
+        expected_rows=10_089,
         description=(
             "All-serotype poliovirus whole-genome multiple sequence alignment "
             "(5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"
@@ -512,7 +516,7 @@ ARTIFACTS: dict[str, AlignmentSpec] = {
         name="NPEV_unified",
         stack="unified",
         population=PopulationSpec(virus_groups=(NON_POLIO,)),
-        expected_rows=14_218,
+        expected_rows=14_216,
         description=(
             "Non-polio enterovirus whole-genome multiple sequence alignment "
             "(5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)"

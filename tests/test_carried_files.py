@@ -53,29 +53,29 @@ from enterovirus_genbank_curated.oracle.release import (
 # output, so their pins move whenever a rebuild is promoted -- see `oracle/release.py`.
 CARRIED_SHA256 = {
     "final/alignments/EV_unified.coverage.tsv.gz":
-        "453cd965ed28651f60a3eed7ecf2b70cd49342972e931b6c291d47a8309a34d8",
+        "3f0f2582f8903e811378c02019f816abefba552e3b7c82c069936461c8366126",
     "final/alignments/EV_unified.provenance.json":
-        "17655eafae2ea9d34281f81562ccf39bda3657c9fe6707c74a1a366cbe32e55e",
+        "a7b121cf1fca9caffa93b690f74b11c62b3417bac12aff2942a47f426aa69a83",
     "final/alignments/EV_unified.sto.gz":
-        "d3f8272a9fd67c486e47bb257ec35c7146ed32349f96ad0e3aa8fa203740f1f8",
+        "93c4cdda63c806e325abb110a4094459b0745bf0586e6eb0503102158054e036",
     "final/alignments/EV_unified_aln.fasta.gz":
-        "dc76eea2a25931b8f8fff74b46b1c107c926a217791d5f20d7092f9a0fb5aebd",
+        "b0299ec6eb64fc121913dfe5b5e4201574f90cdcec5757a34cd0f384f88435ae",
     "final/alignments/NPEV_unified.coverage.tsv.gz":
-        "3c34e327dcc6467c8384f33cea1c95cf44a8f704e04565af98ea0a16479e58f4",
+        "23df2fdb86fec28fb83bfac4ed66d0737df9e55f2a280b25d53af50e96a4201f",
     "final/alignments/NPEV_unified.provenance.json":
-        "f9a0047626326ea13fd0326ef4d8740a62f11471f04f0db473d36127eb79cb27",
+        "cfeda726131d2393544a90a2561f64f33b7467aa4495fc746efb55cf51c13f80",
     "final/alignments/NPEV_unified.sto.gz":
-        "99335620c5050afe3a2c0b925e4c34c02e578c917ce72a3be058842b3937b1ac",
+        "eabfc3e401d489659dd72de1a9acec2e2a89a4f54eff12729c5f2485fed39a39",
     "final/alignments/NPEV_unified_aln.fasta.gz":
-        "01fd138b7ba7eb6b012642db7aa7f300f5e3b6bb1602d3f29341b4eb34905abe",
+        "fec3de05bb5f6604e9ecdf571482d2b70ab43fc3df055e1cb4d05101cc7413aa",
     "final/alignments/POLIO_unified.coverage.tsv.gz":
-        "ef81428ca221b89980a321912bd35ab3f79361852829ee4e3e35846cdcf60094",
+        "c40d40294d66b2ab5e12e3864e2ce54607ea0d24cc13338b02faa3b44819e299",
     "final/alignments/POLIO_unified.provenance.json":
-        "0340b4456dba6364c5b06d39927bb17445dd2248edd16d144fda8000fed03bbf",
+        "3879a8bc00d2c2d6d08efeed16e985db012c66fa219403353add105bb71757cd",
     "final/alignments/POLIO_unified.sto.gz":
-        "ce81c8bd5dd368fa141c02dd9c71acaabf73786598dd8cd609f67a4a85978a4e",
+        "b7f56642f8f9a668e8ee78df0d543216d33798d9aae90a0e412b3e65aa17a3f0",
     "final/alignments/POLIO_unified_aln.fasta.gz":
-        "ec7c8515fed16ce133a0764c1ec30f73ad3759e5bd6a9a879dcd03bee4698721",
+        "8b3c1bb7df135c2607ac2622a119c3463752216703ab4c4658a10bade4bc5245",
     "final/alignments/PV1_unified.coverage.tsv.gz":
         "3cf89ab8c87dbb2fa0825211d255fd007253c7355387ce827a37dd4b846acf2d",
     "final/alignments/PV1_unified.provenance.json":

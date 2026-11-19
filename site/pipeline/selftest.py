@@ -800,9 +800,17 @@ def alignment_payloads_reproduce_the_panels() -> None:
             )
             width = container["header"]["width"]
             offsets = alignment_artifacts.row_offsets(container["first"], container["last"])
-            references = alignment_artifacts.unpack_row(
-                container["reference_cells"], 0, len(container["header"]["references"]) * width
-            ).reshape(-1, width)
+            # Each reference row is packed on its own, padded to a whole byte, so rows sit
+            # `ceil(width / 2)` bytes apart. Reading the block as one run is right only
+            # while the width is even.
+            stride = (width + 1) // 2
+            reference_cells = container["reference_cells"]
+            references = np.stack(
+                [
+                    alignment_artifacts.unpack_row(reference_cells, slot * stride, width)
+                    for slot in range(len(container["header"]["references"]))
+                ]
+            )
 
             expected = panel_file["divergence"][region]
             wanted = {record: i for i, record in enumerate(expected["record"])}

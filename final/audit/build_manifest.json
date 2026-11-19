@@ -1,14 +1,14 @@
 {
-  "release_version": "5.2.0",
+  "release_version": "5.3.0",
   "schema_version": "2.4.1",
   "baseline_release": "2.4.1",
   "derivation": "Rebuilt from raw/sequence.gb.zip and registry/ alone, by the rules in registry/rules.json. No curated master, no network, no path outside the clone, and no read of final/, which is the comparison target.",
-  "code_sha256": "52b8b62bb11d8b40cc6fb0c76fc1132cb71cc44b62fc03e2e46b702cbcd6bd24",
+  "code_sha256": "4570f0ab68fbb63c8f68c7e6932ef2ff228a7fdfd5c636d91e3d2478e427e806",
   "inputs": {
     "raw_archive_sha256": "96848ce1c275359e25736beb21831acbfccb1b503d3b718cf131eca741abc609",
     "raw_uncompressed_sha256": "d72e8e4dad2b0a1b1953bc827397b917c9ca8a50542f637dc83ce046a5fed2f3",
     "raw_record_count": 25727,
-    "decisions_sha256": "39c9160432520d7d859b4826a3f9b5d4d4714c8d046bb8b5f130c5e1ad6e07a3",
+    "decisions_sha256": "09b72757df65d877f3970824f5d5f1d42ceebae256176eaddd353378357a225f",
     "rules_sha256": "a40dc867418d64cb51611829a21706fecbb0607935acf55094533c12bbee992f"
   },
   "row_counts": {
@@ -22,10 +22,10 @@
     "localities_without_geography": 2052,
     "coherent_digest_groups": 738,
     "curation_queue_groups": 268,
-    "decision_applications": 6338,
+    "decision_applications": 6348,
     "curation_queue_records": 25051,
     "canonical_rows": 24305,
-    "vouched_rows": 10087,
+    "vouched_rows": 10089,
     "rules_published": 39,
     "classification_divergence_rows": 8344,
     "record_disposition_rows": 25727,
@@ -41,8 +41,8 @@
     "applied_unchanged": 529,
     "applied_changed": 1713,
     "not_in_force_retired": 196,
-    "applied_filled_unresolved": 3570,
-    "not_in_force_superseded": 19,
+    "applied_filled_unresolved": 3576,
+    "not_in_force_superseded": 23,
     "subject_outside_carve": 12
   },
   "completeness": {
@@ -125,8 +125,8 @@
     },
     "poliovirus_classification": {
       "source": "projected",
-      "filled": 9626,
-      "blank": 14679,
+      "filled": 9628,
+      "blank": 14677,
       "declined": 461,
       "rules": [
         "R-CLASS-2"

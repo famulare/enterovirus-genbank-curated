@@ -56,7 +56,7 @@ threshold logic below is identical either way.
 ## Order of precedence, and where it declines
 
 1. Outside poliovirus the column is **blank by determination**, not declined — the vocabulary is
-   poliovirus-specific and the release ships blank for all 14,218 non-poliovirus rows.
+   poliovirus-specific and the release ships blank for all 14,216 non-poliovirus rows.
 2. An undecided partition declines: nothing can be said until membership is settled.
 3. An active `verified_classification` or `classification` decision wins outright.
 4. A refinement named in the record's own text wins over the bare band.

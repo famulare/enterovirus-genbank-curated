@@ -389,8 +389,18 @@ test("P1 coverage per selection is pinned, so a population change cannot pass un
   // PV1, PV2 and PV3 are the control and did not move, which is what says the drop is the 5'UTR
   // population leaving and not a population change: those three files are dominated by records whose
   // CDS is annotated, so almost nothing in them was relying on an inferred ORF to reach P1.
+  //
+  // NPEV 12085 -> 12082 and all 20836 -> 20832 on 2026-11-19, the first site build after 5.3.0
+  // rebuilt `EV_unified` and `NPEV_unified`. Four records leave P1 in `all`: `AY962577`,
+  // `JN393203`, `AY942641` and `DQ370161`. The committed EV placed all four inside VP1; the
+  // rebuild places them in 3A-3D, which is where the unchanged `PV1_unified` file puts the two PV1
+  // records and where their same-type peers sit for the other two. `AY942641` and `DQ370161` are
+  // the two NPEV loses. `M30219` is the third: 60 nt that counted as P1 coverage and is now a
+  // poliovirus row, so it leaves NPEV and stays in `all`. The rebuild moved 21 other rows by more
+  // than 60 nt, some to better placements and some to worse (docs/reproducibility.md lists them),
+  // and none of those changes this count.
   const expected: Record<string, number> = {
-    PV1: 3619, PV2: 3435, PV3: 1367, NPEV: 12085, all: 20836,
+    PV1: 3619, PV2: 3435, PV3: 1367, NPEV: 12082, all: 20832,
   };
   for (const [selection, n] of Object.entries(expected)) {
     assert.equal(

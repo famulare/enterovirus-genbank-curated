@@ -338,26 +338,45 @@ LOW_SYNONYMOUS_REVIEW_NET_ACTIVE = (
 # what the record *is*. Only the first half ever landed. The vocabulary has carried
 # `defective-interfering particle` since the ruling and nothing in the release used it.
 #
-# Twelve of the fourteen DI records take the tag. Ten landed in 5.1.0, where the column was blank
-# and the tag only filled it. The other four were held, and the curator took them up the same day:
-#   2  `M29182`/`M29183` held an *active* `classification = Sabin` row from the 2026-07-31 sweep,
-#      one day after the ruling. Read closely, that reason argues the record is a lab-passaged
-#      deletion variant rather than a field isolate — it rules out wild and VDPV and never chooses
-#      between the lineage tier and the particle type. Both deposits are verbatim substrings of
-#      Sabin 1 `AY184219` with zero differences, so `Sabin` restates what any consumer can measure
-#      while the particle type is recoverable only from the deposit's text. Curator ruling of
-#      2026-11-17: supersede, and tag. This is the one place in the series where the change moves a
-#      value a consumer already read, which is why 5.2.0 declares it as a transition in
-#      `oracle/parity.py` rather than removing one.
-#   2  `M30213`/`M30219` are still held, and their reason is unchanged: an active
-#      `membership_confirmation_not_polio` row keeps them outside the poliovirus partition, because
-#      their deposits read `organism=Enterovirus C` while their twelve batch-mates read
-#      `Human poliovirus sp.`. Since 3.2.0 a curated `classification` *entails* poliovirus
-#      membership, so tagging them flips the partition, which moves them between alignment
-#      populations and needs the alignment artifacts rebuilt. That lands in its own release.
+# All fourteen records of the DI series take the tag as a `classification` row. Where the tag lands:
+#  10  the ten PMID:3031313 records outside `M30213`/`M30219` landed in 5.1.0. The column was
+#      blank there and the tag only filled it.
+#   2  `M29182`/`M29183` (PMID:3007445) held an *active* `classification = Sabin` row from the
+#      2026-07-31 sweep, one day after the ruling. Read closely, that reason argues the record is a
+#      lab-passaged deletion variant rather than a field isolate; it rules out wild and VDPV and
+#      never chooses between the lineage tier and the particle type. Both deposits are verbatim
+#      substrings of Sabin 1 `AY184219` with zero differences, so `Sabin` restates what any consumer
+#      can measure while the particle type is recoverable only from the deposit's text. Curator
+#      ruling of 2026-11-17: supersede, and tag. 5.2.0 declares this as a transition in
+#      `oracle/parity.py`, because it moves a value a consumer already read.
+#   2  `M30213`/`M30219` were held outside the poliovirus partition by an active
+#      `membership_confirmation_not_polio` row, because their `organism_name` reads `Enterovirus C`
+#      where the other ten PMID:3031313 records read `Human poliovirus sp.`. Since 3.2.0 a curated
+#      `classification` entails poliovirus membership, so the tag could not land without first
+#      withdrawing the membership row. Curator ruling of 2026-11-17: they are poliovirus, on the
+#      deposit's own definition line and its membership of the same submission.
+#
+# The last pair is eight rows and two supersessions rather than two rows:
+#   2  `membership_confirmation_polio` / `is_poliovirus = TRUE`, superseding the two
+#      `membership_confirmation_not_polio` rows.
+#   2  `classification = defective-interfering particle`.
+#   4  `origin_class = non-human` and `sampling_frame = engineered/lab`. These are not new
+#      curation. The ten batch-mates already carry both from `origin_unknown_curation.csv`, and
+#      2.4.1 shipped both values for these two. They were left out of the 2026-05-28 origin review
+#      because they sat outside the partition, so the ledger migration never carried the cells.
+#      Written under this source, not `origin_unknown_curation.csv`, so the provenance reads as one
+#      curation pass and that file stays exactly as the migration produced it.
 DEFECTIVE_INTERFERING_SOURCE = "defective_interfering_curation_2026-11-17"
-DEFECTIVE_INTERFERING_ADDITIONS = 12
-DEFECTIVE_INTERFERING_SUPERSEDES = 2
+DEFECTIVE_INTERFERING_PARTICLE_TYPE_SUPERSEDES = 2
+DEFECTIVE_INTERFERING_MEMBERSHIP_SUPERSEDES = 2
+DEFECTIVE_INTERFERING_SUPERSEDES = (
+    DEFECTIVE_INTERFERING_PARTICLE_TYPE_SUPERSEDES + DEFECTIVE_INTERFERING_MEMBERSHIP_SUPERSEDES
+)
+DEFECTIVE_INTERFERING_ADDITIONS = (
+    10  # 5.1.0
+    + 2  # M29182/M29183, replacing their Sabin rows
+    + 8  # M30213/M30219: membership, classification, origin_class, sampling_frame, two each
+)
 DEFECTIVE_INTERFERING_NET_ACTIVE = (
     DEFECTIVE_INTERFERING_ADDITIONS - DEFECTIVE_INTERFERING_SUPERSEDES
 )
@@ -676,7 +695,7 @@ def test_retired_rows_agree_with_the_decision_that_governs_them(
 
 
 def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str, str]]) -> None:
-    """Eight distinct causes of supersession, asserted separately so none can absorb another.
+    """Nine distinct causes of supersession, asserted separately so none can absorb another.
 
     D2 overturned a legacy `classification=engineered` call on evidence. The AB180070-73 rows are a
     curator revision preserved through the 2.3.0 resync that would otherwise have deleted them.
@@ -712,7 +731,20 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     # true and stays measurable from the sequence; the ruling is about which of two true statements
     # a single-valued column should carry. The note has to say that, so a later reader does not
     # read this class as a correction.
-    particle_type = [r for r in superseded if "superseded 2026-11-17 by" in r["notes"]]
+    particle_type = [
+        r
+        for r in superseded
+        if "superseded 2026-11-17 by classification=defective-interfering particle" in r["notes"]
+    ]
+    # Ninth cause, 2026-11-17: the same ruling withdrew the membership row holding `M30213` and
+    # `M30219` outside the poliovirus partition. A membership row rather than a classification, and
+    # the only class here that withdraws a *partition* decision, which is why it is selected by its
+    # own note text and not folded into `particle_type`. The withdrawn row decided on organism name
+    # and the capsid-AA band alone; the replacement weighs the deposit's definition line and its
+    # submission, so the note says what the earlier row did not consider.
+    membership_withdrawn = [
+        r for r in superseded if "superseded 2026-11-17 by is_poliovirus=TRUE" in r["notes"]
+    ]
     remainder = [
         r
         for r in superseded
@@ -720,6 +752,7 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
         and r not in reclassified
         and r not in remeasured
         and r not in particle_type
+        and r not in membership_withdrawn
     ]
     d2 = [
         r
@@ -736,12 +769,14 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
     ]
     assert len(d2) + len(carried) + len(jc013129) + len(reversed_value) + len(
         repaired_vocabulary
-    ) + len(reclassified) + len(remeasured) + len(particle_type) == len(superseded), (
+    ) + len(reclassified) + len(remeasured) + len(particle_type) + len(
+        membership_withdrawn
+    ) == len(superseded), (
         "an unexplained supersession class appeared"
     )
 
     assert {r["subject_key"] for r in particle_type} == {"M29182", "M29183"}
-    assert len(particle_type) == DEFECTIVE_INTERFERING_SUPERSEDES
+    assert len(particle_type) == DEFECTIVE_INTERFERING_PARTICLE_TYPE_SUPERSEDES
     for row in particle_type:
         assert row["field_name"] == "classification"
         assert row["new_value"] == "Sabin"
@@ -752,6 +787,20 @@ def test_superseded_rows_are_only_the_adjudicated_conflict(ledger: list[dict[str
         assert "never chose between" in row["notes"], (
             "this class withdraws a true value, so the note must say the earlier reason did not "
             "decide the question rather than that it was wrong"
+        )
+
+    assert {r["subject_key"] for r in membership_withdrawn} == {"M30213", "M30219"}
+    assert len(membership_withdrawn) == DEFECTIVE_INTERFERING_MEMBERSHIP_SUPERSEDES
+    for row in membership_withdrawn:
+        assert row["decision_type"] == "membership_confirmation_not_polio"
+        assert row["field_name"] == "is_poliovirus"
+        assert row["new_value"] == "FALSE"
+        assert (
+            "superseded 2026-11-17 by is_poliovirus=TRUE (membership_confirmation_polio)"
+            in row["notes"]
+        ), "a supersession must name the value and decision type that replaced it"
+        assert "definition line" in row["notes"], (
+            "the note must say what the withdrawn row did not weigh, not only that it was withdrawn"
         )
 
     assert {r["subject_key"] for r in remeasured} == set(POLIO_CLASSIFICATION_OVERTURNED)

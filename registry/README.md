@@ -8,7 +8,7 @@ views and must never be edited by hand.
 ## What the row count does and does not mean
 
 At the 2.4.1 resync the ledger had **3,164 rows**; this section describes it at that point. It has
-since grown to **4,929** (4,716 `active`, 196 `retired`, 17 `superseded`) as the rewrite added
+since grown to **4,939** (4,722 `active`, 196 `retired`, 21 `superseded`) as the rewrite added
 decisions; see [`docs/reproducibility.md`](../docs/reproducibility.md). Read the 3,164 carefully:
 
 - It migrates from **2,282 input rows** across ten hand-maintained registries, because one curator

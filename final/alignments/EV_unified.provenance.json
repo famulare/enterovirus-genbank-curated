@@ -14,14 +14,14 @@
     "cds:no_coding_or_ncr_homology": 116
   },
   "artifact_sha256": {
-    "coverage": "453cd965ed28651f60a3eed7ecf2b70cd49342972e931b6c291d47a8309a34d8",
-    "fasta": "dc76eea2a25931b8f8fff74b46b1c107c926a217791d5f20d7092f9a0fb5aebd",
-    "stockholm": "d3f8272a9fd67c486e47bb257ec35c7146ed32349f96ad0e3aa8fa203740f1f8"
+    "coverage": "3f0f2582f8903e811378c02019f816abefba552e3b7c82c069936461c8366126",
+    "fasta": "b0299ec6eb64fc121913dfe5b5e4201574f90cdcec5757a34cd0f384f88435ae",
+    "stockholm": "93c4cdda63c806e325abb110a4094459b0745bf0586e6eb0503102158054e036"
   },
   "block_widths": {
     "3ncr": 87,
     "5ncr": 738,
-    "cds": 7512
+    "cds": 7302
   },
   "blocks_present": {
     "3ncr": 3447,
@@ -29,7 +29,7 @@
     "cds": 22811
   },
   "blocks_present_cds": 22811,
-  "cds_codons": 2504,
+  "cds_codons": 2434,
   "cds_width_is_whole_codons": true,
   "clade_exemplars": {
     "codons_dropped_after_removal": 3,
@@ -96,10 +96,17 @@
     "unknown": 1789
   },
   "flung_clusters_gapped": {
-    "codons": 108,
+    "codons": 219,
     "columns_dropped_after_gapping": 0,
     "rows": {
-      "JN393203": 11,
+      "AB162760": 12,
+      "AB162761": 13,
+      "AY942641": 13,
+      "AY960848": 32,
+      "AY960849": 32,
+      "DQ370161": 18,
+      "JX417882": 1,
+      "JX417883": 1,
       "JX513592": 8,
       "KM486565": 7,
       "KM486566": 7,
@@ -128,7 +135,7 @@
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
-  "population_sha256": "fb4f26371f90f8e3e52d18e31469711058c01275cbd2f72174902699a3df6040",
+  "population_sha256": "849a73549771fa520af6a85b86840e1f2fd222467b4e71a71cd09ea57cc74b31",
   "rows": 24305,
   "schema": 1,
   "segmentation": {
@@ -159,8 +166,8 @@
   "stack": "unified",
   "threads": 8,
   "tiers": {
-    "addon": 5153,
-    "backbone": 19152
+    "addon": 5152,
+    "backbone": 19153
   },
   "tool_identity": {
     "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
@@ -278,7 +285,7 @@
     "PV1": 4334,
     "PV2": 3792,
     "PV3": 1597,
-    "PV?": 366,
+    "PV?": 368,
     "RV-A1": 12,
     "RV-A10": 2,
     "RV-A101": 40,
@@ -386,7 +393,7 @@
     "RV-C6": 38,
     "RV-C7": 6,
     "RV-C9": 8,
-    "unknown": 1423
+    "unknown": 1421
   },
-  "width_nt": 8337
+  "width_nt": 8127
 }

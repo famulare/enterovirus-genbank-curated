@@ -3,20 +3,20 @@
     "3ncr:below_pop_min": 33,
     "3ncr:empty_fragment": 7612,
     "3ncr:excluded_oversized": 7,
-    "3ncr:inferred_no_ncr": 452,
-    "3ncr:no_coding_or_ncr_homology": 81,
+    "3ncr:inferred_no_ncr": 453,
+    "3ncr:no_coding_or_ncr_homology": 82,
     "5ncr:below_pop_min": 31,
     "5ncr:empty_fragment": 7027,
-    "5ncr:inferred_no_ncr": 451,
-    "5ncr:no_coding_or_ncr_homology": 81,
+    "5ncr:inferred_no_ncr": 452,
+    "5ncr:no_coding_or_ncr_homology": 82,
     "cds:no_cds_untranslatable": 33,
     "cds:no_coding_homology": 458,
-    "cds:no_coding_or_ncr_homology": 81
+    "cds:no_coding_or_ncr_homology": 82
   },
   "artifact_sha256": {
-    "coverage": "ef81428ca221b89980a321912bd35ab3f79361852829ee4e3e35846cdcf60094",
-    "fasta": "ec7c8515fed16ce133a0764c1ec30f73ad3759e5bd6a9a879dcd03bee4698721",
-    "stockholm": "ce81c8bd5dd368fa141c02dd9c71acaabf73786598dd8cd609f67a4a85978a4e"
+    "coverage": "c40d40294d66b2ab5e12e3864e2ce54607ea0d24cc13338b02faa3b44819e299",
+    "fasta": "8b3c1bb7df135c2607ac2622a119c3463752216703ab4c4658a10bade4bc5245",
+    "stockholm": "b7f56642f8f9a668e8ee78df0d543216d33798d9aae90a0e412b3e65aa17a3f0"
   },
   "block_widths": {
     "3ncr": 70,
@@ -26,13 +26,13 @@
   "blocks_present": {
     "3ncr": 1902,
     "5ncr": 2497,
-    "cds": 9515
+    "cds": 9516
   },
-  "blocks_present_cds": 9515,
+  "blocks_present_cds": 9516,
   "cds_codons": 2243,
   "cds_width_is_whole_codons": true,
   "clade_exemplars": {
-    "codons_dropped_after_removal": 14,
+    "codons_dropped_after_removal": 13,
     "exemplars": [
       "NC_001490.1",
       "NC_001617.1",
@@ -80,10 +80,10 @@
     }
   },
   "description": "All-serotype poliovirus whole-genome multiple sequence alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)",
-  "expected_rows": 10087,
+  "expected_rows": 10089,
   "families": {
     "PV": 9721,
-    "unknown": 366
+    "unknown": 368
   },
   "flung_clusters_gapped": {
     "codons": 89,
@@ -107,8 +107,8 @@
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
-  "population_sha256": "47667bbf60f1a0a00102d2f06ad3fb49546dda3daea31e9fafea5fb82e8b1563",
-  "rows": 10087,
+  "population_sha256": "3a4054b360083ebfa1262f6b718d2cd09b0254977b95bff351919bcd12647f27",
+  "rows": 10089,
   "schema": 1,
   "segmentation": {
     "homology_pool": {
@@ -122,15 +122,15 @@
     "inferred_utr_head_nt": 504,
     "methods": {
       "annotated": 9063,
-      "inferred": 452,
+      "inferred": 453,
       "noncoding": 491,
-      "none": 81
+      "none": 82
     },
     "noncoding_offered_to_5ncr": 491,
     "rows_with_unsequenced_run_dropped": 1,
     "strands": {
-      "": 81,
-      "+": 9995,
+      "": 82,
+      "+": 9996,
       "-": 11
     },
     "unsequenced_nt_dropped": 159
@@ -138,8 +138,8 @@
   "stack": "unified",
   "threads": 8,
   "tiers": {
-    "addon": 1354,
-    "backbone": 8733
+    "addon": 1355,
+    "backbone": 8734
   },
   "tool_identity": {
     "cmalign": "infernal 1.1.5 pl5321hd34ca47_4",
@@ -150,7 +150,7 @@
     "PV1": 4333,
     "PV2": 3791,
     "PV3": 1597,
-    "PV?": 366
+    "PV?": 368
   },
   "width_nt": 7545
 }

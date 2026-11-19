@@ -2,7 +2,7 @@
 
 ## Current state
 
-**`final/` is what this pipeline builds.** As of 2026-11-17 it holds release 5.2.0: canonical, audit,
+**`final/` is what this pipeline builds.** As of 2026-11-19 it holds release 5.3.0: canonical, audit,
 curation and dictionary trees written by `evgc build-metadata` from `raw/` and `registry/` alone,
 and alignments written by `evgc alignment-build` from those. It is a build destination, not a parity
 target, and `build.reject_immutable_output` guards only `raw/` — the frozen input of record, where a
@@ -375,10 +375,49 @@ strictly in series because concurrent aligner processes once reached ~50 GB.
 
 | artifact | rows | width | 2.4.1 |
 |---|---:|---:|---:|
-| `EV_unified` | 24,305 | 8,817 | 9,942 |
-| `NPEV_unified` | 14,218 | 8,328 | 8,502 |
-| `POLIO_unified` | 10,087 | 7,632 | 8,928 |
+| `EV_unified` | 24,305 | 8,127 | 9,942 |
+| `NPEV_unified` | 14,216 | 8,643 | 8,502 |
+| `POLIO_unified` | 10,089 | 7,545 | 8,928 |
 | `PV1`/`PV2`/`PV3` | 4,333 / 3,791 / 1,597 | 7,441 / 7,439 / 7,432 | 7,866 / 8,093 / 8,094 |
+
+Widths are from the files as shipped; the earlier column carried widths from a previous build.
+
+**5.3.0 rebuilt `POLIO_unified`, `NPEV_unified` and `EV_unified`, and left `PV1`/`PV2`/`PV3` alone.**
+`M30213` and `M30219` joined the poliovirus partition, so POLIO gained two rows and NPEV lost two
+(both drops are classified `group_moved`). EV's row set is unchanged. Build times, in series on eight
+threads: POLIO 22.7 min, NPEV 72.5, EV 193.4. The serotype files hold no row of either record, since
+neither carries a serotype, so their bytes and hashes did not move.
+
+EV's width fell from 8,337 to 8,127 nt, and that is a side effect rather than anything the two
+records carry. The only differences in EV's inputs are the two records' `virus_type` and `M30213` moving from `addon` to
+`backbone`. MAFFT's `--addfragments` builds its guide tree over the combined set (`align/build.py`),
+so a one-row change to the set can move other fragments, and it did. Columns held by a single row fell
+from 276 to 195, and `OR129570` and `OR129612`, which held 39 and 24 private columns, hold none.
+25 rows moved by more than 60 nt in Sabin 1 coordinates. All 25 are fragments of 96 to 845 nt, and
+the rebuild is better for some and worse for others.
+
+Scored by identity to the majority base of same-type rows in the columns each record occupies:
+
+- **Better, 8:** `JN393203`, `JN393197`, `AY962577`, `AY942641`, `DQ370161`, `EU409818`, `DI499173`,
+  `JC013130`. The first six went from 21–37% identity, which is chance, to 54–95%.
+- **Worse, 11:** `KF413049`, `HQ662313`, `HQ662314`, `KF413052`, `KF413004`, `KF413005`,
+  `KF413019`, `KF413042`, `KF412911`, `MN888086`, `JN203545`. They went from 60–98% to 25–48%, and
+  all but `JN203545` moved the same 312 nt (104 codons) upstream.
+- **No clear change, 6:** `AB268144`, `JQ886656`, `JQ886657`, `X87594`, `DI499174`, `JC013131`.
+
+`PV1_unified` is unchanged and is an independent witness for the four PV1 records. It places
+`AY962577`, `JN393197` and `JN393203` where the rebuilt EV does, and `MN888086` where the committed
+EV did. So three PV1 fragments are now right and one is now wrong. The other 21 have no second
+witness and rest on the identity score alone.
+
+Nothing in `alignment-verify`, `alignment-shape` or the private-column ceiling distinguishes the two
+builds: all 3,744 near-complete rows still translate without an internal stop and neither build has a
+private-column failure. The gate that would is a minimum identity to same-type peers for addon rows;
+none exists. By count the committed EV is slightly ahead, 11 rows against 8, which is within what a
+set-dependent placement does in either direction. This release ships the rebuild because the
+committed file records the old population (366 `PV?` rows, `M30213` as `addon`) and so does not
+describe the 5.3.0 canonical. Fragment placement in the addon tier is an open problem that 5.3.0
+exposes and did not create, and the cause has not been isolated to the one-row change.
 
 ### Half of two CDS blocks held nothing but ambiguity
 
@@ -540,10 +579,10 @@ stays distinguishable from "deleted" without inventing an alignment character.
 **2.4.1's alignments were not 1-to-1 with the release they shipped beside; 4.0.0's are, by
 construction.** The delta each artifact declares against `releases/2.4.1/alignments/`, as built:
 
-| artifact | 2.4.1 rows | 5.0.0 rows | delta |
+| artifact | 2.4.1 rows | current rows | delta |
 |---|---|---|---|
-| `POLIO_unified` | 9,988 | 10,087 | +106 / −7 |
-| `NPEV_unified` | 14,050 | 14,218 | +168 / −0 |
+| `POLIO_unified` | 9,988 | 10,089 | +108 / −7 |
+| `NPEV_unified` | 14,050 | 14,216 | +168 / −2 |
 | `EV_unified` | 24,038 | 24,305 | +272 / −5 |
 | `PV1_unified` | 3,732 | 4,333 | +715 / −114 |
 | `PV2_unified` | 3,604 | 3,791 | +356 / −169 |
@@ -809,14 +848,15 @@ Passing parity means at minimum:
 - identical vouched/provisional partitions;
 - identical FASTA identifiers and nucleotide sequences;
 - migration of all 2,912 human decisions the release shipped, and 28 deterministic rules. The ledger
-  now holds 4,929 — 4,716 `active`, 196 `retired`, 17 `superseded` — and the difference is approved
+  now holds 4,939 — 4,722 `active`, 196 `retired`, 21 `superseded` — and the difference is approved
   curation history rather than a parity failure, itemised by `source_artifact`. The largest single
   block is the 243-row locked VDPV/wild reconciliation allowlist, migrated 2026-07-30: the last input
   to `poliovirus_classification` with no counterpart here, and every row already agrees with the
   shipped column, which a test asserts. The `superseded` rows are assertions a later decision
   replaced, kept as history rather than deleted: among them the D2 rows, curator revisions to
-  `AB180070-73` and `JC013129`, and the `AF065158`/`AB467472` `wild` labels overturned on
-  2026-08-16. See
+  `AB180070-73` and `JC013129`, the `AF065158`/`AB467472` `wild` labels overturned on
+  2026-08-16, the `Sabin` rows of `M29182`/`M29183`, and the `is_poliovirus = FALSE` rows of
+  `M30213`/`M30219`, the last two classes both withdrawn on 2026-11-17. See
   [`registry/README.md`](../registry/README.md);
 - equivalent normalized source and canonical scientific values;
 - complete, referentially closed provenance;
@@ -840,15 +880,15 @@ had become of it. `evgc build-metadata` now writes `audit/decision_applications.
 decision per canonical field it can reach, and **a decision with no row is a build failure** rather
 than an absence.
 
-The measured tally, 6,336 application rows over the 4,929-row ledger
+The measured tally, 6,348 application rows over the 4,939-row ledger
 (`final/audit/decision_applications.tsv.gz`):
 
 | status | n | what it means |
 |---|---|---|
-| `applied_filled_unresolved` | 3,570 | the decision is the only reason the cell has a value |
+| `applied_filled_unresolved` | 3,576 | the decision is the only reason the cell has a value |
 | `applied_changed` | 1,713 | in force, and the value differs from the rule's |
 | `applied_unchanged` | 529 | **a rule now reaches the same value on its own** |
-| `not_in_force_retired` / `_superseded` | 196 / 17 | the curator took it back |
+| `not_in_force_retired` / `_superseded` | 196 / 23 | the curator took it back |
 | `applied_exclusion` | 176 | the record is absent from the carve *because* the ledger says so |
 | `no_canonical_field` | 123 | reference-selection curation the canonical schema has no column for |
 | `subject_outside_carve` | 12 | no canonical value exists to change |

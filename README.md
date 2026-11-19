@@ -53,7 +53,7 @@ site/                 Source for the browser data explorer linked above, plus th
                       precomputed artifacts it serves and the gate that keeps them
                       in step with final/.
 src/                  Pipeline foundation and executable contract validation.
-final/                Release 5.2.0 — what this pipeline produces, rebuilt from raw/ and
+final/                Release 5.3.0 — what this pipeline produces, rebuilt from raw/ and
                       registry/ alone. A build destination, not a comparison target: a
                       guarded build may write it and may not read a file it did not write.
 releases/2.4.1/       The superseded release, retired rather than rewritten: its parity
@@ -75,8 +75,8 @@ records directly — scanning the distributions and outliers on the explorer sit
 against the poliovirus literature — to make them as correct as he can. `provisional` means that
 depth of review has not happened yet.
 
-Today that lands exactly on the partition: all 10,087 poliovirus records are `vouched` and all
-14,218 non-polio ones are `provisional`, because the review has covered poliovirus and not yet
+Today that lands exactly on the partition: all 10,089 poliovirus records are `vouched` and all
+14,216 non-polio ones are `provisional`, because the review has covered poliovirus and not yet
 covered non-polio EV. The two columns therefore carry the same *bits* right now and different
 *claims*, and they will separate the first time a non-polio family is reviewed. Read
 `curation_status` as a statement about the reviewing, not as a restatement of `virus_group`.
@@ -161,12 +161,50 @@ compared against. And a blank cell is never a claim — `audit/projection_proven
 filled, how many are blank and how many were declined.
 
 Every curation decision also gets a recorded outcome. `audit/decision_applications.tsv.gz` says what
-became of each of the 4,900 ledger rows — applied and changed something, applied and made no
+became of each of the 4,939 ledger rows — applied and changed something, applied and made no
 difference, filled a cell a rule declined, withdrawn, or reaching no canonical column — and a decision
 with *no* row is a build failure. That is the D2 lesson as an artifact: the failure it prevents is an
 assertion sitting in the ledger for two releases while the pipeline quietly recomputed the value. As
 of release 3.0.0 the `field_not_projected` bucket is **empty**: every ledger field mapped to a
 canonical column now reaches a rule that projects it.
+
+### Release 5.3.0
+
+`final/` **is** release 5.3.0 — the dataset this pipeline produces end to end from public inputs.
+
+5.3.0 lands the two records 5.2.0 held back. `M30213` and `M30219` move from the non-polio partition
+into the poliovirus partition, on the curator ruling of 2026-11-17. The row set and the column set
+are unchanged, so a minor bump. Against 5.2.0, 12 canonical cells change, six on each record:
+`virus_group` (`non_polio_enterovirus` → `poliovirus`), `curation_status` (`provisional` →
+`vouched`), `poliovirus_classification` (blank → `defective-interfering particle`), `sequence_scope`
+(`unknown` → `other_fragment`), `sample_origin` (`unknown` → `non-human`) and `surveillance_stream`
+(`not_applicable` → `engineered/lab`). Every other cell of every other row is identical.
+
+The ledger gains eight rows from `defective_interfering_curation_2026-11-17` (membership,
+classification, origin and sampling frame, for each record) and supersedes the two
+`membership_confirmation_not_polio` rows that kept them out. Those two are superseded, not retired:
+each decided on the organism name and the capsid-AA band alone, and the ruling adds the deposit's own
+definition line and its membership of a submission whose other ten records are already carved as
+poliovirus. The ledger is now 4,939 rows.
+
+This is the first release where the partition differs from 2.4.1. `oracle/parity.py` declares the
+difference: two cells each in `virus_group`, `curation_status` and `sequence_scope`, a new
+`('', 'defective-interfering particle')` class of 2, `('non-human', 'unknown')` down from 10 to 8, and
+the `('engineered/lab', 'not_applicable')` class gone, because the ledger returns both records to the
+value 2.4.1 shipped. The declared decline counts do not move: neither record was ever declining.
+`docs/classification-migration-gap.md` goes from 517 differing records to 519.
+
+The partition flip changes alignment membership, so `POLIO_unified`, `NPEV_unified` and
+`EV_unified` were rebuilt, in series. `POLIO_unified` gains the two rows (10,087 → 10,089),
+`NPEV_unified` loses them (14,218 → 14,216, each drop classified `group_moved`), and `EV_unified`
+holds its 24,305. Neither record carries a serotype, so `PV1`/`PV2`/`PV3` are byte-identical.
+
+The rebuilt EV is narrower, 8,127 nt against 8,337, and 25 of its fragment rows (96-845 nt) moved by
+more than 60 nt. Scored against same-type peers, eight are now better placed and eleven worse, and
+six did not clearly change. MAFFT's `--addfragments` places fragments over the whole set at once, so
+this follows from a one-row change to the addon set rather than from anything about the two records.
+No gate measures it. [`docs/reproducibility.md`](docs/reproducibility.md) lists the rows and what is
+not known.
 
 ### Release 5.2.0
 
@@ -196,11 +234,11 @@ is recoverable from the sequence and the particle type is not — is recorded at
 [`derive/classification.py`](src/enterovirus_genbank_curated/derive/classification.py). It is a
 curation convention expressed as ledger rows per accession; nothing in the code enforces it.
 
-**`M30213` and `M30219` are still held.** An active `membership_confirmation_not_polio` row keeps
-them outside the poliovirus partition, and since 3.2.0 a curated `classification` *entails*
-membership — so tagging them flips the partition, which moves them between alignment populations and
-needs `POLIO_unified`, `NPEV_unified` and `EV_unified` rebuilt. Splitting that off keeps a
-two-cell change from waiting on a five-hour build; it lands in its own release.
+**`M30213` and `M30219` were still held in 5.2.0.** An active `membership_confirmation_not_polio`
+row kept them outside the poliovirus partition, and since 3.2.0 a curated `classification`
+*entails* membership — so tagging them flips the partition, which moves them between alignment
+populations and needs `POLIO_unified`, `NPEV_unified` and `EV_unified` rebuilt. Splitting that off
+kept a two-cell change from waiting on a five-hour build. They land in 5.3.0, above.
 
 ### Release 5.1.0
 
@@ -226,7 +264,7 @@ paper and reasoning explicitly about the defective-interfering nature — and a 
 made on the same facts is not something a rebuild of an earlier one may quietly overturn. That went
 back to the curator and is settled in 5.2.0 above. `M30213`/`M30219` are held outside the poliovirus
 partition by an active `membership_confirmation_not_polio` row, because their deposits read
-`organism=Enterovirus C` while their twelve batch-mates read `Human poliovirus sp.`; since 3.2.0 a
+`organism=Enterovirus C` while their ten batch-mates read `Human poliovirus sp.`; since 3.2.0 a
 curated `classification` *entails* poliovirus membership, so a tag there would contradict a
 membership decision rather than fill a blank. Both are recorded in
 [`tests/test_decision_ledger.py`](tests/test_decision_ledger.py) next to the count they explain.
@@ -417,7 +455,7 @@ contract that nothing can contradict is not a contract, so CI runs the full form
 The human-readable curation ledger is `registry/decisions.tsv`. Its contract and review rules are
 documented in [`registry/README.md`](registry/README.md).
 
-Note that three version numbers coexist and are independent: the **data release** is 5.2.0
+Note that three version numbers coexist and are independent: the **data release** is 5.3.0
 (`CITATION.cff`, and `release_version` in `final/audit/build_manifest.json`), the canonical
 **schema** is 2.4.1 (`schema_version` in the same manifest), and the Python package version is
 0.0.0.

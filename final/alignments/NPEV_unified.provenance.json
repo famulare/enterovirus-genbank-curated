@@ -2,33 +2,33 @@
   "absence_reasons": {
     "3ncr:below_pop_min": 40,
     "3ncr:empty_fragment": 12270,
-    "3ncr:inferred_no_ncr": 328,
-    "3ncr:no_coding_or_ncr_homology": 35,
+    "3ncr:inferred_no_ncr": 327,
+    "3ncr:no_coding_or_ncr_homology": 34,
     "5ncr:below_pop_min": 39,
     "5ncr:empty_fragment": 10741,
-    "5ncr:inferred_no_ncr": 327,
-    "5ncr:no_coding_or_ncr_homology": 35,
+    "5ncr:inferred_no_ncr": 326,
+    "5ncr:no_coding_or_ncr_homology": 34,
     "cds:no_cds_untranslatable": 25,
     "cds:no_coding_homology": 862,
-    "cds:no_coding_or_ncr_homology": 35
+    "cds:no_coding_or_ncr_homology": 34
   },
   "artifact_sha256": {
-    "coverage": "3c34e327dcc6467c8384f33cea1c95cf44a8f704e04565af98ea0a16479e58f4",
-    "fasta": "01fd138b7ba7eb6b012642db7aa7f300f5e3b6bb1602d3f29341b4eb34905abe",
-    "stockholm": "99335620c5050afe3a2c0b925e4c34c02e578c917ce72a3be058842b3937b1ac"
+    "coverage": "23df2fdb86fec28fb83bfac4ed66d0737df9e55f2a280b25d53af50e96a4201f",
+    "fasta": "fec3de05bb5f6604e9ecdf571482d2b70ab43fc3df055e1cb4d05101cc7413aa",
+    "stockholm": "eabfc3e401d489659dd72de1a9acec2e2a89a4f54eff12729c5f2485fed39a39"
   },
   "block_widths": {
     "3ncr": 87,
     "5ncr": 738,
-    "cds": 7830
+    "cds": 7818
   },
   "blocks_present": {
     "3ncr": 1545,
     "5ncr": 3076,
-    "cds": 13296
+    "cds": 13295
   },
-  "blocks_present_cds": 13296,
-  "cds_codons": 2610,
+  "blocks_present_cds": 13295,
+  "cds_codons": 2606,
   "cds_width_is_whole_codons": true,
   "clade_exemplars": {
     "codons_dropped_after_removal": 3,
@@ -79,7 +79,7 @@
     }
   },
   "description": "Non-polio enterovirus whole-genome multiple sequence alignment (5'NCR structure-aware, CDS codon-aware, 3'NCR structure-aware)",
-  "expected_rows": 14218,
+  "expected_rows": 14216,
   "families": {
     "CVA": 6210,
     "CVB": 897,
@@ -92,10 +92,10 @@
     "RV-A": 344,
     "RV-B": 112,
     "RV-C": 347,
-    "unknown": 1423
+    "unknown": 1421
   },
   "flung_clusters_gapped": {
-    "codons": 97,
+    "codons": 96,
     "columns_dropped_after_gapping": 0,
     "rows": {
       "JX513592": 8,
@@ -109,7 +109,6 @@
       "KM486572": 6,
       "KM486573": 6,
       "MT661798": 1,
-      "PQ009017": 1,
       "X87592": 14,
       "X87597": 16
     }
@@ -126,8 +125,8 @@
     "pass1_gap_open": "4.5 for every unified artifact. Upstream used 3.0 for polio, which its own source documents as producing a deterministic CDS width blowup with no benefit; 4.5 was applied once as a command-line override and never propagated into the script.",
     "pass2_local_gap_open": "-24.0. Upstream's shipped builds ran at MAFFT's default of -2.00 through every build, which shreds short addon fragments. This is the larger scientific change of the two."
   },
-  "population_sha256": "a9745402f37fc219bef4e67117a18a7c75c58086970fdf6c7d4d17bd4dd41092",
-  "rows": 14218,
+  "population_sha256": "ffab62970ea96613bcf3454526a8f7ca724c67bc181c0f799549e1aa36f67a28",
+  "rows": 14216,
   "schema": 1,
   "segmentation": {
     "homology_pool": {
@@ -141,15 +140,15 @@
     "inferred_utr_head_nt": 120,
     "methods": {
       "annotated": 12968,
-      "inferred": 328,
+      "inferred": 327,
       "noncoding": 887,
-      "none": 35
+      "none": 34
     },
     "noncoding_offered_to_5ncr": 887,
     "rows_with_unsequenced_run_dropped": 49,
     "strands": {
-      "": 35,
-      "+": 14165,
+      "": 34,
+      "+": 14164,
       "-": 18
     },
     "unsequenced_nt_dropped": 39369
@@ -157,7 +156,7 @@
   "stack": "unified",
   "threads": 8,
   "tiers": {
-    "addon": 3799,
+    "addon": 3797,
     "backbone": 10419
   },
   "tool_identity": {
@@ -382,7 +381,7 @@
     "RV-C6": 38,
     "RV-C7": 6,
     "RV-C9": 8,
-    "unknown": 1423
+    "unknown": 1421
   },
-  "width_nt": 8655
+  "width_nt": 8643
 }

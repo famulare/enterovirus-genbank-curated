@@ -29,14 +29,20 @@ SHIPPED = "releases/2.4.1/alignments/{name}.sto.gz"
 # the rebuild legitimately loses. Both are re-derived per artifact in the delta tests, so these
 # are tripwires: they fail when the underlying data moves, which is the point.
 EXPECTED_DELTA = {
-    "POLIO_unified": (106, 7),
-    "NPEV_unified": (168, 0),
+    "POLIO_unified": (108, 7),
+    "NPEV_unified": (168, 2),
     "EV_unified": (272, 5),
     "PV1_unified": (715, 114),
     "PV2_unified": (356, 169),
     "PV3_unified": (261, 89),
 }
 
+# Re-measured 2026-11-18 for the two defective-interfering records the curator ruled poliovirus
+# (`M30213`, `M30219`). 2.4.1 carved both as non-poliovirus, so they were rows of its
+# `NPEV_unified`; they are now `POLIO_unified` rows. That is +2 `added` on POLIO and +2 `dropped` on
+# NPEV, where each drop is classified `group_moved`. `EV_unified` holds both populations and does
+# not move. The serotype files do not move: neither record carries a serotype.
+#
 # Re-measured 2026-08-14 for release 5.0.0's correctness pass. Two changes, both deliberate:
 #
 #   +3 dropped everywhere `FV537075`/`76`/`77` appear — carve-excluded as laboratory conversions of
@@ -233,7 +239,7 @@ def test_the_substituted_column_reproduces_the_shipped_tiers_exactly(
 
 @pytest.mark.parametrize(
     ("name", "backbone", "addon"),
-    [("POLIO_unified", 8732, 1251), ("NPEV_unified", 10418, 3632), ("EV_unified", 19150, 4883)],
+    [("POLIO_unified", 8732, 1251), ("NPEV_unified", 10419, 3631), ("EV_unified", 19151, 4882)],
 )
 def test_the_rebuilds_own_rule_differs_from_shipped_only_by_the_reclassified_records(
     repository_root: Path,
@@ -251,6 +257,13 @@ def test_the_rebuilds_own_rule_differs_from_shipped_only_by_the_reclassified_rec
     all — the two `SEQUENCE_RESCUED_INCLUSIONS` and the three `FV5370xx` carve exclusions added on
     2026-08-14 — which is why POLIO and EV read below the shipped figures rather than one above.
     Deriving this is honest; asserting exactness on all three would assert something false.
+
+    Since 2026-11-18 a second record changes column: `M30213`, which the curator ruling of
+    2026-11-17 moved into the poliovirus partition. Its `serotype_sequence_confident` is TRUE and
+    its `enterovirus_type_sequence_confident` FALSE, so the shipped partition tiered it `addon` and
+    the poliovirus column tiers it `backbone`. `M30219` has FALSE in both and stays `addon`. Both
+    are in the shipped NPEV and EV row sets, which is why those two read one backbone higher than
+    the shipped 10,418/3,632 and 19,150/4,883; `POLIO_unified`'s shipped set never held either.
     """
     shipped = shipped_row_ids(repository_root, name)
     counts = {"backbone": 0, "addon": 0}
@@ -445,6 +458,9 @@ def test_blank_types_take_the_sentinel_for_their_own_group(
     turned out to state their type in their own title. The sentinel population is the *residue* of a
     typing gap, so it shrinking is the gap closing.
 
+    366/1,423 -> 368/1,421 on 2026-11-18: `M30213` and `M30219` carry no serotype, and the curator
+    ruling of 2026-11-17 moved them from the non-polio blanks to the polio ones.
+
     **`type_sort_key` is also the alignment row order** (`population.select`), so those 427
     records move within `NPEV_unified` and `EV_unified`. That is why the alignment rebuild covers
     all six artifacts and not the five the population arithmetic alone would imply.
@@ -453,11 +469,11 @@ def test_blank_types_take_the_sentinel_for_their_own_group(
     npev_blanks = [r for r in populations["NPEV_unified"].records if not r.virus_type]
     assert {r.type_sort_key for r in polio_blanks} == {"PV?"}
     assert {r.type_sort_key for r in npev_blanks} == {"unknown"}
-    assert len(polio_blanks) == 366
-    assert len(npev_blanks) == 1423
+    assert len(polio_blanks) == 368
+    assert len(npev_blanks) == 1421
     ev_labels = populations["EV_unified"].type_counts()
-    assert ev_labels["PV?"] == 366
-    assert ev_labels["unknown"] == 1423
+    assert ev_labels["PV?"] == 368
+    assert ev_labels["unknown"] == 1421
 
 
 def test_the_blank_polio_records_are_in_no_serotype_artifact(

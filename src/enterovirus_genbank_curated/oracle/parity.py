@@ -92,8 +92,12 @@ DECLARED_ROW_DELTA = {
 }
 
 # Every canonical cell that differs from the 2.4.1 baseline, by class, over the 24,296 shared rows.
-# The nineteen columns absent from this table are identical on every shared row, `virus_group` and
-# `curation_status` among them — the partition reproduces exactly.
+# The sixteen columns absent from this table are identical on every shared row. Until the curator
+# ruling of 2026-11-17 landed, `virus_group` and `curation_status` were among them and the
+# partition reproduced exactly. `M30213` and `M30219` are now the two shared rows where it does
+# not: 2.4.1 and every release up to 5.2.0 carved them as non-poliovirus, and the ruling moves them
+# into the poliovirus partition. Each cell that follows from that is declared below, in the three
+# columns that were previously absent (`virus_group`, `curation_status`, `sequence_scope`).
 #
 # Read a `('x', '')` entry as "2.4.1 asserted x and this pipeline declines or blanks", and a
 # `('x', 'y')` entry as "both assert, differently". A blanking is not automatically a loss: 94.8% of
@@ -102,13 +106,15 @@ DECLARED_ROW_DELTA = {
 # `('unknown', 'human')` cells are this pipeline reading a `/host` the upstream stage never
 # examined. Both numbers are the table below's own, and must be re-read off it when it moves.
 DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
-    # Two columns are absent from this table, and their absence is the result rather than an
+    # Two columns were absent from this table, and their absence was the result rather than an
     # omission. `sequence_scope` held 24,296 cells in 6 classes — every shared row, because the
     # column shipped empty — and `collection_date` held 1,761 in 59 per-year classes. Both were
     # recorded as unreachable from `raw/`; both were reproduced exactly on 2026-08-12, by
     # `R-SCOPE-2` and by `R-DATE-2`'s identifier branch. A column moving from "differs on every row"
     # to "no declared class at all" is the strongest form this contract can take, and it is why
-    # neither is listed as zero: there is no transition left to declare.
+    # neither was listed as zero: there was no transition left to declare. `collection_date` still
+    # has none. `sequence_scope` has one again, two cells, and the reason is the partition rather
+    # than the rule: see the entry at the end of this table.
     #
     # 427 cells left `virus_type` the same day, when R-TYPE-2 began reading the depositor's own
     # definition line for the abbreviated type forms an NCBI organism name never uses. What is left
@@ -240,6 +246,11 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         # only in the deposit's text. This is the one class in this table where the release is
         # not correcting the baseline but carrying a fact the baseline had no column for.
         ('Sabin', 'defective-interfering particle'): 2,
+        # New on 2026-11-18: `M30213` and `M30219`. 2.4.1 carved both as non-poliovirus, where the
+        # column is blank by determination; the curator ruling of 2026-11-17 puts them in the
+        # partition and they take the same tag as their ten batch-mates. Not a correction of a
+        # value 2.4.1 asserted: the baseline had nothing to assert in the column for these rows.
+        ('', 'defective-interfering particle'): 2,
         ('Sabin-like', 'wild'): 1,
         # Down from 12 with the ambiguity fix: an `N` or an `R` scored as a substitution was
         # pushing these over PV2's 0.6% ceiling. `OK634152` carried exactly one `R`.
@@ -269,7 +280,9 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('unknown', 'non-human'): 544,
         ('vaccine', ''): 24,
         ('unknown', ''): 17,
-        ('non-human', 'unknown'): 10,
+        # 10 until 2026-11-18. Eight records remain; `M30213` and `M30219` were two of the ten and
+        # take `non-human` again from the ledger, the value 2.4.1 shipped for them.
+        ('non-human', 'unknown'): 8,
         ('non-human', ''): 7,
         # 1 -> 3 on 2026-08-16. `JC013131` and `DI499174` held `origin_class = human` decisions that
         # outranked R-ORIGIN-2's PAT branch and asserted the opposite of what the vocabulary says a
@@ -290,7 +303,9 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
         ('vaccine/reference', ''): 49,
         ('AFP/clinical', 'environmental'): 6,
         ('unknown', 'not_applicable'): 6,
-        ('engineered/lab', 'not_applicable'): 2,
+        # `('engineered/lab', 'not_applicable'): 2` stood here until 2026-11-18. Both were
+        # `M30213` and `M30219`, which the ledger now returns to the value 2.4.1 shipped, so the
+        # class is gone rather than declared.
         ('non-human experimental', 'not_applicable'): 3,
         ('AFP/clinical', 'not_applicable'): 2,
         ('unknown', 'environmental'): 2,
@@ -328,6 +343,24 @@ DECLARED_TRANSITIONS: dict[str, dict[tuple[str, str], int]] = {
     # cannot reach, after the six ratified 2026-08-14.
     "engineered_or_construct": {
         ('TRUE', 'FALSE'): 501,
+    },
+    # The three columns below hold the whole of what moving `M30213` and `M30219` across the
+    # partition changes against 2.4.1, apart from the two classes above. Both records are
+    # defective-interfering deposits from PMID:3031313 whose `organism_name` reads `Enterovirus C`
+    # where their ten batch-mates read `Human poliovirus sp.`; 2.4.1 followed the organism name and
+    # the curator ruling of 2026-11-17 follows the deposit's own definition line and its membership
+    # of the submission. `virus_group` and `curation_status` move together, because the vouched
+    # table is the poliovirus partition. `sequence_scope` moves with them: 2.4.1 shipped `unknown`
+    # outside the partition, and inside it R-SCOPE-2 reads the deposit's annotation, which names no
+    # region, so it lands on `other_fragment` like every other 60 nt deposit of the series.
+    "virus_group": {
+        ('non_polio_enterovirus', 'poliovirus'): 2,
+    },
+    "curation_status": {
+        ('provisional', 'vouched'): 2,
+    },
+    "sequence_scope": {
+        ('unknown', 'other_fragment'): 2,
     },
 }
 
@@ -533,6 +566,10 @@ UNRESOLVED_SPECIMEN_ROWS = 12617
 # entirely: those 759 are now scoped and read their `/host`. The rest of the 1,385 newly-partitioned
 # records deposit no `/host` and no recognisable human specimen, so they stay declined here — a
 # resolved partition makes the question askable, not answered.
+#
+# Unchanged on 2026-11-18, when `M30213` and `M30219` moved into the partition. Neither was ever a
+# decline: outside poliovirus the rule returns `unknown` by determination
+# (`not_determined_outside_poliovirus`), and inside it the two records now read their ledger rows.
 UNRESOLVED_ORIGIN_ROWS = 2728
 # `surveillance_stream` rows R-SURVEILLANCE-2 declines: 7,342 whose text names no surveillance
 # context at all — including the 2,823 poliovirus records the release spreads across all seven of
@@ -557,6 +594,10 @@ UNRESOLVED_ORIGIN_ROWS = 2728
 # resolved anything; presence is the signal. Only 17 rather than the 148 flagged records in the
 # carve, because 95 already read `environmental` from their own text and 36 name an individual's
 # specimen, which the flag does not overrule — see `derive/epi.py`.
+#
+# Unchanged on 2026-11-18, for the same reason as `sample_origin` above: `M30213` and `M30219` held
+# the determined `not_applicable` outside the partition, and now hold `engineered/lab` from the
+# ledger.
 UNRESOLVED_STREAM_ROWS = 7456
 # `engineered_or_construct` now declines on nothing. It declined on `LY501105` and `LZ216100`, the
 # CAVA cold-adaptation pair Appendix B of the re-adjudication recorded as open in either direction,
@@ -651,6 +692,10 @@ UNRESOLVED_TYPE_ROWS = 1789
 # can reach — and each now carries an accession-level decision landing the half of the 2026-07-30
 # ruling that only ever reached `engineered_or_construct`. The refusal was correct; what was missing
 # was the curation to answer it.
+#
+# Unchanged on 2026-11-18. `M30213` and `M30219` shipped a determined blank, the outside-poliovirus
+# branch, and now ship the particle type from the ledger. Neither was declining, so the count that
+# fell by 10 in 5.1.0 does not fall by two more here.
 UNRESOLVED_CLASSIFICATION_ROWS = 461
 
 

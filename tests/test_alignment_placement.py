@@ -175,7 +175,14 @@ def test_the_built_artifacts_place_their_addon_rows_well(
 # a *higher* shifted share than `OR538735` while placing perfectly well. Any threshold that caught
 # this one would sweep in the other twenty-three on a tuned number, which is the thing every other
 # threshold in this pipeline was chosen to avoid. So it is recorded here and left alone.
-LARGEST_PRIVATE_OWNER = {"EV_unified": 39, "NPEV_unified": 216, "POLIO_unified": 15}
+#
+# `EV_unified` 39 -> 27 on 2026-11-18, when 5.3.0 rebuilt it. The 39 was `OR129570`, and `OR129612`
+# held 24 beside it; in the rebuild neither holds a private column and the largest owner is
+# `MT641370` at 27. The only input difference was `M30213` moving from the addon set to the
+# backbone, and addon placement depends on the addon set, so a change of this kind is expected. The
+# change has not been isolated to that one row. `check_private_columns` reports no failure on
+# either build.
+LARGEST_PRIVATE_OWNER = {"EV_unified": 27, "NPEV_unified": 216, "POLIO_unified": 15}
 
 
 def test_one_record_hogging_columns_is_refused() -> None:

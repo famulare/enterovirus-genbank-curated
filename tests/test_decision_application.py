@@ -171,7 +171,14 @@ EXPECTED_TALLY = {
     # land here and not in `applied_changed` because `R-CLASS-2` declines these cells with or
     # without the ledger — 60 nt carries no VP1 window to measure — so the decision is the only
     # reason the cell has a value, which is exactly what this bucket means.
-    "applied_filled_unresolved": 3559 - 3 + 4 + 10,
+    # +6 on 2026-11-18, `M30213` and `M30219`: their `classification`, `origin_class` and
+    # `sampling_frame` rows, three each. The cells were the determined `unknown`, `not_applicable`
+    # and blank of the non-poliovirus branch, which is not a decline, so the decision is the only
+    # reason each cell now carries the value this bucket means.
+    # The two `is_poliovirus` swaps move nothing here. The withdrawn `FALSE` rows were
+    # `applied_filled_unresolved` on `virus_group` and `curation_status`, and their `TRUE`
+    # replacements land on the same two fields: four rows leave, four arrive.
+    "applied_filled_unresolved": 3559 - 3 + 4 + 10 + 6,
     # -4 more on 2026-08-15: four `iVDPV` decisions the attestation branch now reaches unaided,
     # because the record's own `/isolation_source` names an immunodeficient host and the rule reads
     # it. `iVDPV` in this tally goes 40 -> 44. They stay active under the 2026-08-14 ruling — the
@@ -204,7 +211,11 @@ EXPECTED_TALLY = {
     # divergence of zero, where the 5.1.0 series is 60 nt and carries no VP1 window at all. That is
     # this table independently stating the premise of the ruling: the lineage is recoverable from
     # the sequence, so the column is better spent on the particle type, which is not.
-    "not_in_force_superseded": 10 + 3 + 2 + 2 + 2,
+    # +4 on 2026-11-18: the two `is_poliovirus = FALSE` membership rows on `M30213` and `M30219`.
+    # Each is reported once per canonical field it maps to, `virus_group` and `curation_status`, so
+    # two superseded ledger rows add four here. Their `TRUE` replacements land in
+    # `applied_filled_unresolved`, as above.
+    "not_in_force_superseded": 10 + 3 + 2 + 2 + 2 + 4,
 }
 
 

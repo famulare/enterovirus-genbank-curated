@@ -5,8 +5,8 @@ title: "enterovirus-genbank-curated: a curated, provenance-tracked GenBank Enter
 authors:
   - family-names: Famulare
     given-names: Mike
-version: "5.2.0"
-date-released: "2026-11-17"
+version: "5.3.0"
+date-released: "2026-11-19"
 license: CC0-1.0
 license-url: "https://creativecommons.org/publicdomain/zero/1.0/legalcode"
 keywords:
