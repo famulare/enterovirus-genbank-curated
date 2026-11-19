@@ -388,29 +388,47 @@ Widths are from the files as shipped; the earlier column carried widths from a p
 threads: POLIO 22.7 min, NPEV 72.5, EV 193.4. The serotype files hold no row of either record, since
 neither carries a serotype, so their bytes and hashes did not move.
 
-EV's width fell from 8,337 to 8,127 nt, and that is a side effect rather than anything the two
-records carry. The only differences in EV's inputs are the two records' `virus_type` and `M30213` moving from `addon` to
-`backbone`. MAFFT's `--addfragments` builds its guide tree over the combined set (`align/build.py`),
-so a one-row change to the set can move other fragments, and it did. Columns held by a single row fell
-from 276 to 195, and `OR129570` and `OR129612`, which held 39 and 24 private columns, hold none.
-25 rows moved by more than 60 nt in Sabin 1 coordinates. All 25 are fragments of 96 to 845 nt, and
-the rebuild is better for some and worse for others. The direction follows the region.
+**The rebuilt EV is not demonstrably better than the file it replaces, and it costs real sequence.**
+Its CDS block is narrower, 7,302 nt (2,434 codons) against 7,512 (2,504), and its overall width is
+8,127 nt against 8,337. Against that, eleven fragment rows are placed worse where eight are placed
+better, and the flung-cluster repair removed twice as many residues a deposit really has. This release
+ships it because the committed file records the old population (366 `PV?` rows, `M30213` as `addon`)
+and so does not describe the 5.3.0 canonical. That is an argument about correctness of description,
+not about quality.
 
-Scored by identity to the majority base of same-type rows in the columns each record occupies, with
-each record's span read off the `AY184219` row and regions from `reference_region_coordinates.tsv`:
+*What changed.* Nothing about the build did. The provenance sidecars of the committed and rebuilt EV
+are byte-identical in the whole `codon` block (gap penalties and every threshold), `tool_identity`
+(MAFFT 7.526, Infernal 1.1.5), both covariance-model hashes, `threads`, `parameter_departures`,
+`blocks_present`, `absence_reasons` and `segmentation`. What differs is the input: the population
+hash, the tiers (`addon` 5,153 → 5,152, `backbone` 19,152 → 19,153) and the types (`PV?` 366 → 368).
+That is `M30213` moving from `addon` to `backbone` and two records' `virus_type`. MAFFT's
+`--addfragments` builds its guide tree over the combined set (`align/build.py`), so a one-row change
+to the set can move other fragments, and it did. What the sidecars do not show is whether the same
+input rebuilds to the same bytes at eight threads. That has not been tested; a second EV build on
+unchanged input would say.
+
+*What moved.* Columns held by a single row fell from 276 to 195, and `OR129570` and `OR129612`, which
+held 39 and 24 private columns, hold none. 25 rows moved by more than 60 nt in Sabin 1 coordinates.
+All 25 are fragments of 96 to 845 nt, and the direction follows the region. Scored by identity to the
+majority base of same-type rows in the columns each record occupies, with each record's span read off
+the `AY184219` row and regions from `reference_region_coordinates.tsv`:
 
 - **Better, 8.** Six are non-capsid fragments the committed EV placed in the wrong region: in VP1
   or VP3 (`AY962577`, `AY942641`), in 2A and 2B (`EU409818`, `DQ370161`), or scattered over several
-  regions (`JN393197`, `JN393203`). They now sit in 2C to 3D (`AY962577` 5,100-5,324; `AY942641`, `EU409818`, `DQ370161` in 3B/3C/3D;
-  `JN393197`, `JN393203` 5,835-6,467), and their identity went from 21-37%, which is chance, to
-  54-95%. The other two, `DI499173` and `JC013130` (96 nt), are in VP1 in both builds and moved 90 nt.
+  regions (`JN393197`, `JN393203`). They now sit in 2C to 3D (`AY962577` 5,100-5,324; `AY942641`,
+  `EU409818`, `DQ370161` in 3B/3C/3D; `JN393197`, `JN393203` 5,835-6,467), and their identity went
+  from 21-37%, which is chance, to 54-95%. The other two, `DI499173` and `JC013130` (96 nt), are in
+  VP1 in both builds and moved 90 nt. `AY942641` and `DQ370161` are also newly flung-gapped (below),
+  but the repair does not account for their gain: scored on only the residues the rebuild kept, the
+  committed placement still reads 25% and 29%.
 - **Worse, 11.** All are partial VP1 sequences of 246-552 nt (`KF413019` runs into 2A): `JN203545`,
   `MN888086`, `KF413019`, `KF413042`, `KF413004`, `KF413049`, `KF412911`, `KF413005`, `HQ662313`,
   `HQ662314`, `KF413052`. They are in VP1 in the committed EV too, at 60-98% identity, and now
   score 25-48%. Ten of the eleven moved the same 312 nt (104 codons) upstream within VP1;
   `JN203545` moved 120-150 nt downstream.
 - **No clear change, 6.** Five are in VP1 in both builds (`DI499174`, `JC013131`, `AB268144`,
-  `JQ886656`, `JQ886657`). `X87594` has 845 residues spread across the whole genome in both.
+  `JQ886656`, `JQ886657`). `X87594` has 845 residues spread across the
+  whole genome in both.
 
 The rebuild moved placement quality from the non-capsid fragments to the capsid ones. A shift of
 exactly 104 codons across ten records of different types is a misregistration, not scatter. Partial
@@ -422,14 +440,21 @@ has not been established.
 EV did. So three PV1 fragments are now right and one is now wrong. The other 21 have no second
 witness and rest on the identity score alone.
 
+*What it cost.* The flung-cluster repair is, in the sidecar's own words, "the only repair that
+removes residues a deposit really has". The committed EV removed 108 codons over 15 rows; the
+rebuild removed 219 codons (657 nt) over 22, and the `unplaced_nt` column of the coverage sidecar
+agrees (324 → 657 nt). Newly on the list: `AY960848` and `AY960849` (PV1, 96 of 1,425 nt each),
+`AB162760` and `AB162761` (PV2, 36 of 435 and 39 of 438 nt), `DQ370161` (54 of 651), `AY942641` (39
+of 615), and `JX417882` and `JX417883` (3 of 909 nt each). For the first six that is 6-9% of the
+record. `JN393203` left the list: it had 33 nt removed and now keeps all 633.
+
 Nothing in `alignment-verify`, `alignment-shape` or the private-column ceiling distinguishes the two
 builds: all 3,744 near-complete rows still translate without an internal stop and neither build has a
-private-column failure. The gate that would is a minimum identity to same-type peers for addon rows;
-none exists. By count the committed EV is slightly ahead, 11 rows against 8, which is within what a
-set-dependent placement does in either direction. This release ships the rebuild because the
-committed file records the old population (366 `PV?` rows, `M30213` as `addon`) and so does not
-describe the 5.3.0 canonical. Fragment placement in the addon tier is an open problem that 5.3.0
-exposes and did not create, and the cause has not been isolated to the one-row change.
+private-column failure. The gates that would are a minimum identity to same-type peers for addon
+rows and a ceiling on residues removed by the flung-cluster repair; neither exists. By count the
+committed EV is three rows ahead on placement (the rebuild is worse on 11 and better on 8) and keeps
+333 more residues. Fragment placement in the addon tier is an open problem that 5.3.0 exposes and
+did not create.
 
 ### Half of two CDS blocks held nothing but ambiguity
 
