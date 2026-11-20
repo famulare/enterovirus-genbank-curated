@@ -18,6 +18,10 @@ This is a **data release** with an early public pipeline foundation. It is not y
 self-contained reproducible pipeline. See [Reproducibility status](#reproducibility-status) for the
 precise boundary and [`docs/pipeline.md`](docs/pipeline.md) for the staged rewrite architecture.
 
+[`docs/history.md`](docs/history.md) is an account of how the dataset was built between April and
+November 2026: what data was chosen, how curation worked, how the work was split between the
+maintainer and AI agents, where sign-off was slow, and how the shipped product was decided.
+
 ## What's here
 
 ```text
@@ -63,7 +67,8 @@ releases/2.4.1/       The superseded release, retired rather than rewritten: its
                       the tree — see src/enterovirus_genbank_curated/contracts.py.)
 derived/alignments/   Where evgc alignment-build writes; final/alignments/ is the promoted
                       copy, promoted into final/alignments/.
-docs/                 Pipeline architecture and the reproducibility boundary.
+docs/                 Pipeline architecture, the reproducibility boundary, and a history of
+                      how the dataset was built.
 ```
 
 ## Data model at a glance
